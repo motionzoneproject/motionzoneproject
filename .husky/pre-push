@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Run build to ensure project builds successfully
+echo "Running build check..."
+npm run build

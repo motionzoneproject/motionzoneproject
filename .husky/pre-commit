@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Run Biome format
+echo "Running Biome format..."
+npm run format
+
+# Run Biome lint check
+echo "Running Biome lint check..."
+npm run lint
