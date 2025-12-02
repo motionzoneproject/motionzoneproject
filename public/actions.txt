@@ -1,0 +1,105 @@
+navbar
+    - mobileversion
+    - laptopversion
+    - main menu
+    - admin menu
+    - user menu
+    - i18n för att byta språk (?)
+
+auth
+    - inloggning
+    - registrering
+    - utloggning
+
+utloggning
+
+i18n
+    - Installera
+    - Implementera
+
+startsida
+    - hero
+    - kommande event
+    - vad elever säger
+    - varför välja oss
+
+footer
+
+Om oss
+    - Om studion
+    - Lärarpresentation, hämtas från db, md med bilder (kanske? eller statisk sida?)
+    - Visa scheman för terminer (hämtas från db)
+
+
+Kurser
+    - Filtrering
+    - Lista kurserna för köp
+    - Läs mer om
+
+Galleri 
+    Här beror det ju på hur vi vill göra, ska vi bara visa senaste flödet från instagram och länka dit, eller importera flödet och kategorisera i admin?
+
+
+Profilsida lärare
+    - kurstillfällen
+        - Snabbt kunna ta närvaro
+        - Kunna se hur många bokningar samt elevinfo och vilka som har köpt kursen.
+    - Presentation av dig och kurserna (visas på om oss sidan om ikryssad)
+        - MD Editor
+        - Bildupladdning
+    - Dina uppgifter & lösenord
+
+
+Profilsida elev
+    - Dina bokningar (samt se info om inställda t.ex)
+    - Dina (köpta) kurser
+        - Se bokningar
+        - Avboka
+        - boka
+
+
+Adminsidor:
+
+
+Kurser
+    - Lägga till / ta bort kurs
+    - Ändra kursdetaljer, Hantera tillfällen: redigera närvaro, ställa in -och meddelande.
+
+
+Produkter
+    - Filtrera
+    - Lägga till ny produkt (kurs / paket / vanlig produkt(?))
+    - Ändra produkt (pris / info)
+    - Ta bort
+
+Event / Galleri
+    - Hantera galleriet, t.ex importera x antal senaste och kategorisera om nytt? Beror ju på, kanske bara ha några utvalda videos? Eller bara visa senaste flödet från instagram, då behövs ej detta?
+    - Hantera event
+        - Datum från och till
+        - Länk till biljettkios
+        - bild och MD.
+
+Elever
+    - Filtrera
+    - Nyhetsbrev
+    - Lista elever och visa uppgifter och bokningar
+    - Ändra i paket och kurser?
+
+
+Terminer och scheman
+    - Lägga till / ta bort Terminer
+    - Ställa in Datum
+    - Lägga in / flytta runt / ta bort kurser (baserat på id) i veckoschemat.
+
+
+Databas
+    - Modellera så gott det går
+    
+
+Varukorg och kassa
+    - Swish API
+    - Varukorg
+    - Checkout och bekräftelse
+    - Registrering, koppla allt till medlem.
+
+
