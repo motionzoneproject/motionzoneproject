@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  Courses Course[] // Many to many med kurser
+
+  @@unique([email])
+  @@map("user")
+}
+
+
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+
+}
+
+model Course {
+  id String @id @default(uuid())
+  name String
+  description String
+  users User[] // Användare som är i kursen
+  products Product[]
+
+  terminid String
+  Termin  @relation(fields: [terminId]¸ references: [id], onDelete: Cascade)
+
+}
+
+model Termin {
+  id String @id @default(uuid())
+  products Product[]
+
+  start DateTime
+  end DateTime
+
+  courses Course[]
+
+  
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+
+model Product {
+  id String @id @default(uuid())
+  courses Course[]
+  terminId String
+  termin Termin @relation(fields: [terminId]¸ references: [id], onDelete: Cascade)
+  price Decimal @db.Money
+
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+
+// Så när en termin skaapas och en kurs läggs in i veckodag, så skapas lessons för det tillfället, 
+model Lesson {
+  id            String    @id
+  start DateTime
+  ends DateTime
+  bookings Booking[]
+
+  message String
+  cancelled Boolean
+
+  courseId String
+  course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+}
+
+// Så här 
+model Booking {
+  id            String    @id
+  lessonId String
+  lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+}
+
+model OrderItem {
+  id String @id @default(uuid())
+
+  count Int
+  price Decimal @db.Money
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+// So here are the table for storing one order, and connect it to every items in the order.
+
+model Order {
+  id String @id @default(uuid())
+
+  // We need a copy of the price right?
+  orderItems OrderItem[]
+
+  totalPrice    Decimal @db.Money
+
+  userId String? // So can be anonymous (extra if time)
+  user   User?   @relation(fields: [userId], references: [id])
+
+  postalcode String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+
+}
