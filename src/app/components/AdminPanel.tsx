@@ -4,9 +4,25 @@ export default function AdminPanel() {
   return (
     <nav className="bg-white p-2 border-b-2 border-cyan-400">
       <div className="flex items-center space-x-6">
-        <span className="font-bold text-gray-900">Admin:</span>
+        <span className="text-gray-900 text-sm font-bold">Admin:</span>
 
         <ul className="flex space-x-4 text-sm">
+          <li>
+            <Link
+              href="/admin/start"
+              className="text-gray-800 hover:text-gray-900"
+            >
+              Startsida
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/admin/omoss"
+              className="text-gray-800 hover:text-gray-900"
+            >
+              Om oss
+            </Link>
+          </li>
           <li>
             <Link
               href="/admin/courses"

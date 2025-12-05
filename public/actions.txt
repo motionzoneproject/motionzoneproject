@@ -59,8 +59,23 @@ Profilsida elev
         - boka
 
 
-
 --- Adminsidor ---
+
+Start
+    - kunna ändra hero och vad som visas på startsidan
+
+
+Omoss 
+    - kunna ändra om oss sidan (kanske kunna välja lärarpresentationerna här instället?)
+
+
+Event / Galleri
+- Hantera galleriet, t.ex importera x antal senaste och kategorisera om nytt? Beror ju på, kanske bara ha några utvalda videos? Eller bara visa senaste flödet från instagram, då behövs ej detta?
+- Hantera event
+    - Datum från och till
+    - Länk till biljettkios
+    - bild och MD.
+
 
 Kurser
     - Lägga till / ta bort kurs
@@ -73,12 +88,7 @@ Produkter
     - Ändra produkt (pris / info)
     - Ta bort
 
-Event / Galleri
-    - Hantera galleriet, t.ex importera x antal senaste och kategorisera om nytt? Beror ju på, kanske bara ha några utvalda videos? Eller bara visa senaste flödet från instagram, då behövs ej detta?
-    - Hantera event
-        - Datum från och till
-        - Länk till biljettkios
-        - bild och MD.
+
 
 Elever
     - Filtrera
