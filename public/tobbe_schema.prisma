@@ -101,7 +101,7 @@ model Verification {
 
 // Så när en termin skapas och en kurs läggs in i veckodag, så skapas lessons för det tillfället under hela den perioden -Så byggs schemat upp.
 model Lesson {
-  id            String    @id @default(uuid())
+  id String @id @default(uuid())
 
   startTime DateTime // Ska innehålla båda dag och tid. 
   endTime DateTime // Ska innehålla båda dag och tid. 
@@ -114,7 +114,6 @@ model Lesson {
   termin      Termin?    @relation(fields: [terminId], references: [id])
   courseId String // Vilken kurs är det
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
   
   // Läraren:
   teacherId String
@@ -122,8 +121,6 @@ model Lesson {
 
   bookings Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
   maxBookings Int // Ärvs från schema, som ärver från course, men möjliggör att lärarna kan ändra specifika tillfällen.
-
-  
 
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
 
@@ -334,7 +331,7 @@ model Booking {
 }
 
 
-// Så detta ska spegla produkten..
+// Så detta ska spegla produkten, eller rättare sagt typ som skapaar ett objekt av den dvs när lkunden faktiskt köpt en produkt så skapas en purchase.
 model Purchase {
   id              String    @id @default(uuid())
   userId          String
@@ -374,6 +371,9 @@ model Purchase {
   @@index([orderId])
   @@map("purchase")
 }
+
+
+
 
 // Så här specas varje kurs
 model PurchaseItem {
