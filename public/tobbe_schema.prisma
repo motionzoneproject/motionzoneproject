@@ -113,7 +113,7 @@ model Lesson {
   terminId    String?    
   termin      Termin?    @relation(fields: [terminId], references: [id])
   courseId String // Vilken kurs är det
-  course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   
   // Läraren:
@@ -267,7 +267,7 @@ model Product {
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om useTotalCount sätts count till 0.
 
   terminId String? // Specificera vilken termin den gäller på. Inte obligatoriskt. Men då sätts expireDate till när terminen slutar.
-  termin Termin @relation(fields: [terminId], references: [id], onDelete: SetNull)
+  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
 
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
@@ -315,7 +315,7 @@ model Booking {
   id            String    @id @default(uuid())
 
   lessonId String
-  lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   purchaseItemId String // Koppla dit så det dras ett tillfälle från användarens köpta produkt.
   purchaseItem PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
