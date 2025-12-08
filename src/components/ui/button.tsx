@@ -32,12 +32,8 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-<<<<<<< HEAD
+  },
 );
-=======
-)
->>>>>>> 07cc25e (added adminpanel, modelling db)
 
 function Button({
   className,
@@ -47,15 +43,9 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-<<<<<<< HEAD
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
-=======
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot : "button"
->>>>>>> 07cc25e (added adminpanel, modelling db)
 
   return (
     <Comp
@@ -63,14 +53,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-<<<<<<< HEAD
   );
 }
 
 export { Button, buttonVariants };
-=======
-  )
-}
-
-export { Button, buttonVariants }
->>>>>>> 07cc25e (added adminpanel, modelling db)
