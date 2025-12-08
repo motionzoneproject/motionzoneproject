@@ -76,6 +76,7 @@ Event / Galleri
     - Länk till biljettkios
     - bild och MD.
 
+--- Adminsidor ---
 
 Kurser
     - Lägga till / ta bort kurs
