@@ -17,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -45,7 +44,7 @@ export default function SignInForm() {
   });
 
   async function onSubmit(values: FormValues) {
-    const { data, error } = await authClient.signIn.email({
+    const { error } = await authClient.signIn.email({
       email: values.email,
       password: values.password,
     });
