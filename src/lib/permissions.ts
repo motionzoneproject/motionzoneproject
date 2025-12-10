@@ -2,8 +2,8 @@
 
 import { createAccessControl } from "better-auth/plugins/access";
 import {
-  defaultStatements,
   adminAc,
+  defaultStatements,
   userAc,
 } from "better-auth/plugins/admin/access";
 

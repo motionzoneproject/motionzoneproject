@@ -2,11 +2,10 @@
 
 // So this handles the signup, and besides just the standard better-auth logic, we also makes the first user Admin.
 
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-
 import { SignUpFormSchema } from "@/validations/betterauthforms";
-import { NextRequest, NextResponse } from "next/server";
 
 /**
  * API via POST, expecting:
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!result.success)
       return NextResponse.json(
         { error: result.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
 
     // get data from safeParsed results:

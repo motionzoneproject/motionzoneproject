@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin as adminPlugin } from "better-auth/plugins";
 import prisma from "@/lib/prisma"; // Importera din HMR-säkra, adapter-konfigurerade instans
-import { ac, instructor, user, admin } from "./permissions";
+import { ac, admin, instructor, user } from "./permissions";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
