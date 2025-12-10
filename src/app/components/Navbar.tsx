@@ -1,0 +1,62 @@
+import Link from "next/link";
+
+export default function NavBar() {
+  return (
+    <header className="w-full">
+      <nav className="flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
+        <Link href="/">
+          {/* <Image
+            loading="eager"
+            src="/LogoGP.png"
+            width={195}
+            height={66}
+            alt="MotionZone Växjö"
+          /> */}
+
+          <span className="text-xl font-bold">MotionZone Växjö</span>
+        </Link>
+
+        <ul className="flex space-x-6 text-sm">
+          <li>
+            <Link href="/" className="hover:text-cyan-400">
+              Hem
+            </Link>
+          </li>
+          <li>
+            <Link href="/courses" className="hover:text-cyan-400">
+              Kurser
+            </Link>
+          </li>
+          <li>
+            <Link href="/gallery" className="hover:text-cyan-400">
+              Galleri
+            </Link>
+          </li>
+          <li>
+            <Link href="/about" className="hover:text-cyan-400">
+              Om oss
+            </Link>
+          </li>
+        </ul>
+
+        <div className="flex items-center space-x-4">
+          <span className="text-sm">Svenska 🇸🇪</span>
+          <Link href="/checkout" className="hover:text-cyan-400">
+            <span className="text-sm">Varukorg 🛒</span>
+          </Link>
+          <Link href="/user">
+            <button
+              type="button"
+              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+            >
+              Logga in
+            </button>
+          </Link>
+          <Link href="/admin" className="hover:text-cyan-400">
+            Admin
+          </Link>
+        </div>
+      </nav>
+    </header>
+  );
+}

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavBar from "./components/NavBar";
+import Footer from "./components/Footer";
+import NavBar from "./components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,26 @@ export const metadata: Metadata = {
   title: "MotionZone Växjö",
   description:
     "Official Webbsite for dancestudio MotionZone Växjö - For buy and book courses and membership.",
+
+  icons: {
+    icon: "/favicon.ico", // Gör en favivon.
+  },
+
+  // Öppna grafdata för sociala medier (Open Graph)
+  openGraph: {
+    title: "MotionZone Växjö",
+    description: "MotionZone Växjö - Buy and book dance courses",
+    url: "https://motionzone.se",
+    siteName: "MotionZone Växjö",
+    images: [
+      {
+        url: "https://dinwebbplats.se/LogoGP.jpg",
+        width: 400,
+        height: 100,
+        alt: "MotionZone Växjö Dansstudio",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -27,10 +48,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
       >
         <NavBar></NavBar>
         {children}
+        <Footer></Footer>
       </body>
     </html>
   );
