@@ -1,11 +1,9 @@
+import SignInForm from "./form";
 
-export default function SignInPage(){
-
-
-    return (
-
-        <div className=" w-full flex justify-center  items-center p-4 min-h-screen bg-slate-400">
-            <h1 className="text-6xl font-bold">Sign In</h1>
-        </div>
-    )
+export default function SignInPage() {
+  return (
+    <div className="max-w-screen">
+      <SignInForm />
+    </div>
+  );
 }

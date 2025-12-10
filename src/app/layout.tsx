@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Footer from "@/components/Footer";
-import NavBar from "@/components/Navbar";
+import NavBar from "./components/NavBar";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import NavBarSession from "@/components/navbar-session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,17 +42,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
       >
-        <NavBar></NavBar>
+        <NavBarSession session={session} />
         {children}
         <Footer></Footer>
       </body>
