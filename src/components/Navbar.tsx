@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { BetterAuthSession } from "@/lib/auth-session";
+import NavBarAuth from "./Navbar-auth";
 
-export default function NavBar() {
+export default function NavBar({ session }: BetterAuthSession) {
   return (
     <header className="w-full">
       <nav className="flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
@@ -44,17 +46,8 @@ export default function NavBar() {
           <Link href="/checkout" className="hover:text-cyan-400">
             <span className="text-sm">Varukorg 🛒</span>
           </Link>
-          <Link href="/user">
-            <button
-              type="button"
-              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-            >
-              Logga in
-            </button>
-          </Link>
-          <Link href="/admin" className="hover:text-cyan-400">
-            Admin
-          </Link>
+
+          <NavBarAuth session={session}></NavBarAuth>
         </div>
       </nav>
     </header>

@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import z from "zod";
+import type z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,26 +23,26 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { SignUpFormSchema } from "@/validations/betterauthforms";
 
-const FormSchema = z
-  .object({
-    name: z.string().min(2).max(50),
-    email: z.email().max(100),
-    password: z.string().min(8).max(50),
-    confirmPassword: z.string().min(8).max(50),
-  })
-  .superRefine((values, ctx) => {
-    if (values.password !== values.confirmPassword) {
-      ctx.addIssue("Passwords do not match");
-    }
-  });
+const formSchema = SignUpFormSchema;
 
-type FormValues = z.infer<typeof FormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+  // From docs:
+  const {
+    data: session,
+    // isPending, //loading state
+    // error, //error object
+    // refetch, //refetch the session
+  } = authClient.useSession();
+  const router = useRouter();
 
+  const [signUpError, setSignUpError] = useState<{ msg: string }>({ msg: "" });
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -53,30 +52,63 @@ export default function SignUpForm() {
   });
 
   async function onSubmit(values: FormValues) {
-    const { data, error } = await authClient.signUp.email({
-      name: values.name,
-      email: values.email,
-      password: values.password,
-    });
-    if (error) {
-      alert(error.message);
-    } else {
-      console.log(data);
+    try {
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          confirmPassword: values.confirmPassword,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Sign in and go to user page!
+        const { error } = await authClient.signIn.email({
+          email: values.email,
+          password: values.password,
+        });
+        if (error) {
+          alert(error.message);
+        } else {
+          // Signed in
+          // i use this because the sessionprovider wont be updated yet. so this reloads everything and then redirect.
+          window.location.reload();
+        }
+      } else {
+        const errorMessage =
+          typeof result.error === "string"
+            ? result.error
+            : result.error?.body?.message ||
+              result.error?.message ||
+              "Signup failed.";
+        setSignUpError({ msg: errorMessage });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Network error occurred";
+      setSignUpError({ msg: errorMessage });
     }
   }
 
+  // So after the reload (or if getting to this page with a session), goto user page!
+  useEffect(() => {
+    if (session) router.push("/user");
+  }, [session, router]);
+
+  if (session) return null; // Maybe unessasary?
+
   return (
-    <Card className="max-w-sm mx-auto mt-6">
+    <Card className="w-full max-w-small">
       <CardHeader>
-        <CardTitle>Sign Up </CardTitle>
+        <CardTitle>Sign Up</CardTitle>
         <CardDescription>
-          Enter Your details below to create an account
+          Enter your details below to create an Account
         </CardDescription>
-        <CardAction>
-          <Button asChild variant="link">
-            <Link href="/signin">Sign In</Link>
-          </Button>
-        </CardAction>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -88,11 +120,8 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your name" {...field} />
+                    <Input {...field} />
                   </FormControl>
-                  <FormDescription>
-                    This is your public display name.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -104,11 +133,7 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      {...field}
-                    />
+                    <Input type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,11 +146,7 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Enter your password"
-                      {...field}
-                    />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,21 +159,24 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>ConfirmPassword</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Enter your password again"
-                      {...field}
-                    />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <div className="text-red-600 break-all">
+              {signUpError.msg && signUpError.msg}
+            </div>
             <Button className="w-full" type="submit">
               Sign Up
             </Button>
           </form>
         </Form>
+
+        {form.formState.isSubmitting && (
+          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-purple-300 animate-spin"></div>
+        )}
       </CardContent>
     </Card>
   );
