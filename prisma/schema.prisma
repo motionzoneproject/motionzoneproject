@@ -14,17 +14,7 @@ datasource db {
 }
 
 
-enum Role {
-  student
-  instructor
-  admin
-}
 
-enum Level {
-  beginner
-  intermediate
-  advanced
-}
 model User {
   id            String    @id
   name          String
@@ -36,7 +26,6 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  level Level?
 
   //Ordrar:
   orders          Order[] // För att visa orderdatan.
@@ -54,7 +43,7 @@ model User {
 
   
 
-  role       Role? // So can only be one of the enum roles.
+  role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
   banExpires DateTime?
