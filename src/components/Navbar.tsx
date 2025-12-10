@@ -1,8 +1,7 @@
 import Link from "next/link";
-import type { BetterAuthSession } from "@/lib/auth-session";
 import NavBarAuth from "./Navbar-auth";
 
-export default function NavBar({ session }: BetterAuthSession) {
+export default function NavBar() {
   return (
     <header className="w-full">
       <nav className="flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
@@ -47,7 +46,7 @@ export default function NavBar({ session }: BetterAuthSession) {
             <span className="text-sm">Varukorg 🛒</span>
           </Link>
 
-          <NavBarAuth session={session}></NavBarAuth>
+          <NavBarAuth></NavBarAuth>
         </div>
       </nav>
     </header>

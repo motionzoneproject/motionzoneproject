@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
 import NavBarAuth from "@/components/Navbar-auth";
 import { auth } from "@/lib/auth";
+import { SessionProvider } from "@/lib/session-provider";
+import { getSessionData } from "@/lib/actions/sessiondata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,9 +58,14 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
       >
-        <NavBar session={session}></NavBar>
-        {children}
-        <Footer></Footer>
+        <SessionProvider
+          session={session?.session ?? null}
+          user={session?.user ?? null}
+        >
+          <NavBar></NavBar>
+          {children}
+          <Footer></Footer>
+        </SessionProvider>
       </body>
     </html>
   );
