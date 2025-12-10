@@ -13,6 +13,22 @@ datasource db {
   provider = "postgresql"
 }
 
+
+// Tänker att den första användaren som skapas blir en admin.
+// Admin kan ändra roles på andra användare.
+enum Role {
+  student
+  instructor
+  admin
+}
+
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
 model User {
   id            String    @id
   name          String
@@ -33,6 +49,8 @@ model User {
 
   bio           String?  
   phone         String?  
+
+  level Level?
 
   //Ordrar:
   orders          Order[] // För att visa orderdatan.
