@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NavBarAuth from "./Navbar-auth";
 
 export default function NavBar() {
   return (
@@ -44,17 +45,8 @@ export default function NavBar() {
           <Link href="/checkout" className="hover:text-cyan-400">
             <span className="text-sm">Varukorg 🛒</span>
           </Link>
-          <Link href="/user">
-            <button
-              type="button"
-              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-            >
-              Logga in
-            </button>
-          </Link>
-          <Link href="/admin" className="hover:text-cyan-400">
-            Admin
-          </Link>
+
+          <NavBarAuth></NavBarAuth>
         </div>
       </nav>
     </header>
