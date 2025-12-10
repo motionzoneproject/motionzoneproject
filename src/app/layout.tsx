@@ -4,8 +4,6 @@ import "./globals.css";
 import { headers } from "next/headers";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
-import NavBarAuth from "@/components/Navbar-auth";
-import { getSessionData } from "@/lib/actions/sessiondata";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
 
