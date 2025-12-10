@@ -9,6 +9,7 @@
 // In server components / actions, use await getSessionData() or await getRole() like:
 // const sessionData = await getSessionData();
 // const user = sessionData?.user;
+
 // const role = await getRole(); // if you just need the role.
 // (see lib/actions/sessiondata.ts)
 
