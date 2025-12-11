@@ -150,7 +150,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
             <AccordionContent key={itm.id}>
               {itm.timeStart.toLocaleTimeString()}
               <br />
-              {JSON.stringify(itm)}
+              {itm.course.name}
               <br />
               {itm.timeStart.toLocaleTimeString()}
             </AccordionContent>

@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { isAdminRole } from "@/lib/actions/admin";
 
-export default function AdminPanel() {
+export default async function AdminPanel() {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return notFound(); // This stops all adminpages to be rendered since its on the layout for admin.
+
   return (
     <nav className="bg-white p-2 border-b-2 border-cyan-400">
       <div className="flex items-center space-x-6">

@@ -13,15 +13,15 @@ import { formToDbDate } from "../time-convert";
 import { getSessionData } from "./sessiondata";
 
 // Lika bra att exportera denna tänker jag.
-export const isAdmin = async () => {
+export async function isAdminRole(): Promise<boolean> {
   const sessiondata = await getSessionData();
 
-  if (sessiondata?.user.role === "admin") return true;
-  return false;
-};
+  return sessiondata?.user.role === "admin";
+}
 
 // Inser att det är svengelska. Men men.
 export async function getTermin(): Promise<Termin[]> {
+  const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   // Behövs mer säkerhet än såhär?
@@ -35,6 +35,7 @@ export type SchemaItemWithCourse = SchemaItem & { course: Course };
 export async function getSchemaItems(
   terminId: string,
 ): Promise<SchemaItemWithCourse[]> {
+  const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const schemaItems = await prisma.schemaItem.findMany({
@@ -45,6 +46,7 @@ export async function getSchemaItems(
 }
 
 export async function getAllCourses(): Promise<Course[]> {
+  const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const courses = await prisma.course.findMany();
@@ -58,6 +60,7 @@ export async function addCoursetoSchema(
   success: boolean;
   msg: string;
 }> {
+  const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   // try {
