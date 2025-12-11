@@ -33,7 +33,7 @@ export async function getTermin(): Promise<Termin[]> {
 export type SchemaItemWithCourse = SchemaItem & { course: Course };
 
 export async function getSchemaItems(
-  terminId: string,
+  terminId: string
 ): Promise<SchemaItemWithCourse[]> {
   if (!isAdmin) return [];
 
@@ -42,14 +42,6 @@ export async function getSchemaItems(
     include: { course: true },
   });
   return schemaItems;
-}
-
-export async function getCourseById(courseId: string): Promise<Course | null> {
-  if (!isAdmin) return null;
-  console.log("Lookin for course " + courseId);
-  const course = await prisma.course.findUnique({ where: { id: courseId } });
-  console.log(JSON.stringify(course));
-  return course;
 }
 
 export async function getAllCourses(): Promise<Course[]> {
@@ -61,7 +53,7 @@ export async function getAllCourses(): Promise<Course[]> {
 
 export async function addCoursetoSchema(
   terminId: string,
-  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>
 ): Promise<{
   success: boolean;
   msg: string;
@@ -70,8 +62,6 @@ export async function addCoursetoSchema(
 
   // try {
   const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
-
-  console.log("Adding: " + JSON.stringify(validated));
 
   const newSchemaItem = await prisma.schemaItem.create({
     data: {
@@ -83,7 +73,7 @@ export async function addCoursetoSchema(
       weekday: validated.day as Weekday,
     },
   });
-  return { success: true, msg: "added with id " + newSchemaItem.id };
+  return { success: true, msg: `added with id ${newSchemaItem.id}` };
   // } catch (e) {
   //   return { success: false, msg: JSON.stringify(e) };
   // }

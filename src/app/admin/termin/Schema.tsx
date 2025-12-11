@@ -4,7 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getCourseById, type SchemaItemWithCourse } from "@/lib/actions/admin";
+import { type SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 
 interface SchemaProps {
