@@ -75,7 +75,10 @@ export default function AddCourseToSchemaForm({
       <CardContent>
         <br />
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-2 bg-gray-100 p-2 rounded-xl"
+          >
             <FormField
               control={form.control}
               name="courseId"
@@ -90,7 +93,7 @@ export default function AddCourseToSchemaForm({
                     }
                   >
                     <FormControl>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Välj kurs" />
                       </SelectTrigger>
                     </FormControl>
@@ -99,7 +102,7 @@ export default function AddCourseToSchemaForm({
                         <SelectLabel>Välj kurs</SelectLabel>
                         {allCourses.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {c.id} - {c.name}
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -124,7 +127,7 @@ export default function AddCourseToSchemaForm({
                     }
                   >
                     <FormControl>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Välj kurs" />
                       </SelectTrigger>
                     </FormControl>

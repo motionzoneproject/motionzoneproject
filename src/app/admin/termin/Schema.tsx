@@ -1,40 +1,29 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
+import { Weekday } from "@/generated/prisma/enums";
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
-import { dbToFormTime } from "@/lib/time-convert";
+import SchemaDay from "./SchemaDay";
 
 interface SchemaProps {
   schemaItems: SchemaItemWithCourse[];
 }
 
 export default function Schema({ schemaItems }: SchemaProps) {
+  const weekdays = Object.keys(Weekday);
+
   return (
     <Accordion type="single" collapsible>
-      <AccordionItem value="day0">
-        <AccordionTrigger>
-          Måndag ({schemaItems.filter((itm) => itm.weekday === "MONDAY").length}
-          )
-        </AccordionTrigger>
-        {schemaItems
-          .filter((itm) => itm.weekday === "MONDAY")
-          .map(async (itm) => {
-            // const itmCourse = await getCourseById(itm.id);
+      {weekdays.map((day) => {
+        return (
+          <SchemaDay
+            schemaItems={schemaItems}
+            weekday={day as Weekday}
+            weekdayIndex={weekdays.indexOf(day)}
+            key={day}
+          ></SchemaDay>
+        );
+      })}
 
-            return (
-              <AccordionContent key={itm.id}>
-                {dbToFormTime(itm.timeStart)}
-                <br />
-                {itm.course.name}
-                <br />
-                {dbToFormTime(itm.timeEnd)}
-              </AccordionContent>
-            );
-          })}
-      </AccordionItem>
+      {/* 
       <AccordionItem value="day1">
         <AccordionTrigger>
           Tisdag (
@@ -42,6 +31,9 @@ export default function Schema({ schemaItems }: SchemaProps) {
         </AccordionTrigger>
         {schemaItems
           .filter((itm) => itm.weekday === "TUESDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
           .map(async (itm) => {
             // const itmCourse = await getCourseById(itm.id);
 
@@ -63,6 +55,9 @@ export default function Schema({ schemaItems }: SchemaProps) {
         </AccordionTrigger>
         {schemaItems
           .filter((itm) => itm.weekday === "WEDNESDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
           .map(async (itm) => {
             // const itmCourse = await getCourseById(itm.id);
 
@@ -84,6 +79,9 @@ export default function Schema({ schemaItems }: SchemaProps) {
         </AccordionTrigger>
         {schemaItems
           .filter((itm) => itm.weekday === "THURSDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
           .map(async (itm) => {
             // const itmCourse = await getCourseById(itm.id);
 
@@ -105,6 +103,9 @@ export default function Schema({ schemaItems }: SchemaProps) {
         </AccordionTrigger>
         {schemaItems
           .filter((itm) => itm.weekday === "FRIDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
           .map(async (itm) => {
             // const itmCourse = await getCourseById(itm.id);
 
@@ -126,6 +127,9 @@ export default function Schema({ schemaItems }: SchemaProps) {
         </AccordionTrigger>
         {schemaItems
           .filter((itm) => itm.weekday === "SATURDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
           .map(async (itm) => {
             // const itmCourse = await getCourseById(itm.id);
 
@@ -145,18 +149,23 @@ export default function Schema({ schemaItems }: SchemaProps) {
           Söndag ({schemaItems.filter((itm) => itm.weekday === "SUNDAY").length}
           )
         </AccordionTrigger>
-        {schemaItems.map((itm) => {
-          return (
-            <AccordionContent key={itm.id}>
-              {itm.timeStart.toLocaleTimeString()}
-              <br />
-              {itm.course.name}
-              <br />
-              {itm.timeStart.toLocaleTimeString()}
-            </AccordionContent>
-          );
-        })}
-      </AccordionItem>
+        {schemaItems
+          .filter((itm) => itm.weekday === "SUNDAY")
+          .sort((a, b) =>
+            dbToFormTime(a.timeStart).localeCompare(dbToFormTime(b.timeStart))
+          )
+          .map((itm) => {
+            return (
+              <AccordionContent key={itm.id}>
+                {itm.timeStart.toLocaleTimeString()}
+                <br />
+                {itm.course.name}
+                <br />
+                {itm.timeStart.toLocaleTimeString()}
+              </AccordionContent>
+            );
+          })}
+      </AccordionItem> */}
     </Accordion>
   );
 }

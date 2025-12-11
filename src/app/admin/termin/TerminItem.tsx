@@ -39,7 +39,16 @@ export default async function TerminItem({ termin }: Props) {
     <div className="p-2 border rounded">
       <Card>
         <CardHeader>
-          <CardTitle>{termin.name}</CardTitle>
+          <div className="w-full flex justify-between items-start">
+            <CardTitle>
+              <div>{termin.name}</div>
+            </CardTitle>
+
+            <div className="p-2">
+              <Button variant={"default"}>Ändra</Button>
+              <Button variant={"destructive"}>Ta bort</Button>
+            </div>
+          </div>
         </CardHeader>
 
         <CardContent>
@@ -48,14 +57,13 @@ export default async function TerminItem({ termin }: Props) {
             <br />
             Slut: {termin.endDate.toLocaleDateString()}
           </CardDescription>
-          <CardAction>
-            <Button variant={"default"}>Ändra</Button>
-          </CardAction>
           <span className="font-bold">Veckoschema:</span>
           <br />
           <Dialog>
             <DialogTrigger asChild>
-              <Button>Lägg till kurstillfälle</Button>
+              <Button variant={"default"} className="bg-green-500">
+                Lägg till kurstillfälle
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -85,7 +93,6 @@ export default async function TerminItem({ termin }: Props) {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-
           <br />
           <br />
           <Schema schemaItems={schemaItems} />
