@@ -1,6 +1,6 @@
 "use server";
 
-import type { Termin } from "@/generated/prisma/client";
+import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
 
@@ -20,4 +20,18 @@ export async function getTermin(): Promise<Termin[]> {
 
   const terminer = await prisma.termin.findMany();
   return terminer;
+}
+
+export async function getSchemaItems(terminId: string): Promise<SchemaItem[]> {
+  if (!isAdmin) return [];
+
+  const schemaItems = await prisma.schemaItem.findMany({ where: { terminId } });
+  return schemaItems;
+}
+
+export async function getCourseById(courseId: string): Promise<Course | null> {
+  if (!isAdmin) return null;
+
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  return course;
 }

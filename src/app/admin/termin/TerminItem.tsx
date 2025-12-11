@@ -1,9 +1,3 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,12 +8,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Termin } from "@/generated/prisma/client";
+import { getSchemaItems } from "@/lib/actions/admin";
+import Schema from "./Schema";
 
 interface Props {
   termin: Termin;
 }
 
-export default function TerminItem({ termin }: Props) {
+export default async function TerminItem({ termin }: Props) {
+  const schemaItems = await getSchemaItems(termin.id);
+
   return (
     <div className="p-2 border rounded">
       <Card>
@@ -37,36 +35,8 @@ export default function TerminItem({ termin }: Props) {
             <Button variant={"default"}>Ändra</Button>
           </CardAction>
           <span className="font-bold">Veckoschema:</span>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="day0">
-              <AccordionTrigger>Måndag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day1">
-              <AccordionTrigger>Tisdag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day2">
-              <AccordionTrigger>Onsdag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day3">
-              <AccordionTrigger>Torsdag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day4">
-              <AccordionTrigger>Fredag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day5">
-              <AccordionTrigger>Lördag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="day6">
-              <AccordionTrigger>Söndag</AccordionTrigger>
-              <AccordionContent>Inga kurser.</AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          <br />
+          <Schema schemaItems={schemaItems} />
         </CardContent>
       </Card>
     </div>
