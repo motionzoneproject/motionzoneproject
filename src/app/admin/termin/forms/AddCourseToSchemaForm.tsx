@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { type Course, type Termin } from "@/generated/prisma/client";
+import type { Course, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 

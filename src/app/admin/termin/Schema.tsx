@@ -22,7 +22,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "MONDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
@@ -43,7 +43,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "TUESDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
@@ -64,7 +64,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "WEDNESDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
@@ -85,7 +85,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "THURSDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
@@ -106,7 +106,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "FRIDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
@@ -127,7 +127,7 @@ export default function Schema({ schemaItems }: SchemaProps) {
         {schemaItems
           .filter((itm) => itm.weekday === "SATURDAY")
           .map(async (itm) => {
-            const itmCourse = await getCourseById(itm.id);
+            // const itmCourse = await getCourseById(itm.id);
 
             return (
               <AccordionContent key={itm.id}>
