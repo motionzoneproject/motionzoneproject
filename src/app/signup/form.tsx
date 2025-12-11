@@ -103,7 +103,7 @@ export default function SignUpForm() {
   if (session) return null; // Maybe unessasary?
 
   return (
-    <Card className="w-full max-w-small">
+    <Card className="w-full max-w-sm mx-auto">
       <CardHeader>
         <CardTitle>Sign Up</CardTitle>
         <CardDescription>
@@ -112,7 +112,10 @@ export default function SignUpForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 bg-secondary text-white border-sky-200"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -120,7 +123,7 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="border-sky-200" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,7 +136,11 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input
+                      type="email"
+                      {...field}
+                      className="border-sky-200"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,7 +153,11 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      {...field}
+                      className=" border-sky-200"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -159,7 +170,11 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>ConfirmPassword</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      {...field}
+                      className=" border-sky-200"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
