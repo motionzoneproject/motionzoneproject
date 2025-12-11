@@ -33,7 +33,7 @@ export async function getTermin(): Promise<Termin[]> {
 export type SchemaItemWithCourse = SchemaItem & { course: Course };
 
 export async function getSchemaItems(
-  terminId: string
+  terminId: string,
 ): Promise<SchemaItemWithCourse[]> {
   if (!isAdmin) return [];
 
@@ -53,7 +53,7 @@ export async function getAllCourses(): Promise<Course[]> {
 
 export async function addCoursetoSchema(
   terminId: string,
-  formData: z.infer<typeof adminAddCourseToSchemaSchema>
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
 ): Promise<{
   success: boolean;
   msg: string;
