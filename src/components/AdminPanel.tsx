@@ -65,7 +65,7 @@ export default function AdminPanel() {
           </li>
           <li>
             <Link
-              href="/admin/schemas"
+              href="/admin/termin"
               className="text-gray-800 hover:text-gray-900"
             >
               Terminer / Scheman

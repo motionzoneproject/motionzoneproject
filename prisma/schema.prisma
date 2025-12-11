@@ -146,6 +146,8 @@ model Termin {
 
   id String @id @default(uuid())
 
+  name String
+
   startDate DateTime // När startar terminen?
   endDate DateTime // När slutar den?
 
