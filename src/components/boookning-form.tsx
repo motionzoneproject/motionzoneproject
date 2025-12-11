@@ -32,7 +32,10 @@ const BookingForm = () => {
       <h2 className="text-2xl font-semibold text-center">Book a Course</h2>
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700"
+        >
           Name
         </label>
         <input
@@ -46,7 +49,10 @@ const BookingForm = () => {
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
           Email
         </label>
         <input
@@ -60,7 +66,10 @@ const BookingForm = () => {
       </div>
 
       <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="date"
+          className="block text-sm font-medium text-gray-700"
+        >
           Date
         </label>
         <input
@@ -74,7 +83,10 @@ const BookingForm = () => {
       </div>
 
       <div>
-        <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="time"
+          className="block text-sm font-medium text-gray-700"
+        >
           Time
         </label>
         <input

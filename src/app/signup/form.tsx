@@ -136,11 +136,7 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      {...field}
-                      className="border-sky-200"
-                    />
+                    <Input type="email" {...field} className="border-sky-200" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

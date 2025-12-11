@@ -1,8 +1,8 @@
 "use client";
+import { useState } from "react";
 import BookingForm from "@/components/boookning-form";
 import Modal from "@/components/modal";
-import { Button } from "@/components/ui/button"
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function KursForm() {
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
