@@ -4,7 +4,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { SchemaItem } from "@/generated/prisma/client";
 import { getCourseById, type SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 

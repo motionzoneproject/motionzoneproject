@@ -7,7 +7,6 @@ import type z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -31,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { type Course, type Termin, Weekday } from "@/generated/prisma/client";
+import { type Course, type Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 
