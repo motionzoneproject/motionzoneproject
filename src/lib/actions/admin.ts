@@ -1,7 +1,15 @@
 "use server";
 
-import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
+import type z from "zod";
+import type {
+  Course,
+  SchemaItem,
+  Termin,
+  Weekday,
+} from "@/generated/prisma/client";
+import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 import prisma from "../prisma";
+import { formToDbDate } from "../time-convert";
 import { getSessionData } from "./sessiondata";
 
 // Lika bra att exportera denna tänker jag.
@@ -22,16 +30,61 @@ export async function getTermin(): Promise<Termin[]> {
   return terminer;
 }
 
-export async function getSchemaItems(terminId: string): Promise<SchemaItem[]> {
+export type SchemaItemWithCourse = SchemaItem & { course: Course };
+
+export async function getSchemaItems(
+  terminId: string,
+): Promise<SchemaItemWithCourse[]> {
   if (!isAdmin) return [];
 
-  const schemaItems = await prisma.schemaItem.findMany({ where: { terminId } });
+  const schemaItems = await prisma.schemaItem.findMany({
+    where: { terminId },
+    include: { course: true },
+  });
   return schemaItems;
 }
 
 export async function getCourseById(courseId: string): Promise<Course | null> {
   if (!isAdmin) return null;
-
+  console.log("Lookin for course " + courseId);
   const course = await prisma.course.findUnique({ where: { id: courseId } });
+  console.log(JSON.stringify(course));
   return course;
+}
+
+export async function getAllCourses(): Promise<Course[]> {
+  if (!isAdmin) return [];
+
+  const courses = await prisma.course.findMany();
+  return courses;
+}
+
+export async function addCoursetoSchema(
+  terminId: string,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+): Promise<{
+  success: boolean;
+  msg: string;
+}> {
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  // try {
+  const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+
+  console.log("Adding: " + JSON.stringify(validated));
+
+  const newSchemaItem = await prisma.schemaItem.create({
+    data: {
+      terminId,
+      courseId: validated.courseId,
+      maxBookings: 50,
+      timeStart: formToDbDate(validated.timeStart),
+      timeEnd: formToDbDate(validated.timeEnd),
+      weekday: validated.day as Weekday,
+    },
+  });
+  return { success: true, msg: "added with id " + newSchemaItem.id };
+  // } catch (e) {
+  //   return { success: false, msg: JSON.stringify(e) };
+  // }
 }
