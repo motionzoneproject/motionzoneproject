@@ -32,7 +32,7 @@ export default async function CourseItem({ course }: Props) {
         </CardHeader>
 
         <CardContent>
-          Saker vi vill göra med en kurs.
+          Saker vi vill göra med en kurs!
           <br />
         </CardContent>
       </Card>
