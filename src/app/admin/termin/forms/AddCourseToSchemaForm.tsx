@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DialogClose } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -62,8 +64,12 @@ export default function AddCourseToSchemaForm({
 
   async function onSubmit(values: FormValues) {
     const res = await addCoursetoSchema(termin.id, values);
-    alert(JSON.stringify(res));
-    router.refresh();
+    if (res.success) {
+      toast.success(res.msg);
+      router.refresh();
+    } else {
+      toast.error(res.msg);
+    }
   }
 
   return (
@@ -77,7 +83,7 @@ export default function AddCourseToSchemaForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-2 bg-gray-100 p-2 rounded-xl"
+            className="space-y-2 p-2 rounded-xl"
           >
             <FormField
               control={form.control}
@@ -179,7 +185,9 @@ export default function AddCourseToSchemaForm({
               )}
             />
 
-            <Button type="submit">Lägg till!</Button>
+            <DialogClose asChild>
+              <Button type="submit">Lägg till!</Button>
+            </DialogClose>
           </form>
         </Form>
       </CardContent>

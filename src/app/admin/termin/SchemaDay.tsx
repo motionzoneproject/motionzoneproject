@@ -3,11 +3,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
 import type { Weekday } from "@/generated/prisma/enums";
 
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
+import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";
 
 interface Props {
   schemaItems: SchemaItemWithCourse[];
@@ -15,7 +15,7 @@ interface Props {
   weekdayIndex: number;
 }
 
-export default function SchemaDay({
+export default async function SchemaDay({
   schemaItems,
   weekday,
   weekdayIndex,
@@ -49,14 +49,14 @@ export default function SchemaDay({
 
           return (
             <AccordionContent key={itm.id}>
-              <div className="bg-blue-200 border-blue-800 border-2 p-2 rounded-lg flex justify-between">
+              <div className="bg-blue-200 border-blue-800 text-black border-2 p-2 rounded-lg flex justify-between">
                 <div>
                   {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
                   <br />
                   <span className="font-bold">{itm.course.name}</span>
                 </div>
                 <div>
-                  <Button variant={"destructive"}>Ta bort</Button>
+                  <DeleteSchemaItemBtn itemId={itm.id} />
                 </div>
               </div>
             </AccordionContent>

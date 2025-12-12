@@ -22,6 +22,7 @@ import {
   getSchemaItems,
   type SchemaItemWithCourse,
 } from "@/lib/actions/admin";
+import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import AddCourseToSchemaForm from "./forms/AddCourseToSchemaForm";
 import Schema from "./Schema";
 
@@ -38,26 +39,24 @@ export default async function TerminItem({ termin }: Props) {
     <div className="p-2 border rounded">
       <Card>
         <CardHeader>
-          <div className="w-full flex justify-between items-start">
+          <div className="w-full lg:flex md:justify-between md:items-start">
             <CardTitle>
               <div>{termin.name}</div>
             </CardTitle>
+            <CardDescription>
+              Start: {termin.startDate.toLocaleDateString()}
+              <br />
+              Slut: {termin.endDate.toLocaleDateString()}
+            </CardDescription>
 
-            <div className="p-2">
+            <div className="p-2 flex gap-2">
               <Button variant={"default"}>Ändra</Button>
-              <Button variant={"destructive"}>Ta bort</Button>
+              <DeleteTerminBtn terminId={termin.id} />
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          <CardDescription>
-            Start: {termin.startDate.toLocaleDateString()}
-            <br />
-            Slut: {termin.endDate.toLocaleDateString()}
-          </CardDescription>
-          <span className="font-bold">Veckoschema:</span>
-          <br />
           <Dialog>
             <DialogTrigger asChild>
               <Button variant={"default"} className="bg-green-500">

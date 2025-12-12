@@ -7,7 +7,10 @@ import type {
   Termin,
   Weekday,
 } from "@/generated/prisma/client";
-import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
+import {
+  adminAddCourseToSchemaSchema,
+  adminAddTerminSchema,
+} from "@/validations/adminforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
 import { getSessionData } from "./sessiondata";
@@ -53,6 +56,31 @@ export async function getAllCourses(): Promise<Course[]> {
   return courses;
 }
 
+export async function addNewTermin(
+  formData: z.infer<typeof adminAddTerminSchema>,
+) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddTerminSchema.parseAsync(formData);
+
+    const newSchemaItem = await prisma.termin.create({
+      data: {
+        name: validated.name,
+        startDate: new Date(validated.startDate),
+        endDate: new Date(validated.endDate),
+      },
+    });
+    return {
+      success: true,
+      msg: `Terminen ${newSchemaItem.name} skapades.`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
 export async function addCoursetoSchema(
   terminId: string,
   formData: z.infer<typeof adminAddCourseToSchemaSchema>,
@@ -63,21 +91,69 @@ export async function addCoursetoSchema(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
-  // try {
-  const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+  try {
+    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
 
-  const newSchemaItem = await prisma.schemaItem.create({
-    data: {
-      terminId,
-      courseId: validated.courseId,
-      maxBookings: 50,
-      timeStart: formToDbDate(validated.timeStart),
-      timeEnd: formToDbDate(validated.timeEnd),
-      weekday: validated.day as Weekday,
-    },
-  });
-  return { success: true, msg: `added with id ${newSchemaItem.id}` };
-  // } catch (e) {
-  //   return { success: false, msg: JSON.stringify(e) };
-  // }
+    const newSchemaItem = await prisma.schemaItem.create({
+      data: {
+        terminId,
+        courseId: validated.courseId,
+        maxBookings: 50, // fix: Ärv från kurs.
+        timeStart: formToDbDate(validated.timeStart),
+        timeEnd: formToDbDate(validated.timeEnd),
+        weekday: validated.day as Weekday,
+      },
+      include: { course: true, termin: true },
+    });
+    return {
+      success: true,
+      msg: `Kursen ${newSchemaItem.course.name} lades till i terminen ${newSchemaItem.termin.name}`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function delSchemaItem(
+  id: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const del = await prisma.schemaItem.delete({
+      where: { id },
+      select: { course: true },
+    });
+
+    if (del) {
+      return {
+        success: true,
+        msg: `${del.course.name} togs bort från veckoschemat.`,
+      };
+    } else {
+      return { success: false, msg: `${id} not found.` };
+    }
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function delTermin(
+  id: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const del = await prisma.termin.delete({ where: { id } });
+
+    if (del) {
+      return { success: true, msg: `Terminen ${del.name} togs bort.` };
+    } else {
+      return { success: false, msg: `${id} not found.` };
+    }
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
 }

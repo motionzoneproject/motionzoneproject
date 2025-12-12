@@ -1,4 +1,5 @@
 import z from "zod";
+
 import { Weekday } from "@/generated/prisma/enums";
 
 const TIME_REGEX = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -23,3 +24,9 @@ export const adminAddCourseToSchemaSchema = z
       path: ["timeEnd"],
     },
   );
+
+export const adminAddTerminSchema = z.object({
+  name: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+});

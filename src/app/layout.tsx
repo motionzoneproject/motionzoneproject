@@ -4,6 +4,7 @@ import "./globals.css";
 import { headers } from "next/headers";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
+import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
 
@@ -54,7 +55,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
       >
         <SessionProvider
           session={session?.session ?? null}
@@ -63,6 +64,7 @@ export default async function RootLayout({
           <NavBar></NavBar>
           {children}
           <Footer></Footer>
+          <Toaster richColors position="top-center" />
         </SessionProvider>
       </body>
     </html>

@@ -8,10 +8,10 @@ export default async function AdminPanel() {
 
   return (
     <nav className="bg-white p-2 border-b-2 border-cyan-400">
-      <div className="flex items-center space-x-6">
+      <div className="md:flex items-center space-x-6">
         <span className="text-gray-900 text-sm font-bold">Admin:</span>
 
-        <ul className="flex space-x-4 text-sm">
+        <ul className="md:flex space-x-4 text-sm">
           <li>
             <Link
               href="/admin/start"

@@ -11,7 +11,11 @@ export default function Schema({ schemaItems }: SchemaProps) {
   const weekdays = Object.keys(Weekday);
 
   return (
-    <Accordion type="single" collapsible>
+    <Accordion type="single" className="p-2 border-2" collapsible>
+      <div>
+        <span className="font-bold">Veckoschema:</span>
+        <br />
+      </div>
       {weekdays.map((day) => {
         return (
           <SchemaDay
