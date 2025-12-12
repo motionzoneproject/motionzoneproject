@@ -1,5 +1,7 @@
 "use client";
 
+// ev fix: Gör en generisk ta bort-knapp och passa funktionen som den ska köra.
+
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { delSchemaItem } from "@/lib/actions/admin";
@@ -11,6 +13,7 @@ interface Props {
 import { toast } from "sonner";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -23,15 +26,12 @@ import {
 export default function DeleteSchemaItemBtn({ itemId }: Props) {
   const router = useRouter();
 
-  const delItm = async (formData: FormData) => {
-    const id = formData.get("id") as string;
-    if (!id) return;
-
+  const delItm = async () => {
     try {
-      const { success, msg } = await delSchemaItem(id);
+      const { success, msg } = await delSchemaItem(itemId);
       if (!success) {
         toast.error(
-          `Kunde inte ta bort tillfället med id ${id}. Anledning: ${JSON.stringify(
+          `Kunde inte ta bort tillfället med id ${itemId}. Anledning: ${JSON.stringify(
             msg,
           )}`,
         );
@@ -43,7 +43,7 @@ export default function DeleteSchemaItemBtn({ itemId }: Props) {
     } catch (e) {
       console.error(e);
       toast.error(
-        `Kunde inte ta bort tillfället med id ${id}. Anledning: ${JSON.stringify(
+        `Kunde inte ta bort tillfället med id ${itemId}. Anledning: ${JSON.stringify(
           e,
         )}`,
       );
@@ -64,17 +64,9 @@ export default function DeleteSchemaItemBtn({ itemId }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <form action={delItm}>
-            <input
-              type="hidden"
-              name="id"
-              value={itemId}
-              className="cursor-pointer"
-            />
-            <Button variant={"destructive"} type="submit">
-              Ta bort
-            </Button>
-          </form>
+          <AlertDialogAction onClick={async () => await delItm()}>
+            Ta bort
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

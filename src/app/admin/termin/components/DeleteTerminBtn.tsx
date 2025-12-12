@@ -11,6 +11,7 @@ interface Props {
 import { toast } from "sonner";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -23,12 +24,9 @@ import {
 export default function DeleteTerminBtn({ terminId }: Props) {
   const router = useRouter();
 
-  const delItm = async (formData: FormData) => {
-    const id = formData.get("id") as string;
-    if (!id) return;
-
+  const delItm = async () => {
     try {
-      const { success, msg } = await delTermin(id);
+      const { success, msg } = await delTermin(terminId);
       if (!success) {
         toast.error(`Failed to delete article: ${msg}`);
         console.log(msg);
@@ -58,17 +56,9 @@ export default function DeleteTerminBtn({ terminId }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <form action={delItm}>
-            <input
-              type="hidden"
-              name="id"
-              value={terminId}
-              className="cursor-pointer"
-            />
-            <Button variant={"destructive"} type="submit">
-              Ta bort
-            </Button>
-          </form>
+          <AlertDialogAction onClick={async () => await delItm()}>
+            Ta bort
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

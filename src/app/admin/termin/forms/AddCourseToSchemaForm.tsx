@@ -92,7 +92,10 @@ export default function AddCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button
+          variant={"default"}
+          className="bg-green-500 cursor-pointer mb-3"
+        >
           Lägg till kurstillfälle
         </Button>
       </DialogTrigger>

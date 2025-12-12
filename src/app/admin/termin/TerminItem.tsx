@@ -27,7 +27,7 @@ export default async function TerminItem({ termin }: Props) {
   const allCourses = await getAllCourses();
 
   return (
-    <div className="p-2 border rounded">
+    <div className="p-2 ">
       <Card>
         <CardHeader>
           <div className="w-full lg:flex md:justify-between md:items-start">
