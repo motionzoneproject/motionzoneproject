@@ -6,16 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
 import { type Termin, Weekday } from "@/generated/prisma/client";
 import {
   getAllCourses,
@@ -57,41 +48,12 @@ export default async function TerminItem({ termin }: Props) {
         </CardHeader>
 
         <CardContent>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant={"default"} className="bg-green-500">
-                Lägg till kurstillfälle
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  Lägg till kurstillfälle i veckoschemat
-                </DialogTitle>
-                <DialogDescription>
-                  Ange vilken veckodag samt mellan vilka tider du vill lägga in
-                  tillfället. Tillfället blir då{" "}
-                  <span className="bold">bokningsbart</span> av kunder som köpt
-                  tillgång till kursen.
-                </DialogDescription>
-              </DialogHeader>
+          <AddCourseToSchemaForm
+            weekdays={Object.keys(Weekday)}
+            allCourses={allCourses}
+            termin={termin}
+          />
 
-              <AddCourseToSchemaForm
-                weekdays={Object.keys(Weekday)}
-                allCourses={allCourses}
-                termin={termin}
-              />
-
-              <DialogFooter className="sm:justify-start">
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">
-                    Close
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <br />
           <br />
           <Schema schemaItems={schemaItems} />
         </CardContent>

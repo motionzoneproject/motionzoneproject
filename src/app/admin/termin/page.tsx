@@ -1,14 +1,3 @@
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { getTermin } from "@/lib/actions/admin";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";
@@ -24,31 +13,7 @@ export default async function Page() {
             <span className="font-bold text-2xl">Terminer / scheman</span>
           </div>
           <div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant={"default"} className="bg-green-500">
-                  Ny termin
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Skapa en ny termin</DialogTitle>
-                  <DialogDescription>
-                    Ange terminens namn och vilka datum terminen har.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <AddTerminForm />
-
-                <DialogFooter className="sm:justify-start">
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                      Close
-                    </Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <AddTerminForm />
           </div>
           <br />
         </div>

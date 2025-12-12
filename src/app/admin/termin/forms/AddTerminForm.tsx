@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -13,7 +14,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -23,7 +33,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
 import { addNewTermin } from "@/lib/actions/admin";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
@@ -42,10 +51,17 @@ export default function AddTerminForm() {
 
   const router = useRouter();
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) form.reset();
+  }, [isOpen, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await addNewTermin(values);
     if (res.success) {
       toast.success(res.msg);
+      setIsOpen(false);
       router.refresh();
     } else {
       toast.error(res.msg);
@@ -53,70 +69,93 @@ export default function AddTerminForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Skapa ny termin.</CardTitle>
-        <CardDescription></CardDescription>
-      </CardHeader>
-      <CardContent>
-        <br />
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-2 p-2 rounded-xl"
-          >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Namn</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
+      <DialogTrigger asChild>
+        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+          Ny termin
+        </Button>
+      </DialogTrigger>
 
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start datum</FormLabel>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Skapa en ny termin</DialogTitle>
+          <DialogDescription>
+            Ange terminens namn och vilka datum terminen har.
+          </DialogDescription>
+        </DialogHeader>
 
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+        <Card>
+          <CardHeader>
+            <CardTitle>Skapa ny termin.</CardTitle>
+            <CardDescription></CardDescription>
+          </CardHeader>
+          <CardContent>
+            <br />
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-2 p-2 rounded-xl"
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Namn</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start datum</FormLabel>
 
-            <FormField
-              control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Slut datum</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
 
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slut datum</FormLabel>
 
-            <DialogClose asChild>
-              <Button type="submit">Skapa</Button>
-            </DialogClose>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit">Skapa</Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
+        <DialogFooter className="sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
