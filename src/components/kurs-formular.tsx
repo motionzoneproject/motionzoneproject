@@ -15,15 +15,15 @@ export default function KursForm() {
 
   return (
     <div>
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <BookingForm />
+      </Modal>
       <Button
         className="text-black bg-white hover:bg-green-600 px-6 py-3 text-lg rounded-full"
         onClick={openModal} // Open modal on button click
       >
         Boka kurs
       </Button>
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <BookingForm />
-      </Modal>
     </div>
   );
 }

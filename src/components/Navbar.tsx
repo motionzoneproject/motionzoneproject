@@ -38,6 +38,11 @@ export default function NavBar() {
               Om oss
             </Link>
           </li>
+          <li>
+            <Link href="/admin" className="hover:text-cyan-400">
+              Admin
+            </Link>
+          </li>
         </ul>
 
         <div className="flex items-center space-x-4">
