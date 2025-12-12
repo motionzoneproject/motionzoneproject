@@ -2,7 +2,9 @@
 
 import type z from "zod";
 import type {
+  Booking,
   Course,
+  Lesson,
   SchemaItem,
   Termin,
   Weekday,
@@ -36,6 +38,8 @@ export async function getTermin(): Promise<Termin[]> {
 }
 
 export type SchemaItemWithCourse = SchemaItem & { course: Course };
+
+export type LessonWithBookings = Lesson & { bookings: Booking[] };
 
 export async function getSchemaItems(
   terminId: string,
@@ -219,7 +223,7 @@ export async function addNewCourse(
   }
 }
 
-export async function createLessons(
+async function createLessons(
   schemaItemId: string,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();

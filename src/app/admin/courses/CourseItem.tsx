@@ -8,12 +8,30 @@ import {
 } from "@/components/ui/card";
 
 import type { Course } from "@/generated/prisma/client";
+import type { LessonWithBookings } from "@/lib/actions/admin";
+import prisma from "@/lib/prisma";
+import LessonsBrowser from "./components/LessonsBrowser";
 
 interface Props {
   course: Course;
 }
 
+// Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
+//           kursdetaljer. Hantera data kring tillfällen dvs redigera närvaro,
+//           ställa in -och skicka meddelande, se antal bokningar / platser.
+
 export default async function CourseItem({ course }: Props) {
+  const lessonsWithBooking: LessonWithBookings[] = await prisma.lesson.findMany(
+    {
+      where: { courseId: course.id },
+      include: { bookings: true },
+    },
+  );
+
+  const terminer = await prisma.termin.findMany({
+    where: { schemaItems: { some: { courseId: course.id } } },
+  });
+
   return (
     <div className="p-2 ">
       <Card>
@@ -36,10 +54,10 @@ export default async function CourseItem({ course }: Props) {
         </CardHeader>
 
         <CardContent>
-          Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
-          kursdetaljer. Hantera data kring tillfällen dvs redigera närvaro,
-          ställa in -och skicka meddelande, se antal bokningar / platser.
-          <br />
+          <LessonsBrowser
+            lessonsWithBookings={lessonsWithBooking}
+            terminer={terminer}
+          />
         </CardContent>
       </Card>
     </div>
