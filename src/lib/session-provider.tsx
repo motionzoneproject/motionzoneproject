@@ -46,7 +46,6 @@ export function SessionProvider({
   children,
   session,
   user,
-  admin,
 }: {
   children: ReactNode;
   session: Session | null;

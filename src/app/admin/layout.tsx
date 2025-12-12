@@ -1,6 +1,6 @@
 import AdminPanel from "@/components/AdminPanel";
 
-export default function RootLayout({
+export default function AdminRootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

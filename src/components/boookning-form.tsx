@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 const BookingForm = () => {
@@ -10,11 +9,10 @@ const BookingForm = () => {
   });
 
   const handleInputChange = (e) => {
-    const { name, value,date,time } = e.target;
+    const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
       [name]: value,
-      
     }));
   };
 
@@ -29,7 +27,9 @@ const BookingForm = () => {
       onSubmit={handleSubmit}
       className="space-y-4 p-6 bg-white rounded-xl shadow-md w-full max-w-sm mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center text-red-950">Book a Course</h2>
+      <h2 className="text-2xl font-semibold text-center text-red-950">
+        Book a Course
+      </h2>
 
       <div>
         <label
