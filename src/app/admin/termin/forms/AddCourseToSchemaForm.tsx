@@ -116,7 +116,6 @@ export default function AddCourseToSchemaForm({
             <CardDescription></CardDescription>
           </CardHeader>
           <CardContent>
-            <br />
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -222,7 +221,9 @@ export default function AddCourseToSchemaForm({
                   )}
                 />
 
-                <Button type="submit">Lägg till!</Button>
+                <Button type="submit" className="w-full">
+                  Lägg till!
+                </Button>
               </form>
             </Form>
           </CardContent>

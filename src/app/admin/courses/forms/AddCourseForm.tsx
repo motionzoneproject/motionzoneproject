@@ -1,24 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -33,21 +27,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { addNewTermin } from "@/lib/actions/admin";
-import { adminAddTerminSchema } from "@/validations/adminforms";
+import { Textarea } from "@/components/ui/textarea";
+import { addNewCourse } from "@/lib/actions/admin";
+import { useSession } from "@/lib/session-provider";
+import { adminAddCourseSchema } from "@/validations/adminforms";
 
-const formSchema = adminAddTerminSchema;
+const formSchema = adminAddCourseSchema;
 
-type FormInput = z.input<typeof adminAddTerminSchema>;
-type FormOutput = z.output<typeof adminAddTerminSchema>;
+type CourseFormInput = z.input<typeof adminAddCourseSchema>;
+type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
-export default function AddTerminForm() {
-  const form = useForm<FormInput, unknown, FormOutput>({
+export default function AddCourseForm() {
+  const { user } = useSession();
+  const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      startDate: "",
-      endDate: "",
+      description: "",
+      maxbookings: 0,
+      teacherid: user?.id, // fix: get the admins id?
     },
   });
 
@@ -60,7 +58,15 @@ export default function AddTerminForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewTermin(values);
+    if (
+      // fix: se över detta, kanske räcker med zod när vi fixat det.
+      (form.watch("maxbookings") as number) <= 0 ||
+      (form.watch("maxbookings") as string).trim()
+    ) {
+      values.maxbookings = 0;
+    }
+
+    const res = await addNewCourse(values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -70,46 +76,33 @@ export default function AddTerminForm() {
     }
   }
 
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="bg-green-500 cursor-pointer">
-          Ny termin
+          Ny kurs
         </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Skapa en ny termin</DialogTitle>
-          <DialogDescription>
-            Ange terminens namn och vilka datum terminen har.
-          </DialogDescription>
+          <DialogTitle>Skapa en ny kurs</DialogTitle>
+          Ge kursen ett namn, och beskriv kursen samt ange max antal bokningar
+          per tillfälle (0 för ingen gräns). Du kan också sätta specifika
+          gränser när du skapar tillfällen i veckoschemat.
+          <br />
+          <div className="w-full flex items-end bg-amber-200 text-black p-2 rounded">
+            <Flag className="w-16 h-16 text-red-600" />{" "}
+            <div className="font-bold">
+              Du sätts som lärare automatiskt, så om du inte är läraren vänligen
+              logga in som rätt lärare och skapa kursen.
+            </div>
+          </div>
         </DialogHeader>
 
         <Card>
           <CardHeader>
-            <CardTitle>Skapa ny termin.</CardTitle>
-            <CardDescription></CardDescription>
+            <CardTitle>Skapa ny kurs.</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -133,17 +126,45 @@ export default function AddTerminForm() {
 
                 <FormField
                   control={form.control}
-                  name="startDate"
+                  name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start datum</FormLabel>
+                      <FormLabel>Beskrivning av kursen</FormLabel>
+
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxbookings"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Max bokningar per tillfälle
+                        {((form.watch("maxbookings") as number) <= 0 ||
+                          (form.watch("maxbookings") as string).trim() ===
+                            "") && (
+                          <div className="text-yellow-800">
+                            (ingen gräns är satt)
+                          </div>
+                        )}
+                      </FormLabel>
 
                       <FormControl>
                         <Input
-                          type="date"
+                          type="number"
+                          min="0"
+                          step="1"
                           {...field}
-                          value={formatDateToInput(field.value)}
-                          onChange={field.onChange}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
                         />
                       </FormControl>
 
@@ -154,18 +175,13 @@ export default function AddTerminForm() {
 
                 <FormField
                   control={form.control}
-                  name="endDate"
+                  name="teacherid"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slut datum</FormLabel>
+                    <FormItem className="hidden">
+                      <FormLabel>Lärare:</FormLabel>
 
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={formatDateToInput(field.value)}
-                          onChange={field.onChange}
-                        />
+                        <Input {...field} readOnly />
                       </FormControl>
 
                       <FormMessage />

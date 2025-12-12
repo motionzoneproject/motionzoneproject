@@ -1,5 +1,6 @@
 import { getAllCourses } from "@/lib/actions/admin";
 import CourseItem from "./CourseItem";
+import AddCourseForm from "./forms/AddCourseForm";
 
 export default async function Page() {
   const allCourses = await getAllCourses();
@@ -11,7 +12,9 @@ export default async function Page() {
           <div>
             <span className="font-bold text-2xl">Kurser</span>
           </div>
-          <div>(lägg till kurs-knapp)</div>
+          <div>
+            <AddCourseForm />
+          </div>
           <br />
         </div>
         {allCourses.map((c) => (

@@ -227,7 +227,7 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på!
+  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna? fix
 
   @@index([teacherId])
   // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
