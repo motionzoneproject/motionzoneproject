@@ -1,39 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { searchCourses } from "@/lib/search-courses";
 
 export default function SearchBar() {
   const [search, setSearch] = useState("");
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
   useEffect(() => {
-    console.log(search);
+    const fetchCourses = async () => {
+      const courses = await searchCourses(search);
+      // setCourses(courses);
+      console.log(JSON.stringify(courses));
+    };
+    fetchCourses();
   }, [search]);
 
   return (
-    <div className="w-full flex justify-between items-center">
-      <ul className="flex gap-2 ml-auto">
-        <li>
-          <button
-            className="border-2 border-blue-700 rounded-md px-2 py-2 text-blue-700 cursor-pointer hover:bg-blue-200"
-            type="submit"
-          >
-            <Link href="/">back</Link>
-          </button>
-        </li>
-        <li>
-          <input
-            type="search"
-            placeholder="write what you want to search"
-            className="border-2 border-blue-700 rounded-lg px-4 py-2 text-black"
-            onChange={(e) => handleSearch(e)}
-          />
-        </li>
-      </ul>
+    <div className=" bg-secondary-foreground p-4 mt-4 flex justify-between  items-center">
+      <div className=" gap-4 items-center">
+        <label className="text-black font-bold" htmlFor="search">
+          Search:{" "}
+        </label>
+        <input
+          type="search"
+          placeholder="Write course name"
+          className="border-2 border-red-700 rounded-lg px-4 py-2 text-black"
+          onChange={handleInputChange}
+        />
+        <button
+          type="button"
+          className="border-2 border-secondary-700 rounded-md px-2 py-2 text-blue-700 cursor-pointer hover:bg-blue-200 ml-auto"
+        >
+          Submit
+        </button>
+      </div>
+
+      <button
+        type="button"
+        className="border-2 border-secondary-700 rounded-md px-2 py-2 text-blue-700 cursor-pointer hover:bg-blue-200 ml-auto"
+      >
+        <Link href="/">Back Home</Link>
+      </button>
     </div>
   );
 }

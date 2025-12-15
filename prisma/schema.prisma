@@ -13,8 +13,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
 model User {
   id            String    @id
   name          String
@@ -26,24 +24,21 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  // Relations to other models (orders, courses, etc.)
+  orders    Order[]
+  purchases Purchase[]
 
-  //Ordrar:
-  orders          Order[] // För att visa orderdatan.
-  purchases       Purchase[] // Här är de produkter som användaren köpt, med all info som vilka bokningar som gjorts och hur många tillfällen som använts.
+  teachingCourses Course[]  @relation("TeacherCourses")
+  teachingLessons Lesson[]  @relation("TeacherLessons")
+  enrolledCourses Course[]  @relation("StudentCourses")
+  bookings        Booking[] @relation("StudentBookings")
 
+  // Add the reverse relation to Search
+  searches Search[] // This defines the relationship to Search model
 
-  teachingCourses Course[] @relation("TeacherCourses") // är lärare på dessa kurser
-  teachingLessons Lesson[] @relation("TeacherLessons") // är lärare på dessa tillfällen.
-  
-  enrolledCourses Course[] @relation("StudentCourses") // är elev på dessa kurser.
-  bookings        Booking[] @relation("StudentBookings") //är elev på dessa bokningar.
-
-  bio           String?  
-  phone         String?  
-
-  
-
-  role       String? // So can only be one of the enum roles.
+  bio        String?
+  phone      String?
+  role       String?
   banned     Boolean?  @default(false)
   banReason  String?
   banExpires DateTime?
@@ -64,6 +59,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   impersonatedBy String?
+
   @@unique([token])
   @@index([userId])
   @@map("session")
@@ -101,32 +97,38 @@ model Verification {
   @@map("verification")
 }
 
+model Search {
+  id        String   @id @default(uuid())
+  query     String // The search query entered by the user
+  userId    String // Foreign key to associate the search with a user
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) // Timestamp when the search was made
 
-
-
+  // Optional: for faster querying by userId
+  @@index([userId])
+}
 
 // Så när en termin skapas och en kurs läggs in i veckodag, så skapas lessons för det tillfället under hela den perioden -Så byggs schemat upp.
+
 model Lesson {
   id String @id @default(uuid())
 
   startTime DateTime // Ska innehålla båda dag och tid. 
-  endTime DateTime // Ska innehålla båda dag och tid. 
+  endTime   DateTime // Ska innehålla båda dag och tid. 
 
-  message String? // Om läraren har något meddelande om tillfället.
+  message   String? // Om läraren har något meddelande om tillfället.
   cancelled Boolean @default(false) // Om läraren har ställt in.
 
   // Här är det ju bokat via en viss termin och kurs, så därför har vi detta:
-  terminId    String?    
-  termin      Termin?    @relation(fields: [terminId], references: [id])
-  courseId String // Vilken kurs är det
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-
+  terminId  String?
+  termin    Termin? @relation(fields: [terminId], references: [id])
+  courseId  String // Vilken kurs är det
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   // Läraren:
   teacherId String
-  teacher   User   @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Restrict) // Hämtas från den Course som den tillhör(som en lärare skapat, och därmed teacherId) när lesson skapas.
+  teacher   User    @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Restrict) // Hämtas från den Course som den tillhör(som en lärare skapat, och därmed teacherId) när lesson skapas.
 
-  bookings Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
+  bookings    Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
   maxBookings Int // Ärvs från schema, som ärver från course, men möjliggör att lärarna kan ändra specifika tillfällen.
 
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
@@ -140,19 +142,18 @@ model Lesson {
   @@map("lesson")
 }
 
-
 // Semester? Eller vad ska vi kalla det på engelska? 
-model Termin {
 
+model Termin {
   id String @id @default(uuid())
 
   startDate DateTime // När startar terminen?
-  endDate DateTime // När slutar den?
+  endDate   DateTime // När slutar den?
 
   schemaItems SchemaItem[] // Implicit relation - SchemaItem pekar på Termin
 
   products Product[] // Vilka produkter är kopplade till terminen. På omvägar här kan man se vilka kunder som köpt produkter kopplade till terminen, även deras kurser.
-  lessons Lesson[] // Vilka tillfällen är kopplade till terminen
+  lessons  Lesson[] // Vilka tillfällen är kopplade till terminen
 
   courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också!.
 
@@ -160,7 +161,6 @@ model Termin {
   updatedAt DateTime? @updatedAt
 
 }
-
 
 enum Weekday {
   MONDAY
@@ -173,49 +173,45 @@ enum Weekday {
 }
 
 model SchemaItem {
+  id String @id @default(uuid())
 
-    id String @id @default(uuid())
+  weekday Weekday
 
-    weekday Weekday
+  timeStart DateTime // är DateTime rätt här?
+  timeEnd   DateTime // -||- ?
 
-    timeStart DateTime // är DateTime rätt här?
-    timeEnd DateTime // -||- ?
+  terminId String
+  termin   Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
 
-    terminId String
-    termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
+  courseId String // Vilken kurs
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-    courseId String // Vilken kurs
-    course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
 
-    maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
+  Lessons Lesson[]
 
-    Lessons Lesson[]
-
-    @@index([terminId])  
-    @@index([courseId]) 
-    @@map("schema_item")
-
+  @@index([terminId])
+  @@index([courseId])
+  @@map("schema_item")
 }
 
-
 // En lärare lägger till en kurs.
-model Course {
 
-  id String @id @default(uuid())
-  name String
+model Course {
+  id          String @id @default(uuid())
+  name        String
   description String
 
   products ProductOnCourse[]
 
   maxBookings Int // Per tillfälle (standardvärdet, det går att ändra i veckorschemat eller per tillfälle med).
 
-  lessons Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
+  lessons     Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
   schemaItems SchemaItem[] // Veckoschemat.
 
   // Läraren
   teacherId String
   teacher   User   @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Restrict) // Läraren. TeacherCourses
-  
   // Elever:
   students  User[] @relation("StudentCourses") // När en PurchaseItem skapas, så ska denna kopplas mellan course och user så vi kan se vilka som har tillgång. 
 
@@ -227,129 +223,114 @@ model Course {
 
   terms CourseOnTermin[] // Vilka terminer kursen är inlagd på!
 
-  @@index([teacherId])
   // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
+
+  @@index([teacherId])
   @@map("course")
-
 }
-
 
 // Denna tabell kopplar alltså kurs till termin, du kan ha samma kurs på flera terminer.
+
 model CourseOnTermin {
-    courseId String
-    course   Course @relation(fields: [courseId], references: [id])
-    terminId String
-    termin   Termin @relation(fields: [terminId], references: [id])
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+  terminId String
+  termin   Termin @relation(fields: [terminId], references: [id])
 
-    // isActive Boolean @default(true)
+  // isActive Boolean @default(true)
 
-    @@id([courseId, terminId])
-    @@map("course_on_termin")
+  @@id([courseId, terminId])
+  @@map("course_on_termin")
 }
-
 
 // Så här finns informationen om vilken/vilka kurser man kan boka med produkten, och i vilken termin (om specificerat). 
 // Vi skulle kunna utifrån detta räkna med kod för att få fram hur många bokningar en användare har kvar, men smartare
 // att se detta som en mall, och när väl köpt så skapar vi en Purchase, med purcaseItems som speglar produkterna och hanterar
 // om bokningar gjorts etc. Så varje bokning borde också vara kopplad till en purchaseItem!
 
-
 // Hur vi gör med max antal platser på en kurs egentligen? Ska man kunna ha fler elever än antal platser?
 // Det får lärarna själva ha koll på, de kan ju se hur ofta de blir fullbokade om de behöver lägga till tillfällen eller inaktivera produkterna så inga fler kan köpa t.ex.
 
 //Men om lärarna vill vara schyssta och låta en kund få med sig kurstillfällen till nästa period, då kanske vi bara kan antingen göra ett rabattsystem (kanske vi borde ändå?), eller kanske göra så admin kan ändra expiresAt (om kursen fortsätter en annan termin)
 
-
-
 model Product {
-
   id String @id @default(uuid())
 
-  name String
+  name        String
   description String
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om useTotalCount sätts count till 0.
 
   terminId String? // Specificera vilken termin den gäller på. Inte obligatoriskt. Men då sätts expireDate till när terminen slutar.
-  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
+  termin   Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
 
-  expireFixedDate DateTime? // Om den ska ha ett sista datum.
+  expireFixedDate        DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
   useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
-  totalCount Int? // Totalt antal tillfällen att boka (om man använder den metoden)
+  totalCount    Int? // Totalt antal tillfällen att boka (om man använder den metoden)
 
   price Decimal @db.Money
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
-  purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
+  purchases  Purchase[] // För att: Håll koll på kundernas köpta produkt.
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
-
 
   @@index([terminId])
   @@map("product")
 }
 
-
 // Så varje 
-model ProductOnCourse {
 
+model ProductOnCourse {
   courseId String
   course   Course @relation(fields: [courseId], references: [id])
 
   productId String
-  product  Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (0 om klippkort)
-
 
   @@id([courseId, productId])
   @@map("product_on_course")
 }
 
-
-
-
 // Det här är en bokning, dvs när användaren trycker på boka på ett tillfälle. 
 // Så när användaren trycker på boka, måste vi kanske också kunna spåra vilken purchase som användes?
 // Om ett tillfälle avbokas eller ställs in, måste vi hantera det i koden så booking tas bort.
+
 model Booking {
-  id            String    @id @default(uuid())
+  id String @id @default(uuid())
 
   lessonId String
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   purchaseItemId String // Koppla dit så det dras ett tillfälle från användarens köpta produkt.
-  purchaseItem PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
-
+  purchaseItem   PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
 
   userId String
   user   User   @relation("StudentBookings", fields: [userId], references: [id]) // Kopplas till StudentBookings i user när bokning skapas.
 
-  createdAt DateTime @default(now()) 
-  updatedAt DateTime @updatedAt      
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([lessonId])
   @@index([purchaseItemId])
-
 }
 
-
 // Så detta ska spegla produkten, eller rättare sagt typ som skapaar ett objekt av den dvs när lkunden faktiskt köpt en produkt så skapas en purchase.
+
 model Purchase {
-  id              String    @id @default(uuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  productId       String // Vilken produkt speglas
-  product         Product   @relation(fields: [productId], references: [id])
-  
-  orderId         String // Vilket orderId speglas
-  order           Order     @relation(fields: [orderId], references: [id])
-  
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId     String // Vilken produkt speglas
+  product       Product        @relation(fields: [productId], references: [id])
+  orderId       String // Vilket orderId speglas
+  order         Order          @relation(fields: [orderId], references: [id])
   PurchaseItems PurchaseItem[] // Kurserna och deras tillfällen
 
   // useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
@@ -364,58 +345,46 @@ model Purchase {
   // // Använd:
   // purchase.product.useTotalCount
   // purchase.product.totalCount
-  
+  expiresAt DateTime? // Om produkten / paketet eller klippkortet går ut
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-
-  
-  expiresAt       DateTime? // Om produkten / paketet eller klippkortet går ut
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
   @@index([userId])
   @@index([productId])
   @@index([orderId])
   @@map("purchase")
 }
 
-
-
-
 // Så här specas varje kurs
-model PurchaseItem {
-  id              String    @id @default(uuid())
 
-  purchaseId      String   
-  purchase        Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+model PurchaseItem {
+  id String @id @default(uuid())
+
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
   orderItemId String // 
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
   courseId String
-  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict) 
-
-  
-  // terminId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Restrict) // terminId String
   // termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
   // Denna info finns i purschase.
 
   lessonsIncluded Int // 0 om klippkort, precis som produkt.
-  remainingCount Int
+  remainingCount  Int
 
   bookings Booking[]
 
-  createdAt DateTime @default(now()) 
-  updatedAt DateTime @updatedAt    
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // @@index([terminId])
 
   @@index([purchaseId])
   @@index([courseId])
-  // @@index([terminId])
   @@unique([purchaseId, courseId])
   @@map("purchase_item")
-
 }
-
 
 model OrderItem {
   id String @id @default(uuid())
@@ -424,7 +393,7 @@ model OrderItem {
   price Decimal @db.Money
 
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   purchaseItems PurchaseItem[]
 
@@ -434,25 +403,24 @@ model OrderItem {
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@index([orderId])  
+  @@index([orderId])
   @@index([productId])
   @@map("order_item")
 }
 
 model Order {
-
   id String @id @default(uuid())
 
   orderItems OrderItem[]
 
-  totalPrice    Decimal @db.Money
+  totalPrice Decimal @db.Money
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem
   user   User   @relation(fields: [userId], references: [id])
 
   postalcode String?
 
-  purchases  Purchase[]
+  purchases Purchase[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -462,23 +430,20 @@ model Order {
 }
 
 model Event {
-
   id String @id @default(uuid())
 
   startDate DateTime // När startar eventet? (datum)
-  endDate DateTime? // När slutar den? (datum), optional ifall det bara är en dag.
+  endDate   DateTime? // När slutar den? (datum), optional ifall det bara är en dag.
 
-  headline String
+  headline    String
   description String
-  link String
-  imageURL String
+  link        String
+  imageURL    String
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
 }
-
-
 
 // // Varukorg? Använda cookies?
 // model Basket {
@@ -490,7 +455,6 @@ model Event {
 //   id String @id @default(uuid())
 
 // }
-
 
 // // Denna är under diskussion hur vi ska göra med
 // model Gallery {

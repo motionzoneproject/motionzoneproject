@@ -1,5 +1,5 @@
 import Link from "next/link";
-import SearchBar from "./seachback";
+// import SearchBar from "./seachback";
 
 export default function AdminPanel() {
   return (
@@ -74,9 +74,9 @@ export default function AdminPanel() {
           </li>
         </ul>
       </div>
-      <div>
+      {/* <div>
         <SearchBar />
-      </div>
+      </div> */}
     </nav>
   );
 }

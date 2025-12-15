@@ -13,11 +13,12 @@ export default async function Page() {
   }
 
   return (
-    <div className="max-w-sm flex flex-col justify-center items-center mx-auto min-h-screen bg-slate-400 w-full">
+    <div className="container mx-auto mt-12 min-h-screen bg-slate-400 items-center justify-center flex flex-col">
       <p className="text-md font-bold text-black mb-4 text-center">
         Fyll i det här formuläret för att ansöka till vilken kurs du än är
         intresserad av
       </p>
+
       <KursForm />
     </div>
   );

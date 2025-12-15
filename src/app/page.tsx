@@ -1,6 +1,6 @@
 export default function Page() {
   return (
-    <div className="w-full bg-slate-200 min-h-screen">
+    <div className="w-full bg-slate-300 min-h-screen">
       <div className="mx-auto text-center mt-0">
         <div className="animate-bounce text-3xl text-black font-extrabold">
           💃🏻🕺🏽
