@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import type { Termin } from "@/generated/prisma/client";
 import type { LessonWithBookings } from "@/lib/actions/admin";
+import LessonItem from "./LessonItem";
 
 interface Props {
   lessonsWithBookings: LessonWithBookings[];
@@ -43,10 +45,10 @@ export default function LessonsBrowser({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-2">
+        <div className="md:flex gap-2">
           <div>
             <Select onValueChange={(value) => setselTermin(value)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Välj en termin" />
               </SelectTrigger>
               <SelectContent>
@@ -62,53 +64,28 @@ export default function LessonsBrowser({
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="flex gap-2 items-center my-2">
             <Checkbox
+              id="showOld"
+              className="w-6 h-6"
               checked={showOldLessons}
               onCheckedChange={(newValue: boolean) =>
                 setShowOldLessons(newValue)
               }
-            />{" "}
-            Visa gamla tillfällen.
+            />
+            <Label htmlFor="showOld" className="text-md">
+              Visa gamla tillfällen.
+            </Label>
           </div>
         </div>
         <br />
-        <div className="w-full p-2 border-2 rounded grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="w-full bg-secondary p-2 border-2 rounded grid md:grid-cols-2 gap-2 max-h-[80vh] overflow-auto">
           {lessons
             .filter((l) => l.terminId === selTermin)
             .filter((l) => showOldLessons || l.startTime >= new Date())
+            .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
             .map((l) => (
-              <div
-                key={l.id}
-                className="bg-blue-300 text-black p-2 border-2 border-blue-800 rounded"
-              >
-                <div>Datum: {l.startTime.toLocaleDateString("sv-SE")}</div>
-
-                {/* Visar tiden (t.ex. 16:00 - 17:30) */}
-                <div>
-                  Tid:{" "}
-                  {l.startTime.toLocaleTimeString("sv-SE", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {" - "}
-                  {l.endTime.toLocaleTimeString("sv-SE", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-
-                {/* Visar veckodagen */}
-                <div>
-                  Veckodag:{" "}
-                  {l.startTime.toLocaleDateString("sv-SE", { weekday: "long" })}
-                </div>
-
-                {/* Visar eventuellt antal bokningar kvar */}
-                <div>Antal bokningar: {l.bookings.length}</div>
-                <div>Max antal: {l.maxBookings}</div>
-                <div>Närvaro</div>
-              </div>
+              <LessonItem key={l.id} lesson={l} />
             ))}
         </div>
       </CardContent>

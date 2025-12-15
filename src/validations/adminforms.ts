@@ -50,3 +50,9 @@ export const adminAddCourseSchema = z.object({
   description: z.string(),
   teacherid: z.string().min(1),
 });
+
+export const adminHandleLessonSchema = z.object({
+  id: z.string().min(1),
+  message: z.string(),
+  cancelled: z.string(),
+});

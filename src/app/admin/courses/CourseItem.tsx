@@ -7,13 +7,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import type { Course } from "@/generated/prisma/client";
-import type { LessonWithBookings } from "@/lib/actions/admin";
+import type {
+  CourseWithTeacher,
+  LessonWithBookings,
+} from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import DeleteCourseBtn from "./components/DelCourseBtn";
 import LessonsBrowser from "./components/LessonsBrowser";
 
 interface Props {
-  course: Course;
+  course: CourseWithTeacher;
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
@@ -41,14 +44,14 @@ export default async function CourseItem({ course }: Props) {
               <div>{course.name}</div>
             </CardTitle>
             <CardDescription>
-              Teacher: {course.teacherId}
+              Lärare: {course.teacher.name}
               <br />
               Maxbookings: {course.maxBookings}
             </CardDescription>
 
             <div className="p-2 flex gap-2">
               <Button variant={"default"}>Ändra</Button>
-              {/* <DeleteCourseBtn courseId={termin.id} /> */}
+              <DeleteCourseBtn courseId={course.id} />
             </div>
           </div>
         </CardHeader>

@@ -15,21 +15,21 @@ interface Props {
   weekdayIndex: number;
 }
 
+export const veckodagar = [
+  "Måndag",
+  "Tisdag",
+  "Onsdag",
+  "Torsdag",
+  "Fredag",
+  "Lördag",
+  "Söndag",
+];
+
 export default async function SchemaDay({
   schemaItems,
   weekday,
   weekdayIndex,
 }: Props) {
-  const veckodagar = [
-    "Måndag",
-    "Tisdag",
-    "Onsdag",
-    "Torsdag",
-    "Fredag",
-    "Lördag",
-    "Söndag",
-  ];
-
   if (schemaItems.filter((itm) => itm.weekday === weekday).length === 0)
     return null;
 

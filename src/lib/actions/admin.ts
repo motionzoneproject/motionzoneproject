@@ -1,5 +1,6 @@
 "use server";
 
+import type { User } from "better-auth";
 import type z from "zod";
 import type {
   Booking,
@@ -9,7 +10,6 @@ import type {
   Termin,
   Weekday,
 } from "@/generated/prisma/client";
-
 import {
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -41,6 +41,8 @@ export type SchemaItemWithCourse = SchemaItem & { course: Course };
 
 export type LessonWithBookings = Lesson & { bookings: Booking[] };
 
+export type CourseWithTeacher = Course & { teacher: User };
+
 export async function getSchemaItems(
   terminId: string,
 ): Promise<SchemaItemWithCourse[]> {
@@ -54,11 +56,11 @@ export async function getSchemaItems(
   return schemaItems;
 }
 
-export async function getAllCourses(): Promise<Course[]> {
+export async function getAllCourses(): Promise<CourseWithTeacher[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const courses = await prisma.course.findMany();
+  const courses = await prisma.course.findMany({ include: { teacher: true } });
   return courses;
 }
 
@@ -180,6 +182,25 @@ export async function delTermin(
 
     if (del) {
       return { success: true, msg: `Terminen ${del.name} togs bort.` };
+    } else {
+      return { success: false, msg: `${id} not found.` };
+    }
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function delCourse(
+  id: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const del = await prisma.course.delete({ where: { id } });
+
+    if (del) {
+      return { success: true, msg: `Kursen ${del.name} togs bort.` };
     } else {
       return { success: false, msg: `${id} not found.` };
     }

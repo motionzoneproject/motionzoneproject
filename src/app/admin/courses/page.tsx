@@ -1,13 +1,13 @@
-import { getAllCourses } from "@/lib/actions/admin";
+import { type CourseWithTeacher, getAllCourses } from "@/lib/actions/admin";
 import CourseItem from "./CourseItem";
 import AddCourseForm from "./forms/AddCourseForm";
 
 export default async function Page() {
-  const allCourses = await getAllCourses();
+  const allCourses: CourseWithTeacher[] = await getAllCourses();
 
   return (
     <div>
-      <div className="w-full md:grid md:grid-cols-2 gap-2 p-2">
+      <div className="w-full lg:grid lg:grid-cols-2 gap-2 p-2">
         <div className="col-span-2 flex gap-2">
           <div>
             <span className="font-bold text-2xl">Kurser</span>
