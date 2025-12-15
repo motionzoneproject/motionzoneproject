@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -9,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { LessonWithBookings } from "@/lib/actions/admin";
+import LessonAttendanceForm from "./LessonAttendanceForm";
 import LessonItemForm from "./LessonItemForm";
 
 interface Props {
@@ -38,15 +38,14 @@ export default function LessonItem({ lesson }: Props) {
           })}
         </CardDescription>
         <CardAction>
-          <Button variant={"secondary"} className="w-full">
-            Närvaro
-          </Button>
+          <LessonAttendanceForm lesson={lesson} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        <LessonItemForm lesson={lesson} />
+        <LessonItemForm lesson={lesson} />{" "}
       </CardContent>
       <CardFooter>
+        {" "}
         <p>
           {lesson.bookings.length}{" "}
           {lesson.maxBookings > 0 && ` / ${lesson.maxBookings}`} bokningar

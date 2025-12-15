@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -45,6 +46,10 @@ export default function AddCourseForm() {
       name: "",
       description: "",
       maxbookings: 0,
+      minAge: "",
+      maxAge: "",
+      level: "",
+      adult: false,
       teacherid: user?.id, // fix: get the admins id?
     },
   });
@@ -88,8 +93,8 @@ export default function AddCourseForm() {
         <DialogHeader>
           <DialogTitle>Skapa en ny kurs</DialogTitle>
           Ge kursen ett namn, och beskriv kursen samt ange max antal bokningar
-          per tillfälle (0 för ingen gräns). Du kan också sätta specifika
-          gränser när du skapar tillfällen i veckoschemat.
+          per tillfälle (0 för ingen gräns). För minsta / högsta ålder: sätt 0
+          för ingen, eller 18 för vuxen
           <br />
           <div className="w-full flex items-end bg-amber-200 text-black p-2 rounded">
             <Flag className="w-16 h-16 text-red-600" />{" "}
@@ -166,6 +171,112 @@ export default function AddCourseForm() {
                             field.value === undefined ? "" : String(field.value)
                           }
                         />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minAge"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Minsta ålder
+                        {(form.watch("minAge") as number) <= 0 ||
+                        (form.watch("minAge") as string).trim() === "" ? (
+                          <div className="text-yellow-800">
+                            (ingen minsta ålder är satt)
+                          </div>
+                        ) : (
+                          (form.watch("minAge") as number) === 18 && `vuxen`
+                        )}
+                      </FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxAge"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Hösta ålder
+                        {(form.watch("maxAge") as number) <= 0 ||
+                        (form.watch("maxAge") as string).trim() === "" ? (
+                          <div className="text-yellow-800">
+                            (ingen minsta ålder är satt)
+                          </div>
+                        ) : (
+                          (form.watch("maxAge") as number) === 18 && `vuxen`
+                        )}
+                      </FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="adult"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vuxen</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) =>
+                            field.onChange(checked)
+                          }
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nivå:</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
                       </FormControl>
 
                       <FormMessage />

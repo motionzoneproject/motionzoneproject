@@ -45,10 +45,10 @@ export default function LessonsBrowser({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="md:flex gap-2">
+        <div className="md:flex gap-2 w-full">
           <div>
             <Select onValueChange={(value) => setselTermin(value)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="min-w-[200px]">
                 <SelectValue placeholder="Välj en termin" />
               </SelectTrigger>
               <SelectContent>
@@ -79,15 +79,21 @@ export default function LessonsBrowser({
           </div>
         </div>
         <br />
-        <div className="w-full bg-secondary p-2 border-2 rounded grid md:grid-cols-2 gap-2 max-h-[80vh] overflow-auto">
-          {lessons
-            .filter((l) => l.terminId === selTermin)
-            .filter((l) => showOldLessons || l.startTime >= new Date())
-            .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
-            .map((l) => (
-              <LessonItem key={l.id} lesson={l} />
-            ))}
-        </div>
+        {lessons
+          .filter((l) => l.terminId === selTermin)
+          .filter((l) => showOldLessons || l.startTime >= new Date())
+          .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+          .length > 0 && (
+          <div className="w-full bg-secondary p-2 border-2 rounded grid md:grid-cols-2 gap-2 max-h-[80vh] overflow-auto">
+            {lessons
+              .filter((l) => l.terminId === selTermin)
+              .filter((l) => showOldLessons || l.startTime >= new Date())
+              .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+              .map((l) => (
+                <LessonItem key={l.id} lesson={l} />
+              ))}
+          </div>
+        )}
       </CardContent>
       <CardFooter>
         <p>Kursen har totalt {lessons.length}st tillfällen.</p>

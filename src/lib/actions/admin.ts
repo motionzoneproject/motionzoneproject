@@ -14,6 +14,7 @@ import {
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
   adminAddTerminSchema,
+  adminLessonFormSchema,
 } from "@/validations/adminforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
@@ -111,6 +112,7 @@ export async function addCoursetoSchema(
     const newSchemaItem = await prisma.schemaItem.create({
       data: {
         terminId,
+        place: validated.place,
         courseId: validated.courseId,
         maxBookings: getCourse?.maxBookings,
         timeStart: formToDbDate(validated.timeStart),
@@ -153,6 +155,7 @@ export async function delSchemaItem(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Behöver vi validera id med zod? ev. fix.
     const del = await prisma.schemaItem.delete({
       where: { id },
       select: { course: true },
@@ -178,6 +181,7 @@ export async function delTermin(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Behöver vi validera id med zod? ev. fix.
     const del = await prisma.termin.delete({ where: { id } });
 
     if (del) {
@@ -197,6 +201,8 @@ export async function delCourse(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Behöver vi validera id med zod? ev. fix.
+
     const del = await prisma.course.delete({ where: { id } });
 
     if (del) {
@@ -231,8 +237,12 @@ export async function addNewCourse(
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
+        minAge: validated.minAge,
+        maxAge: validated.maxAge,
+        level: validated.level,
+        adult: validated.adult,
         description: validated.description,
-        teacherId: validated.teacherid, // also check this! But i guess it throws if its not accurate. Fixed.
+        teacherId: validated.teacherid,
       },
     });
     return {
@@ -252,6 +262,8 @@ async function createLessons(
 
   try {
     // Hämtar all data vi behöver.
+
+    // Behöver vi validatera någonting här? ev. fix.
 
     const schemaItm = await prisma.schemaItem.findUnique({
       where: { id: schemaItemId },
@@ -346,6 +358,47 @@ async function createLessons(
       success: true,
       msg: `Successfully created ${result.count} lessons.`,
     };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function editLessonItem(
+  formData: z.output<typeof adminLessonFormSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminLessonFormSchema.parseAsync(formData);
+
+    const edit = await prisma.lesson.update({
+      where: { id: validated.id },
+      data: { message: validated.message, cancelled: validated.cancelled },
+    });
+
+    if (validated.cancelled) {
+      // Remove all bookings:
+      const bookings = await prisma.booking.deleteMany({
+        where: { lessonId: validated.id },
+      });
+
+      if (bookings && edit) {
+        return {
+          success: true,
+          msg: `Tillfället ${edit.id} uppdaterades. ${bookings.count} bokningar togs bort.`,
+        };
+      }
+    }
+
+    if (edit) {
+      return {
+        success: true,
+        msg: `Tillfället ${edit.id} uppdaterades.`,
+      };
+    } else {
+      return { success: false, msg: `${validated.id} not found.` };
+    }
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
   }

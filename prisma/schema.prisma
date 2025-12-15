@@ -189,6 +189,8 @@ model SchemaItem {
     courseId String // Vilken kurs
     course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
+    place String?
+
     maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
 
     Lessons Lesson[]
@@ -227,7 +229,13 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna? fix
+  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna?
+
+  level String? 
+
+  minAge Int?
+  maxAge Int?
+  adult Boolean @default(false)
 
   @@index([teacherId])
   // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
@@ -326,6 +334,7 @@ model Booking {
   purchaseItemId String // Koppla dit så det dras ett tillfälle från användarens köpta produkt.
   purchaseItem PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
 
+  cancelled Boolean @default(false)
 
   userId String
   user   User   @relation("StudentBookings", fields: [userId], references: [id]) // Kopplas till StudentBookings i user när bokning skapas.

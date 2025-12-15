@@ -12,6 +12,7 @@ import type {
   LessonWithBookings,
 } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
 import LessonsBrowser from "./components/LessonsBrowser";
 
@@ -41,12 +42,11 @@ export default async function CourseItem({ course }: Props) {
         <CardHeader>
           <div className="w-full lg:flex md:justify-between md:items-start">
             <CardTitle>
-              <div>{course.name}</div>
+              <div>{getCourseName(course)}</div>
             </CardTitle>
             <CardDescription>
-              Lärare: {course.teacher.name}
-              <br />
-              Maxbookings: {course.maxBookings}
+              Max antal bokningar:{" "}
+              {course.maxBookings === 0 ? "Ingen gräns" : course.maxBookings}
             </CardDescription>
 
             <div className="p-2 flex gap-2">

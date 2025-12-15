@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import type { Course, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
+import { getCourseName } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseToSchemaSchema;
@@ -64,6 +65,7 @@ export default function AddCourseToSchemaForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: "",
+      place: "",
       day: "MONDAY",
       timeStart: "0",
       timeEnd: "1",
@@ -144,7 +146,7 @@ export default function AddCourseToSchemaForm({
                             <SelectLabel>Välj kurs</SelectLabel>
                             {allCourses.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {c.name}
+                                {getCourseName(c)}
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -214,6 +216,22 @@ export default function AddCourseToSchemaForm({
 
                       <FormControl>
                         <Input type="time" step="300" {...field} className="" />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="place"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plats</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
                       </FormControl>
 
                       <FormMessage />

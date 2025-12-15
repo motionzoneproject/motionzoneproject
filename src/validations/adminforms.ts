@@ -9,6 +9,8 @@ export const adminAddCourseToSchemaSchema = z
   .object({
     courseId: z.string().min(1),
 
+    place: z.string().optional(),
+
     timeStart: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
@@ -48,11 +50,21 @@ export const adminAddCourseSchema = z.object({
     .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
   // ------------------------------
   description: z.string(),
+  level: z.string().optional(),
+  minAge: z.coerce
+    .number()
+    .int("Ålder måste vara ett heltal.")
+    .nonnegative("Ålder måste vara noll eller ett positivt tal."),
+  maxAge: z.coerce
+    .number()
+    .int("Ålder måste vara ett heltal.")
+    .nonnegative("Ålder måste vara noll eller ett positivt tal."),
+  adult: z.coerce.boolean().optional(),
   teacherid: z.string().min(1),
 });
 
-export const adminHandleLessonSchema = z.object({
+export const adminLessonFormSchema = z.object({
   id: z.string().min(1),
-  message: z.string(),
-  cancelled: z.string(),
+  message: z.string().optional(),
+  cancelled: z.coerce.boolean().optional(),
 });
