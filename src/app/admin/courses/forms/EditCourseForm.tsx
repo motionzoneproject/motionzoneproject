@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Course } from "@/generated/prisma/client";
+import { editCourse } from "@/lib/actions/admin";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseSchema;
