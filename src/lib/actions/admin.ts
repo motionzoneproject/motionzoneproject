@@ -377,24 +377,17 @@ export async function editLessonItem(
       data: { message: validated.message, cancelled: validated.cancelled },
     });
 
-    if (validated.cancelled) {
-      // Remove all bookings:
-      const bookings = await prisma.booking.deleteMany({
-        where: { lessonId: validated.id },
-      });
+    const editBookings = await prisma.booking.updateMany({
+      where: { lessonId: validated.id },
+      data: { cancelled: validated.cancelled }, // Så när vi håller koll på prudukter, så räknar vi av de som är inställda, men så ser man ändå bokningarna som gjordes.
+    });
 
-      if (bookings && edit) {
-        return {
-          success: true,
-          msg: `Tillfället ${edit.id} uppdaterades. ${bookings.count} bokningar togs bort.`,
-        };
-      }
-    }
+    // fix: Maila ut till alla bokade kunder att det är inställt?
 
     if (edit) {
       return {
         success: true,
-        msg: `Tillfället ${edit.id} uppdaterades.`,
+        msg: `Tillfället ${edit.id} och ${editBookings.count} bokningar uppdaterades.`,
       };
     } else {
       return { success: false, msg: `${validated.id} not found.` };

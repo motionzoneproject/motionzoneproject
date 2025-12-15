@@ -32,7 +32,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
         <Button
           variant={"default"}
           className="bg-green-500 cursor-pointer mb-3"
-          disabled={lesson.cancelled}
+          // disabled={lesson.cancelled}
         >
           Närvaro
         </Button>

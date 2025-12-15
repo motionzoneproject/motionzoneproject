@@ -7,6 +7,7 @@ import type { Weekday } from "@/generated/prisma/enums";
 
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
+import { getCourseName } from "@/lib/tools";
 import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";
 
 interface Props {
@@ -53,7 +54,9 @@ export default async function SchemaDay({
                 <div>
                   {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
                   <br />
-                  <span className="font-bold">{itm.course.name}</span>
+                  <span className="font-bold">{getCourseName(itm.course)}</span>
+                  <br />
+                  <span className="font-bold">Plats: {itm.place}</span>
                 </div>
                 <div>
                   <DeleteSchemaItemBtn itemId={itm.id} />
