@@ -10,7 +10,7 @@ export function getCourseName(course: Course) {
         }${course.adult ? ` / Vuxen` : ""}`
       : course.adult
         ? "Vuxen" // Om minAge saknas, men adult är true
-        : null; // Om varken minAge eller adult är true
+        : ""; // Om varken minAge eller adult är true
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;

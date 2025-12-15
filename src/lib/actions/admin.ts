@@ -61,7 +61,9 @@ export async function getAllCourses(): Promise<CourseWithTeacher[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const courses = await prisma.course.findMany({ include: { teacher: true } });
+  const courses = await prisma.course.findMany({
+    include: { teacher: true },
+  });
   return courses;
 }
 
