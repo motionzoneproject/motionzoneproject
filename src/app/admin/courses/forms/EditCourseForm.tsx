@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addNewCourse } from "@/lib/actions/admin";
-import { useSession } from "@/lib/session-provider";
+import type { Course } from "@/generated/prisma/client";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseSchema;
@@ -38,19 +37,22 @@ const formSchema = adminAddCourseSchema;
 type CourseFormInput = z.input<typeof adminAddCourseSchema>;
 type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
-export default function AddCourseForm() {
-  const { user } = useSession();
+interface Props {
+  course: Course;
+}
+
+export default function EditCourseForm({ course }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      maxbookings: 0,
-      minAge: "",
-      maxAge: "",
-      level: "",
-      adult: false,
-      teacherid: user?.id, // fix: get the admins id?
+      name: course.name,
+      description: course.description,
+      maxbookings: course.maxBookings,
+      minAge: course.minAge,
+      maxAge: course.maxAge,
+      level: course.level ?? "",
+      adult: course.adult,
+      teacherid: course.teacherId, // fix: gör så man kan välja lärare.
     },
   });
 
@@ -71,7 +73,7 @@ export default function AddCourseForm() {
       values.maxbookings = 0;
     }
 
-    const res = await addNewCourse(values);
+    const res = await editCourse(course.id, values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -94,13 +96,14 @@ export default function AddCourseForm() {
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="bg-green-500 cursor-pointer">
-          Ny kurs
+          Ändra kursen
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Skapa en ny kurs</DialogTitle>
+
           <div className="w-full flex items-end bg-amber-200 text-black p-2 rounded">
             <Flag className="w-16 h-16 text-red-600" />{" "}
             <div className="font-bold">
@@ -305,7 +308,7 @@ export default function AddCourseForm() {
                 />
 
                 <Button type="submit" className="w-full">
-                  Skapa
+                  Ändra
                 </Button>
               </form>
             </Form>

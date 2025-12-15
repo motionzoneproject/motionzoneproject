@@ -98,7 +98,7 @@ export default function AddTerminForm() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Skapa en ny termin</DialogTitle>
           <DialogDescription>

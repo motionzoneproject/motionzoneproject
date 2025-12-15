@@ -9,7 +9,7 @@ export default function SearchInput() {
   const { replace } = useRouter();
 
   const params = new URLSearchParams(searchParams);
-  // Använd debouncing för att vänta 300ms innan sökningen körs
+  // Använd debouncing för att vänta 300ms innan sökningen körs. fix.
 
   const handleSearch = (term: string) => {
     if (term) {

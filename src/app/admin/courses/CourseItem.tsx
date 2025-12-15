@@ -1,12 +1,10 @@
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
   CourseWithTeacher,
   LessonWithBookings,
@@ -15,6 +13,7 @@ import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
 import LessonsBrowser from "./components/LessonsBrowser";
+import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
   course: CourseWithTeacher;
@@ -44,23 +43,26 @@ export default async function CourseItem({ course }: Props) {
             <CardTitle>
               <div>{getCourseName(course)}</div>
             </CardTitle>
-            <CardDescription>
-              Max antal bokningar:{" "}
-              {course.maxBookings === 0 ? "Ingen gräns" : course.maxBookings}
-            </CardDescription>
 
             <div className="p-2 flex gap-2">
-              <Button variant={"default"}>Ändra</Button>
+              <EditCourseForm course={course} />
               <DeleteCourseBtn courseId={course.id} />
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          <LessonsBrowser
-            lessonsWithBookings={lessonsWithBooking}
-            terminer={terminer}
-          />
+          <Accordion type="single" collapsible>
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Lektioner</AccordionTrigger>
+              <AccordionContent>
+                <LessonsBrowser
+                  lessonsWithBookings={lessonsWithBooking}
+                  terminer={terminer}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
     </div>

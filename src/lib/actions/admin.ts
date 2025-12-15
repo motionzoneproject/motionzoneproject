@@ -256,6 +256,47 @@ export async function addNewCourse(
   }
 }
 
+export async function editCourse(
+  id: string,
+  formData: z.output<typeof adminAddCourseSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddCourseSchema.parseAsync(formData);
+
+    const checkTeacherId = await prisma.user.findUnique({
+      where: { id: validated.teacherid },
+    });
+
+    if (!(checkTeacherId && checkTeacherId.role === "admin"))
+      throw new Error(
+        `A teacher with id ${validated.teacherid} was not found.`,
+      );
+
+    const newCourseItem = await prisma.course.update({
+      data: {
+        name: validated.name,
+        maxBookings: validated.maxbookings,
+        minAge: validated.minAge,
+        maxAge: validated.maxAge,
+        level: validated.level,
+        adult: validated.adult,
+        description: validated.description,
+        teacherId: validated.teacherid, // Om en lärare går in nu och ändrar en kurs, blir han lärare. fix.
+      },
+      where: { id: id },
+    });
+    return {
+      success: true,
+      msg: `Kursen ${newCourseItem.name} ändrades.`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
 async function createLessons(
   schemaItemId: string,
 ): Promise<{ success: boolean; msg: string }> {

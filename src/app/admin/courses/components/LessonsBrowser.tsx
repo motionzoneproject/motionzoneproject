@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -38,12 +31,6 @@ export default function LessonsBrowser({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Tillfällen</CardTitle>
-        <CardDescription>
-          Här kan du se och hantera alla tillfällen i kursen i en termin.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         <div className="md:flex gap-2 w-full">
           <div>
