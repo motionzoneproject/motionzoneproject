@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 
 const BookingForm = () => {
   const [formData, setFormData] = useState({
@@ -8,7 +8,7 @@ const BookingForm = () => {
     time: "",
   });
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
@@ -16,7 +16,7 @@ const BookingForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Here, you can send the data to your server or handle the submission logic
     console.log("Form submitted:", formData);
