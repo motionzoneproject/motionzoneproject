@@ -69,15 +69,6 @@ export const adminLessonFormSchema = z.object({
   cancelled: z.coerce.boolean().optional(),
 });
 
-// Så man
-const ProductCourseItemSchema = z.object({
-  courseId: z.string().min(1, "Kurs-ID måste anges."),
-  lessonsIncluded: z.coerce
-    .number()
-    .int()
-    .nonnegative("Antalet tillfällen får inte vara negativt."),
-});
-
 export const adminAddProductSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
@@ -87,7 +78,18 @@ export const adminAddProductSchema = z.object({
     .number()
     .int()
     .nonnegative("Antalet tillfällen får inte vara negativt."),
-  courses: z
-    .array(ProductCourseItemSchema)
-    .min(1, "Du måste koppla produkten till minst en kurs."),
+  // courses: z
+  // .array(AdminProductCourseItemSchema)
+  // .min(1, "Du måste koppla produkten till minst en kurs."),
+  // Bytt metod, men sparr detta ifall vi vill ha ett och samma formulär sen istället. Prioriterar att få det funka nu.
+});
+
+export const AdminProductCourseItemSchema = z.object({
+  productId: z.string().min(1),
+  isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
+  courseId: z.string().min(1, "Kurs-ID måste anges."),
+  lessonsIncluded: z.coerce
+    .number()
+    .int()
+    .nonnegative("Antalet tillfällen får inte vara negativt."),
 });

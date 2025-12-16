@@ -12,9 +12,10 @@ import type {
   Weekday,
 } from "@/generated/prisma/client";
 import {
+  AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
-  type adminAddProductSchema,
+  adminAddProductSchema,
   adminAddTerminSchema,
   adminLessonFormSchema,
 } from "@/validations/adminforms";
@@ -499,26 +500,164 @@ export async function addNewProduct(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // const validated = await adminAddProductSchema.parseAsync(formData);
-    console.log(JSON.stringify(formData));
+    const validated = await adminAddProductSchema.parseAsync(formData);
     // fix:
-    // const newCourseItem = await prisma.product.create({
-    //   data: {
-    //     name: validated.name,
-    //     maxBookings: validated.maxbookings,
-    //     minAge: validated.minAge,
-    //     maxAge: validated.maxAge,
-    //     level: validated.level,
-    //     adult: validated.adult,
-    //     description: validated.description,
-    //     teacherId: validated.teacherid,
-    //   },
-    // });
+    const newProd = await prisma.product.create({
+      data: {
+        name: validated.name,
+        description: validated.description,
+        price: validated.price,
+        useTotalCount: validated.clipcard,
+        totalCount: validated.clipCount,
+      },
+    });
     return {
       success: true,
-      msg: `Produkten skapades.`, // fix
+      msg: `Produkten ${newProd.name} skapades.`, // fix
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function editProduct(
+  id: string,
+  formData: z.output<typeof adminAddProductSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddProductSchema.parseAsync(formData);
+    // fix:
+    const newProd = await prisma.product.update({
+      where: { id },
+      data: {
+        name: validated.name,
+        description: validated.description,
+        price: validated.price,
+        useTotalCount: validated.clipcard,
+        totalCount: validated.clipCount,
+      },
+    });
+    return {
+      success: true,
+      msg: `Produkten ${newProd.name} ändrades.`, // fix
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function removeProduct(
+  id: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    // fix:
+    const remProd = await prisma.product.delete({
+      where: { id },
+    });
+    return {
+      success: true,
+      msg: `Produkten ${remProd.name} togs bort.`, // fix
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function addCourseToProduct(
+  formData: z.output<typeof AdminProductCourseItemSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await AdminProductCourseItemSchema.parseAsync(formData);
+
+    const isInProd = await isCourseInProduct(
+      formData.courseId,
+      formData.productId,
+    );
+    if (isInProd) {
+      await prisma.productOnCourse.update({
+        where: {
+          courseId_productId: {
+            courseId: validated.courseId,
+            productId: validated.productId,
+          },
+        },
+        data: {
+          lessonsIncluded: validated.lessonsIncluded,
+        },
+      });
+
+      return {
+        success: true,
+        msg: `Kursen ändrades i produkten.`, // fix
+      };
+    } else {
+      await prisma.productOnCourse.create({
+        data: {
+          productId: validated.productId,
+          courseId: validated.courseId,
+          lessonsIncluded: validated.lessonsIncluded,
+        },
+      });
+
+      return {
+        success: true,
+        msg: `Kursen lades in i produkten.`, // fix
+      };
+    }
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function removeCourseInProduct(
+  formData: z.output<typeof AdminProductCourseItemSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    await prisma.productOnCourse.delete({
+      where: {
+        courseId_productId: {
+          productId: formData.productId,
+          courseId: formData.courseId,
+        },
+      },
+    });
+    return {
+      success: true,
+      msg: `Kursen togs bort i produkten.`, // fix
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function isCourseInProduct(
+  courseId: string,
+  productId: string,
+): Promise<{ found: boolean; lessonsIncluded?: number }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { found: false };
+
+  try {
+    const found = await prisma.productOnCourse.findUnique({
+      where: { courseId_productId: { courseId, productId } },
+    });
+
+    if (found) return { found: true, lessonsIncluded: found.lessonsIncluded };
+    return { found: false };
+  } catch (e) {
+    console.error(e);
+    return { found: false };
   }
 }
