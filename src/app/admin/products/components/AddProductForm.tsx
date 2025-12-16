@@ -3,6 +3,7 @@
 /// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -31,7 +32,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewProduct } from "@/lib/actions/admin";
-
 import { adminAddProductSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddProductSchema;
@@ -39,12 +39,12 @@ const formSchema = adminAddProductSchema;
 type CourseFormInput = z.input<typeof formSchema>;
 type CourseFormOutput = z.output<typeof formSchema>;
 
-export default function AddCourseForm() {
+export default function AddProductForm() {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: false,
-      courses: [],
+      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: "",
       name: "",
       price: 0,
@@ -82,6 +82,9 @@ export default function AddCourseForm() {
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Skapa en ny produkt</DialogTitle>
+          <DialogDescription>
+            Kurser läggs in efter att produkten har skapats.
+          </DialogDescription>
         </DialogHeader>
 
         <Card>
@@ -110,7 +113,7 @@ export default function AddCourseForm() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Beskrivning av kursen</FormLabel>
+                      <FormLabel>Beskrivning av produkten</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
