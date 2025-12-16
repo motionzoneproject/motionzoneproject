@@ -4,7 +4,7 @@ import NavBarAuth from "./Navbar-auth";
 export default function NavBar() {
   return (
     <header className="w-full">
-      <nav className="flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
+      <nav className="md:flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
         <Link href="/">
           {/* <Image
             loading="eager"
@@ -17,7 +17,7 @@ export default function NavBar() {
           <span className="text-xl font-bold">MotionZone Växjö</span>
         </Link>
 
-        <ul className="flex space-x-6 text-sm">
+        <ul className="md:flex space-x-6 text-sm sm:inline-block">
           <li>
             <Link href="/" className="hover:text-cyan-400">
               Hem
@@ -40,7 +40,7 @@ export default function NavBar() {
           </li>
         </ul>
 
-        <div className="flex items-center space-x-4">
+        <div className="md:flex items-center space-x-4">
           <span className="text-sm">Svenska 🇸🇪</span>
           <Link href="/checkout" className="hover:text-cyan-400">
             <span className="text-sm">Varukorg 🛒</span>

@@ -146,6 +146,8 @@ model Termin {
 
   id String @id @default(uuid())
 
+  name String
+
   startDate DateTime // När startar terminen?
   endDate DateTime // När slutar den?
 
@@ -154,7 +156,8 @@ model Termin {
   products Product[] // Vilka produkter är kopplade till terminen. På omvägar här kan man se vilka kunder som köpt produkter kopplade till terminen, även deras kurser.
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
 
-  courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också!.
+  // Denna verkar hittils iaf inte vara nödvändig: fix
+  courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också. 
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -186,6 +189,8 @@ model SchemaItem {
 
     courseId String // Vilken kurs
     course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+    place String?
 
     maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
 
@@ -225,7 +230,13 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på!
+  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna?
+
+  level String? 
+
+  minAge Int?
+  maxAge Int?
+  adult Boolean @default(false)
 
   @@index([teacherId])
   // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
@@ -276,10 +287,10 @@ model Product {
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
-  useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
+  useTotalCount Boolean @default(false)// Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
   totalCount Int? // Totalt antal tillfällen att boka (om man använder den metoden)
 
-  price Decimal @db.Money
+  price Decimal @default(0) // Money
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
@@ -304,7 +315,6 @@ model ProductOnCourse {
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (0 om klippkort)
 
-
   @@id([courseId, productId])
   @@map("product_on_course")
 }
@@ -324,6 +334,7 @@ model Booking {
   purchaseItemId String // Koppla dit så det dras ett tillfälle från användarens köpta produkt.
   purchaseItem PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
 
+  cancelled Boolean @default(false)
 
   userId String
   user   User   @relation("StudentBookings", fields: [userId], references: [id]) // Kopplas till StudentBookings i user när bokning skapas.
@@ -421,7 +432,7 @@ model OrderItem {
   id String @id @default(uuid())
 
   count Int
-  price Decimal @db.Money
+  price Decimal 
 
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -445,7 +456,7 @@ model Order {
 
   orderItems OrderItem[]
 
-  totalPrice    Decimal @db.Money
+  totalPrice    Decimal 
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem
   user   User   @relation(fields: [userId], references: [id])

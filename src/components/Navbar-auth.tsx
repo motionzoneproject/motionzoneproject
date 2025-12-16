@@ -35,23 +35,21 @@ export default function NavBarAuth() {
             Logout
           </Button>
           {user && user.role === "admin" ? (
-            <Link href="/admin" className="hover:text-cyan-400 cursor-pointer">
-              <Button
-                className="ml-auto höver:bg-blue-200 hover:text-white cursor-pointer"
-                variant="outline"
-              >
-                Admin
-              </Button>
-            </Link>
+            <Button
+              className="ml-auto hover:bg-blue-200 hover:text-white cursor-pointer"
+              variant="secondary"
+              asChild
+            >
+              <Link href="/admin">Admin</Link>
+            </Button>
           ) : (
-            <Link href="/user" className="hover:text-cyan-400 cursor-pointer">
-              <Button
-                className="ml-auto höver:bg-blue-200 hover:text-white cursor-pointer"
-                variant="outline"
-              >
-                User
-              </Button>
-            </Link>
+            <Button
+              className="ml-auto hover:bg-blue-200 hover:text-white cursor-pointer"
+              variant="secondary"
+              asChild
+            >
+              <Link href="/user">User</Link>
+            </Button>
           )}
         </>
       ) : (

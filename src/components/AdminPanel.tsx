@@ -1,12 +1,17 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { isAdminRole } from "@/lib/actions/admin";
 
-export default function AdminPanel() {
+export default async function AdminPanel() {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return notFound(); // This stops all adminpages to be rendered since its on the layout for admin.
+
   return (
     <nav className="bg-white p-2 border-b-2 border-cyan-400">
-      <div className="flex items-center space-x-6">
+      <div className="md:flex items-center space-x-6">
         <span className="text-gray-900 text-sm font-bold">Admin:</span>
 
-        <ul className="flex space-x-4 text-sm">
+        <ul className="md:flex space-x-4 text-sm">
           <li>
             <Link
               href="/admin/start"
@@ -65,7 +70,7 @@ export default function AdminPanel() {
           </li>
           <li>
             <Link
-              href="/admin/schemas"
+              href="/admin/termin"
               className="text-gray-800 hover:text-gray-900"
             >
               Terminer / Scheman
