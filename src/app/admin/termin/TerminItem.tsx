@@ -1,4 +1,9 @@
-import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Card,
   CardContent,
@@ -6,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { type Termin, Weekday } from "@/generated/prisma/client";
 import {
   getAllCourses,
@@ -15,10 +19,21 @@ import {
 } from "@/lib/actions/admin";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import AddCourseToSchemaForm from "./forms/AddCourseToSchemaForm";
+import EditTerminForm from "./forms/EditTerminForm";
 import Schema from "./Schema";
 
 interface Props {
   termin: Termin;
+}
+
+function isTerminActive(termin: Termin): boolean {
+  const today = new Date();
+
+  const isAfterStart = today >= termin.startDate;
+
+  const isBeforeEnd = today <= termin.endDate;
+
+  return isAfterStart && isBeforeEnd;
 }
 
 export default async function TerminItem({ termin }: Props) {
@@ -32,7 +47,12 @@ export default async function TerminItem({ termin }: Props) {
         <CardHeader>
           <div className="w-full lg:flex md:justify-between md:items-start">
             <CardTitle>
-              <div>{termin.name}</div>
+              <div>
+                {termin.name}{" "}
+                <span className="font-bold">
+                  {isTerminActive(termin) && "(AKTIV)"}
+                </span>
+              </div>
             </CardTitle>
             <CardDescription>
               Start: {termin.startDate.toLocaleDateString()}
@@ -41,7 +61,7 @@ export default async function TerminItem({ termin }: Props) {
             </CardDescription>
 
             <div className="p-2 flex gap-2">
-              <Button variant={"default"}>Ändra</Button>
+              <EditTerminForm termin={termin} />
               <DeleteTerminBtn terminId={termin.id} />
             </div>
           </div>
@@ -55,7 +75,14 @@ export default async function TerminItem({ termin }: Props) {
           />
 
           <br />
-          <Schema schemaItems={schemaItems} />
+          <Accordion type="single" collapsible>
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Veckoschema</AccordionTrigger>
+              <AccordionContent>
+                <Schema schemaItems={schemaItems} />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
     </div>

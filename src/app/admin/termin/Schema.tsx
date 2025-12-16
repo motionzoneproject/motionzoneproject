@@ -11,21 +11,19 @@ export default function Schema({ schemaItems }: SchemaProps) {
   const weekdays = Object.keys(Weekday);
 
   return (
-    <Accordion type="single" className="p-2 border-2" collapsible>
-      <div>
-        <span className="font-bold">Veckoschema:</span>
-        <br />
-      </div>
-      {weekdays.map((day) => {
-        return (
-          <SchemaDay
-            schemaItems={schemaItems}
-            weekday={day as Weekday}
-            weekdayIndex={weekdays.indexOf(day)}
-            key={day}
-          ></SchemaDay>
-        );
-      })}
+    <Accordion type="single" className="p-2 border-2 rounded" collapsible>
+      {schemaItems.length === 0
+        ? "Inga kurser i veckoschemat."
+        : weekdays.map((day) => {
+            return (
+              <SchemaDay
+                schemaItems={schemaItems}
+                weekday={day as Weekday}
+                weekdayIndex={weekdays.indexOf(day)}
+                key={day}
+              ></SchemaDay>
+            );
+          })}
     </Accordion>
   );
 }

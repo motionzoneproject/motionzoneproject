@@ -315,7 +315,7 @@ export default function AddCourseForm() {
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button type="button" variant="secondary">
-              Close
+              Avbryt
             </Button>
           </DialogClose>
         </DialogFooter>

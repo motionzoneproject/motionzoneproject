@@ -27,7 +27,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { addNewTermin } from "@/lib/actions/admin";
+import type { Termin } from "@/generated/prisma/client";
+import { editTermin } from "@/lib/actions/admin";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddTerminSchema;
@@ -35,13 +36,17 @@ const formSchema = adminAddTerminSchema;
 type FormInput = z.input<typeof adminAddTerminSchema>;
 type FormOutput = z.output<typeof adminAddTerminSchema>;
 
-export default function AddTerminForm() {
+interface Props {
+  termin: Termin;
+}
+
+export default function EditTerminForm({ termin }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      startDate: "",
-      endDate: "",
+      name: termin.name,
+      startDate: termin.startDate,
+      endDate: termin.endDate,
     },
   });
 
@@ -54,7 +59,7 @@ export default function AddTerminForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewTermin(values);
+    const res = await editTermin(termin.id, values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -87,14 +92,14 @@ export default function AddTerminForm() {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
-          Ny termin
+        <Button variant={"default"} className="cursor-pointer">
+          Ändra termin
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Skapa en ny termin</DialogTitle>
+          <DialogTitle>Ändra terminen</DialogTitle>
           <DialogDescription>
             Ange terminens namn och vilka datum terminen har.
           </DialogDescription>

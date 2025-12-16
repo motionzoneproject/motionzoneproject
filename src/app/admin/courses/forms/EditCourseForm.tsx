@@ -96,7 +96,7 @@ export default function EditCourseForm({ course }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button variant={"default"} className="cursor-pointer">
           Ändra kursen
         </Button>
       </DialogTrigger>
@@ -319,7 +319,7 @@ export default function EditCourseForm({ course }: Props) {
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button type="button" variant="secondary">
-              Close
+              Avbryt
             </Button>
           </DialogClose>
         </DialogFooter>

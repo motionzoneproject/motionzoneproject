@@ -1,4 +1,10 @@
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Card,
   CardAction,
   CardContent,
@@ -42,7 +48,14 @@ export default function LessonItem({ lesson }: Props) {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <LessonItemForm lesson={lesson} />{" "}
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Hantera</AccordionTrigger>
+            <AccordionContent>
+              <LessonItemForm lesson={lesson} />{" "}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </CardContent>
       <CardFooter>
         {" "}

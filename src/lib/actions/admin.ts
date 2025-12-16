@@ -34,7 +34,9 @@ export async function getTermin(): Promise<Termin[]> {
 
   // Behövs mer säkerhet än såhär?
 
-  const terminer = await prisma.termin.findMany();
+  const terminer = await prisma.termin.findMany({
+    orderBy: { startDate: "asc" },
+  });
   return terminer;
 }
 
@@ -86,6 +88,33 @@ export async function addNewTermin(
     return {
       success: true,
       msg: `Terminen ${newSchemaItem.name} skapades.`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function editTermin(
+  id: string,
+  formData: z.infer<typeof adminAddTerminSchema>,
+) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddTerminSchema.parseAsync(formData);
+
+    const newSchemaItem = await prisma.termin.update({
+      data: {
+        name: validated.name,
+        startDate: new Date(validated.startDate), // fix: Validate first as date.
+        endDate: new Date(validated.endDate), // fix: Validate first as date.
+      },
+      where: { id },
+    });
+    return {
+      success: true,
+      msg: `Terminen ${newSchemaItem.name} ändrades.`,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };

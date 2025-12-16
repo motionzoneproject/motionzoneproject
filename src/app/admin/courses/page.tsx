@@ -26,8 +26,8 @@ export default async function Page({
           <div>
             <AddCourseForm />
           </div>
-          <br />
         </div>
+
         {allCourses
           .filter((c) =>
             getCourseName(c)

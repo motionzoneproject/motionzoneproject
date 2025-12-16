@@ -46,6 +46,7 @@ import type { Course, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
 import { getCourseName } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
+import { veckodagar } from "../SchemaDay";
 
 const formSchema = adminAddCourseToSchemaSchema;
 type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
@@ -178,9 +179,9 @@ export default function AddCourseToSchemaForm({
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Välj dag</SelectLabel>
-                            {weekdays.map((c) => (
+                            {weekdays.map((c, i) => (
                               <SelectItem key={c} value={c}>
-                                {c}
+                                {veckodagar[i]}
                               </SelectItem>
                             ))}
                           </SelectGroup>
