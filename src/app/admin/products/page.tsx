@@ -1,5 +1,6 @@
 import type { Product } from "@/generated/prisma/client";
 import { getAllProducts } from "@/lib/actions/admin";
+import AddProductForm from "./components/AddProductForm";
 import ProductItem from "./components/ProductItem";
 
 export default async function Page({
@@ -22,7 +23,9 @@ export default async function Page({
 
           <div>(filter)</div>
 
-          <div>{/* <AddProductForm /> */}</div>
+          <div>
+            <AddProductForm />
+          </div>
         </div>
         {allProducts
           .filter((p) => p.name.includes(query))

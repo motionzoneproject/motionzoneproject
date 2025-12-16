@@ -68,3 +68,22 @@ export const adminLessonFormSchema = z.object({
   message: z.string().optional(),
   cancelled: z.coerce.boolean().optional(),
 });
+
+// Så man
+const ProductCourseItemSchema = z.object({
+  courseId: z.string().min(1, "Kurs-ID måste anges."),
+  lessonsIncluded: z.coerce
+    .number()
+    .int()
+    .nonnegative("Antalet tillfällen får inte vara negativt."),
+});
+
+export const adminAddProductSchema = z.object({
+  name: z.string().min(1),
+  description: z.string(),
+  price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+  clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
+  courses: z
+    .array(ProductCourseItemSchema)
+    .min(1, "Du måste koppla produkten till minst en kurs."),
+});

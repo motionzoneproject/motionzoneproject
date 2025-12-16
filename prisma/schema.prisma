@@ -156,7 +156,8 @@ model Termin {
   products Product[] // Vilka produkter är kopplade till terminen. På omvägar här kan man se vilka kunder som köpt produkter kopplade till terminen, även deras kurser.
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
 
-  courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också!.
+  // Denna verkar hittils iaf inte vara nödvändig: fix
+  courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också. 
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -313,7 +314,6 @@ model ProductOnCourse {
   product  Product @relation(fields: [productId], references: [id])
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (0 om klippkort)
-
 
   @@id([courseId, productId])
   @@map("product_on_course")

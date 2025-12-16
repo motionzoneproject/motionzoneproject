@@ -1,5 +1,7 @@
 "use client";
 
+/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewCourse } from "@/lib/actions/admin";
-import { useSession } from "@/lib/session-provider";
+
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseSchema;
@@ -38,19 +40,9 @@ type CourseFormInput = z.input<typeof adminAddCourseSchema>;
 type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 export default function AddCourseForm() {
-  const { user } = useSession();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      maxbookings: 0,
-      minAge: "",
-      maxAge: "",
-      level: "",
-      adult: false,
-      teacherid: user?.id, // fix: get the admins id?
-    },
+    defaultValues: {},
   });
 
   const router = useRouter();

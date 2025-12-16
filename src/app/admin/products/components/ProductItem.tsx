@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/generated/prisma/client";
 import type { ProdCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
-import ProdCourseBrowser from "./ProdCourseBrowser";
+import { getCourseName } from "@/lib/tools";
 
 interface Props {
   product: Product;
@@ -45,7 +45,18 @@ export default async function ProductItem({ product }: Props) {
             <AccordionItem value="item-1">
               <AccordionTrigger>Kurser i produkten</AccordionTrigger>
               <AccordionContent>
-                <ProdCourseBrowser product={product} prodCourses={prodCourse} />
+                <Card>
+                  <CardContent>
+                    <div className="w-full bg-secondary p-2 border-2 rounded max-h-[80vh] overflow-auto">
+                      {prodCourse.map((pc) => (
+                        <div key={pc.courseId}>
+                          {getCourseName(pc.course)} - tillfällen:{" "}
+                          {pc.lessonsIncluded}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
