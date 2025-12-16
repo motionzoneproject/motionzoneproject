@@ -14,6 +14,7 @@ import type {
 import {
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
+  type adminAddProductSchema,
   adminAddTerminSchema,
   adminLessonFormSchema,
 } from "@/validations/adminforms";
@@ -490,3 +491,34 @@ export type ProdCourse = {
   productId: string;
   lessonsIncluded: number;
 };
+
+export async function addNewProduct(
+  formData: z.output<typeof adminAddProductSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    // const validated = await adminAddProductSchema.parseAsync(formData);
+    console.log(JSON.stringify(formData));
+    // fix:
+    // const newCourseItem = await prisma.product.create({
+    //   data: {
+    //     name: validated.name,
+    //     maxBookings: validated.maxbookings,
+    //     minAge: validated.minAge,
+    //     maxAge: validated.maxAge,
+    //     level: validated.level,
+    //     adult: validated.adult,
+    //     description: validated.description,
+    //     teacherId: validated.teacherid,
+    //   },
+    // });
+    return {
+      success: true,
+      msg: `Produkten skapades.`, // fix
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}

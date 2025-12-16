@@ -83,6 +83,10 @@ export const adminAddProductSchema = z.object({
   description: z.string(),
   price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
   clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
+  clipCount: z.coerce
+    .number()
+    .int()
+    .nonnegative("Antalet tillfällen får inte vara negativt."),
   courses: z
     .array(ProductCourseItemSchema)
     .min(1, "Du måste koppla produkten till minst en kurs."),
