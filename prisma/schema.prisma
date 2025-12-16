@@ -286,10 +286,10 @@ model Product {
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
-  useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
+  useTotalCount Boolean @default(false)// Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
   totalCount Int? // Totalt antal tillfällen att boka (om man använder den metoden)
 
-  price Decimal @db.Money
+  price Decimal @default(0) // Money
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
@@ -432,7 +432,7 @@ model OrderItem {
   id String @id @default(uuid())
 
   count Int
-  price Decimal @db.Money
+  price Decimal 
 
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -456,7 +456,7 @@ model Order {
 
   orderItems OrderItem[]
 
-  totalPrice    Decimal @db.Money
+  totalPrice    Decimal 
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem
   user   User   @relation(fields: [userId], references: [id])

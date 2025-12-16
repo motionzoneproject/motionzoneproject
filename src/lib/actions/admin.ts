@@ -6,6 +6,7 @@ import type {
   Booking,
   Course,
   Lesson,
+  Product,
   SchemaItem,
   Termin,
   Weekday,
@@ -468,3 +469,24 @@ export async function editLessonItem(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
+
+//ev, får se vad som behövs: export type ProductWithCourses = Product & { courses: Course[] };
+
+export type ProductWithNumberPrice = Omit<Product, "price"> & { price: number };
+
+export async function getAllProducts(): Promise<Product[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  const products = await prisma.product.findMany();
+
+  return products;
+}
+
+export type ProdCourse = {
+  course: Course;
+} & {
+  courseId: string;
+  productId: string;
+  lessonsIncluded: number;
+};
