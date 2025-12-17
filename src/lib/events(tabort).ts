@@ -1,5 +1,7 @@
+// Sparar denna bara för att lägga in i db sen. Duger för visning till kunden idag.
+
 // Default events that can be easily replaced with API calls
-export interface Event {
+export interface EventTempType {
   id?: string;
   number: string;
   title: string;
@@ -10,7 +12,7 @@ export interface Event {
   location: string;
 }
 
-export const DEFAULT_EVENTS: Event[] = [
+export const DEFAULT_EVENTS: EventTempType[] = [
   {
     id: "event-1",
     number: "1",
@@ -46,17 +48,19 @@ export const DEFAULT_EVENTS: Event[] = [
   },
 ];
 
-// This function will be replaced with actual API call to your backend
-export async function fetchEvents(): Promise<Event[]> {
-  try {
-    // TODO: Replace with actual API endpoint
-    // const response = await fetch('/api/events');
-    // return response.json();
+// Yes, look in server-action.ts!
 
-    // For now, return default events
-    return DEFAULT_EVENTS;
-  } catch (error) {
-    console.error("Failed to fetch events:", error);
-    return DEFAULT_EVENTS;
-  }
-}
+// // This function will be replaced with actual API call to your backend
+// export async function fetchEvents(): Promise<Event[]> {
+//   try {
+//     // TODO: Replace with actual API endpoint
+//     // const response = await fetch('/api/events');
+//     // return response.json();
+
+//     // For now, return default events
+//     return DEFAULT_EVENTS;
+//   } catch (error) {
+//     console.error("Failed to fetch events:", error);
+//     return DEFAULT_EVENTS;
+//   }
+// }

@@ -1,10 +1,10 @@
 "use client";
 
 interface FeaturesProps {
-  isDark: boolean;
+  isDark?: boolean;
 }
 
-export default function Features({ isDark }: FeaturesProps) {
+export default function Features({ isDark = false }: FeaturesProps) {
   return (
     <section
       id="varfor"

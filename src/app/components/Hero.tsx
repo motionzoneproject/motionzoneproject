@@ -3,10 +3,10 @@
 import Image from "next/image";
 
 interface HeroProps {
-  isDark: boolean;
+  isDark?: boolean;
 }
 
-export default function Hero({ isDark }: HeroProps) {
+export default function Hero({ isDark = false }: HeroProps) {
   return (
     <section
       className={`text-white py-24 md:py-36 relative overflow-hidden transition-colors duration-300 ${
@@ -85,17 +85,12 @@ export default function Hero({ isDark }: HeroProps) {
           </div>
 
           <div className="flex justify-center order-1 lg:order-2">
-            <div
-              className="w-full max-w-md aspect-square rounded-3xl border-2 overflow-hidden"
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(30, 41, 59, 0.5)"
-                  : "rgba(229, 231, 235, 0.8)",
-              }}
-            >
+            <div className="w-full max-w-md aspect-square rounded-3xl border-2 overflow-hidden">
               <Image
                 src="/LOGO.jpg"
                 alt="Motion Zone Hero"
+                width={500}
+                height={500}
                 className="w-full h-full object-cover"
               />
             </div>

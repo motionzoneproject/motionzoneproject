@@ -1,10 +1,10 @@
 "use client";
 
 interface ContactProps {
-  isDark: boolean;
+  isDark?: boolean;
 }
 
-export default function Contact({ isDark }: ContactProps) {
+export default function Contact({ isDark = false }: ContactProps) {
   return (
     <section
       id="kontakt"

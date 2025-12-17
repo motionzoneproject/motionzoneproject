@@ -1,15 +1,17 @@
 "use client";
 
+// import { Event } from "@/generated/prisma/client"; såhär ska det vara sen (hämtas från prisma)
 import { Calendar, Clock, DollarSign, MapPin, Music } from "lucide-react";
 import { useState } from "react";
-import type { Event } from "@/lib/events";
+import type { EventTempType } from "@/lib/events(tabort)";
 
 interface EventsProps {
-  isDark: boolean;
-  events: Event[];
+  isDark?: boolean;
+  // events: Event[]; såhär ska det vara sen (hämtas från prisma)
+  events: EventTempType[];
 }
 
-export default function Events({ isDark, events }: EventsProps) {
+export default function Events({ isDark = false, events }: EventsProps) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
 
   const nextEvent = () => {

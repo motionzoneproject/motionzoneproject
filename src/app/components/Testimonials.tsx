@@ -3,10 +3,10 @@
 import { Quote } from "lucide-react";
 
 interface TestimonialsProps {
-  isDark: boolean;
+  isDark?: boolean;
 }
 
-export default function Testimonials({ isDark }: TestimonialsProps) {
+export default function Testimonials({ isDark = false }: TestimonialsProps) {
   return (
     <section
       id="testimonials"

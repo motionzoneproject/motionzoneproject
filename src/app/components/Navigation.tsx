@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Detta kommer vi ta bort sen helst, så lite clients som möjligt!
 
 import { Globe, Menu, Moon, Sun, X } from "lucide-react";
 import Image from "next/image";
@@ -10,7 +10,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ isDark, setIsDark }: NavigationProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // Låter detta vara kvar nu.
 
   return (
     <header
@@ -25,6 +25,8 @@ export default function Navigation({ isDark, setIsDark }: NavigationProps) {
           <Image
             src="/LogoGirl.png"
             alt="Motion Zone Logo"
+            width={16}
+            height={16}
             className="h-16 w-16 object-contain"
           />
           <div className="text-4xl md:text-4xl font-bold tracking-tight cursor-pointer transition-all duration-300 hover:opacity-80">
