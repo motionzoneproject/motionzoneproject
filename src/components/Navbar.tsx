@@ -1,4 +1,4 @@
-"use client";
+"use client"; // fix: Can we do this without using client?
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
