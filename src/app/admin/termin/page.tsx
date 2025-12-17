@@ -23,7 +23,7 @@ export default async function Page({
   return (
     <div>
       <div className="w-full md:grid md:grid-cols-2 gap-2 p-2">
-        <div className="col-span-2 flex gap-2">
+        <div className="col-span-2 flex gap-2 items-center">
           <div>
             <span className="font-bold text-2xl">
               Terminer och veckoscheman
