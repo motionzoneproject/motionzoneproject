@@ -36,6 +36,8 @@ export default async function CourseItem({ course }: Props) {
     where: { schemaItems: { some: { courseId: course.id } } },
   });
 
+  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+
   const counts = await countOrderItemsAndProductsCourse(course.id);
 
   return (
@@ -48,7 +50,7 @@ export default async function CourseItem({ course }: Props) {
             </CardTitle>
 
             <div className="p-2 flex gap-2">
-              <EditCourseForm course={course} />
+              <EditCourseForm teachers={teachers} course={course} />
               <DeleteCourseBtn courseId={course.id} />
             </div>
           </div>
