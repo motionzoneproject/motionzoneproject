@@ -298,6 +298,8 @@ model Product {
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
 
+  maxCustomer Int @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
+
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 

@@ -175,7 +175,9 @@ export default function AddProductForm() {
                   name="clipCount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Antal bokningar (klippkort):</FormLabel>
+                      <FormLabel>
+                        Antal bokningar (för klippkort, 0 = obegränsat)
+                      </FormLabel>
 
                       <FormControl>
                         <Input
