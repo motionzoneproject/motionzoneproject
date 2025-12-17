@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface HeroProps {
   isDark: boolean;
 }
@@ -91,7 +93,7 @@ export default function Hero({ isDark }: HeroProps) {
                   : "rgba(229, 231, 235, 0.8)",
               }}
             >
-              <img
+              <Image
                 src="/LOGO.jpg"
                 alt="Motion Zone Hero"
                 className="w-full h-full object-cover"

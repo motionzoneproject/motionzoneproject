@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe, Menu, Moon, Sun, X } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 interface NavigationProps {
@@ -21,7 +22,7 @@ export default function Navigation({ isDark, setIsDark }: NavigationProps) {
     >
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8 py-6">
         <div className="flex items-center gap-4">
-          <img
+          <Image
             src="/LogoGirl.png"
             alt="Motion Zone Logo"
             className="h-16 w-16 object-contain"
