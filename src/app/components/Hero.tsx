@@ -6,7 +6,7 @@ interface HeroProps {
   isDark?: boolean;
 }
 
-export default function Hero({ isDark = false }: HeroProps) {
+export default function Hero({ isDark = true }: HeroProps) {
   return (
     <section
       className={`text-white py-24 md:py-36 relative overflow-hidden transition-colors duration-300 ${

@@ -2,7 +2,6 @@ import Footer from "@/components/Footer";
 // import { Event } from "@/generated/prisma/client"; såhär löser vi det sen.
 // import { getEvents } from "@/lib/actions/server-actions";
 import { DEFAULT_EVENTS } from "@/lib/events(tabort)";
-import Contact from "./components/Contact";
 import Events from "./components/Events";
 import Features from "./components/Features";
 import Hero from "./components/Hero";
@@ -17,8 +16,6 @@ export default async function Page() {
       <Events events={DEFAULT_EVENTS} />
       <Features />
       <Testimonials />
-      <Contact />
-      <Footer />
     </div>
   );
 }

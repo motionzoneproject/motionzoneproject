@@ -4,7 +4,7 @@ interface FeaturesProps {
   isDark?: boolean;
 }
 
-export default function Features({ isDark = false }: FeaturesProps) {
+export default function Features({ isDark = true }: FeaturesProps) {
   return (
     <section
       id="varfor"

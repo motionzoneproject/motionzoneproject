@@ -11,7 +11,7 @@ interface EventsProps {
   events: EventTempType[];
 }
 
-export default function Events({ isDark = false, events }: EventsProps) {
+export default function Events({ isDark = true, events }: EventsProps) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
 
   const nextEvent = () => {
@@ -134,8 +134,8 @@ export default function Events({ isDark = false, events }: EventsProps) {
                   index === currentEventIndex
                     ? "w-8 bg-linear-to-r from-pink-500 to-orange-400"
                     : isDark
-                      ? "w-3 bg-gray-600 hover:bg-gray-500"
-                      : "w-3 bg-gray-400 hover:bg-gray-500"
+                    ? "w-3 bg-gray-600 hover:bg-gray-500"
+                    : "w-3 bg-gray-400 hover:bg-gray-500"
                 }`}
               ></button>
             ))}

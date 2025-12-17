@@ -175,17 +175,17 @@ export const translations = {
   },
 };
 
-export function getTranslation(language: Language, key: string): string {
-  const keys = key.split(".");
-  let value: Record<string, unknown> | unknown = translations[language];
+// export function getTranslation(language: Language, key: string): string {
+//   const keys = key.split(".");
+//   let value: Record<string, unknown> | unknown = translations[language];
 
-  for (const k of keys) {
-    value = value?.[k];
-  }
+//   for (const k of keys) {
+//     value = value?.[k];
+//   }
 
-  return value || key;
-}
+//   return value || key;
+// }
 
-export function useTranslation(language: Language) {
-  return (key: string) => getTranslation(language, key);
-}
+// export function useTranslation(language: Language) {
+//   return (key: string) => getTranslation(language, key);
+// }
