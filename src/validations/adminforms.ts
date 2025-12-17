@@ -46,9 +46,12 @@ export const adminAddCourseSchema = z.object({
   name: z.string().min(3),
   maxbookings: z.coerce
     .number()
+    .int("Antal bokningar måste vara ett heltal.")
+    .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
+  maxCustomers: z.coerce
+    .number()
     .int("Antal platser måste vara ett heltal.")
     .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
-  // ------------------------------
   description: z.string(),
   level: z.string().optional(),
   minAge: z.coerce
@@ -72,6 +75,7 @@ export const adminLessonFormSchema = z.object({
 export const adminAddProductSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
+  maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
   price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
   clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
   clipCount: z.coerce

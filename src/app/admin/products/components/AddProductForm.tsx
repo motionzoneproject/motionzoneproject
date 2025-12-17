@@ -49,6 +49,7 @@ export default function AddProductForm() {
       name: "",
       price: 0,
       clipCount: 0,
+      maxCustomers: 0,
     },
   });
 
@@ -136,6 +137,30 @@ export default function AddProductForm() {
                           type="number"
                           min="0"
                           step="0.01"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)

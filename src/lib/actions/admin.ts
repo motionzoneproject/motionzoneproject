@@ -272,6 +272,7 @@ export async function addNewCourse(
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
+        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -312,6 +313,7 @@ export async function editCourse(
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
+        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -508,6 +510,7 @@ export async function addNewProduct(
         name: validated.name,
         description: validated.description,
         price: validated.price,
+        maxCustomer: validated.maxCustomers,
         useTotalCount: validated.clipcard,
         totalCount: validated.clipCount,
       },
@@ -538,6 +541,7 @@ export async function editProduct(
         description: validated.description,
         price: validated.price,
         useTotalCount: validated.clipcard,
+        maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,
       },
     });
@@ -658,6 +662,44 @@ export async function isCourseInProduct(
 
     if (found) return { found: true, lessonsIncluded: found.lessonsIncluded };
     return { found: false };
+  } catch (e) {
+    console.error(e);
+    return { found: false };
+  }
+}
+
+export async function countOrderItems(
+  productId: string,
+): Promise<{ found: boolean; count?: number }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { found: false };
+  try {
+    const count = await prisma.orderItem.count({
+      where: { productId: productId },
+    });
+    // Vi returnerar success: true även om count är 0
+    return { found: true, count };
+  } catch (e) {
+    console.error(e);
+    return { found: false, count: 0 };
+  }
+}
+
+export async function countOrderItemsAndProductsCourse(
+  courseId: string,
+): Promise<{ found: boolean; count?: number; countProd?: number }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { found: false };
+  try {
+    const count = await prisma.orderItem.count({
+      where: { product: { courses: { some: { courseId } } } },
+    });
+
+    const countProd = await prisma.product.count({
+      where: { courses: { some: { courseId } } },
+    });
+    // Vi returnerar success: true även om count är 0
+    return { found: true, count, countProd };
   } catch (e) {
     console.error(e);
     return { found: false };

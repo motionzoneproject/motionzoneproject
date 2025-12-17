@@ -5,9 +5,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type {
-  CourseWithTeacher,
-  LessonWithBookings,
+import {
+  type CourseWithTeacher,
+  countOrderItemsAndProductsCourse,
+  type LessonWithBookings,
 } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
@@ -35,6 +36,8 @@ export default async function CourseItem({ course }: Props) {
     where: { schemaItems: { some: { courseId: course.id } } },
   });
 
+  const counts = await countOrderItemsAndProductsCourse(course.id);
+
   return (
     <div className="p-2 ">
       <Card>
@@ -52,6 +55,18 @@ export default async function CourseItem({ course }: Props) {
         </CardHeader>
 
         <CardContent>
+          <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
+            <div>
+              <span className="font-bold">Kunder:</span> {counts.count ?? 0} /{" "}
+              {course.maxCustomer > 0 ? course.maxCustomer : "Obegränsat"}
+            </div>
+
+            <div>
+              <span className="font-bold">Produkter:</span>{" "}
+              {counts.countProd ?? 0} st
+            </div>
+          </div>
+
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>Lektioner</AccordionTrigger>

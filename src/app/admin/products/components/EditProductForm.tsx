@@ -46,6 +46,7 @@ interface Props {
   name: string;
   price: number;
   clipCount: number;
+  maxCustomers: number;
 }
 
 export default function EditProductForm({
@@ -55,6 +56,7 @@ export default function EditProductForm({
   description,
   name,
   price,
+  maxCustomers,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -65,6 +67,7 @@ export default function EditProductForm({
       name: name,
       price: price,
       clipCount: clipCount,
+      maxCustomers: maxCustomers,
     },
   });
 
@@ -152,6 +155,30 @@ export default function EditProductForm({
                           type="number"
                           min="0"
                           step="0.01"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)

@@ -50,7 +50,8 @@ export default function AddCourseForm() {
       maxAge: "",
       level: "",
       adult: false,
-      teacherid: user?.id, // fix: get the admins id?
+      teacherid: user?.id,
+      maxCustomers: 0,
     },
   });
 
@@ -86,9 +87,6 @@ export default function AddCourseForm() {
 
   const maxAgeValue = form.watch("maxAge");
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
-
-  const maxBookValue = form.watch("maxbookings");
-  const maxBookTrim: string = String(maxBookValue ?? "").trim();
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -156,14 +154,32 @@ export default function AddCourseForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Max bokningar per tillfälle
-                        {((form.watch("maxbookings") as number) <= 0 ||
-                          maxBookTrim === "") && (
-                          <div className="text-yellow-800">
-                            (ingen gräns är satt)
-                          </div>
-                        )}
+                        Max bokningar per tillfälle (0 = obegränsat)
                       </FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max kunder (0=obegränsat).</FormLabel>
 
                       <FormControl>
                         <Input
@@ -226,7 +242,7 @@ export default function AddCourseForm() {
                         {(form.watch("maxAge") as number) <= 0 ||
                         maxAgeTrim === "" ? (
                           <div className="text-yellow-800">
-                            (ingen minsta ålder är satt)
+                            (ingen högsta ålder är satt)
                           </div>
                         ) : (
                           ""
