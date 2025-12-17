@@ -4,13 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Termin, Weekday } from "@/generated/prisma/client";
 import {
   getAllCourses,
@@ -54,13 +48,14 @@ export default async function TerminItem({ termin }: Props) {
                 </span>
               </div>
             </CardTitle>
-            <CardDescription>
-              Start: {termin.startDate.toLocaleDateString()}
-              <br />
-              Slut: {termin.endDate.toLocaleDateString()}
-            </CardDescription>
 
             <div className="p-2 flex gap-2">
+              {/* fix: card-action istället? */}
+              <AddCourseToSchemaForm
+                weekdays={Object.keys(Weekday)}
+                allCourses={allCourses}
+                termin={termin}
+              />
               <EditTerminForm termin={termin} />
               <DeleteTerminBtn terminId={termin.id} />
             </div>
@@ -68,11 +63,20 @@ export default async function TerminItem({ termin }: Props) {
         </CardHeader>
 
         <CardContent>
-          <AddCourseToSchemaForm
-            weekdays={Object.keys(Weekday)}
-            allCourses={allCourses}
-            termin={termin}
-          />
+          <div className="grid grid-cols-2 gap-2 rounded bg-accent">
+            <div className="p-2">
+              <span className="font-bold">
+                {termin.startDate.toLocaleDateString()}
+              </span>
+              <br />-{" "}
+              <span className="font-bold">
+                {termin.endDate.toLocaleDateString()}
+              </span>
+            </div>
+            <div className="p-2">
+              Totalt antal kunder: 0 {/* fix */} (fix: bättre statistik här)
+            </div>
+          </div>
 
           <br />
           <Accordion type="single" collapsible>
