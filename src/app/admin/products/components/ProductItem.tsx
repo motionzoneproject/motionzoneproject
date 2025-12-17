@@ -6,7 +6,11 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/generated/prisma/client";
-import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
+import {
+  countOrderItems,
+  getAllCourses,
+  type ProdCourse,
+} from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
@@ -44,6 +48,7 @@ export default async function ProductItem({ product }: Props) {
                 productCourses={prodCourse}
               ></AddCoursesToProductForm>
               <EditProductForm
+                maxCustomers={product.maxCustomer}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}
                 clipcard={product.useTotalCount}
@@ -81,7 +86,9 @@ export default async function ProductItem({ product }: Props) {
               {product.price.toNumber()}kr
             </div>
             <div>
-              <span className="font-bold">Antal kunder:</span> 0st {/*fix:*/}
+              <span className="font-bold">Platser:</span>{" "}
+              {(await countOrderItems(product.id)).count ?? 0} /{" "}
+              {product.maxCustomer > 0 ? product.maxCustomer : "Obegränsat"}
             </div>
           </div>
 

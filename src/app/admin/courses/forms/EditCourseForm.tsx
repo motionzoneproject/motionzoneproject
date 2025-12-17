@@ -54,6 +54,7 @@ export default function EditCourseForm({ course }: Props) {
       level: course.level ?? "",
       adult: course.adult,
       teacherid: course.teacherId, // fix: gör så man kan välja lärare.
+      maxCustomers: course.maxBookings,
     },
   });
 
@@ -168,6 +169,30 @@ export default function EditCourseForm({ course }: Props) {
                           </div>
                         )}
                       </FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max kunder (0=obegränsat).</FormLabel>
 
                       <FormControl>
                         <Input
