@@ -1,3 +1,4 @@
+import { Calendar } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -63,18 +64,29 @@ export default async function TerminItem({ termin }: Props) {
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-2 gap-2 rounded bg-accent">
-            <div className="p-2">
-              <span className="font-bold">
-                {termin.startDate.toLocaleDateString()}
-              </span>
-              <br />-{" "}
-              <span className="font-bold">
-                {termin.endDate.toLocaleDateString()}
-              </span>
+          <div className="grid grid-cols-2 gap-2 rounded ">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center justify-center bg-white border rounded-md p-2 shadow-sm min-w-[100px]">
+                <span className="text-[10px] uppercase text-muted-foreground font-bold">
+                  <Calendar className="inline-block" /> Start
+                </span>
+                <span className="text-sm font-bold">
+                  {termin.startDate.toLocaleDateString()}
+                </span>
+              </div>
+              <div className="h-px w-4 bg-gray-300" />{" "}
+              {/* En liten horisontell linje emellan */}
+              <div className="flex flex-col items-center justify-center bg-white border rounded-md p-2 shadow-sm min-w-[100px]">
+                <span className="text-[10px] uppercase text-muted-foreground font-bold">
+                  <Calendar className="inline-block" /> Slut
+                </span>
+                <span className="text-sm font-bold">
+                  {termin.endDate.toLocaleDateString()}
+                </span>
+              </div>
             </div>
-            <div className="p-2">
-              Totalt antal kunder: 0 {/* fix */} (fix: bättre statistik här)
+            <div className="p-2 text-muted-foreground">
+              (statistik kommer...)
             </div>
           </div>
 

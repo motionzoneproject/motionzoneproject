@@ -68,6 +68,7 @@ export async function getAllCourses(): Promise<CourseWithTeacher[]> {
 
   const courses = await prisma.course.findMany({
     include: { teacher: true },
+    orderBy: { name: "asc" },
   });
   return courses;
 }
@@ -480,7 +481,7 @@ export async function getAllProducts(): Promise<Product[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const products = await prisma.product.findMany();
+  const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
 
   return products;
 }
@@ -575,47 +576,48 @@ export async function addCourseToProduct(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
-  try {
-    const validated = await AdminProductCourseItemSchema.parseAsync(formData);
+  // try {
+  const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
-    const isInProd = await isCourseInProduct(
-      formData.courseId,
-      formData.productId,
-    );
-    if (isInProd) {
-      await prisma.productOnCourse.update({
-        where: {
-          courseId_productId: {
-            courseId: validated.courseId,
-            productId: validated.productId,
-          },
-        },
-        data: {
-          lessonsIncluded: validated.lessonsIncluded,
-        },
-      });
+  const isInProd = await isCourseInProduct(
+    formData.courseId,
+    formData.productId,
+  );
 
-      return {
-        success: true,
-        msg: `Kursen ändrades i produkten.`, // fix
-      };
-    } else {
-      await prisma.productOnCourse.create({
-        data: {
-          productId: validated.productId,
+  if (isInProd.found) {
+    await prisma.productOnCourse.update({
+      where: {
+        courseId_productId: {
           courseId: validated.courseId,
-          lessonsIncluded: validated.lessonsIncluded,
+          productId: validated.productId,
         },
-      });
+      },
+      data: {
+        lessonsIncluded: validated.lessonsIncluded,
+      },
+    });
 
-      return {
-        success: true,
-        msg: `Kursen lades in i produkten.`, // fix
-      };
-    }
-  } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    return {
+      success: true,
+      msg: `Kursen ändrades i produkten.`, // fix
+    };
+  } else {
+    await prisma.productOnCourse.create({
+      data: {
+        productId: validated.productId,
+        courseId: validated.courseId,
+        lessonsIncluded: validated.lessonsIncluded,
+      },
+    });
+
+    return {
+      success: true,
+      msg: `Kursen lades in i produkten.`, // fix
+    };
   }
+  // } catch (e) {
+  //   return { success: false, msg: JSON.stringify(e) };
+  // }
 }
 
 export async function removeCourseInProduct(
