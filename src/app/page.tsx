@@ -1,4 +1,3 @@
-import Footer from "@/components/Footer";
 // import { Event } from "@/generated/prisma/client"; såhär löser vi det sen.
 // import { getEvents } from "@/lib/actions/server-actions";
 import { DEFAULT_EVENTS } from "@/lib/events(tabort)";
