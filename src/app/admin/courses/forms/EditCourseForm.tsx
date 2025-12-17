@@ -28,8 +28,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, User } from "@/generated/prisma/client";
 import { editCourse } from "@/lib/actions/admin";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
@@ -40,9 +49,10 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   course: Course;
+  teachers: User[];
 }
 
-export default function EditCourseForm({ course }: Props) {
+export default function EditCourseForm({ course, teachers }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -321,12 +331,32 @@ export default function EditCourseForm({ course }: Props) {
                   control={form.control}
                   name="teacherid"
                   render={({ field }) => (
-                    <FormItem className="hidden">
+                    <FormItem>
                       <FormLabel>Lärare:</FormLabel>
 
-                      <FormControl>
-                        <Input {...field} readOnly />
-                      </FormControl>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj lärare" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj lärare</SelectLabel>
+                            {teachers.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
 
                       <FormMessage />
                     </FormItem>
