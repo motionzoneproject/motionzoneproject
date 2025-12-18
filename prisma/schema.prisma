@@ -31,6 +31,9 @@ model User {
   orders          Order[] // För att visa orderdatan.
   purchases       Purchase[] // Här är de produkter som användaren köpt, med all info som vilka bokningar som gjorts och hur många tillfällen som använts.
 
+  // Order status audit events authored by this user (e.g., admin/teacher)
+  orderStatusEvents OrderStatusEvent[]
+
 
   teachingCourses Course[] @relation("TeacherCourses") // är lärare på dessa kurser
   teachingLessons Lesson[] @relation("TeacherLessons") // är lärare på dessa tillfällen.
@@ -465,6 +468,10 @@ model Order {
 
   purchases  Purchase[]
 
+  // Order status lifecycle
+  status OrderStatus @default(PENDING_PAYMENT)
+  statusEvents OrderStatusEvent[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
@@ -487,6 +494,37 @@ model Event {
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
+}
+
+// Enum for order lifecycle states
+enum OrderStatus {
+  CREATED
+  PENDING_PAYMENT
+  AWAITING_APPROVAL
+  PAID
+  APPROVED
+}
+
+// Audit trail for order status changes
+model OrderStatusEvent {
+  id String @id @default(uuid())
+
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+
+  changedByUserId String
+  changedBy       User   @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  note String?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([changedByUserId])
+  @@map("order_status_event")
 }
 
 

@@ -46,6 +46,14 @@ export default async function AdminPanel() {
           </li>
           <li>
             <Link
+              href="/admin/orders"
+              className="text-gray-800 hover:text-gray-900"
+            >
+              Ordrar
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/admin/events"
               className="text-gray-800 hover:text-gray-900"
             >

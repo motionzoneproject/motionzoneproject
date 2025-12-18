@@ -1,0 +1,8 @@
+feat: implement order management system with admin functionalities:
+
+- Orders list refreshes automatically after actions: Approve and Mark Paid update the list without manual reload.
+- Status tabs with URL filters: Switch between All, Pending Payment (default), Awaiting Approval, Approved, and Paid. The current tab is reflected in the URL.
+- Reliable order details page: View opens a dedicated page that consistently loads the order, its line items, totals, and the status change history.
+- Status lifecycle is fully supported: Created → Pending Payment → Awaiting Approval → Approved/Paid, and each change is recorded in the history.
+- Smooth actions UX: Approve/Mark Paid buttons show a loading state and are disabled while submitting to prevent duplicate clicks.
+- Always-fresh data: Admin orders pages are rendered per request (no cache), so filters and details always show the latest database state.
