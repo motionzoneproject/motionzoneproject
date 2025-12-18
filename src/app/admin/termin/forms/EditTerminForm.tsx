@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Termin } from "@/generated/prisma/client";
-import { editTermin } from "@/lib/actions/admin";
+import { checkTerminDateChange, editTermin } from "@/lib/actions/admin";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddTerminSchema;
@@ -59,6 +59,22 @@ export default function EditTerminForm({ termin }: Props) {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    const check = await checkTerminDateChange(
+      termin.id,
+      values.startDate,
+      values.endDate,
+    );
+
+    if (check.count > 0) {
+      const confirm = window.confirm(
+        `Varning: ${check.count} bokningar ligger utanför de nya datumen. ` +
+          `Dessa kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
+      );
+      if (!confirm) return;
+    }
+
+    // 2. Kör den vanliga editTermin om man godkänt
+
     const res = await editTermin(termin.id, values);
     if (res.success) {
       toast.success(res.msg);

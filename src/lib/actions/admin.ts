@@ -101,6 +101,26 @@ export async function addNewTermin(
   }
 }
 
+export async function checkTerminDateChange(
+  terminId: string,
+  newStart: Date,
+  newEnd: Date,
+) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { count: 0 };
+
+  const affectedBookings = await prisma.booking.count({
+    where: {
+      lesson: {
+        terminId: terminId,
+        OR: [{ startTime: { lt: newStart } }, { startTime: { gt: newEnd } }],
+      },
+    },
+  });
+
+  return { count: affectedBookings };
+}
+
 export async function editTermin(
   id: string,
   formData: z.infer<typeof adminAddTerminSchema>,
@@ -110,21 +130,133 @@ export async function editTermin(
 
   try {
     const validated = await adminAddTerminSchema.parseAsync(formData);
+    const newStartDate = new Date(validated.startDate);
+    const newEndDate = new Date(validated.endDate);
 
-    const newSchemaItem = await prisma.termin.update({
-      data: {
-        name: validated.name,
-        startDate: new Date(validated.startDate), // fix: Validate first as date.
-        endDate: new Date(validated.endDate), // fix: Validate first as date.
-      },
-      where: { id },
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Uppdatera själva terminen
+      const updatedTermin = await tx.termin.update({
+        where: { id },
+        data: {
+          name: validated.name,
+          startDate: newStartDate,
+          endDate: newEndDate,
+        },
+      });
+
+      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning)
+      const affectedBookings = await tx.booking.findMany({
+        where: {
+          lesson: {
+            terminId: id,
+            OR: [
+              { startTime: { lt: newStartDate } },
+              { startTime: { gt: newEndDate } },
+            ],
+          },
+        },
+        select: { id: true, purchaseItemId: true },
+      });
+
+      // Ge tillbaka klipp till alla drabbade elever
+      for (const booking of affectedBookings) {
+        await tx.purchaseItem.update({
+          where: { id: booking.purchaseItemId },
+          data: { remainingCount: { increment: 1 } },
+        });
+      }
+
+      // 3. Hämta alla mallar (schemaItems) för att synka lektioner
+      const schemaItems = await tx.schemaItem.findMany({
+        where: { terminId: id },
+        include: {
+          course: true,
+          Lessons: true, // Se till att detta matchar ditt relationsnamn (Lessons/Lesson)
+        },
+      });
+
+      // 4. Städa bort lektioner som nu ligger utanför intervallet
+      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan)
+      await tx.lesson.deleteMany({
+        where: {
+          terminId: id,
+          OR: [
+            { startTime: { lt: newStartDate } },
+            { startTime: { gt: newEndDate } },
+          ],
+        },
+      });
+
+      // 5. Skapa nya lektioner för de datum som tillkommit
+      const WEEKDAY_MAP: Record<string, number> = {
+        MONDAY: 1,
+        TUESDAY: 2,
+        WEDNESDAY: 3,
+        THURSDAY: 4,
+        FRIDAY: 5,
+        SATURDAY: 6,
+        SUNDAY: 0,
+      };
+
+      const lessonsToCreate = [];
+
+      for (const item of schemaItems) {
+        const targetDay = WEEKDAY_MAP[item.weekday];
+        const currentDate = new Date(newStartDate.getTime());
+
+        const startHours = item.timeStart.getHours();
+        const startMinutes = item.timeStart.getMinutes();
+        const endHours = item.timeEnd.getHours();
+        const endMinutes = item.timeEnd.getMinutes();
+
+        while (currentDate <= newEndDate) {
+          currentDate.setHours(0, 0, 0, 0);
+
+          if (currentDate.getDay() === targetDay) {
+            const combinedStartTime = new Date(currentDate.getTime());
+            combinedStartTime.setHours(startHours, startMinutes, 0, 0);
+
+            // Kolla om lektionen redan finns (så vi inte skapar dubbletter)
+            const exists = item.Lessons.some(
+              (l) => l.startTime.getTime() === combinedStartTime.getTime(),
+            );
+
+            if (!exists) {
+              const combinedEndTime = new Date(currentDate.getTime());
+              combinedEndTime.setHours(endHours, endMinutes, 0, 0);
+
+              lessonsToCreate.push({
+                startTime: combinedStartTime,
+                endTime: combinedEndTime,
+                terminId: id,
+                courseId: item.courseId,
+                teacherId: item.course.teacherId,
+                maxBookings: item.maxBookings,
+                schemaItemId: item.id,
+              });
+            }
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+
+      if (lessonsToCreate.length > 0) {
+        await tx.lesson.createMany({
+          data: lessonsToCreate,
+        });
+      }
+
+      return updatedTermin;
     });
+
+    revalidatePath("/admin/courses");
     return {
       success: true,
-      msg: `Terminen ${newSchemaItem.name} ändrades.`,
+      msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och klipp har återställts till eleverna.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error("Fel vid editTermin:", e);
+    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
 
@@ -926,7 +1058,7 @@ export async function removeUserFromLesson(
     if (lesson?.cancelled) {
       return {
         success: false,
-        msg: "Kan inte lägga till elever i en inställd lektion.",
+        msg: "Kan inte ta bort elev i en inställd lektion. Eleven har redan fått tillbaka sin bokning.",
       };
     }
 
