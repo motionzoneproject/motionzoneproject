@@ -1,5 +1,7 @@
 "use client";
 
+// big fix! Här har jag nästlat in mig i ett träsk av use client tror jag, förmodligen i onödan och borde gå att lösa detta utan att göra det. Men det funkar atm
+
 import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,7 +63,7 @@ export default function LessonsBrowser({
               }
             />
             <Label htmlFor="showOld" className="text-md">
-              Visa gamla tillfällen.
+              Visa gamla lektioner.
             </Label>
           </div>
         </div>
@@ -83,7 +85,7 @@ export default function LessonsBrowser({
         )}
       </CardContent>
       <CardFooter>
-        <p>Kursen har totalt {lessons.length}st tillfällen.</p>
+        <p>Kursen har totalt {lessons.length}st lektioner.</p>
       </CardFooter>
     </Card>
   );

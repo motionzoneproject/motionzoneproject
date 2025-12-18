@@ -1,17 +1,20 @@
 "use server";
 
 import type { User } from "better-auth";
+import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
   Booking,
   Course,
   Lesson,
+  Prisma,
   Product,
   SchemaItem,
   Termin,
   Weekday,
 } from "@/generated/prisma/client";
 import {
+  AdminAddUserInLessonSchema,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -450,28 +453,58 @@ export async function editLessonItem(
   try {
     const validated = await adminLessonFormSchema.parseAsync(formData);
 
-    const edit = await prisma.lesson.update({
+    // 1. Hämta nuvarande status innan vi ändrar något
+    const currentLesson = await prisma.lesson.findUnique({
       where: { id: validated.id },
-      data: { message: validated.message, cancelled: validated.cancelled },
+      include: { bookings: true },
     });
 
-    const editBookings = await prisma.booking.updateMany({
-      where: { lessonId: validated.id },
-      data: { cancelled: validated.cancelled }, // Så när vi håller koll på prudukter, så räknar vi av de som är inställda, men så ser man ändå bokningarna som gjordes.
+    if (!currentLesson) return { success: false, msg: "Lesson not found." };
+
+    await prisma.$transaction(async (tx) => {
+      // 2. Kolla om vi ställer in lektionen NU (från false till true)
+      if (!currentLesson.cancelled && validated.cancelled) {
+        for (const booking of currentLesson.bookings) {
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
+      // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
+      else if (currentLesson.cancelled && !validated.cancelled) {
+        for (const booking of currentLesson.bookings) {
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { decrement: 1 } },
+          });
+        }
+      }
+
+      // 4. Uppdatera själva lektionen och bokningarna
+      await tx.lesson.update({
+        where: { id: validated.id },
+        data: {
+          message: validated.message,
+          cancelled: validated.cancelled,
+        },
+      });
+
+      await tx.booking.updateMany({
+        where: { lessonId: validated.id },
+        data: { cancelled: validated.cancelled },
+      });
     });
 
-    // fix: Maila ut till alla bokade kunder att det är inställt?
+    revalidatePath("/admin/courses");
 
-    if (edit) {
-      return {
-        success: true,
-        msg: `Tillfället ${edit.id} och ${editBookings.count} bokningar uppdaterades.`,
-      };
-    } else {
-      return { success: false, msg: `${validated.id} not found.` };
-    }
+    return {
+      success: true,
+      msg: "Lektionen och klipp-saldon har uppdaterats.",
+    };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
 
@@ -631,11 +664,13 @@ export async function removeCourseInProduct(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    const validated = await AdminProductCourseItemSchema.parseAsync(formData);
+
     await prisma.productOnCourse.delete({
       where: {
         courseId_productId: {
-          productId: formData.productId,
-          courseId: formData.courseId,
+          productId: validated.productId,
+          courseId: validated.courseId,
         },
       },
     });
@@ -703,5 +738,230 @@ export async function countOrderItemsAndProductsCourse(
   } catch (e) {
     console.error(e);
     return { found: false };
+  }
+}
+
+export async function getTeacher(userId: string) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { found: false };
+  try {
+    const teacher = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    return { found: true, teacher: teacher };
+  } catch (e) {
+    console.error(e);
+    return { found: false };
+  }
+}
+
+export type UserPurchasesForCourse = Prisma.UserGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    purchases: {
+      select: {
+        id: true;
+        product: { select: { id: true; name: true } };
+        PurchaseItems: {
+          select: { id: true; remainingCount: true };
+        };
+      };
+    };
+  };
+}>;
+
+export async function getUsersWithPurchasedProductsWithCourseInIt(
+  courseId: string,
+): Promise<{
+  success: boolean;
+  msg?: string;
+  users?: UserPurchasesForCourse[];
+}> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+  try {
+    const usersWithData = await prisma.user.findMany({
+      where: {
+        purchases: {
+          some: {
+            PurchaseItems: {
+              some: { courseId: courseId, remainingCount: { gt: 0 } },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        purchases: {
+          where: {
+            PurchaseItems: {
+              some: { courseId, remainingCount: { gt: 0 } },
+            },
+          },
+          select: {
+            id: true,
+            product: {
+              select: { id: true, name: true }, // Vi skippar price här!
+            },
+            PurchaseItems: {
+              where: { courseId, remainingCount: { gt: 0 } },
+              select: {
+                id: true,
+                remainingCount: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!usersWithData) {
+      return { success: false, msg: "Användaren hittades inte." };
+    }
+
+    return {
+      success: true,
+      msg: "Hämtade användare och giltiga köp.",
+      users: usersWithData,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false };
+  }
+}
+
+export async function addUserInLesson(
+  formData: z.output<typeof AdminAddUserInLessonSchema>,
+): Promise<{ success: boolean; msg?: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+  try {
+    const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
+
+    const purchase = await prisma.purchaseItem.findUnique({
+      where: { id: validated.purchaseId },
+    });
+
+    if (!purchase)
+      return { success: false, msg: "Could not find the purchase" };
+
+    if (purchase.remainingCount === 0)
+      return { success: false, msg: "No remaining count." };
+
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        lessonId: validated.lessonId,
+        userId: validated.userId,
+        purchaseItemId: purchase.id,
+      },
+    });
+
+    if (existingBooking) {
+      return {
+        success: false,
+        msg: "Eleven är redan registrerad på denna lektion.",
+      };
+    }
+
+    // KOLLA STATUS PÅ LEKTIONEN
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: validated.lessonId },
+      select: { cancelled: true },
+    });
+
+    if (lesson?.cancelled) {
+      return {
+        success: false,
+        msg: "Kan inte lägga till elever i en inställd lektion.",
+      };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.create({
+        data: {
+          lessonId: validated.lessonId,
+          userId: validated.userId,
+          purchaseItemId: purchase.id,
+        },
+      });
+
+      const updatedItem = await tx.purchaseItem.update({
+        where: {
+          id: validated.purchaseId,
+          remainingCount: { gt: 0 }, // Uppdatera ENDAST om det finns klipp kvar
+        },
+        data: {
+          remainingCount: { decrement: 1 },
+        },
+      });
+
+      console.log("Nytt saldo i databasen:", updatedItem.remainingCount);
+    });
+
+    revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
+
+    return { success: true, msg: "Eleven blev tillagd i lektionen." };
+  } catch (e) {
+    console.error(e);
+    return { success: false };
+  }
+}
+export async function removeUserFromLesson(
+  userId: string,
+  lessonId: string,
+): Promise<{ success: boolean; msg?: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    // KOLLA STATUS PÅ LEKTIONEN
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { cancelled: true },
+    });
+
+    if (lesson?.cancelled) {
+      return {
+        success: false,
+        msg: "Kan inte lägga till elever i en inställd lektion.",
+      };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Hitta bokningen baserat på användare och lektion
+      const booking = await tx.booking.findFirst({
+        where: {
+          userId: userId,
+          lessonId: lessonId,
+        },
+        select: { id: true, purchaseItemId: true },
+      });
+
+      if (!booking) {
+        throw new Error(
+          "Ingen bokning hittades för denna användare på denna lektion.",
+        );
+      }
+
+      // 2. Ta bort bokningen med dess unika ID
+      await tx.booking.delete({
+        where: { id: booking.id },
+      });
+
+      // 3. Ge tillbaka klippet på rätt köp
+      await tx.purchaseItem.update({
+        where: { id: booking.purchaseItemId },
+        data: { remainingCount: { increment: 1 } },
+      });
+    });
+
+    revalidatePath("/admin/courses");
+    return { success: true, msg: "Närvaro borttagen och klipp återställt." };
+  } catch (e) {
+    console.error("Fel vid borttagning av närvaro:", e);
+    return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
