@@ -97,3 +97,9 @@ export const AdminProductCourseItemSchema = z.object({
     .int()
     .nonnegative("Antalet tillfällen får inte vara negativt."),
 });
+
+export const AdminAddUserInLessonSchema = z.object({
+  userId: z.string().min(1),
+  purchaseId: z.string().min(1),
+  lessonId: z.string().min(1),
+});

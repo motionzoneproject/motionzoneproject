@@ -1,4 +1,5 @@
 import { type CourseWithTeacher, getAllCourses } from "@/lib/actions/admin";
+import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import CourseItem from "./CourseItem";
 import SearchInput from "./components/SearchCourse";
@@ -13,6 +14,8 @@ export default async function Page({
   const query = params.q || "";
 
   const allCourses: CourseWithTeacher[] = await getAllCourses();
+  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+
   return (
     <div>
       <div className="w-full lg:grid lg:grid-cols-2 gap-2 p-2">
@@ -24,7 +27,7 @@ export default async function Page({
             <SearchInput />
           </div>
           <div>
-            <AddCourseForm />
+            <AddCourseForm teachers={teachers} />
           </div>
         </div>
 

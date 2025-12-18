@@ -28,7 +28,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { User } from "@/generated/prisma/client";
 import { addNewCourse } from "@/lib/actions/admin";
 import { useSession } from "@/lib/session-provider";
 import { adminAddCourseSchema } from "@/validations/adminforms";
@@ -38,7 +48,11 @@ const formSchema = adminAddCourseSchema;
 type CourseFormInput = z.input<typeof adminAddCourseSchema>;
 type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
-export default function AddCourseForm() {
+interface Props {
+  teachers: User[];
+}
+
+export default function AddCourseForm({ teachers }: Props) {
   const { user } = useSession();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -308,12 +322,32 @@ export default function AddCourseForm() {
                   control={form.control}
                   name="teacherid"
                   render={({ field }) => (
-                    <FormItem className="hidden">
+                    <FormItem>
                       <FormLabel>Lärare:</FormLabel>
 
-                      <FormControl>
-                        <Input {...field} readOnly />
-                      </FormControl>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj lärare" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj lärare</SelectLabel>
+                            {teachers.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
 
                       <FormMessage />
                     </FormItem>
