@@ -13,16 +13,16 @@ export default function TotalPreview(props: {
   const { products, productInputId, countInputId, currency = "SEK" } = props;
   const priceMap = useMemo(
     () => new Map(products.map((p) => [p.id, p.price])),
-    [products]
+    [products],
   );
   const [total, setTotal] = useState<number>(0);
 
   useEffect(() => {
     const productEl = document.getElementById(
-      productInputId
+      productInputId,
     ) as HTMLSelectElement | null;
     const countEl = document.getElementById(
-      countInputId
+      countInputId,
     ) as HTMLInputElement | null;
 
     if (!productEl || !countEl) return;

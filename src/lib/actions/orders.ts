@@ -19,7 +19,7 @@ export async function updateOrderStatus(
     | "AWAITING_APPROVAL"
     | "PAID"
     | "APPROVED",
-  note?: string
+  note?: string,
 ) {
   const adminUserId = await requireAdmin();
 
