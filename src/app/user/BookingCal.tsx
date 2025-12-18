@@ -1,21 +1,31 @@
 "use client";
 
 import { sv } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { addUserInLesson } from "@/lib/actions/admin";
 import type {
   BookingWithLesson,
   LessonWithCourse,
+  UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
+import BookBtn from "./BookBtn";
 
 interface Props {
   lessons: LessonWithCourse[];
   bookings: BookingWithLesson[];
+  purschaseItems: UserPurchaseWithProduct[];
 }
 
-export default function BookingCal({ lessons, bookings }: Props) {
+export default function BookingCal({
+  lessons,
+  bookings,
+  purschaseItems,
+}: Props) {
   const [date, setDate] = useState<Date | undefined>(new Date());
 
   // 1. Förbered datumlistor för kalendern
@@ -36,6 +46,32 @@ export default function BookingCal({ lessons, bookings }: Props) {
     );
   }, [date, lessons]);
 
+  const router = useRouter();
+  const [_isPending, setIsPending] = useState(false);
+
+  const _handleBooking = async (
+    lessonId: string,
+    userId: string,
+    purchaseId: string,
+  ) => {
+    setIsPending(true);
+
+    // Vi skickar datan som matchar ditt Zod-schema (AdminAddUserInLessonSchema)
+    const result = await addUserInLesson({
+      lessonId,
+      userId,
+      purchaseId,
+    });
+
+    if (result.success) {
+      toast.success(result.msg);
+      router.refresh(); // Uppdaterar propsen (lessons/bookings) så kalendern ändrar färg
+    } else {
+      toast.error(result.msg || "Något gick fel");
+    }
+    setIsPending(false);
+  };
+
   return (
     <div className="flex flex-col gap-6 md:flex-row">
       <div className="flex-none">
@@ -47,12 +83,10 @@ export default function BookingCal({ lessons, bookings }: Props) {
             showWeekNumber
             locale={sv}
             className="rounded-lg border shadow w-full sm:w-auto"
-            // Vi definierar våra tillstånd
             modifiers={{
               isBooked: bookedDays,
               isAvailable: availableDays,
             }}
-            // Vi stylar tillstånden (Tailwind-färger fungerar bäst via modifiersClassNames men inline funkar här)
             modifiersStyles={{
               isBooked: {
                 backgroundColor: "#3b82f6",
@@ -115,9 +149,19 @@ export default function BookingCal({ lessons, bookings }: Props) {
                       </p>
                     </div>
                     {isAlreadyBooked ? (
-                      <Button variant={"destructive"}>Avboka</Button>
+                      <div>
+                        <Button variant={"destructive"}>Avboka</Button>
+                      </div>
                     ) : (
-                      <Button>Boka</Button>
+                      <div>
+                        <BookBtn
+                          courseId={lesson.courseId}
+                          lessonId={lesson.id}
+                          purschaseItems={purschaseItems.filter(
+                            (itm) => itm.courseId === lesson.courseId,
+                          )}
+                        />
+                      </div>
                     )}
                   </div>
                 );

@@ -53,7 +53,7 @@ export type LessonWithBookings = Lesson & { bookings: Booking[] };
 export type CourseWithTeacher = Course & { teacher: User };
 
 export async function getSchemaItems(
-  terminId: string,
+  terminId: string
 ): Promise<SchemaItemWithCourse[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
@@ -77,7 +77,7 @@ export async function getAllCourses(): Promise<CourseWithTeacher[]> {
 }
 
 export async function addNewTermin(
-  formData: z.infer<typeof adminAddTerminSchema>,
+  formData: z.infer<typeof adminAddTerminSchema>
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -104,7 +104,7 @@ export async function addNewTermin(
 export async function checkTerminDateChange(
   terminId: string,
   newStart: Date,
-  newEnd: Date,
+  newEnd: Date
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { count: 0 };
@@ -123,7 +123,7 @@ export async function checkTerminDateChange(
 
 export async function editTermin(
   id: string,
-  formData: z.infer<typeof adminAddTerminSchema>,
+  formData: z.infer<typeof adminAddTerminSchema>
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -155,15 +155,30 @@ export async function editTermin(
             ],
           },
         },
-        select: { id: true, purchaseItemId: true },
+        include: {
+          purchaseItem: {
+            include: { purchase: true },
+          },
+        },
       });
 
-      // Ge tillbaka klipp till alla drabbade elever
+      // Ge tillbaka klipp till alla drabbade elever på rätt nivå
       for (const booking of affectedBookings) {
-        await tx.purchaseItem.update({
-          where: { id: booking.purchaseItemId },
-          data: { remainingCount: { increment: 1 } },
-        });
+        const purchase = booking.purchaseItem.purchase;
+
+        if (purchase.useTotalCount) {
+          // Återställ till Klippkortet
+          await tx.purchase.update({
+            where: { id: purchase.id },
+            data: { remainingCount: { increment: 1 } },
+          });
+        } else {
+          // Återställ till den specifika kursen (PurchaseItem)
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
       }
 
       // 3. Hämta alla mallar (schemaItems) för att synka lektioner
@@ -171,12 +186,11 @@ export async function editTermin(
         where: { terminId: id },
         include: {
           course: true,
-          Lessons: true, // Se till att detta matchar ditt relationsnamn (Lessons/Lesson)
+          Lessons: true,
         },
       });
 
       // 4. Städa bort lektioner som nu ligger utanför intervallet
-      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan)
       await tx.lesson.deleteMany({
         where: {
           terminId: id,
@@ -218,7 +232,7 @@ export async function editTermin(
 
             // Kolla om lektionen redan finns (så vi inte skapar dubbletter)
             const exists = item.Lessons.some(
-              (l) => l.startTime.getTime() === combinedStartTime.getTime(),
+              (l) => l.startTime.getTime() === combinedStartTime.getTime()
             );
 
             if (!exists) {
@@ -252,7 +266,7 @@ export async function editTermin(
     revalidatePath("/admin/courses");
     return {
       success: true,
-      msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och klipp har återställts till eleverna.`,
+      msg: `Terminen "${result.name}" har uppdaterats. Bokningar utanför perioden har raderats och saldon har återställts korrekt.`,
     };
   } catch (e) {
     console.error("Fel vid editTermin:", e);
@@ -262,7 +276,7 @@ export async function editTermin(
 
 export async function addCoursetoSchema(
   terminId: string,
-  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>
 ): Promise<{
   success: boolean;
   msg: string;
@@ -301,11 +315,11 @@ export async function addCoursetoSchema(
       });
       if (!del)
         throw new Error(
-          "SchemaItem was created, but could not create lessons, and could not delete the schemaItem. Empty schemaItem can be in the db.",
+          "SchemaItem was created, but could not create lessons, and could not delete the schemaItem. Empty schemaItem can be in the db."
         );
 
       throw new Error(
-        "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
+        "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar."
       );
     }
 
@@ -319,53 +333,126 @@ export async function addCoursetoSchema(
 }
 
 export async function delSchemaItem(
-  id: string,
+  id: string
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Behöver vi validera id med zod? ev. fix.
-    const del = await prisma.schemaItem.delete({
-      where: { id },
-      select: { course: true },
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Hitta alla bokningar kopplade till lektioner som skapats av detta schemaItem
+      const affectedBookings = await tx.booking.findMany({
+        where: {
+          lesson: { schemaItemId: id },
+        },
+        include: {
+          purchaseItem: {
+            include: { purchase: true },
+          },
+        },
+      });
+
+      // 2. Återställ klipp/saldon
+      for (const booking of affectedBookings) {
+        const purchase = booking.purchaseItem.purchase;
+
+        if (purchase.useTotalCount) {
+          // Klippkort
+          await tx.purchase.update({
+            where: { id: purchase.id },
+            data: { remainingCount: { increment: 1 } },
+          });
+        } else {
+          // Kursbundet
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
+
+      // 3. Radera mallen (schemaItem)
+      // Detta raderar alla lessons och bookings pga Cascade
+      return await tx.schemaItem.delete({
+        where: { id },
+        select: { course: true },
+      });
     });
 
-    if (del) {
-      return {
-        success: true,
-        msg: `${del.course.name} togs bort från veckoschemat.`,
-      };
-    } else {
-      return { success: false, msg: `${id} not found.` };
-    }
+    revalidatePath("/admin/courses");
+
+    return {
+      success: true,
+      msg: `${result.course.name} togs bort från veckoschemat och klipp har återställts för alla framtida bokningar.`,
+    };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error("Fel vid delSchemaItem:", e);
+    return { success: false, msg: "Kunde inte ta bort schemaposten." };
   }
 }
-
 export async function delTermin(
-  id: string,
+  id: string
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Behöver vi validera id med zod? ev. fix.
-    const del = await prisma.termin.delete({ where: { id } });
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Hitta alla bokningar kopplade till lektioner i denna termin
+      // Vi inkluderar köpinformation för att veta var vi ska återställa klipp
+      const affectedBookings = await tx.booking.findMany({
+        where: {
+          lesson: { terminId: id },
+        },
+        include: {
+          purchaseItem: {
+            include: { purchase: true },
+          },
+        },
+      });
 
-    if (del) {
-      return { success: true, msg: `Terminen ${del.name} togs bort.` };
-    } else {
-      return { success: false, msg: `${id} not found.` };
-    }
+      // 2. Ge tillbaka klipp till alla drabbade elever
+      for (const booking of affectedBookings) {
+        const purchase = booking.purchaseItem.purchase;
+
+        if (purchase.useTotalCount) {
+          // Återställ till klippkortet
+          await tx.purchase.update({
+            where: { id: purchase.id },
+            data: { remainingCount: { increment: 1 } },
+          });
+        } else {
+          // Återställ till den specifika kursen
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
+
+      // 3. Radera terminen
+      // (Bokningar och lektioner raderas automatiskt om du har onDelete: Cascade)
+      return await tx.termin.delete({
+        where: { id },
+      });
+    });
+
+    revalidatePath("/admin/courses");
+    return {
+      success: true,
+      msg: `Terminen ${result.name} och alla dess lektioner togs bort. Klipp har återställts till eleverna.`,
+    };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error("Fel vid borttagning av termin:", e);
+    return {
+      success: false,
+      msg: "Kunde inte ta bort terminen. Kontrollera om det finns beroenden som hindrar borttagning.",
+    };
   }
 }
 
 export async function delCourse(
-  id: string,
+  id: string
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -386,7 +473,7 @@ export async function delCourse(
 }
 
 export async function addNewCourse(
-  formData: z.output<typeof adminAddCourseSchema>,
+  formData: z.output<typeof adminAddCourseSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -400,7 +487,7 @@ export async function addNewCourse(
 
     if (!(checkTeacherId && checkTeacherId.role === "admin"))
       throw new Error(
-        `A teacher with id ${validated.teacherid} was not found.`,
+        `A teacher with id ${validated.teacherid} was not found.`
       );
 
     const newCourseItem = await prisma.course.create({
@@ -427,7 +514,7 @@ export async function addNewCourse(
 
 export async function editCourse(
   id: string,
-  formData: z.output<typeof adminAddCourseSchema>,
+  formData: z.output<typeof adminAddCourseSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -441,7 +528,7 @@ export async function editCourse(
 
     if (!(checkTeacherId && checkTeacherId.role === "admin"))
       throw new Error(
-        `A teacher with id ${validated.teacherid} was not found.`,
+        `A teacher with id ${validated.teacherid} was not found.`
       );
 
     const newCourseItem = await prisma.course.update({
@@ -468,7 +555,7 @@ export async function editCourse(
 }
 
 async function createLessons(
-  schemaItemId: string,
+  schemaItemId: string
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -577,7 +664,7 @@ async function createLessons(
 }
 
 export async function editLessonItem(
-  formData: z.output<typeof adminLessonFormSchema>,
+  formData: z.output<typeof adminLessonFormSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -585,10 +672,18 @@ export async function editLessonItem(
   try {
     const validated = await adminLessonFormSchema.parseAsync(formData);
 
-    // 1. Hämta nuvarande status innan vi ändrar något
+    // 1. Hämta nuvarande status och inkludera allt för att veta var saldot bor
     const currentLesson = await prisma.lesson.findUnique({
       where: { id: validated.id },
-      include: { bookings: true },
+      include: {
+        bookings: {
+          include: {
+            purchaseItem: {
+              include: { purchase: true },
+            },
+          },
+        },
+      },
     });
 
     if (!currentLesson) return { success: false, msg: "Lesson not found." };
@@ -597,19 +692,41 @@ export async function editLessonItem(
       // 2. Kolla om vi ställer in lektionen NU (från false till true)
       if (!currentLesson.cancelled && validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          const purchase = booking.purchaseItem.purchase;
+
+          if (purchase.useTotalCount) {
+            // Återställ till klippkortet
+            await tx.purchase.update({
+              where: { id: purchase.id },
+              data: { remainingCount: { increment: 1 } },
+            });
+          } else {
+            // Återställ till kursraden
+            await tx.purchaseItem.update({
+              where: { id: booking.purchaseItemId },
+              data: { remainingCount: { increment: 1 } },
+            });
+          }
         }
       }
       // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
       else if (currentLesson.cancelled && !validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { decrement: 1 } },
-          });
+          const purchase = booking.purchaseItem.purchase;
+
+          if (purchase.useTotalCount) {
+            // Dra från klippkortet igen
+            await tx.purchase.update({
+              where: { id: purchase.id },
+              data: { remainingCount: { decrement: 1 } },
+            });
+          } else {
+            // Dra från kursraden igen
+            await tx.purchaseItem.update({
+              where: { id: booking.purchaseItemId },
+              data: { remainingCount: { decrement: 1 } },
+            });
+          }
         }
       }
 
@@ -662,7 +779,7 @@ export type ProdCourse = {
 };
 
 export async function addNewProduct(
-  formData: z.output<typeof adminAddProductSchema>,
+  formData: z.output<typeof adminAddProductSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -691,7 +808,7 @@ export async function addNewProduct(
 
 export async function editProduct(
   id: string,
-  formData: z.output<typeof adminAddProductSchema>,
+  formData: z.output<typeof adminAddProductSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -720,7 +837,7 @@ export async function editProduct(
 }
 
 export async function removeProduct(
-  id: string,
+  id: string
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -740,7 +857,7 @@ export async function removeProduct(
 }
 
 export async function addCourseToProduct(
-  formData: z.output<typeof AdminProductCourseItemSchema>,
+  formData: z.output<typeof AdminProductCourseItemSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -750,7 +867,7 @@ export async function addCourseToProduct(
 
   const isInProd = await isCourseInProduct(
     formData.courseId,
-    formData.productId,
+    formData.productId
   );
 
   if (isInProd.found) {
@@ -790,7 +907,7 @@ export async function addCourseToProduct(
 }
 
 export async function removeCourseInProduct(
-  formData: z.output<typeof AdminProductCourseItemSchema>,
+  formData: z.output<typeof AdminProductCourseItemSchema>
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -817,7 +934,7 @@ export async function removeCourseInProduct(
 
 export async function isCourseInProduct(
   courseId: string,
-  productId: string,
+  productId: string
 ): Promise<{ found: boolean; lessonsIncluded?: number }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
@@ -836,7 +953,7 @@ export async function isCourseInProduct(
 }
 
 export async function countOrderItems(
-  productId: string,
+  productId: string
 ): Promise<{ found: boolean; count?: number }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
@@ -853,7 +970,7 @@ export async function countOrderItems(
 }
 
 export async function countOrderItemsAndProductsCourse(
-  courseId: string,
+  courseId: string
 ): Promise<{ found: boolean; count?: number; countProd?: number }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
@@ -905,7 +1022,7 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
 }>;
 
 export async function getUsersWithPurchasedProductsWithCourseInIt(
-  courseId: string,
+  courseId: string
 ): Promise<{
   success: boolean;
   msg?: string;
@@ -965,40 +1082,124 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
   }
 }
 
+export type UserPurchaseWithProduct = {
+  purchase: {
+    totalCount: number | null;
+    id: string;
+    remainingCount: number | null;
+    useTotalCount: boolean;
+    product: {
+      totalCount: number | null;
+      id: string;
+      name: string;
+      useTotalCount: boolean;
+    };
+  };
+} & {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  purchaseId: string;
+  orderItemId: string;
+  courseId: string;
+  lessonsIncluded: number;
+  remainingCount: number;
+};
+
+export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
+  const session = await getSessionData();
+
+  if (!session) return [];
+
+  try {
+    const purchases = await prisma.purchaseItem.findMany({
+      where: {
+        purchase: { userId: session.user.id },
+      },
+
+      include: {
+        purchase: {
+          select: {
+            id: true,
+
+            useTotalCount: true,
+
+            totalCount: true,
+
+            remainingCount: true,
+
+            product: {
+              select: {
+                id: true,
+
+                name: true,
+
+                useTotalCount: true,
+
+                totalCount: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return purchases;
+  } catch (_e) {
+    return [];
+  }
+}
+
 export async function addUserInLesson(
-  formData: z.output<typeof AdminAddUserInLessonSchema>,
+  formData: z.output<typeof AdminAddUserInLessonSchema>
 ): Promise<{ success: boolean; msg?: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
+
   try {
     const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
 
-    const purchase = await prisma.purchaseItem.findUnique({
+    // 1. Hämta PurchaseItem och dess tillhörande Purchase (för att se klippkorts-inställningar)
+    const pItem = await prisma.purchaseItem.findUnique({
       where: { id: validated.purchaseId },
+      include: {
+        purchase: true,
+      },
     });
 
-    if (!purchase)
-      return { success: false, msg: "Could not find the purchase" };
+    if (!pItem) return { success: false, msg: "Kunde inte hitta köpet." };
 
-    if (purchase.remainingCount === 0)
-      return { success: false, msg: "No remaining count." };
+    const purchase = pItem.purchase;
 
+    // 2. Kontrollera saldo baserat på produkttyp
+    if (purchase.useTotalCount) {
+      // Klippkort: Kolla saldot på huvudköpet
+      if ((purchase.remainingCount ?? 0) <= 0) {
+        return { success: false, msg: "Inga klipp kvar på klippkortet." };
+      }
+    } else {
+      // Kursbundet: Kolla saldot på det specifika föremålet
+      if (pItem.remainingCount <= 0) {
+        return { success: false, msg: "Inga tillfällen kvar på denna kurs." };
+      }
+    }
+
+    // 3. Kolla om eleven redan är bokad
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
         userId: validated.userId,
-        purchaseItemId: purchase.id,
       },
     });
 
     if (existingBooking) {
       return {
         success: false,
-        msg: "Eleven är redan registrerad på denna lektion.",
+        msg: "Användaren är redan registrerad på denna lektion.",
       };
     }
 
-    // KOLLA STATUS PÅ LEKTIONEN
+    // 4. Kolla om lektionen är inställd
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
       select: { cancelled: true },
@@ -1011,45 +1212,50 @@ export async function addUserInLesson(
       };
     }
 
+    // 5. Utför bokning och saldominskning i en transaktion
     await prisma.$transaction(async (tx) => {
+      // Skapa bokningen
       await tx.booking.create({
         data: {
           lessonId: validated.lessonId,
           userId: validated.userId,
-          purchaseItemId: purchase.id,
+          purchaseItemId: pItem.id,
         },
       });
 
-      const updatedItem = await tx.purchaseItem.update({
-        where: {
-          id: validated.purchaseId,
-          remainingCount: { gt: 0 }, // Uppdatera ENDAST om det finns klipp kvar
-        },
-        data: {
-          remainingCount: { decrement: 1 },
-        },
-      });
-
-      console.log("Nytt saldo i databasen:", updatedItem.remainingCount);
+      if (purchase.useTotalCount) {
+        // Minska saldo på huvudköpet (Klippkort)
+        await tx.purchase.update({
+          where: { id: purchase.id },
+          data: { remainingCount: { decrement: 1 } },
+        });
+      } else {
+        // Minska saldo på purchaseItem (Kursbundet)
+        await tx.purchaseItem.update({
+          where: { id: pItem.id },
+          data: { remainingCount: { decrement: 1 } },
+        });
+      }
     });
 
-    revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
+    revalidatePath("/admin/courses");
 
-    return { success: true, msg: "Eleven blev tillagd i lektionen." };
+    return { success: true, msg: "Användaren blev tillagd i lektionen." };
   } catch (e) {
-    console.error(e);
-    return { success: false };
+    console.error("Error in addUserInLesson:", e);
+    return { success: false, msg: "Ett tekniskt fel uppstod." };
   }
 }
+
 export async function removeUserFromLesson(
   userId: string,
-  lessonId: string,
+  lessonId: string
 ): Promise<{ success: boolean; msg?: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // KOLLA STATUS PÅ LEKTIONEN
+    // 1. KOLLA STATUS PÅ LEKTIONEN
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
       select: { cancelled: true },
@@ -1063,37 +1269,56 @@ export async function removeUserFromLesson(
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1. Hitta bokningen baserat på användare och lektion
+      // 2. Hitta bokningen och inkludera info om köptyp
       const booking = await tx.booking.findFirst({
         where: {
           userId: userId,
           lessonId: lessonId,
         },
-        select: { id: true, purchaseItemId: true },
+        include: {
+          purchaseItem: {
+            include: {
+              purchase: true,
+            },
+          },
+        },
       });
 
       if (!booking) {
         throw new Error(
-          "Ingen bokning hittades för denna användare på denna lektion.",
+          "Ingen bokning hittades för denna användare på denna lektion."
         );
       }
 
-      // 2. Ta bort bokningen med dess unika ID
+      const purchase = booking.purchaseItem.purchase;
+
+      // 3. Ta bort bokningen
       await tx.booking.delete({
         where: { id: booking.id },
       });
 
-      // 3. Ge tillbaka klippet på rätt köp
-      await tx.purchaseItem.update({
-        where: { id: booking.purchaseItemId },
-        data: { remainingCount: { increment: 1 } },
-      });
+      // 4. Ge tillbaka klippet på RÄTT ställe
+      if (purchase.useTotalCount) {
+        // Återställ till huvudköpet (Klippkort)
+        await tx.purchase.update({
+          where: { id: purchase.id },
+          data: { remainingCount: { increment: 1 } },
+        });
+      } else {
+        // Återställ till purchaseItem (Kursbundet)
+        await tx.purchaseItem.update({
+          where: { id: booking.purchaseItemId },
+          data: { remainingCount: { increment: 1 } },
+        });
+      }
     });
 
     revalidatePath("/admin/courses");
     return { success: true, msg: "Närvaro borttagen och klipp återställt." };
   } catch (e) {
     console.error("Fel vid borttagning av närvaro:", e);
-    return { success: false, msg: "Kunde inte ta bort närvaro." };
+    const errorMsg =
+      e instanceof Error ? e.message : "Kunde inte ta bort närvaro.";
+    return { success: false, msg: errorMsg };
   }
 }
