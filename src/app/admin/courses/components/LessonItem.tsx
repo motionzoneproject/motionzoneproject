@@ -25,7 +25,12 @@ export default function LessonItem({ lesson }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{lesson.startTime.toLocaleDateString("sv-SE")}</CardTitle>
+        <CardTitle>
+          {lesson.startTime.toLocaleDateString("sv-SE")}{" "}
+          {lesson.cancelled && (
+            <span className="font-bold text-red-500">(inställd)</span>
+          )}
+        </CardTitle>
         <CardDescription>
           {lesson.startTime
             .toLocaleDateString("sv-SE", { weekday: "long" })
