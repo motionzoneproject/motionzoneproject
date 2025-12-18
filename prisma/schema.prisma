@@ -379,11 +379,11 @@ model Purchase {
   //   include: { product: true }
   // });
 
-  // // Använd:
-  // purchase.product.useTotalCount
-  // purchase.product.totalCount
-  
 
+  // Om produkten är ett klippkort:
+  useTotalCount   Boolean   @default(false)  // klippkort eller ej
+  totalCount      Int?      // Ursprungliga antalet klipp
+  remainingCount  Int?      // Aktuellt saldo för klippkortet
 
   
   expiresAt       DateTime? // Om produkten / paketet eller klippkortet går ut

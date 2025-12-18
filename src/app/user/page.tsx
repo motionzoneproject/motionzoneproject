@@ -5,7 +5,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getUserBookings, getUserLessons } from "@/lib/actions/server-actions";
+import {
+  getUserBookings,
+  getUserLessons,
+  getUserPurchases,
+  type UserPurchaseWithProduct,
+} from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import BookingCal from "./BookingCal";
 
@@ -15,6 +20,7 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
+  const purschaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
 
   return (
     <div>
@@ -28,7 +34,11 @@ export default async function Page() {
         </CardHeader>
         <CardContent>
           (BOKA)
-          <BookingCal lessons={lessons} bookings={bookings} />
+          <BookingCal
+            purschaseItems={purschaseItems}
+            lessons={lessons}
+            bookings={bookings}
+          />
           <br />
           (Uppgifter)
         </CardContent>
