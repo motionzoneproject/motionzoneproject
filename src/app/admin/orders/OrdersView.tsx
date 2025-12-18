@@ -120,7 +120,7 @@ export default function OrdersView({
               <td className="p-2">
                 <Link
                   href={`/admin/orders/view?status=${encodeURIComponent(
-                    active,
+                    active
                   )}&orderId=${encodeURIComponent(o.id)}`}
                   className="underline text-blue-600"
                 >
