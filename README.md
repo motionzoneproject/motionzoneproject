@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+**Overview**
 
-## Getting Started
+- Purpose: MotionZone dance studio platform with auth, admin, courses/terms/schedule, products, orders, purchases, and bookings.
+- Stack: Next.js 16 (App Router), React 19, Prisma 7 + PostgreSQL, Better Auth, Tailwind 4, Radix UI.
 
-First, run the development server:
+**Key Paths**
+
+- Auth: [src/lib/auth.ts](src/lib/auth.ts), [src/app/api/auth/[...all]/route.ts](src/app/api/auth/[...all]/route.ts)
+- Prisma client: [src/lib/prisma.ts](src/lib/prisma.ts)
+- Schema: [prisma/schema.prisma](prisma/schema.prisma)
+- Admin: [src/app/admin](src/app/admin)
+- Checkout (basic): [src/app/checkout/page.tsx](src/app/checkout/page.tsx), success at [src/app/checkout/success/page.tsx](src/app/checkout/success/page.tsx)
+
+**Setup**
+
+- Requirements: Node 20+, PostgreSQL (local or Docker).
+- Env: create [.env](.env) with:
+  - `DATABASE_URL=postgresql://<user>:<password>@localhost:5432/motionzone?schema=public`
+  - `BETTER_AUTH_SECRET=<random-hex>`
+  - `BETTER_AUTH_URL=http://localhost:3000`
+- Install + generate:
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+```
+
+**Run**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Branching Workflow**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Always branch from latest `dev`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+git checkout dev
+git pull origin dev
+git checkout -b feature/<short-topic>
+```
 
-## Learn More
+- Keep branches small and focused; open PRs into `dev`.
 
-To learn more about Next.js, take a look at the following resources:
+**Commit & Husky Hooks**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Pre-commit runs Biome format + lint; pre-push runs build.
+- If hooks fail, fix reported files (do not bypass unless urgent).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# before commit (optional manual run)
+npm run format
+npm run lint
 
-## Deploy on Vercel
+# commit normally (hooks will run)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+git commit -m "<clear message>"
+git push -u origin feature/<short-topic>
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Pull Requests**
+
+- Target: `dev`.
+- Include: summary, scope, testing notes.
+- CI passes: format, lint, build.
+
+**Database Tips**
+
+- Local via Docker (matches sample .env):
+
+```bash
+docker run --name motionzone-pg \
+	-e POSTGRES_USER=postgres \
+	-e POSTGRES_PASSWORD=postgres \
+	-e POSTGRES_DB=motionzone \
+	-p 5432:5432 -d postgres:16
+```
+
+- After schema changes:
+
+```bash
+npx prisma generate
+npx prisma migrate dev --name <change>
+```
+
+**Notes**
+
+- Prices use Prisma Decimal; convert/format for display.
+- Server actions require a signed-in user.
