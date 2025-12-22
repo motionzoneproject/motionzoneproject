@@ -71,7 +71,7 @@ export async function getUserLessons(): Promise<{
     const lessons = await prisma.lesson.findMany({
       where: {
         courseId: { in: courseIds },
-        cancelled: false, // Vi visar nog bara lektioner som inte är inställda
+        // cancelled: false, // Vi visar nog bara lektioner som inte är inställda. Fel.
         // startTime: { gte: new Date() } // Valfritt: Visa bara framtida lektioner. Nej man kanske vill se sina tidigare boknignar.
       },
       include: { course: true },
@@ -89,28 +89,31 @@ export async function getUserLessons(): Promise<{
   }
 }
 
+// fix this too i guess, we should be able to get this dynamicly.
 export type UserPurchaseWithProduct = {
   purchase: {
-    id: string;
     totalCount: number | null;
-    remainingCount: number | null;
-    useTotalCount: boolean;
+    id: string;
     product: {
-      name: string;
-      id: string;
       totalCount: number | null;
+      id: string;
+      name: string;
       useTotalCount: boolean;
     };
+    useTotalCount: boolean;
+    remainingCount: number | null;
   };
 } & {
   id: string;
   createdAt: Date;
   updatedAt: Date;
+  type: string;
   courseId: string;
-  purchaseId: string;
-  orderItemId: string;
+  unlimited: boolean;
   lessonsIncluded: number;
   remainingCount: number;
+  purchaseId: string;
+  orderItemId: string;
 };
 
 export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
@@ -147,8 +150,6 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
     return [];
   }
 }
-
-// fix: tänk ut vad som blir bäst här (de två funktionerna ovan) :P
 
 export async function addBooking(
   formData: z.output<typeof UserBookLessonSchema>,
@@ -259,15 +260,13 @@ export async function addBooking(
 }
 
 export async function delBooking(
-  userId: string,
   lessonId: string,
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
 
   // Säkerställ att användaren bara kan ta bort sina egna bokningar
-  if (!user || user.id !== userId)
-    return { success: false, msg: "Ingen giltig session." };
+  if (!user) return { success: false, msg: "Ingen giltig session." };
 
   try {
     // 1. Hämta lektionsstatus och tid
@@ -297,7 +296,7 @@ export async function delBooking(
       // 2. Hitta bokningen inkl. köp-info
       const booking = await tx.booking.findFirst({
         where: {
-          userId: userId,
+          userId: user.id,
           lessonId: lessonId,
         },
         include: {
@@ -318,9 +317,10 @@ export async function delBooking(
         where: { id: booking.id },
       });
 
-      // 4. Ge tillbaka klippet på RÄTT nivå
+      // fix: Här har vi förberett för att hantera klippkort, men använder inte type. Alla kommer vara course så det behövs ej fixas nu innan. Behåller för att påminna mig om logiken. (//tobias)
+      // Ge tillbaka klippet på RÄTT nivå
       if (purchase.useTotalCount) {
-        // Återställ till Klippkortet (Purchase)
+        // Återställ till Klippkortet (Purchase för klippkort)
         await tx.purchase.update({
           where: { id: purchase.id },
           data: { remainingCount: { increment: 1 } },
@@ -343,4 +343,24 @@ export async function delBooking(
     console.error("Fel vid avbokning:", e);
     return { success: false, msg: "Kunde inte genomföra avbokningen." };
   }
+}
+
+export async function getFullCourseNameFromId(id: string) {
+  const course = await prisma.course.findUnique({ where: { id } });
+
+  if (!course) return null;
+
+  const ageRange =
+    course.minAge && course.minAge > 0
+      ? `${course.minAge}${
+          course.maxAge && course.maxAge > 0
+            ? `–${course.maxAge} år` // Använder tankstreck (–) och lägger till " år" här
+            : "+ år" // Lägger till "+ år" om maxAge saknas
+        }${course.adult ? ` / Vuxen` : ""}`
+      : course.adult
+        ? "Vuxen" // Om minAge saknas, men adult är true
+        : ""; // Om varken minAge eller adult är true
+  const levelInfo = course.level && ` - ${course.level}`;
+
+  return `${course.name} ${ageRange} ${levelInfo}`;
 }
