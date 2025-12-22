@@ -28,11 +28,18 @@ export default function BookingCal({
 
   // 1. Förbered datumlistor för kalendern
   const bookedDays = useMemo(
-    () => bookings.map((b) => new Date(b.lesson.startTime)),
+    () =>
+      bookings
+        .filter((b) => !b.cancelled)
+        .map((b) => new Date(b.lesson.startTime)),
     [bookings],
   );
   const availableDays = useMemo(
     () => lessons.map((l) => new Date(l.startTime)),
+    [lessons],
+  );
+  const cancelledDays = useMemo(
+    () => lessons.filter((l) => l.cancelled).map((l) => new Date(l.startTime)),
     [lessons],
   );
 
@@ -57,6 +64,7 @@ export default function BookingCal({
             className="rounded-lg border shadow w-full sm:w-auto"
             modifiers={{
               isBooked: bookedDays,
+              cancelled: cancelledDays,
               isAvailable: availableDays,
             }}
             modifiersStyles={{
@@ -67,6 +75,11 @@ export default function BookingCal({
               },
               isAvailable: {
                 border: "2px solid #22c55e",
+                borderRadius: "50%",
+              },
+              cancelled: {
+                backgroundColor: "#ef4444",
+                color: "white",
                 borderRadius: "50%",
               },
             }}
