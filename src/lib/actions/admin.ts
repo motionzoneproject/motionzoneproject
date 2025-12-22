@@ -399,18 +399,6 @@ async function createLessons(
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // console.log(
-    //   "Lektioner att skapa: \n" +
-    //     "targetDay: " +
-    //     targetDay +
-    //     "\n startDate:" +
-    //     startDate +
-    //     "\n endDate:" +
-    //     endDate +
-    //     "\n\n\n Lessons:\n" +
-    //     JSON.stringify(lessonsToCreate)
-    // );
-
     // Kontrollera om det finns något att skapa
     if (lessonsToCreate.length === 0) {
       return {

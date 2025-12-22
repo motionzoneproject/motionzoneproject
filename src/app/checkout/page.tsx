@@ -1,39 +1,37 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { createCheckoutAndRedirect } from "@/lib/actions/checkout";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { readCart } from "@/lib/cart";
 import prisma from "@/lib/prisma";
-import LineItemPreview from "./LineItemPreview";
-import TotalPreview from "./TotalPreview";
+import CartSummary from "./CartSummary";
 
 export default async function Page() {
   const session = await getSessionData();
-  const products = await prisma.product.findMany({
-    select: { id: true, name: true, price: true },
-    orderBy: { name: "asc" },
-  });
-  const productsForClient = products.map((p) => ({
-    id: p.id,
-    name: p.name,
-    price: parseFloat(String(p.price)),
-  }));
+  const cart = await readCart();
+  const hasItems = cart.items.length > 0;
 
   async function action(formData: FormData) {
     "use server";
-    const productId = String(formData.get("productId") || "");
-    const count = Number(formData.get("count") || 1);
     const postalcode = formData.get("postalcode")?.toString();
     const note = formData.get("note")?.toString();
-    // Look up price server-side to avoid trusting client input
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const currentCart = await readCart();
+    if (!currentCart.items.length) throw new Error("Varukorgen är tom");
+    const ids = currentCart.items.map((i) => i.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, price: true },
     });
-    if (!product) throw new Error("Produkt hittades inte");
-    const price = parseFloat(String(product.price));
-
-    await createCheckoutAndRedirect({
-      items: [{ productId, count, price }],
-      postalcode,
-      note,
-    });
+    const byId = new Map(
+      products.map((p) => [p.id, parseFloat(String(p.price))]),
+    );
+    const items = currentCart.items.map((it) => ({
+      productId: it.productId,
+      count: it.qty,
+      price: byId.get(it.productId) ?? 0,
+    }));
+    await createCheckoutAndRedirect({ items, postalcode, note });
   }
 
   if (!session) {
@@ -61,79 +59,74 @@ export default async function Page() {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Kassa</h1>
-      <p className="text-sm text-gray-600">
-        Välj produkt och antal för fakturaköp.
-      </p>
-      <form action={action} className="space-y-3">
-        <div>
-          <label htmlFor="productId" className="block text-sm font-medium">
-            Produkt
-          </label>
-          <select
-            id="productId"
-            name="productId"
-            className="border w-full px-2 py-1"
-            required
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Välj en produkt
-            </option>
-            {productsForClient.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {p.price.toFixed(2)} SEK
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <label htmlFor="count" className="block text-sm font-medium">
-            Antal
-          </label>
-          <input
-            id="count"
-            name="count"
-            type="number"
-            min={1}
-            defaultValue={1}
-            className="border w-full px-2 py-1"
-          />
-          <TotalPreview
-            products={productsForClient.map(({ id, price }) => ({ id, price }))}
-            productInputId="productId"
-            countInputId="count"
-          />
-        </div>
-        <div>
-          <label htmlFor="postalcode" className="block text-sm font-medium">
-            Postnummer (valfritt)
-          </label>
-          <input
-            id="postalcode"
-            name="postalcode"
-            placeholder="123 45"
-            className="border w-full px-2 py-1"
-          />
-        </div>
-        <div>
-          <label htmlFor="note" className="block text-sm font-medium">
-            Notering (valfritt)
-          </label>
-          <input
-            id="note"
-            name="note"
-            placeholder="t.ex. Swish referens"
-            className="border w-full px-2 py-1"
-          />
-        </div>
-        <LineItemPreview
-          products={productsForClient}
-          productInputId="productId"
-          countInputId="count"
-        />
-      </form>
+    <div className="max-w-2xl mx-auto p-6 space-y-8">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-extrabold tracking-tight">Kassa</h1>
+        <p className="text-gray-500">
+          Granska din beställning och slutför köpet.
+        </p>
+      </header>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold">Din varukorg</h2>
+        <CartSummary />
+      </section>
+
+      {hasItems && (
+        <section className="space-y-4 bg-white border rounded-lg p-6 shadow-sm">
+          <h2 className="text-xl font-bold">Leverans & Information</h2>
+          <form action={action} className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label
+                  htmlFor="postalcode"
+                  className="block text-sm font-semibold text-gray-700"
+                >
+                  Postnummer
+                </label>
+                <input
+                  id="postalcode"
+                  name="postalcode"
+                  type="text"
+                  placeholder="123 45"
+                  className="block w-full rounded-md border-gray-300 border px-3 py-2 text-sm focus:border-black focus:ring-black outline-none transition"
+                />
+                <p className="text-xs text-gray-400">
+                  Valfritt, men hjälper oss med planering.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="note"
+                className="block text-sm font-semibold text-gray-700"
+              >
+                Notering till beställningen
+              </label>
+              <textarea
+                id="note"
+                name="note"
+                rows={3}
+                placeholder="t.ex. Swish-referens eller speciella önskemål"
+                className="block w-full rounded-md border-gray-300 border px-3 py-2 text-sm focus:border-black focus:ring-black outline-none transition resize-none"
+              />
+            </div>
+
+            <div className="pt-4 border-t">
+              <button
+                type="submit"
+                className="w-full bg-black text-white font-bold py-3 px-4 rounded-md hover:bg-gray-800 transition-colors shadow-lg active:scale-[0.98]"
+              >
+                Slutför beställning (Faktura)
+              </button>
+              <p className="mt-4 text-center text-xs text-gray-500">
+                Genom att slutföra köpet godkänner du våra köpvillkor.
+              </p>
+            </div>
+          </form>
+        </section>
+      )}
     </div>
   );
 }
