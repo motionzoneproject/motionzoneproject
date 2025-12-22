@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Prisma, PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client";
 
 const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) {
@@ -14,17 +14,17 @@ async function main() {
     {
       name: "Drop-in 1 tillfälle",
       description: "Enstaka tillfälle.",
-      price: new Prisma.Decimal("199.00"),
+      price: 199.0,
     },
     {
       name: "Kurs 10 tillfällen",
       description: "Paket om 10 tillfällen.",
-      price: new Prisma.Decimal("1599.00"),
+      price: 1599.0,
     },
     {
       name: "Klipptkort 5 tillfällen",
       description: "Flexibelt kort för 5 pass.",
-      price: new Prisma.Decimal("899.00"),
+      price: 899.0,
     },
   ];
 
