@@ -65,6 +65,8 @@ export default async function Page() {
                   {p.name}
                 </CardTitle>
                 <CardDescription className="line-clamp-2 min-h-[40px]">
+                  Typ: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
+                  <br />
                   {p.description}
                 </CardDescription>
               </CardHeader>
@@ -99,7 +101,7 @@ export default async function Page() {
                   <div className="grid gap-2">
                     {schemaItems.map(async (s) => {
                       const courseName = await getFullCourseNameFromId(
-                        s.courseId,
+                        s.courseId
                       );
                       return (
                         <div
