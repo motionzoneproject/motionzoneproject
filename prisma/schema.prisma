@@ -287,8 +287,8 @@ model Product {
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om useTotalCount sätts count till 0.
 
-  terminId String? // Specificera vilken termin den gäller på. Inte obligatoriskt. Men då sätts expireDate till när terminen slutar.
-  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
+  terminId String? // fix: Detta hämtas i nulöäget istället från vart kurserna i produkten faktiskt har lagts in i veckoschemat (se GetProductTermin i server-action). Kanske gör en koppling hit senare.
+  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull) // fix: se ovan.
 
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate

@@ -26,6 +26,27 @@ export const veckodagar = [
   "Söndag",
 ];
 
+export const getVeckodag = (day: Weekday) => {
+  switch (day) {
+    case "MONDAY":
+      return "Måndag";
+    case "TUESDAY":
+      return "Tisdag";
+    case "WEDNESDAY":
+      return "Onsdag";
+    case "THURSDAY":
+      return "Torsdag";
+    case "FRIDAY":
+      return "Fredag";
+    case "SATURDAY":
+      return "Lördag";
+    case "SUNDAY":
+      return "Söndag";
+    default:
+      return day; // Returnerar originalsträngen om ingen matchning hittas
+  }
+};
+
 export default async function SchemaDay({
   schemaItems,
   weekday,
