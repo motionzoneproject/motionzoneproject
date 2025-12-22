@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import {
   getAllProducts,
+  getCourseCountInProduct,
   getFullCourseNameFromId,
   getProductSchema,
   getProductTermin,
@@ -49,7 +50,7 @@ export default async function Page() {
             >
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start mb-2">
-                  <Badge variant="secondary" className="font-bold">
+                  <Badge variant="default" className="font-bold text-xl">
                     {p.price.toNumber()} kr
                   </Badge>
                   {spotsLeft !== null && (
@@ -64,7 +65,7 @@ export default async function Page() {
                 <CardTitle className="text-xl font-bold leading-none">
                   {p.name}
                 </CardTitle>
-                <CardDescription className="line-clamp-2 min-h-[40px]">
+                <CardDescription className="line-clamp-2">
                   Typ: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
                   <br />
                   {p.description}
@@ -101,7 +102,12 @@ export default async function Page() {
                   <div className="grid gap-2">
                     {schemaItems.map(async (s) => {
                       const courseName = await getFullCourseNameFromId(
-                        s.courseId
+                        s.courseId,
+                      );
+
+                      const courseCounts = await getCourseCountInProduct(
+                        p.id,
+                        s.courseId,
                       );
                       return (
                         <div
@@ -110,6 +116,7 @@ export default async function Page() {
                         >
                           <div className="font-bold text-foreground leading-tight">
                             {courseName}
+                            <br />({courseCounts}st tillfällen)
                           </div>
                           <div className="flex items-center gap-1 text-muted-foreground font-medium">
                             <span>{getVeckodag(s.weekday)}</span>
