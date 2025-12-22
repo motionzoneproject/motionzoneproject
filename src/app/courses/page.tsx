@@ -57,7 +57,7 @@ export default async function Page() {
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start mb-2">
                   <Badge variant="default" className="font-bold text-xl">
-                    {p.price.toNumber()} kr
+                    {p.price} kr
                   </Badge>
                   {spotsLeft !== null && (
                     <Badge

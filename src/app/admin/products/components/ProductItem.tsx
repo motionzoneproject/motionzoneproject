@@ -54,7 +54,7 @@ export default async function ProductItem({ product }: Props) {
                 clipcard={product.useTotalCount}
                 description={product.description}
                 name={product.name}
-                price={product.price.toNumber()}
+                price={product.price} // .toNumber() om vi ska köra decimal
               />
               <DeleteProductBtn productId={product.id} />
             </div>
@@ -82,8 +82,9 @@ export default async function ProductItem({ product }: Props) {
               {prodCourse.length}
             </div>
             <div>
-              <span className="font-bold">Pris:</span>{" "}
-              {product.price.toNumber()}kr
+              <span className="font-bold">Pris:</span>
+              {/* fix:  .toNumber() om det ska vara decimal */} {product.price}
+              kr
             </div>
             <div>
               <span className="font-bold">Platser:</span>{" "}

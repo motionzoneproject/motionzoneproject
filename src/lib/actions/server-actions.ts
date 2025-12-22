@@ -61,7 +61,7 @@ export async function getUserLessons(): Promise<{
     const userPurchases = await prisma.purchaseItem.findMany({
       where: {
         purchase: { userId: user.id },
-        remainingCount: { gt: 0 },
+        // remainingCount: { gt: 0 }, // fixed: Lektionerna skall synas ändå, så detta får kollas i boka-delen istället.
       },
       select: { courseId: true },
     });

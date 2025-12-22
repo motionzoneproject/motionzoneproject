@@ -78,3 +78,89 @@ export async function adminGetOrder(orderId: string) {
     },
   });
 }
+
+// fix: klippkort.
+// kör denna när man accepterar ordern.
+export async function createPurchaseFromOrder(orderId: string) {
+  await requireAdmin();
+
+  return prisma.$transaction(async (tx) => {
+    // 1. SÄKERHETSSPÄRR: Kolla om ordern redan har genererat ett köp
+    const existingPurchase = await tx.purchase.findFirst({
+      where: { orderId: orderId },
+    });
+
+    if (existingPurchase) {
+      // Vi returnerar framgång här eftersom målet (att ett köp ska finnas) redan är uppfyllt,
+      // men vi skapar inget nytt. Alternativt kasta ett fel om du vill logga det som ett problem.
+      return {
+        success: true,
+        message: "Köp fanns redan för denna order.",
+        purchaseId: existingPurchase.id,
+      };
+    }
+
+    // 2. Hämta ordern (inkludera allt vi behöver för att skapa köpet)
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                courses: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) throw new Error("Order hittades inte");
+
+    // Kontrollera att ordern är i rätt status för att generera köp
+    if (order.status !== "APPROVED" && order.status !== "PAID") {
+      throw new Error("Ordern är inte godkänd/betald ännu.");
+    }
+
+    // 3. Skapa huvudpurchasen
+    const purchase = await tx.purchase.create({
+      data: {
+        userId: order.userId,
+        orderId: order.id,
+        productId: order.orderItems[0]?.productId,
+      },
+    });
+
+    // 4. Skapa PurchaseItems
+    const purchaseItemPromises = order.orderItems.flatMap((orderItem) =>
+      orderItem.product.courses.map((pc) =>
+        tx.purchaseItem.create({
+          data: {
+            purchaseId: purchase.id,
+            courseId: pc.courseId,
+            orderItemId: orderItem.id,
+            lessonsIncluded: pc.lessonsIncluded,
+            remainingCount: pc.lessonsIncluded,
+            unlimited: pc.unlimited ?? false,
+          },
+        }),
+      ),
+    );
+
+    await Promise.all(purchaseItemPromises);
+
+    return {
+      success: true,
+      purchaseId: purchase.id,
+      itemCount: purchaseItemPromises.length,
+    };
+  });
+}
+
+export async function getPurchaseFromOrder(id: string) {
+  await requireAdmin();
+  const p = await prisma.purchase.findMany({ where: { orderId: id } });
+
+  return p;
+}

@@ -102,6 +102,7 @@ export default function OrdersView({
           <tr className="bg-gray-50">
             <th className="p-2 text-left">Order</th>
             <th className="p-2 text-left">Kund</th>
+
             <th className="p-2 text-left">Total</th>
             <th className="p-2 text-left">Status</th>
             <th className="p-2 text-left">Skapad</th>
@@ -110,57 +111,68 @@ export default function OrdersView({
           </tr>
         </thead>
         <tbody>
-          {filtered.map((o) => (
-            <tr key={o.id} className="border-t">
-              <td className="p-2 font-mono">{o.id}</td>
-              <td className="p-2">{o.user?.email ?? o.userId}</td>
-              <td className="p-2">{String(o.totalPrice)}</td>
-              <td className="p-2">{o.status ?? "PENDING_PAYMENT"}</td>
-              <td className="p-2">{new Date(o.createdAt).toLocaleString()}</td>
-              <td className="p-2">
-                <Link
-                  href={`/admin/orders/view?status=${encodeURIComponent(
-                    active,
-                  )}&orderId=${encodeURIComponent(o.id)}`}
-                  className="underline text-blue-600"
-                >
-                  Visa
-                </Link>
-              </td>
-              <td className="p-2">
-                <div className="flex gap-2">
-                  <form action={onApprove} className="flex items-center gap-2">
-                    <input type="hidden" name="orderId" value={o.id} />
-                    <input
-                      name="note"
-                      placeholder="Notering (valfritt)"
-                      className="border px-2 py-1 text-xs"
-                    />
-                    <SubmitButton
-                      className="px-2 py-1 bg-emerald-600 text-white rounded"
-                      pendingText="Uppdaterar…"
+          {filtered.map((o) => {
+            // const purchase = await getPurchaseFromOrder(o.id);
+            return (
+              <tr key={o.id} className="border-t">
+                <td className="p-2 font-mono">{o.id}</td>
+                <td className="p-2">{o.user?.email ?? o.userId}</td>
+                <td className="p-2">{String(o.totalPrice)}</td>
+                <td className="p-2">{o.status ?? "PENDING_PAYMENT"}</td>
+                <td className="p-2">
+                  {new Date(o.createdAt).toLocaleString()}
+                </td>
+                <td className="p-2">
+                  <Link
+                    href={`/admin/orders/view?status=${encodeURIComponent(
+                      active,
+                    )}&orderId=${encodeURIComponent(o.id)}`}
+                    className="underline text-blue-600"
+                  >
+                    Visa
+                  </Link>
+                </td>
+                <td className="p-2">
+                  <div className="flex gap-2">
+                    <form
+                      action={onApprove}
+                      className="flex items-center gap-2"
                     >
-                      Godkänn
-                    </SubmitButton>
-                  </form>
-                  <form action={onMarkPaid} className="flex items-center gap-2">
-                    <input type="hidden" name="orderId" value={o.id} />
-                    <input
-                      name="note"
-                      placeholder="Notering (valfritt)"
-                      className="border px-2 py-1 text-xs"
-                    />
-                    <SubmitButton
-                      className="px-2 py-1 bg-blue-600 text-white rounded"
-                      pendingText="Uppdaterar…"
+                      <input type="hidden" name="orderId" value={o.id} />
+                      <input
+                        name="note"
+                        placeholder="Notering (valfritt)"
+                        className="border px-2 py-1 text-xs"
+                      />
+                      <SubmitButton
+                        className="px-2 py-1 bg-emerald-600 text-white rounded"
+                        pendingText="Uppdaterar…"
+                      >
+                        Godkänn
+                      </SubmitButton>
+                    </form>
+                    <form
+                      action={onMarkPaid}
+                      className="flex items-center gap-2"
                     >
-                      Betald
-                    </SubmitButton>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          ))}
+                      <input type="hidden" name="orderId" value={o.id} />
+                      <input
+                        name="note"
+                        placeholder="Notering (valfritt)"
+                        className="border px-2 py-1 text-xs"
+                      />
+                      <SubmitButton
+                        className="px-2 py-1 bg-blue-600 text-white rounded"
+                        pendingText="Uppdaterar…"
+                      >
+                        Betald
+                      </SubmitButton>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </>

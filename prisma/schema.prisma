@@ -300,7 +300,7 @@ model Product {
   useTotalCount Boolean @default(false)// (kommande fix med type istället) Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
   totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
-  price Decimal @default(0) // Money
+  price Float @default(0) // Money
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
@@ -450,7 +450,7 @@ model OrderItem {
   id String @id @default(uuid())
 
   count Int
-  price Decimal 
+  price Float 
 
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -474,7 +474,7 @@ model Order {
 
   orderItems OrderItem[]
 
-  totalPrice    Decimal 
+  totalPrice    Float 
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem.
   user   User   @relation(fields: [userId], references: [id])
