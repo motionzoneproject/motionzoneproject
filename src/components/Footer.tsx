@@ -98,7 +98,7 @@ const Footer = () => {
         <Separator className="my-10 bg-gray-800" />
 
         <div className="max-w-7xl mx-auto bg-sky-400 ">
-          <p className=" border-neutral-200 text-md font-bold text-black px-6 py-2 text-center max-w-full">
+          <p className=" border-neutral-200 text-md font-bold text-black px-6 py-2 text-center w-full">
             © {new Date().getFullYear()} MotionZone Växjö. Alla rättigheter
             förbehållna.
           </p>
