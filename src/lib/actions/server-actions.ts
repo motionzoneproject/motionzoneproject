@@ -473,3 +473,33 @@ export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
     return [];
   }
 }
+
+export async function getCourseCountInProduct(
+  productId: string,
+  courseId: string,
+): Promise<number> {
+  const sessionData = await getSessionData();
+  if (!sessionData?.user) return 0;
+
+  try {
+    // fix: ej för klippkort än.
+
+    // Vi letar i kopplingstabellen mellan produkt och kurs
+    const relation = await prisma.productOnCourse.findUnique({
+      where: {
+        courseId_productId: {
+          productId: productId,
+          courseId: courseId,
+        },
+      },
+      select: {
+        lessonsIncluded: true,
+      },
+    });
+
+    return relation?.lessonsIncluded ?? 0;
+  } catch (e) {
+    console.error("Fel vid hämtning av bokningsgräns:", e);
+    return 0;
+  }
+}
