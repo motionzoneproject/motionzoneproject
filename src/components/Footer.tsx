@@ -9,7 +9,6 @@ const Footer = () => {
     <footer className="bg-gray-950 text-gray-300">
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
           <div className="space-y-3">
             <h2 className="text-2xl font-bold text-white mb-4">
               MotionZone Växjö
@@ -84,7 +83,9 @@ const Footer = () => {
             </ul>
           </div>
 
-          <div className="items-center mx-auto">
+          <div className="items-center mx-auto space-y-3">
+            <h3 className="text-lg text-white font-bold">Bli medlem</h3>
+            <p className="text-sm text-white-600">Vill du börja dansan? skapa ett konto och boka din första kurs idag</p>
             <Button asChild className="mt-6 w-full bg-red-600 hover:bg-red-500">
               <Link href="/signup">Bli medlem</Link>
             </Button>
@@ -93,8 +94,8 @@ const Footer = () => {
 
         <Separator className="my-10 bg-gray-800" />
 
-        <div className="max-w-7xl mx-auto ">
-          <p className=" border-neutral-200 text-md font-bold text-white-500 px-6 py-2 text-center">
+        <div className="max-w-7xl mx-auto bg-sky-400 w-full">
+          <p className=" border-neutral-200 text-md font-bold text-black px-6 py-2 text-center">
             © {new Date().getFullYear()} MotionZone Växjö. Alla rättigheter
             förbehållna.
           </p>
