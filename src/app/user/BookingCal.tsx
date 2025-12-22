@@ -1,24 +1,22 @@
 "use client";
 
 import { sv } from "date-fns/locale";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { addUserInLesson } from "@/lib/actions/admin";
-import type {
-  BookingWithLesson,
-  LessonWithCourse,
-  UserPurchaseWithProduct,
+import {
+  type BookingWithLesson,
+  delBooking,
+  type LessonWithCourse,
+  type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import BookBtn from "./BookBtn";
 
 interface Props {
-  lessons: LessonWithCourse[];
-  bookings: BookingWithLesson[];
-  purschaseItems: UserPurchaseWithProduct[];
+  lessons: LessonWithCourse[]; // Alla lektioner i alla kurser som kunden har tillgång till.
+  bookings: BookingWithLesson[]; // Alla bokningar gjorda av kunden.
+  purschaseItems: UserPurchaseWithProduct[]; // Alla produkter (purschaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
 }
 
 export default function BookingCal({
@@ -45,32 +43,6 @@ export default function BookingCal({
       (l) => l.startTime.toDateString() === date.toDateString(),
     );
   }, [date, lessons]);
-
-  const router = useRouter();
-  const [_isPending, setIsPending] = useState(false);
-
-  const _handleBooking = async (
-    lessonId: string,
-    userId: string,
-    purchaseId: string,
-  ) => {
-    setIsPending(true);
-
-    // Vi skickar datan som matchar ditt Zod-schema (AdminAddUserInLessonSchema)
-    const result = await addUserInLesson({
-      lessonId,
-      userId,
-      purchaseId,
-    });
-
-    if (result.success) {
-      toast.success(result.msg);
-      router.refresh(); // Uppdaterar propsen (lessons/bookings) så kalendern ändrar färg
-    } else {
-      toast.error(result.msg || "Något gick fel");
-    }
-    setIsPending(false);
-  };
 
   return (
     <div className="flex flex-col gap-6 md:flex-row">
@@ -128,6 +100,7 @@ export default function BookingCal({
           <CardContent className="space-y-4">
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
+                // Okej så här kollar vi om den redan är bokad genom att söka efter lessonId i bookings:
                 const isAlreadyBooked = bookings.some(
                   (b) => b.lessonId === lesson.id,
                 );
@@ -145,12 +118,26 @@ export default function BookingCal({
                         })}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {lesson.course.name}
+                        {lesson.course.name}{" "}
+                        {lesson.cancelled && (
+                          <span className="font-bold text-red-500">
+                            (INSTÄLLD)
+                            <br />
+                            {lesson.message}
+                          </span>
+                        )}
                       </p>
                     </div>
-                    {isAlreadyBooked ? (
+                    {lesson.cancelled ? (
+                      "Inställd."
+                    ) : isAlreadyBooked ? (
                       <div>
-                        <Button variant={"destructive"}>Avboka</Button>
+                        <Button
+                          variant={"destructive"}
+                          onClick={async () => await delBooking(lesson.id)}
+                        >
+                          Avboka
+                        </Button>
                       </div>
                     ) : (
                       <div>

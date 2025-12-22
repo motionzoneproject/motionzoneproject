@@ -163,7 +163,7 @@ model Termin {
   courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också. 
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  updatedAt DateTime @updatedAt
 
 }
 
@@ -275,7 +275,11 @@ model CourseOnTermin {
 
 //Men om lärarna vill vara schyssta och låta en kund få med sig kurstillfällen till nästa period, då kanske vi bara kan antingen göra ett rabattsystem (kanske vi borde ändå?), eller kanske göra så admin kan ändra expiresAt (om kursen fortsätter en annan termin)
 
-
+enum ProductType {
+  COURSE  // En specifik kurs (t.ex. "Yoga måndagar")
+  PACK // Ett paket med flera fasta kurser
+  CLIP    // Klippkort (gäller valfria kurser i systemet)
+}
 
 model Product {
 
@@ -292,8 +296,9 @@ model Product {
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
-  useTotalCount Boolean @default(false)// Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
-  totalCount Int? // Totalt antal tillfällen att boka (om man använder den metoden)
+  type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
+  useTotalCount Boolean @default(false)// (kommande fix med type istället) Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
+  totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
   price Decimal @default(0) // Money
 
@@ -303,7 +308,7 @@ model Product {
   maxCustomer Int @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  updatedAt DateTime @updatedAt
 
 
   @@index([terminId])
@@ -320,7 +325,9 @@ model ProductOnCourse {
   productId String
   product  Product @relation(fields: [productId], references: [id])
 
-  lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (0 om klippkort)
+  lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (fix: 0 om klippkort gammal logik)
+  type ProductType @default(COURSE) // Tror det är bra att ha den här med.
+  unlimited Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
 
   @@id([courseId, productId])
   @@map("product_on_course")
@@ -380,16 +387,17 @@ model Purchase {
   // });
 
 
-  // Om produkten är ett klippkort:
-  useTotalCount   Boolean   @default(false)  // klippkort eller ej
-  totalCount      Int?      // Ursprungliga antalet klipp
+
+  type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
+  useTotalCount   Boolean   @default(false)  // klippkort eller ej (försvinner i kommande fix).
+  totalCount      Int?      // Ursprungliga antalet (för klippkort)
   remainingCount  Int?      // Aktuellt saldo för klippkortet
 
   
   expiresAt       DateTime? // Om produkten / paketet eller klippkortet går ut
   
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  updatedAt       DateTime?  @updatedAt
   
   @@index([userId])
   @@index([productId])
@@ -418,8 +426,11 @@ model PurchaseItem {
   // termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
   // Denna info finns i purschase.
 
-  lessonsIncluded Int // 0 om klippkort, precis som produkt.
-  remainingCount Int
+  type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
+  lessonsIncluded Int // 0 om klippkort, precis som produkt. Men inför kommande fix är inte logiken baserad på detta utan TYPE.
+  remainingCount Int 
+
+  unlimited Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
 
   bookings Booking[]
 
@@ -450,7 +461,7 @@ model OrderItem {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@index([orderId])  
   @@index([productId])
@@ -465,7 +476,7 @@ model Order {
 
   totalPrice    Decimal 
 
-  userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem
+  userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem.
   user   User   @relation(fields: [userId], references: [id])
 
   postalcode String?
@@ -477,7 +488,7 @@ model Order {
   statusEvents OrderStatusEvent[]
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("order")
@@ -496,7 +507,7 @@ model Event {
   imageURL String
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  updatedAt DateTime @updatedAt
 
 }
 
@@ -541,7 +552,6 @@ model OrderStatusEvent {
 
 // model BasketItem {
 //   id String @id @default(uuid())
-
 // }
 
 

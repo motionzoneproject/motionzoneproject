@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  getFullCourseNameFromId,
   getUserBookings,
   getUserLessons,
   getUserPurchases,
@@ -33,14 +34,49 @@ export default async function Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          (BOKA)
           <BookingCal
             purschaseItems={purschaseItems}
             lessons={lessons}
             bookings={bookings}
           />
           <br />
-          (Uppgifter)
+          Dina produkter, och kurser du kan boka:
+          <ul>
+            {purschaseItems.map(async (pi) => (
+              <li key={pi.id}>
+                {pi.purchase.product.name} -{" "}
+                {await getFullCourseNameFromId(pi.courseId)} - lektioner kvar:{" "}
+                {pi.unlimited ? (
+                  "obegränsat"
+                ) : (
+                  <span>
+                    {pi.remainingCount} / {pi.lessonsIncluded}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {/**För att studera datan: */}
+          {/* 
+          <br />
+          <br />
+          purchaseItems:
+          <br />
+          <pre>{JSON.stringify(purschaseItems, null, 2)}</pre>
+          <br />
+          <br />
+          <br />
+          lessons:
+          <br />
+          <pre>{JSON.stringify(lessons, null, 2)}</pre>
+          <br />
+          <br />
+          <br />
+          bookings:
+          <br />
+          <pre>{JSON.stringify(bookings, null, 2)}</pre>
+          <br />
+          <br /> */}
         </CardContent>
       </Card>
     </div>

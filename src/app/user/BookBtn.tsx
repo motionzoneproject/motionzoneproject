@@ -88,33 +88,13 @@ export default function AddTerminForm({
     }
   }
 
-  const _formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
-
   if (!user) return notFound();
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="bg-green-500 cursor-pointer">
-          Ny termin
+          Boka
         </Button>
       </DialogTrigger>
 
