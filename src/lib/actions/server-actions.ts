@@ -89,7 +89,6 @@ export async function getUserLessons(): Promise<{
   }
 }
 
-// fix this too i guess, we should be able to get this dynamicly.
 export type UserPurchaseWithProduct = {
   purchase: {
     totalCount: number | null;
@@ -109,6 +108,7 @@ export type UserPurchaseWithProduct = {
   updatedAt: Date;
   type: string;
   courseId: string;
+  course: { name: string }; // <--- NYTT: Inkludera kursdata här
   unlimited: boolean;
   lessonsIncluded: number;
   remainingCount: number;
@@ -126,6 +126,10 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
         purchase: { userId: session.user.id },
       },
       include: {
+        course: {
+          // <--- NYTT: Hämtar kursnamnet direkt
+          select: { name: true },
+        },
         purchase: {
           select: {
             id: true,
