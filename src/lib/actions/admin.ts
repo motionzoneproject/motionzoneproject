@@ -898,7 +898,13 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
         id: true;
         product: { select: { id: true; name: true } };
         PurchaseItems: {
-          select: { id: true; remainingCount: true; unlimited: true };
+          select: {
+            id: true;
+            remainingCount: true;
+            unlimited: true;
+            lessonsIncluded: true; // Bra att ha för "X av Y" logik
+            course: { select: { name: true } }; // Hämtar namnet direkt
+          };
         };
       };
     };
@@ -915,6 +921,8 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
   try {
+    // fix: för klippkort!
+
     const usersWithData = await prisma.user.findMany({
       where: {
         purchases: {
@@ -937,7 +945,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
           select: {
             id: true,
             product: {
-              select: { id: true, name: true }, // Vi skippar price här!
+              select: { id: true, name: true },
             },
             PurchaseItems: {
               where: { courseId, remainingCount: { gt: 0 } },
@@ -945,6 +953,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
                 id: true,
                 remainingCount: true,
                 unlimited: true,
+                lessonsIncluded: true, // Lagt till för att matcha typen
+                course: {
+                  select: { name: true }, // Lagt till för att matcha typen
+                },
               },
             },
           },
