@@ -122,10 +122,10 @@ export default function BookingCal({
                         {lesson.cancelled && (
                           <span className="font-bold text-red-500">
                             (INSTÄLLD)
-                            <br />
-                            {lesson.message}
                           </span>
                         )}
+                        <br />
+                        {lesson.message}
                       </p>
                     </div>
                     {lesson.cancelled ? (
