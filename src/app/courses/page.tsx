@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, MapPin } from "lucide-react"; // Ikoner för bättre UX
+import { Book, Calendar, CalendarDays, Clock, MapPin } from "lucide-react"; // Ikoner för bättre UX
 import {
   Accordion,
   AccordionContent,
@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  getAllCoursesInProduct,
   getAllProducts,
   getCourseCountInProduct,
   getFullCourseNameFromId,
@@ -46,6 +47,8 @@ export default async function Page() {
             getProductSchema(p.id),
           ]);
 
+          const courses = await getAllCoursesInProduct(p.id);
+
           const spotsLeft =
             p.maxCustomer > 0 ? p.maxCustomer - (p.totalCount ?? 0) : null;
 
@@ -75,6 +78,7 @@ export default async function Page() {
                   Typ: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
                   <br />
                   {p.description}
+                  {/**fix: allt för klippkort */}
                 </CardDescription>
               </CardHeader>
 
@@ -103,20 +107,34 @@ export default async function Page() {
 
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1">
-                    <AccordionTrigger> Schema & Innehåll</AccordionTrigger>
+                    <AccordionTrigger>Innehåll och schema</AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground"></div>
                         <div className="grid gap-2">
+                          <div>
+                            <span className="font-bold">
+                              <Book className="inline-block" /> Kurser:{" "}
+                            </span>
+                            {courses.map(async (c) => (
+                              <div key={c.id} className="p-1">
+                                <Badge variant={"outline"}>
+                                  {" "}
+                                  {c.name} - Tillfällen:{" "}
+                                  {await getCourseCountInProduct(p.id, c.id)}st
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-1 mt-2">
+                            <Calendar className="inline-block" />
+                            <span className="font-bold">Schema:</span>
+                          </div>
                           {schemaItems.map(async (s) => {
                             const courseName = await getFullCourseNameFromId(
                               s.courseId,
                             );
 
-                            const courseCounts = await getCourseCountInProduct(
-                              p.id,
-                              s.courseId,
-                            );
                             return (
                               <div
                                 key={s.id}
@@ -124,7 +142,6 @@ export default async function Page() {
                               >
                                 <div className="font-bold text-foreground leading-tight">
                                   {courseName}
-                                  <br />({courseCounts}st tillfällen)
                                 </div>
                                 <div className="flex items-center gap-1 ">
                                   <span>{getVeckodag(s.weekday)}</span>
@@ -159,7 +176,7 @@ export default async function Page() {
               </CardContent>
 
               <CardFooter className="pt-4 border-t bg-zinc-50/50 dark:bg-zinc-900/50">
-                <Button className="w-full font-bold uppercase tracking-wider group">
+                <Button className="w-full font-bold uppercase tracking-wider group cursor-pointer">
                   Köp nu
                   <span className="ml-2 group-hover:translate-x-1 transition-transform">
                     →

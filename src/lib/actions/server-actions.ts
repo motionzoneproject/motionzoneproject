@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Course,
   Prisma,
   Product,
   SchemaItem,
@@ -377,6 +378,32 @@ export async function getFullCourseNameFromId(id: string) {
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;
+}
+
+export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  if (!user) return [];
+
+  try {
+    const courses: Course[] = [];
+
+    const c = await prisma.productOnCourse.findMany({
+      where: { productId: pid },
+      include: { course: true },
+    });
+
+    c.forEach((itm) => {
+      courses.push(itm.course);
+    });
+
+    return courses;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
 }
 
 export async function getAllProducts(): Promise<Product[]> {
