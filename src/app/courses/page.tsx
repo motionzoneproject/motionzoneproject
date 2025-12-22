@@ -1,4 +1,10 @@
 import { CalendarDays, Clock, MapPin } from "lucide-react"; // Ikoner för bättre UX
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,56 +100,62 @@ export default async function Page() {
                 </div>
 
                 {/* Schema / Kurser */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    Schema & Innehåll
-                  </div>
-                  <div className="grid gap-2">
-                    {schemaItems.map(async (s) => {
-                      const courseName = await getFullCourseNameFromId(
-                        s.courseId,
-                      );
 
-                      const courseCounts = await getCourseCountInProduct(
-                        p.id,
-                        s.courseId,
-                      );
-                      return (
-                        <div
-                          key={s.id}
-                          className="text-[11px] p-2 bg-zinc-50 dark:bg-zinc-900 rounded border flex flex-col gap-1"
-                        >
-                          <div className="font-bold text-foreground leading-tight">
-                            {courseName}
-                            <br />({courseCounts}st tillfällen)
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground font-medium">
-                            <span>{getVeckodag(s.weekday)}</span>
-                            <span>•</span>
-                            <span>
-                              {s.timeStart.toLocaleTimeString("sv-SE", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                              -
-                              {s.timeEnd.toLocaleTimeString("sv-SE", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                          {s.place && (
-                            <div className="flex items-center gap-1 text-[10px] text-primary/70">
-                              <MapPin className="w-2 h-2" />
-                              {s.place}
-                            </div>
-                          )}
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="item-1">
+                    <AccordionTrigger> Schema & Innehåll</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground"></div>
+                        <div className="grid gap-2">
+                          {schemaItems.map(async (s) => {
+                            const courseName = await getFullCourseNameFromId(
+                              s.courseId,
+                            );
+
+                            const courseCounts = await getCourseCountInProduct(
+                              p.id,
+                              s.courseId,
+                            );
+                            return (
+                              <div
+                                key={s.id}
+                                className="text-[11px] p-2 bg-zinc-50 dark:bg-zinc-900 rounded border flex flex-col gap-1"
+                              >
+                                <div className="font-bold text-foreground leading-tight">
+                                  {courseName}
+                                  <br />({courseCounts}st tillfällen)
+                                </div>
+                                <div className="flex items-center gap-1 ">
+                                  <span>{getVeckodag(s.weekday)}</span>
+                                  <span> </span>
+                                  <span>
+                                    <Clock className="inline-block w-3 h-3" />
+                                    {s.timeStart.toLocaleTimeString("sv-SE", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    -
+                                    {s.timeEnd.toLocaleTimeString("sv-SE", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                                {s.place && (
+                                  <div className="flex items-center gap-1 text-[10px] text-primary/70">
+                                    <MapPin className="w-2 h-2" />
+                                    {s.place}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
 
               <CardFooter className="pt-4 border-t bg-zinc-50/50 dark:bg-zinc-900/50">
