@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import type z from "zod";
-import type { Prisma } from "@/generated/prisma/client";
+import type {
+  Prisma,
+  Product,
+  SchemaItem,
+  Termin,
+} from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
@@ -350,6 +355,11 @@ export async function delBooking(
 }
 
 export async function getFullCourseNameFromId(id: string) {
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  if (!user) return "";
+
   const course = await prisma.course.findUnique({ where: { id } });
 
   if (!course) return null;
@@ -367,4 +377,99 @@ export async function getFullCourseNameFromId(id: string) {
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  if (!user) return [];
+  try {
+    const products = await prisma.product.findMany();
+
+    return products;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+}
+
+export async function getProductTermin(pid: string): Promise<Termin[]> {
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  if (!user) return [];
+  try {
+    // 1. Hämta produkten och gå djupt ner i relationerna på en gång
+    const product = await prisma.product.findUnique({
+      where: { id: pid },
+      include: {
+        courses: {
+          include: {
+            course: {
+              include: {
+                schemaItems: {
+                  include: {
+                    termin: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) return [];
+
+    // 2. Extrahera alla unika terminer med hjälp av en Map (för att undvika dubbletter)
+    const terminMap = new Map<string, Termin>();
+
+    product.courses.forEach((pc) => {
+      pc.course.schemaItems.forEach((si) => {
+        if (si.termin) {
+          terminMap.set(si.termin.id, si.termin);
+        }
+      });
+    });
+
+    // Returnera som en array
+    return Array.from(terminMap.values());
+  } catch (e) {
+    console.error("Fel vid hämtning av terminer för produkt:", e);
+    return [];
+  }
+}
+
+export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
+  const sessionData = await getSessionData();
+  if (!sessionData?.user) return [];
+
+  try {
+    const schemaItems = await prisma.schemaItem.findMany({
+      where: {
+        course: {
+          products: {
+            some: {
+              productId: pid,
+            },
+          },
+        },
+      },
+      // include: { // eventuellt.
+      //   termin: true,
+      //   course: true,
+      // },
+      orderBy: {
+        weekday: "asc", // Eller vad som passar din sortering
+      },
+    });
+
+    return schemaItems;
+  } catch (e) {
+    console.error("Fel vid hämtning av schema för produkt:", e);
+    return [];
+  }
 }

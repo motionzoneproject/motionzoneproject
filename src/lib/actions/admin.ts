@@ -280,6 +280,8 @@ export async function addCoursetoSchema(
 
     if (!getCourse) throw new Error("Course was not found.");
 
+    // fix: lägg in så den kopplar terminen till kursen också?
+
     const newSchemaItem = await prisma.schemaItem.create({
       data: {
         terminId,
