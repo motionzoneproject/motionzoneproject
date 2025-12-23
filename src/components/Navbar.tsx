@@ -5,6 +5,7 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import NavBarAuth from "./Navbar-auth";
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,17 +47,7 @@ export default function NavBar() {
           <Link href="/checkout" className="hover:text-cyan-400">
             <span className="text-sm">Varukorg 🛒</span>
           </Link>
-          <Link href="/user">
-            <button
-              type="button"
-              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-            >
-              Logga in
-            </button>
-          </Link>
-          <Link href="/admin" className="hover:text-cyan-400">
-            Admin
-          </Link>
+          <NavBarAuth></NavBarAuth>
         </div>
 
         {/* Mobile Menu Button */}
@@ -102,29 +93,7 @@ export default function NavBar() {
             Om oss
           </Link>
           <div className="border-t border-purple-700 pt-3 mt-3 space-y-3">
-            <div className="py-2 text-sm">Svenska 🇸🇪</div>
-            <Link
-              href="/checkout"
-              className="block py-2 hover:text-cyan-400 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              Varukorg 🛒
-            </Link>
-            <Link href="/user" onClick={() => setMenuOpen(false)}>
-              <button
-                type="button"
-                className="w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700"
-              >
-                Logga in
-              </button>
-            </Link>
-            <Link
-              href="/admin"
-              className="block py-2 hover:text-cyan-400 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              Admin
-            </Link>
+            <NavBarAuth></NavBarAuth>
           </div>
         </div>
       )}
