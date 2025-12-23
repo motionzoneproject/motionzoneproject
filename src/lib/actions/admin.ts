@@ -700,7 +700,7 @@ export async function editCourse(
 }
 
 /**
- * Genererar fysiska lektionstillfällen (Lessons) baserat på en schemamall (SchemaItem).
+ * Genererar fysiska lektionstillfällen baserat på SchemaItem.
  * * Funktionen itererar genom varje dag mellan terminens start- och slutdatum,
  * identifierar alla datum som matchar den angivna veckodagen och skapar
  * lektionsobjekt med korrekta tidsstämplar.
@@ -892,6 +892,9 @@ export async function editLessonItem(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
+// fix: klippkort
+// fix: Resultat: Prismas decrement på ett heltal kan (beroende på databasinställning) resultera i ett negativt saldo om du inte har en check.
+// Lösning: För admin-verktyg brukar man ofta tillåta detta (admin har sista ordet), men det är bra att veta att det kan ske.
 
 /**
  * Hämtar samtliga produkter från databasen sorterade i alfabetisk ordning efter namn.
@@ -927,7 +930,7 @@ export type ProdCourse = {
 /**
  * Skapar en ny produkt i systemet baserat på validerad formulärdata.
  * * @param formData - Validerad data från `adminAddProductSchema`. Innehåller namn,
- * beskrivning, pris, kundbegränsning samt logik för klippkort (useTotalCount/totalCount).
+ * beskrivning, pris, kundbegränsning samt (fix) gammal logik för klippkort (useTotalCount/totalCount), detta kommer ändras.
  * @returns Ett objekt med success-status och ett bekräftande meddelande med produktens namn.
  * @auth Admin
  */
@@ -958,6 +961,7 @@ export async function addNewProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
+// fix: klippkort
 
 export async function editProduct(
   id: string,
@@ -968,7 +972,18 @@ export async function editProduct(
 
   try {
     const validated = await adminAddProductSchema.parseAsync(formData);
-    // fix:
+
+    // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
+    const salesCount = await prisma.purchase.count({
+      where: { productId: id },
+    });
+    if (validated.maxCustomers < salesCount) {
+      return {
+        success: false,
+        msg: "Kan inte sänka maxantalet under redan sålt antal.",
+      };
+    }
+
     const newProd = await prisma.product.update({
       where: { id },
       data: {
@@ -988,6 +1003,7 @@ export async function editProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
+// fix: klippkort (lägg till type istället)
 
 /**
  * Uppdaterar en befintlig produkts egenskaper i databasen.
