@@ -39,6 +39,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
   const [uicSet, setUicSet] = useState<boolean>();
 
   useEffect(() => {
+    // klippkortslogik också.
     const getAllStudentsWithCourse = async () => {
       setLoading(true);
       setUicSet(true);

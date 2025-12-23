@@ -1153,7 +1153,7 @@ export async function removeCourseInProduct(
 
 /**
  * Kontrollerar om en specifik kurs redan är kopplad till en viss produkt.
- * Hämtar även metadata om kopplingen om den existerar.
+ * Hämtar även metadata för hur många lessons man får boka om kopplingen existerar.
  * * @param courseId - ID för kursen som ska kontrolleras.
  * @param productId - ID för produkten som ska kontrolleras.
  * @returns Ett objekt med `found: boolean`. Om kopplingen finns inkluderas även `lessonsIncluded`.
@@ -1179,6 +1179,7 @@ export async function isCourseInProduct(
     return { found: false };
   }
 }
+// fix: logik om klippkort? Kolla hur den används.
 
 /**
  * Räknar hur många gånger en specifik produkt har köpts (sålda orderrader).
@@ -1195,6 +1196,8 @@ export async function countOrderItems(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
   try {
+    // ev. fix: Kolla orderstatus osv?
+
     const count = await prisma.orderItem.count({
       where: { productId: productId },
     });
@@ -1205,6 +1208,7 @@ export async function countOrderItems(
     return { found: false, count: 0 };
   }
 }
+// ev fix, den används nu som "platser kvar".
 
 /**
  * Analyserar användningen av en specifik kurs i relation till produkter och försäljning.
@@ -1238,6 +1242,11 @@ export async function countOrderItemsAndProductsCourse(
     return { found: false };
   }
 }
+// ev. fix (utredning pågår)
+// Varför den inte räknar "platser kvar":
+// Om du vill veta hur många som just nu har tillgång till en kurs för att jämföra med maxCustomer (platser kvar), ska du titta på PurchaseItem.
+// Ett OrderItem är bara ett kvitto på ett köp.
+// Ett PurchaseItem är det faktiska "medlemskapet" som ger eleven rätt att boka.
 
 /**
  * Hämtar information om en specifik lärare (användare) baserat på dess unika ID.
@@ -1297,6 +1306,7 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
     };
   };
 }>;
+// ev. fix för klippkort? Ska kolla hur funktionen används.
 
 /**
  * Hämtar en lista över användare som har giltiga köp (kvarvarande klipp/lektioner) för en specifik kurs.
@@ -1378,6 +1388,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
     return { success: false };
   }
 }
+// fix: klippkort, samt kolla hur det används.
 
 /**
  * Registrerar en elev på en specifik lektion och drar av ett klipp från deras saldo.
@@ -1413,7 +1424,7 @@ export async function addUserInLesson(
       where: {
         lessonId: validated.lessonId,
         userId: validated.userId,
-        purchaseItemId: purchase.id,
+        //purchaseItemId: purchase.id, // Tog bort för förhindrar därmed att en elev kan boka in sig 2ggr oavsett vilken produkt han väljer.
       },
     });
 
@@ -1467,6 +1478,7 @@ export async function addUserInLesson(
     return { success: false };
   }
 }
+// Klippkort fix!
 
 /**
  * Tar bort en elevs bokning från en specifik lektion och återför ett klipp till saldot.
@@ -1536,3 +1548,4 @@ export async function removeUserFromLesson(
     return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
+// Klippkort fix!

@@ -39,6 +39,7 @@ export default async function CourseItem({ course }: Props) {
   // fix: Vi skickar med alla lärare men vi har inte gjort så admin kan välja lärare för en kurs än.
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
+  // Räknar ut hur många som köpt produkten? Nej, ska utgå från order m.m. Fix!
   const counts = await countOrderItemsAndProductsCourse(course.id); //
 
   return (
