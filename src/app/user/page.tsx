@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import {
   Accordion,
   AccordionContent,
@@ -25,6 +26,8 @@ import BookingCal from "./BookingCal";
 export default async function Page() {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
+
+  if (user?.role === "admin") redirect("/admin");
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
