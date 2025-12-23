@@ -489,9 +489,7 @@ model Event {
   headline String
   description String
   link String
-  imageURL String?
-
-  price Float?
+  imageURL String
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
