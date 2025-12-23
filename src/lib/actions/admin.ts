@@ -963,6 +963,23 @@ export async function addNewProduct(
 }
 // fix: klippkort
 
+/**
+ * Uppdaterar informationen för en befintlig produkt och validerar försäljningskapacitet.
+ * * @param id - Det unika ID:t för produkten som ska redigeras.
+ * @param formData - Validerad data från `adminAddProductSchema`. Innehåller:
+ * - `name` & `description`: Produktens rubrik och information.
+ * - `price`: Det nya priset för framtida köp.
+ * - `clipcard`: Boolean (`useTotalCount`) som avgör om produkten fungerar som ett klippkort.
+ * - `maxCustomers`: Det totala taket för hur många kunder som kan köpa produkten.
+ * - `clipCount`: Antalet tillgängliga bokningar per köp (om klippkort).
+ * * @description
+ * Funktionen genomför en säkerhetskontroll av `maxCustomers`. Om administratören
+ * försöker sänka taket till ett värde som är lägre än antalet redan genomförda köp
+ * (`salesCount`), stoppas uppdateringen för att undvika logiska fel i systemets
+ * kapacitetsberäkning.
+ * * @returns Ett objekt med success-status och ett meddelande som bekräftar ändringen.
+ * @auth Admin
+ */
 export async function editProduct(
   id: string,
   formData: z.output<typeof adminAddProductSchema>,
@@ -1003,14 +1020,18 @@ export async function editProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort (lägg till type istället)
+// fix: klippkort (lägg till type istället).
 
 /**
- * Uppdaterar en befintlig produkts egenskaper i databasen.
- * Justerar produktens namn, beskrivning, pris och eventuella klippkortsinställningar (kommande fix).
- * * @param id - Det unika ID:t för produkten som ska uppdateras.
- * @param formData - Validerad data från `adminAddProductSchema` (innehåller pris, kundbegränsning och saldo-logik).
- * @returns Ett objekt med success-status och ett meddelande som bekräftar ändringen.
+ * Raderar en produkt permanent från systemet.
+ * * @param id - Det unika ID:t för produkten som ska raderas.
+ * * @description
+ * Funktionen försöker radera produkten från databasen. Tack vare databasens
+ * referensintegritet (onDelete: Restrict) kommer raderingen att nekas om det
+ * finns befintliga köp (Purchases) eller orderrader (OrderItems) kopplade till
+ * produkten. Detta förhindrar att historisk försäljnings- och bokföringsdata går förlorad.
+ * * @returns Ett objekt med success-status och ett meddelande. Om produkten är
+ * kopplad till befintliga köp returneras ett felmeddelande istället för att radera.
  * @auth Admin
  */
 export async function removeProduct(
@@ -1052,6 +1073,8 @@ export async function addCourseToProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
+    // fix: använd upsert?
+    // Kolla om den redan är inlagd (för att enkelt kunna ändra istället för att skapa.)
     const isInProd = await isCourseInProduct(
       formData.courseId,
       formData.productId,
@@ -1092,6 +1115,7 @@ export async function addCourseToProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
+// fix: klippkort, kanske kolla om produkten är ett klippkort isfåall ska väl lessonsIncluded vara 0 (?)
 
 /**
  * Tar bort kopplingen mellan en specifik kurs och en produkt.
