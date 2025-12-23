@@ -173,12 +173,13 @@ export default function AddProductForm() {
                   )}
                 />
 
+                {/**Klippkort kommer sen. fix. */}
                 <FormField
                   control={form.control}
                   name="clipcard"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Klippkort</FormLabel>
+                      <FormLabel>Klippkort (kommer snart)</FormLabel>
 
                       <FormControl>
                         <Checkbox
@@ -187,6 +188,7 @@ export default function AddProductForm() {
                             field.onChange(checked)
                           }
                           className="w-6 h-6"
+                          disabled
                         />
                       </FormControl>
 

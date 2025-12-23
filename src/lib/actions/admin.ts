@@ -3,6 +3,8 @@
 // big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas istället för useTotalCount i purchase-nivå).
 // Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
 
+// Ska gå igenom varje funktion här och skriva steg-för-steg så vi har bättre koll på varje funktion. Har testat de funktioner vi behöver ha fungerande nu till första lanseringen och de fungerar. Inaktiverar klippkort tills vidare i admin.
+
 import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import type z from "zod";
