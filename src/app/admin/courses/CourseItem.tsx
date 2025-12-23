@@ -17,7 +17,7 @@ import LessonsBrowser from "./components/LessonsBrowser";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
-  course: CourseWithTeacher;
+  course: CourseWithTeacher; // fix: varför har jag lärare med här?
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
@@ -36,9 +36,10 @@ export default async function CourseItem({ course }: Props) {
     where: { schemaItems: { some: { courseId: course.id } } },
   });
 
+  // fix: Vi skickar med alla lärare men vi har inte gjort så admin kan välja lärare för en kurs än.
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
-  const counts = await countOrderItemsAndProductsCourse(course.id);
+  const counts = await countOrderItemsAndProductsCourse(course.id); //
 
   return (
     <div className="p-2 ">

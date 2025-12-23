@@ -49,7 +49,7 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   course: Course;
-  teachers: User[];
+  teachers: User[]; // fix: Vi tar emot lärare så behövs bara en select.
 }
 
 export default function EditCourseForm({ course, teachers }: Props) {
@@ -63,7 +63,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
       maxAge: course.maxAge,
       level: course.level ?? "",
       adult: course.adult,
-      teacherid: course.teacherId, // fix: gör så man kan välja lärare.
+      teacherid: course.teacherId, // fix: gör så man kan välja lärare. (select)
       maxCustomers: course.maxBookings,
     },
   });
