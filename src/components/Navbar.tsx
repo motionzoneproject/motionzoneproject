@@ -12,13 +12,13 @@ export default function NavBar() {
 
   return (
     <header className="w-full">
-      <nav className="md:flex items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
+      <nav className="flex w-full items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
         <Link href="/">
           <span className="text-xl font-bold">MotionZone Växjö</span>
         </Link>
 
         {/* Desktop Menu */}
-        <ul className="hidden md:flex space-x-6 text-sm">
+        <ul className="hidden md:flex space-x-6">
           <li>
             <Link href="/" className="hover:text-cyan-400">
               Hem
@@ -26,14 +26,14 @@ export default function NavBar() {
           </li>
           <li>
             <Link href="/courses" className="hover:text-cyan-400">
-              Kurser
+              Våra kurser
             </Link>
           </li>
-          <li>
+          {/* <li>
             <Link href="/gallery" className="hover:text-cyan-400">
               Galleri
             </Link>
-          </li>
+          </li> */}
           <li>
             <Link href="/about" className="hover:text-cyan-400">
               Om oss
@@ -43,9 +43,9 @@ export default function NavBar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <span className="text-sm">Svenska 🇸🇪</span>
+          <span className="">Svenska 🇸🇪</span>
           <Link href="/checkout" className="hover:text-cyan-400">
-            <span className="text-sm">Varukorg 🛒</span>
+            <span className="">Varukorg 🛒</span>
           </Link>
           <NavBarAuth></NavBarAuth>
         </div>
@@ -76,15 +76,15 @@ export default function NavBar() {
             className="block py-2 hover:text-cyan-400 transition-colors"
             onClick={() => setMenuOpen(false)}
           >
-            Kurser
+            Våra kurser
           </Link>
-          <Link
+          {/* <Link
             href="/gallery"
             className="block py-2 hover:text-cyan-400 transition-colors"
             onClick={() => setMenuOpen(false)}
           >
             Galleri
-          </Link>
+          </Link> */}
           <Link
             href="/about"
             className="block py-2 hover:text-cyan-400 transition-colors"
@@ -92,7 +92,13 @@ export default function NavBar() {
           >
             Om oss
           </Link>
-          <div className="border-t border-purple-700 pt-3 mt-3 space-y-3">
+          <div className="border-t border-purple-700 pt-3 mt-3 space-y-3 text-center">
+            <div className="space-x-4 p-2 flex justify-between">
+              <span className="text-lg">Svenska 🇸🇪</span>
+              <Link href="/checkout" className="hover:text-cyan-400 text-lg">
+                <span className="text-lg">Varukorg 🛒</span>
+              </Link>
+            </div>
             <NavBarAuth></NavBarAuth>
           </div>
         </div>

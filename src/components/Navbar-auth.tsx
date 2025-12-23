@@ -14,7 +14,7 @@ export default function NavBarAuth() {
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-2 ml-auto">
+    <div className="flex items-center gap-2 ml-auto w-fit">
       {session && user ? (
         <>
           <span className="font-mono text-sm">
@@ -50,7 +50,7 @@ export default function NavBarAuth() {
               variant="secondary"
               asChild
             >
-              <Link href="/user">Boka</Link>
+              <Link href="/user">Bokningar</Link>
             </Button>
           )}
         </>
