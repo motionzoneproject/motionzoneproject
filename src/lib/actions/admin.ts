@@ -75,6 +75,7 @@ export async function getSchemaItems(
     where: { terminId },
     include: { course: true },
   });
+
   return schemaItems;
 }
 
@@ -115,8 +116,8 @@ export async function addNewTermin(
     const newSchemaItem = await prisma.termin.create({
       data: {
         name: validated.name,
-        startDate: new Date(validated.startDate), // fix: Validate first as date.
-        endDate: new Date(validated.endDate), // fix: Validate first as date.
+        startDate: new Date(validated.startDate),
+        endDate: new Date(validated.endDate),
       },
     });
     return {
@@ -194,7 +195,7 @@ export async function editTermin(
         },
       });
 
-      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning)
+      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning). fix: klippkortslogik!
       const affectedBookings = await tx.booking.findMany({
         where: {
           lesson: {
@@ -208,7 +209,7 @@ export async function editTermin(
         select: { id: true, purchaseItemId: true },
       });
 
-      // Ge tillbaka klipp till alla drabbade elever
+      // Ge tillbaka klipp till alla drabbade elever. (fix klippkortslogik)
       for (const booking of affectedBookings) {
         await tx.purchaseItem.update({
           where: { id: booking.purchaseItemId },
@@ -216,17 +217,17 @@ export async function editTermin(
         });
       }
 
-      // 3. Hämta alla mallar (schemaItems) för att synka lektioner
+      // 3. Hämta alla schemaItems för att synka lektioner
       const schemaItems = await tx.schemaItem.findMany({
         where: { terminId: id },
         include: {
           course: true,
-          Lessons: true, // Se till att detta matchar ditt relationsnamn (Lessons/Lesson)
+          Lessons: true,
         },
       });
 
       // 4. Städa bort lektioner som nu ligger utanför intervallet
-      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan)
+      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan). fix: klippkort!
       await tx.lesson.deleteMany({
         where: {
           terminId: id,
@@ -300,9 +301,10 @@ export async function editTermin(
     });
 
     revalidatePath("/admin/courses");
+
     return {
       success: true,
-      msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och klipp har återställts till eleverna.`,
+      msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och bokningar har återställts till eleverna.`,
     };
   } catch (e) {
     console.error("Fel vid editTermin:", e);
@@ -353,7 +355,7 @@ export async function addCoursetoSchema(
         maxBookings: getCourse?.maxBookings,
         timeStart: formToDbDate(validated.timeStart),
         timeEnd: formToDbDate(validated.timeEnd),
-        weekday: validated.day as Weekday, // Jag vågar sätta as Weekday här eftersom zod-schemat validerat det. Men kanske behövs en fix?
+        weekday: validated.day as Weekday,
       },
       include: { course: true, termin: true },
     });
