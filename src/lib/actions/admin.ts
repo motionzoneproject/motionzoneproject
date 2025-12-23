@@ -311,6 +311,7 @@ export async function editTermin(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
+// fix: klippkort
 
 /**
  * Lägger till en kurs i en termins schema och genererar automatiskt alla lektionstillfällen.
@@ -387,10 +388,10 @@ export async function addCoursetoSchema(
 }
 
 /**
- * Tar bort en kursschema-mall (SchemaItem) från en termin.
+ * Tar bort ett SchemaItem från en termin.
  * * @important På grund av databasens konfiguration (Cascade Delete) kommer detta även
- * att radera samtliga lektionstillfällen (Lessons) och tillhörande bokningar (Bookings)
- * som skapats utifrån denna mall.
+ * att radera samtliga lektionstillfällen (Lessons) och tillhörande bokningar.
+ * Klipp ges tillbaka till kunderna.
  * * @param id - Det unika ID:t för den schemapost som ska raderas.
  * @returns Ett objekt med success-status och ett meddelande som bekräftar vilken kurs som togs bort.
  * @auth Admin
@@ -402,29 +403,55 @@ export async function delSchemaItem(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Behöver vi validera id med zod? ev. fix.
-    const del = await prisma.schemaItem.delete({
-      where: { id },
-      select: { course: true },
+    // Hämta ev bokningar som är gjorda i kursen.
+    const bookings = await prisma.booking.findMany({
+      where: {
+        lesson: { schemaItemId: id },
+        cancelled: false,
+      },
+      select: {
+        id: true,
+        purchaseItemId: true,
+      },
     });
 
-    if (del) {
+    // Vi sparar resultatet från transaktionen i en variabel
+    const result = await prisma.$transaction(async (tx) => {
+      if (bookings.length > 0) {
+        for (const booking of bookings) {
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
+
+      const del = await tx.schemaItem.delete({
+        where: { id },
+        select: { course: { select: { name: true } } },
+      });
+
       return {
         success: true,
-        msg: `${del.course.name} togs bort från veckoschemat.`,
+        msg: `${del.course.name} och dess bokningar togs bort. ${bookings.length} klipp har återställts.`,
       };
-    } else {
-      return { success: false, msg: `${id} not found.` };
-    }
+    });
+
+    return result;
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return {
+      success: false,
+      msg: "Ett fel uppstod vid radering av schemaposten.",
+    };
   }
 }
+// fix: klippkort!
 
 /**
- * Raderar en hel termin från systemet.
+ * Raderar en hel termin från systemet. Bokningar betalas tillbaka.
  * * @important Denna operation triggar en kaskad-radering (Cascade Delete). Detta innebär
- * att alla schemamallar (SchemaItems), lektioner (Lessons) och bokningar (Bookings)
+ * att alla SchemaItems, lektioner och bokningar.
  * som är kopplade till denna termin kommer att raderas permanent från databasen.
  * * @param id - Det unika ID:t för terminen som ska raderas.
  * @returns Ett objekt med success-status och ett meddelande som bekräftar att terminen tagits bort.
@@ -437,19 +464,67 @@ export async function delTermin(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Behöver vi validera id med zod? ev. fix.
-    const del = await prisma.termin.delete({ where: { id } });
+    // 1. Hitta alla aktiva bokningar kopplade till denna termin
+    const bookings = await prisma.booking.findMany({
+      where: {
+        lesson: { terminId: id },
+        cancelled: false, // Hmm, ska vi verkligen ignorera detta? Kommer ligga onödiga bokningar. Eller just det, ja för annars betalas inställda bokningar tillbaka. Ev. fix för att inte ha onödig data i db.
+      },
+      select: { purchaseItemId: true },
+    });
 
-    if (del) {
-      return { success: true, msg: `Terminen ${del.name} togs bort.` };
-    } else {
-      return { success: false, msg: `${id} not found.` };
-    }
+    // 2. Kör transaktionen
+    const result = await prisma.$transaction(async (tx) => {
+      // Återställ alla klipp
+      if (bookings.length > 0) {
+        for (const booking of bookings) {
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
+
+      // Radera terminen (triggar cascade för resten)
+      const deletedTermin = await tx.termin.delete({
+        where: { id },
+        select: { name: true },
+      });
+
+      return deletedTermin.name;
+    });
+
+    revalidatePath("/admin/termins");
+
+    return {
+      success: true,
+      msg: `Terminen ${result} och ${bookings.length} tillhörande bokningar raderades. Klipp har återställts.`,
+    };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return {
+      success: false,
+      msg: "Kunde inte radera terminen. Kontrollera om den har aktiva kopplingar som hindrar radering.",
+    };
   }
 }
+// fix: klippkort.
 
+/**
+ * Raderar en kurs permanent från systemet.
+ * * @important
+ * Denna operation triggar en kaskad-radering (Cascade Delete) på SchemaItems, Lessons
+ * och Bookings kopplade till kursen. För att skydda användarnas saldo återförs klipp
+ * för alla aktiva bokningar innan raderingen genomförs.
+ * * @note
+ * Tack vare 'onDelete: Restrict' i databasschemat kommer denna funktion att misslyckas
+ * (kasta ett fel) om det finns PurchaseItems (aktiva kundinnehav) kopplade till kursen.
+ * Detta är ett skydd för att inte radera kurser som kunder har betalat för.
+ * * @param id - Det unika ID:t (UUID) för kursen som ska raderas.
+ * @returns Ett objekt med success-status och ett meddelande. Vid misslyckande pga
+ * befintliga kundköp returneras ett förklarande felmeddelande.
+ * * @auth Admin
+ */
 export async function delCourse(
   id: string,
 ): Promise<{ success: boolean; msg: string }> {
@@ -457,27 +532,67 @@ export async function delCourse(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Behöver vi validera id med zod? ev. fix.
+    // Hitta aktiva bokningar för denna kurs (för att återställa =))
+    const bookings = await prisma.booking.findMany({
+      where: {
+        lesson: { courseId: id },
+        cancelled: false,
+      },
+      select: { purchaseItemId: true },
+    });
 
-    const del = await prisma.course.delete({ where: { id } });
+    // Kör transaktionen
+    const result = await prisma.$transaction(async (tx) => {
+      // Återställ klipp för de bokningar som kommer raderas via cascade
+      if (bookings.length > 0) {
+        for (const booking of bookings) {
+          await tx.purchaseItem.update({
+            where: { id: booking.purchaseItemId },
+            data: { remainingCount: { increment: 1 } },
+          });
+        }
+      }
 
-    if (del) {
-      return { success: true, msg: `Kursen ${del.name} togs bort.` };
-    } else {
-      return { success: false, msg: `${id} not found.` };
-    }
+      // 3. Försök radera kursen (om den finns i produkt så kommer inte transaktionen gå igenom.)
+      const deletedCourse = await tx.course.delete({
+        where: { id },
+        select: { name: true },
+      });
+
+      return deletedCourse.name;
+    });
+
+    revalidatePath("/admin/courses");
+
+    return {
+      success: true,
+      msg: `Kursen ${result} raderades. ${bookings.length} bokningar togs bort och klipp återställdes.`,
+    };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+
+    return {
+      success: false,
+      msg: `Kunde inte radera kursen. ${JSON.stringify(e)}`,
+    };
   }
 }
+// fix: klippkort!
 
 /**
- * Raderar en kurs permanent från systemet.
- * * @important Vid radering av en kurs raderas även alla tillhörande schemaposter (SchemaItems)
- * och lektioner (Lessons) via kaskad-radering. Detta påverkar även historik där kursen
- * ingått som en del av en produkt.
- * * @param id - Det unika ID:t för kursen som ska raderas.
- * @returns Ett objekt med success-status och ett meddelande som bekräftar att kursen tagits bort.
+ * Skapar en ny kurs i systemet och kopplar den till en lärare.
+ * * @important
+ * Funktionen validerar att `teacherId` tillhör en existerande användare med rollen 'admin'.
+ * Detta säkerställer att endast behörig personal kan agera som kursledare och visas i schemat.
+ * * @param formData - Validerad data enligt `adminAddCourseSchema`. Innehåller grunddata som:
+ * - `name`: Kursens namn.
+ * - `teacherid`: ID för läraren/admin som ska hålla kursen.
+ * - `maxbookings`: Antal platser per lektionstillfälle.
+ * - `maxCustomers`: Totalt antal unika kunder som kan köpa in sig på kursen.
+ * - `description`: Kursbeskrivning och detaljer.
+ * - `minAge`/`maxAge`/`level`: Kriterier för deltagande.
+ * * @returns Ett objekt med success-status och ett bekräftande meddelande med kursens namn.
+ * @throws Kastar ett fel om läraren inte hittas eller saknar admin-rättigheter.
  * @auth Admin
  */
 export async function addNewCourse(
@@ -547,6 +662,19 @@ export async function editCourse(
       throw new Error(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
+
+    // Kolla hur många som redan har kursen via ett köp
+    const currentSubscribers = await prisma.purchaseItem.count({
+      where: { courseId: id },
+    });
+
+    // Om admin försöker sänka taket under antalet nuvarande kunder
+    if (validated.maxCustomers < currentSubscribers) {
+      return {
+        success: false,
+        msg: `Kan inte sänka max antal kunder till ${validated.maxCustomers}. Det finns redan ${currentSubscribers} kunder som äger kursen.`,
+      };
+    }
 
     const newCourseItem = await prisma.course.update({
       data: {
