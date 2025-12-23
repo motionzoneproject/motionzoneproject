@@ -20,7 +20,7 @@ export default function Features({ isDark = true }: FeaturesProps) {
         <SectionHeader
           isDark={isDark}
           title="Varför Motion Zone?"
-          subtitle="Vi erbjuder en unik dansupplevelse med världsklass instruktörer och moderna faciliteter"
+          subtitle="Vi erbjuder en unik dansupplevelse i världsklass och moderna faciliteter"
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -28,13 +28,13 @@ export default function Features({ isDark = true }: FeaturesProps) {
             isDark={isDark}
             icon="👨‍🏫"
             title="Professionella instruktörer"
-            description="Våra erfarna lärare har årtionden av erfarenhet och brinner för att dela sin passion för dans."
+            description="Våra erfarna lärare har lång av erfarenhet och brinner för att dela sin passion för dans."
           />
           <FeatureCard
             isDark={isDark}
             icon="📅"
             title="Flexibla Kursider"
-            description="Vi erbjuder kurser på olika tider för att passa din schema. Från morgon till kväll, alla dagar."
+            description="Vi erbjuder kurser på olika tider för att passa ditt schema. Från morgon till kväll, alla dagar."
           />
           <FeatureCard
             isDark={isDark}

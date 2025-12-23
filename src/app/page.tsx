@@ -10,7 +10,6 @@ export default async function Page() {
       <div className="mx-auto text-center mt-0">
         <Hero />
         <Events events={[]} />
-        <br />
         <Features />
       </div>
     </div>
