@@ -85,11 +85,12 @@ export async function getSchemaItems(
  * * @returns En Promise som löser ut till en array av CourseWithTeacher.
  * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
  */
-export async function getAllCourses(): Promise<CourseWithTeacher[]> {
+export async function getAllCourses(q: string): Promise<CourseWithTeacher[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const courses = await prisma.course.findMany({
+    where: { name: { contains: q, mode: "insensitive" } },
     include: { teacher: true },
     orderBy: { name: "asc" },
   });

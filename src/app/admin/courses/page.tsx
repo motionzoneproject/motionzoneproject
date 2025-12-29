@@ -1,6 +1,5 @@
 import { type CourseWithTeacher, getAllCourses } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
-import { getCourseName } from "@/lib/tools";
 import CourseItem from "./CourseItem";
 import SearchInput from "./components/SearchCourse";
 import AddCourseForm from "./forms/AddCourseForm";
@@ -13,7 +12,7 @@ export default async function Page({
   const params = await searchParams;
   const query = params.q || "";
 
-  const allCourses: CourseWithTeacher[] = await getAllCourses();
+  const allCourses: CourseWithTeacher[] = await getAllCourses(query); // fix: debounce.
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
   return (
@@ -31,21 +30,9 @@ export default async function Page({
           </div>
         </div>
 
-        {allCourses
-          .filter((c) =>
-            getCourseName(c)
-              .toLocaleLowerCase()
-              .includes(query.toLocaleLowerCase()),
-          )
-          .sort((a, b) => {
-            const nameA = getCourseName(a);
-            const nameB = getCourseName(b);
-
-            return nameA.localeCompare(nameB, "sv", { sensitivity: "base" });
-          })
-          .map((c) => (
-            <CourseItem course={c} key={c.id}></CourseItem>
-          ))}
+        {allCourses.map((c) => (
+          <CourseItem course={c} key={c.id}></CourseItem>
+        ))}
       </div>
     </div>
   );

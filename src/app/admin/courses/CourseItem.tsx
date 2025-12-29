@@ -25,6 +25,7 @@ interface Props {
 //           ställa in -och skicka meddelande, se antal bokningar / platser.
 
 export default async function CourseItem({ course }: Props) {
+  // Ev fix: Denna kan ta riktigt lång tid eventuellt när eleverna blir många. Tänker att detta kanske ska hämtas om man trycker på närvaro, och inte här?
   const lessonsWithBooking: LessonWithBookings[] = await prisma.lesson.findMany(
     {
       where: { courseId: course.id },
