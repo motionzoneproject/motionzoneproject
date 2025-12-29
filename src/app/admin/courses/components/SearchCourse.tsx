@@ -23,7 +23,7 @@ export default function SearchInput() {
 
   return (
     <Input
-      className="w-[200px]"
+      className="w-50"
       placeholder="Sök kurser..."
       onChange={(e) => handleSearch(e.target.value)}
       defaultValue={searchParams.get("q")?.toString()} // Behåll befintligt värde
