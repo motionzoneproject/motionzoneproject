@@ -69,7 +69,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
   }, [uicSet, lesson.courseId, gotBookings, isOpen, lesson.id]);
 
   const refresher = useCallback(() => {
-    setUicSet(false); // fix - detta tar lång tid att uppdaatera, är en ganska lång lista att hämta. Kommer bli bättre om vi inte kör "use client"
+    setUicSet(false); // fixed - detta tar lång tid att uppdaatera, är en ganska lång lista att hämta. Kommer bli bättre om vi inte kör "use client"
   }, []);
 
   const removeUser = useCallback(
