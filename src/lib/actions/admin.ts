@@ -99,6 +99,21 @@ export async function getAllCourses(
   return courses;
 }
 
+export async function getBookingsFromLesson(
+  lessonId: string,
+): Promise<Booking[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  try {
+    const b = await prisma.booking.findMany({ where: { lessonId: lessonId } });
+    return b;
+  } catch (e) {
+    console.error(JSON.stringify(e));
+    return [];
+  }
+}
+
 /**
  * Skapar en ny termin i systemet baserat på validerad formulärdata.
  * Konverterar datumsträngar till Date-objekt innan de sparas i databasen.

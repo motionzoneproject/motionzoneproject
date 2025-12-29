@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   type CourseWithTeacher,
   countOrderItemsAndProductsCourse,
-  type LessonWithBookings,
 } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
-import LessonsBrowser from "./components/LessonsBrowser";
+import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
@@ -25,18 +24,6 @@ interface Props {
 //           ställa in -och skicka meddelande, se antal bokningar / platser.
 
 export default async function CourseItem({ course }: Props) {
-  // Ev fix: Denna kan ta riktigt lång tid eventuellt när eleverna blir många. Tänker att detta kanske ska hämtas om man trycker på närvaro, och inte här?
-  const lessonsWithBooking: LessonWithBookings[] = await prisma.lesson.findMany(
-    {
-      where: { courseId: course.id },
-      include: { bookings: true },
-    },
-  );
-
-  const terminer = await prisma.termin.findMany({
-    where: { schemaItems: { some: { courseId: course.id } } },
-  });
-
   // fix: Vi skickar med alla lärare men vi har inte gjort så admin kan välja lärare för en kurs än.
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
@@ -76,10 +63,7 @@ export default async function CourseItem({ course }: Props) {
             <AccordionItem value="item-1">
               <AccordionTrigger>Lektioner</AccordionTrigger>
               <AccordionContent>
-                <LessonsBrowser
-                  lessonsWithBookings={lessonsWithBooking}
-                  terminer={terminer}
-                />
+                <LessonBrowserData courseId={course.id} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

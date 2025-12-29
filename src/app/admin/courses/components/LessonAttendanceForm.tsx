@@ -17,16 +17,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { Booking, Lesson } from "@/generated/prisma/client";
 import {
+  getBookingsFromLesson,
   getUsersWithPurchasedProductsWithCourseInIt,
-  type LessonWithBookings,
   removeUserFromLesson,
   type UserPurchasesForCourse,
 } from "@/lib/actions/admin";
 import AddUserBtn from "./AddUserBtn";
 
 interface Props {
-  lesson: LessonWithBookings;
+  lesson: Lesson;
 }
 
 export default function LessonAttendanceForm({ lesson }: Props) {
@@ -34,12 +35,24 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
   const [loading, setLoading] = useState(false);
 
+  const [bookings, setBookings] = useState<Booking[]>([]); // State för bokningar.
+  const [gotBookings, setGotBookings] = useState<boolean>(false);
+
   const [usersInCourse, setUsersInCourse] =
     useState<UserPurchasesForCourse[]>();
   const [uicSet, setUicSet] = useState<boolean>();
 
   useEffect(() => {
-    // klippkortslogik också.
+    // fix: klippkortslogik också.
+
+    if (!isOpen) return; // Kör bara om dialogen faktiskt är öppen
+
+    const getBookingsFromDb = async (lessonId: string) => {
+      const b = await getBookingsFromLesson(lessonId);
+      setBookings(b);
+      if (b) setGotBookings(true);
+    };
+
     const getAllStudentsWithCourse = async () => {
       setLoading(true);
       setUicSet(true);
@@ -52,7 +65,8 @@ export default function LessonAttendanceForm({ lesson }: Props) {
     };
 
     if (!uicSet) getAllStudentsWithCourse();
-  }, [uicSet, lesson.courseId]);
+    if (!gotBookings) getBookingsFromDb(lesson.id);
+  }, [uicSet, lesson.courseId, gotBookings, isOpen, lesson.id]);
 
   const refresher = useCallback(() => {
     setUicSet(false); // fix - detta tar lång tid att uppdaatera, är en ganska lång lista att hämta. Kommer bli bättre om vi inte kör "use client"
@@ -111,7 +125,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
             <div className="w-full flex justify-between"></div>
             {!loading ? (
-              lesson.bookings.map((b) => {
+              bookings.map((b) => {
                 // 1. Hitta användaren i listan
                 const user = usersInCourse?.find((u) => u.id === b.userId);
 
