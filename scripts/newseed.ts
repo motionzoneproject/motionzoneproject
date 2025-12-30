@@ -765,18 +765,18 @@ async function main() {
 
   if (!dbCourses)
     throw new Error(
-      "Nope, dbCourses hittade inga kurser så kurserna skapades aldrig..",
+      "Nope, dbCourses hittade inga kurser så kurserna skapades aldrig.."
     );
 
   for (const s of schemaToCreate) {
     // Hitta rätt kurs-ID genom att matcha namn och minAge (unikt nog för detta schema). Aa jag förstår :)
     const targetCourse = dbCourses.find(
-      (c) => c.name === s.name && c.minAge === s.minAge,
+      (c) => c.name === s.name && c.minAge === s.minAge
     );
 
     if (!targetCourse) {
       console.warn(
-        `Kunde inte hitta kursobjektet för ${s.name} (${s.minAge}+) i databasen. Hoppar över.`,
+        `Kunde inte hitta kursobjektet för ${s.name} (${s.minAge}+) i databasen. Hoppar över.`
       );
       continue;
     }
@@ -841,11 +841,28 @@ async function main() {
   }
 
   console.log(
-    "✅ Allt klart! Nu har du elever, schema, lektioner och säljbara produkter.",
+    "✅ Allt klart! Nu har du elever, schema, lektioner och säljbara produkter."
   );
 
-  // ****************************************************** Skapa 10 färdiga ordrar ******************************************************
+  // Lämnar över till Tarek // Tobbe
+  // ****************************************************** Skapa 10 färdiga ordrar, och 5 pending kanske? ******************************************************
   // Tänker typ elev 2 - 5 har köpt produkt 1, elev 2 - 10 har köpt produkt 2
+
+  // Tips:
+  // Om ordrar bara skapas, så kanske vi kan använda samma funktioner som denna delen i admin/order/page.tsx:
+  /*
+  async function onApprove(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    const note = formData.get("note")?.toString();
+    await approveOrder(orderId, note); // Specifikt här
+    await createPurchaseFromOrder(orderId); Specifikt här så skapas även purschases! Hade lagt in en kopia av de här funktionerna i seed-actions och använt här :)
+    revalidatePath("/admin/orders");
+  }
+  */
+  //
+
+  // Skapa några bokningar kanske? Kan ta över det sen annars eftersom jag hållt på mkt med just det. // Tobbe
 }
 
 main()
