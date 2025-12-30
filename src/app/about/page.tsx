@@ -1,6 +1,6 @@
 export default function About() {
   return (
-    <main className="bg-gradient-to-br from-blue-200 to-purple-200-50 text-black-800">
+    <main className="bg-gradient-to-br from-blue-200 to-purple-50 text-gray-800">
       <section className="max-w-7xl mx-auto px-6 py-20 text-center">
         <h1 className="text-5xl font-bold tracking-tight mb-6">
           Om vår dansstudio
@@ -52,7 +52,7 @@ export default function About() {
             Dansstilar
           </h2>
 
-          <div className="grid gap-6 sm:grid-cols md:grid-cols-2 font-bold">
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 font-bold">
             {[
               "Hip Hop",
               "Balett",
@@ -81,7 +81,7 @@ export default function About() {
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="flex flex-col items-center justify-center">
           <div>
-            <h2 className="text-3xl  text-green-600 font-extrabold mb-6">
+            <h2 className="text-3xl text-green-600 font-extrabold mb-6">
               Vår studio
             </h2>
             <p className="text-gray-600 mb-6">
