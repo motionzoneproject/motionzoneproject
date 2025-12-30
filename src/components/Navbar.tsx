@@ -1,9 +1,10 @@
 "use client";
 
-import { Menu, ShoppingCart, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import CartIcon from "./CartIcon";
 import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
 
@@ -58,12 +59,7 @@ export default function NavBar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          <Link
-            href="/checkout"
-            className="text-muted-foreground hover:text-brand transition-colors"
-          >
-            <ShoppingCart className="w-5 h-5" />
-          </Link>
+          <CartIcon />
           <ModeToggle />
           <NavBarAuth />
         </div>
@@ -95,13 +91,7 @@ export default function NavBar() {
               </li>
             ))}
             <li>
-              <Link
-                href="/checkout"
-                className="block text-muted-foreground hover:text-brand transition-colors"
-                onClick={() => setMenuOpen(false)}
-              >
-                Varukorg
-              </Link>
+              <CartIcon showLabel onClick={() => setMenuOpen(false)} />
             </li>
           </ul>
           <div className="mt-4 pt-4 border-t border-brand/20 flex items-center justify-between">
