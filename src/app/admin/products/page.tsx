@@ -1,5 +1,5 @@
 import type { Product } from "@/generated/prisma/client";
-import { getAllProducts } from "@/lib/actions/admin";
+import { adminGetAllProducts } from "@/lib/actions/admin";
 import AddProductForm from "./components/AddProductForm";
 import ProductItem from "./components/ProductItem";
 import SearchInputProd from "./components/SearchProducts";
@@ -12,7 +12,7 @@ export default async function Page({
   const params = await searchParams;
   const query = params.q || "";
 
-  const allProducts: Product[] = await getAllProducts();
+  const allProducts: Product[] = await adminGetAllProducts();
 
   return (
     <div>

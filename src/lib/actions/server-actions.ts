@@ -407,13 +407,15 @@ export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+  // const sessionData = await getSessionData();
+  // const user = sessionData?.user;
 
-  // Säkerställ att användaren bara kan ta bort sina egna bokningar
-  if (!user) return [];
+  // // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  // if (!user) return [];s
   try {
     const products = await prisma.product.findMany();
+
+    console.log("\n\n\nHämtar produkter. ", products.length);
 
     return products;
   } catch (e) {
