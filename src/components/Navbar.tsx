@@ -1,105 +1,112 @@
-//navbar
+"use client";
 
-"use client"; // fix: Can we do this without using client?
-
-import { Menu, X } from "lucide-react";
+import { Menu, ShoppingCart, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
+
+const navLinks = [
+  { href: "/", label: "Hem" },
+  { href: "/courses", label: "Kurser" },
+  { href: "/about", label: "Om oss" },
+  { href: "/gallery", label: "Galleri" },
+];
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="w-full">
-      <nav className="flex w-full items-center justify-between p-4 bg-linear-to-r from-purple-900 to-gray-900 text-white">
-        <Link href="/">
-          <span className="text-xl font-bold">MotionZone Växjö</span>
+    <header className="w-full bg-background border-b border-brand/20">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 py-3">
+        {/* Logo */}
+        <Link href="/" className="flex items-center">
+          {/* Dark mode logo */}
+          <Image
+            src="/logo-dark.png"
+            alt="MotionZone Växjö"
+            width={320}
+            height={90}
+            className="hidden dark:block h-16 md:h-20 lg:h-24 w-auto"
+            priority
+          />
+          {/* Light mode logo */}
+          <Image
+            src="/logo-light.png"
+            alt="MotionZone Växjö"
+            width={320}
+            height={90}
+            className="block dark:hidden h-16 md:h-20 lg:h-24 w-auto"
+            priority
+          />
         </Link>
 
-        {/* Desktop Menu */}
-        <ul className="hidden md:flex space-x-6">
-          <li>
-            <Link href="/" className="hover:text-cyan-400">
-              Hem
-            </Link>
-          </li>
-          <li>
-            <Link href="/courses" className="hover:text-cyan-400">
-              Våra kurser
-            </Link>
-          </li>
-          {/* <li>
-            <Link href="/gallery" className="hover:text-cyan-400">
-              Galleri
-            </Link>
-          </li> */}
-          <li>
-            <Link href="/about" className="hover:text-cyan-400">
-              Om oss
-            </Link>
-          </li>
+        {/* Desktop Navigation */}
+        <ul className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="text-muted-foreground hover:text-brand transition-colors"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
         </ul>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center space-x-4">
-          <span className="">Svenska 🇸🇪</span>
-          <Link href="/checkout" className="hover:text-cyan-400">
-            <span className="">Varukorg 🛒</span>
+        <div className="hidden md:flex items-center gap-4">
+          <Link
+            href="/checkout"
+            className="text-muted-foreground hover:text-brand transition-colors"
+          >
+            <ShoppingCart className="w-5 h-5" />
           </Link>
-          <NavBarAuth></NavBarAuth>
+          <ModeToggle />
+          <NavBarAuth />
         </div>
 
         {/* Mobile Menu Button */}
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
-          aria-label="Toggle menu"
+          className="md:hidden p-2 text-foreground"
+          aria-label="Öppna meny"
         >
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </nav>
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-purple-900 text-white px-4 py-4 space-y-3">
-          <Link
-            href="/"
-            className="block py-2 hover:text-cyan-400 transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Hem
-          </Link>
-          <Link
-            href="/courses"
-            className="block py-2 hover:text-cyan-400 transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Våra kurser
-          </Link>
-          {/* <Link
-            href="/gallery"
-            className="block py-2 hover:text-cyan-400 transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Galleri
-          </Link> */}
-          <Link
-            href="/about"
-            className="block py-2 hover:text-cyan-400 transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Om oss
-          </Link>
-          <div className="border-t border-purple-700 pt-3 mt-3 space-y-3 text-center">
-            <div className="space-x-4 p-2 flex justify-between">
-              <span className="text-lg">Svenska 🇸🇪</span>
-              <Link href="/checkout" className="hover:text-cyan-400 text-lg">
-                <span className="text-lg">Varukorg 🛒</span>
+        <div className="md:hidden bg-background border-t border-brand/20 px-4 py-4">
+          <ul className="space-y-4">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="block text-muted-foreground hover:text-brand transition-colors"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                href="/checkout"
+                className="block text-muted-foreground hover:text-brand transition-colors"
+                onClick={() => setMenuOpen(false)}
+              >
+                Varukorg
               </Link>
-            </div>
-            <NavBarAuth></NavBarAuth>
+            </li>
+          </ul>
+          <div className="mt-4 pt-4 border-t border-brand/20 flex items-center justify-between">
+            <NavBarAuth />
+            <ModeToggle />
           </div>
         </div>
       )}

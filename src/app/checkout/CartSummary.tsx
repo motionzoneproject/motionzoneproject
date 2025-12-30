@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
 import { readCart } from "@/lib/cart";
 import prisma from "@/lib/prisma";
@@ -11,14 +13,11 @@ export default async function CartSummary() {
 
   if (!items.length) {
     return (
-      <div className="border rounded-lg p-8 text-center space-y-4 bg-gray-50">
-        <p className="text-gray-500">Din varukorg är tom.</p>
-        <a
-          href="/courses"
-          className="inline-block bg-black text-white px-6 py-2 rounded-md text-sm font-semibold hover:bg-gray-800 transition"
-        >
-          Se våra kurser
-        </a>
+      <div className="text-center py-8 space-y-4">
+        <p className="text-muted-foreground">Din varukorg är tom.</p>
+        <Button asChild className="bg-brand hover:bg-brand-light text-white">
+          <Link href="/courses">Se våra kurser</Link>
+        </Button>
       </div>
     );
   }
@@ -47,59 +46,49 @@ export default async function CartSummary() {
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase tracking-wider grid grid-cols-12 gap-2">
-          <div className="col-span-6">Produkt</div>
-          <div className="col-span-3 text-center">Antal</div>
-          <div className="col-span-3 text-right">Summa</div>
-        </div>
-        <div className="divide-y">
-          {rows.map((r) => (
-            <div
-              key={r.id}
-              className="px-4 py-3 grid grid-cols-12 gap-2 items-center"
-            >
-              <div className="col-span-6">
-                <div className="font-medium text-sm">{r.name}</div>
-                <div className="text-xs text-gray-500">
-                  {r.unit.toFixed(2)} SEK / st
-                </div>
-              </div>
-              <div className="col-span-3 flex items-center justify-center gap-2">
-                <form
-                  action={async () => {
-                    "use server";
-                    await updateCart({ productId: r.id, qty: r.qty - 1 });
-                  }}
+      <div className="divide-y divide-border">
+        {rows.map((r) => (
+          <div key={r.id} className="py-4 flex items-center justify-between">
+            <div className="flex-1">
+              <p className="font-medium text-foreground">{r.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {r.unit.toFixed(0)} kr / st
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <form
+                action={async () => {
+                  "use server";
+                  await updateCart({ productId: r.id, qty: r.qty - 1 });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-8 h-8 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground"
                 >
-                  <button
-                    type="submit"
-                    className="w-6 h-6 flex items-center justify-center rounded border hover:bg-gray-100 text-gray-600"
-                  >
-                    -
-                  </button>
-                </form>
-                <span className="text-sm font-medium w-4 text-center">
-                  {r.qty}
-                </span>
-                <form
-                  action={async () => {
-                    "use server";
-                    await updateCart({ productId: r.id, qty: r.qty + 1 });
-                  }}
+                  -
+                </button>
+              </form>
+              <span className="text-foreground font-medium w-6 text-center">
+                {r.qty}
+              </span>
+              <form
+                action={async () => {
+                  "use server";
+                  await updateCart({ productId: r.id, qty: r.qty + 1 });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-8 h-8 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground"
                 >
-                  <button
-                    type="submit"
-                    className="w-6 h-6 flex items-center justify-center rounded border hover:bg-gray-100 text-gray-600"
-                  >
-                    +
-                  </button>
-                </form>
-              </div>
-              <div className="col-span-3 text-right">
-                <div className="text-sm font-semibold">
-                  {r.line.toFixed(2)} SEK
-                </div>
+                  +
+                </button>
+              </form>
+              <div className="w-24 text-right">
+                <p className="font-semibold text-foreground">
+                  {r.line.toFixed(0)} kr
+                </p>
                 <form
                   action={async () => {
                     "use server";
@@ -108,23 +97,21 @@ export default async function CartSummary() {
                 >
                   <button
                     type="submit"
-                    className="text-[10px] text-red-500 hover:underline"
+                    className="text-xs text-destructive hover:underline"
                   >
                     Ta bort
                   </button>
                 </form>
               </div>
             </div>
-          ))}
-        </div>
-        <div className="bg-gray-50 px-4 py-3 border-t flex justify-between items-center">
-          <span className="text-sm font-bold text-gray-700">
-            Totalt att betala
-          </span>
-          <span className="text-lg font-black text-black">
-            {total.toFixed(2)} SEK
-          </span>
-        </div>
+          </div>
+        ))}
+      </div>
+      <div className="pt-4 border-t border-border flex justify-between items-center">
+        <span className="text-muted-foreground">Totalt</span>
+        <span className="text-xl font-bold text-foreground">
+          {total.toFixed(0)} kr
+        </span>
       </div>
     </div>
   );

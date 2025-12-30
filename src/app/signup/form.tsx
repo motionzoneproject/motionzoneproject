@@ -1,9 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,20 +27,13 @@ import { authClient } from "@/lib/auth-client";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
 
 const formSchema = SignUpFormSchema;
-
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
-  // From docs:
-  const {
-    data: session,
-    // isPending, //loading state
-    // error, //error object
-    // refetch, //refetch the session
-  } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const router = useRouter();
-
-  const [signUpError, setSignUpError] = useState<{ msg: string }>({ msg: "" });
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/user";
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -67,17 +61,22 @@ export default function SignUpForm() {
       const result = await response.json();
 
       if (response.ok) {
-        // Sign in and go to user page!
         const { error } = await authClient.signIn.email({
           email: values.email,
           password: values.password,
         });
+
         if (error) {
-          alert(error.message);
+          toast.error("Registrering lyckades, men inloggning misslyckades", {
+            description: "Försök logga in manuellt.",
+          });
+          router.push("/signin");
         } else {
-          // Signed in
-          // i use this because the sessionprovider wont be updated yet. so this reloads everything and then redirect.
-          window.location.reload();
+          toast.success("Konto skapat!", {
+            description: "Välkommen till MotionZone!",
+          });
+          router.push(callbackUrl);
+          router.refresh();
         }
       } else {
         const errorMessage =
@@ -85,30 +84,31 @@ export default function SignUpForm() {
             ? result.error
             : result.error?.body?.message ||
               result.error?.message ||
-              "Signup failed.";
-        setSignUpError({ msg: errorMessage });
+              "Registrering misslyckades.";
+        toast.error("Registrering misslyckades", {
+          description: errorMessage,
+        });
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Network error occurred";
-      setSignUpError({ msg: errorMessage });
+        error instanceof Error ? error.message : "Ett nätverksfel inträffade";
+      toast.error("Något gick fel", {
+        description: errorMessage,
+      });
     }
   }
 
-  // So after the reload (or if getting to this page with a session), goto user page!
   useEffect(() => {
-    if (session) router.push("/user");
-  }, [session, router]);
+    if (session) router.push(callbackUrl);
+  }, [session, router, callbackUrl]);
 
-  if (session) return null; // Maybe unessasary?
+  if (session) return null;
 
   return (
-    <Card className="w-full max-w-small">
+    <Card>
       <CardHeader>
-        <CardTitle>Sign Up</CardTitle>
-        <CardDescription>
-          Enter your details below to create an Account
-        </CardDescription>
+        <CardTitle>Skapa konto</CardTitle>
+        <CardDescription>Fyll i dina uppgifter</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -118,9 +118,13 @@ export default function SignUpForm() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Namn</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input
+                      placeholder="Ditt namn"
+                      autoComplete="name"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,9 +135,14 @@ export default function SignUpForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-post</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="din@epost.se"
+                      autoComplete="email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -144,9 +153,14 @@ export default function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Lösenord</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="********"
+                      autoComplete="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,26 +171,28 @@ export default function SignUpForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ConfirmPassword</FormLabel>
+                  <FormLabel>Bekräfta lösenord</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="********"
+                      autoComplete="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="text-red-600 break-all">
-              {signUpError.msg && signUpError.msg}
-            </div>
-            <Button className="w-full" type="submit">
-              Sign Up
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="w-full bg-brand hover:bg-brand-light text-white"
+            >
+              {form.formState.isSubmitting ? "Skapar konto..." : "Skapa konto"}
             </Button>
           </form>
         </Form>
-
-        {form.formState.isSubmitting && (
-          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-purple-300 animate-spin"></div>
-        )}
       </CardContent>
     </Card>
   );

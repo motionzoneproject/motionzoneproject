@@ -1,6 +1,12 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createCheckoutAndRedirect } from "@/lib/actions/checkout";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { readCart } from "@/lib/cart";
@@ -34,99 +40,105 @@ export default async function Page() {
     await createCheckoutAndRedirect({ items, postalcode, note });
   }
 
-  if (!session) {
-    return (
-      <div className="max-w-md mx-auto p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Kassa</h1>
-        <p className="text-sm text-gray-700">
-          Du måste vara inloggad för att slutföra ett köp.
-        </p>
-        <a
-          href={`/signin?callbackUrl=${encodeURIComponent("/checkout")}`}
-          className="inline-block bg-black text-white px-4 py-2 rounded"
-        >
-          Logga in
-        </a>
-        <p className="text-xs text-gray-500">
-          Har du inget konto?{" "}
-          <a className="underline" href="/signup">
-            Skapa konto
-          </a>
-          .
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">Kassa</h1>
-        <p className="text-gray-500">
-          Granska din beställning och slutför köpet.
-        </p>
-      </header>
+    <main className="flex-1 bg-background py-12">
+      <div className="max-w-2xl mx-auto px-4 space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground">Varukorg</h1>
+          <p className="text-muted-foreground mt-1">
+            {hasItems ? "Granska din beställning" : "Din varukorg är tom"}
+          </p>
+        </div>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold">Din varukorg</h2>
-        <CartSummary />
-      </section>
+        {/* Cart Summary - Always visible */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dina produkter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CartSummary />
+          </CardContent>
+        </Card>
 
-      {hasItems && (
-        <section className="space-y-4 bg-white border rounded-lg p-6 shadow-sm">
-          <h2 className="text-xl font-bold">Leverans & Information</h2>
-          <form action={action} className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label
-                  htmlFor="postalcode"
-                  className="block text-sm font-semibold text-gray-700"
-                >
-                  Postnummer
-                </label>
-                <input
-                  id="postalcode"
-                  name="postalcode"
-                  type="text"
-                  placeholder="123 45"
-                  className="block w-full rounded-md border-gray-300 border px-3 py-2 text-sm focus:border-black focus:ring-black outline-none transition"
-                />
-                <p className="text-xs text-gray-400">
-                  Valfritt, men hjälper oss med planering.
+        {/* Checkout Form - Only if has items */}
+        {hasItems &&
+          (session ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Slutför köp</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form action={action} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="postalcode">Postnummer</Label>
+                    <Input
+                      id="postalcode"
+                      name="postalcode"
+                      type="text"
+                      placeholder="123 45"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Valfritt, men hjälper oss med planering.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="note">Notering till beställningen</Label>
+                    <Textarea
+                      id="note"
+                      name="note"
+                      rows={3}
+                      placeholder="t.ex. Swish-referens eller speciella önskemål"
+                      className="resize-none"
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <Button
+                      type="submit"
+                      className="w-full bg-brand hover:bg-brand-light text-white font-medium"
+                    >
+                      Slutför beställning (Faktura)
+                    </Button>
+                    <p className="mt-4 text-center text-xs text-muted-foreground">
+                      Genom att slutföra köpet godkänner du våra köpvillkor.
+                    </p>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle>Logga in för att slutföra köpet</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground text-center text-sm">
+                  Du måste vara inloggad för att slutföra ett köp.
                 </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="note"
-                className="block text-sm font-semibold text-gray-700"
-              >
-                Notering till beställningen
-              </label>
-              <textarea
-                id="note"
-                name="note"
-                rows={3}
-                placeholder="t.ex. Swish-referens eller speciella önskemål"
-                className="block w-full rounded-md border-gray-300 border px-3 py-2 text-sm focus:border-black focus:ring-black outline-none transition resize-none"
-              />
-            </div>
-
-            <div className="pt-4 border-t">
-              <button
-                type="submit"
-                className="w-full bg-black text-white font-bold py-3 px-4 rounded-md hover:bg-gray-800 transition-colors shadow-lg active:scale-[0.98]"
-              >
-                Slutför beställning (Faktura)
-              </button>
-              <p className="mt-4 text-center text-xs text-gray-500">
-                Genom att slutföra köpet godkänner du våra köpvillkor.
-              </p>
-            </div>
-          </form>
-        </section>
-      )}
-    </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    asChild
+                    className="flex-1 bg-brand hover:bg-brand-light text-white"
+                  >
+                    <Link
+                      href={`/signin?callbackUrl=${encodeURIComponent("/checkout")}`}
+                    >
+                      Logga in
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="flex-1">
+                    <Link
+                      href={`/signup?callbackUrl=${encodeURIComponent("/checkout")}`}
+                    >
+                      Skapa konto
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+    </main>
   );
 }

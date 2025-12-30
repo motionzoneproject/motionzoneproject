@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { headers } from "next/headers";
 import Footer from "@/components/Footer";
@@ -9,35 +8,21 @@ import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
 
-// Strular till det av någon anledning:
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
-
 export const metadata: Metadata = {
   title: "MotionZone Växjö",
   description:
-    "Official Webbsite for dancestudio MotionZone Växjö - For buy and book courses and membership.",
-
+    "Dansstudio MotionZone Växjö - Köp och boka kurser och medlemskap.",
   icons: {
-    icon: "/favicon.ico", // Gör en favivon.
+    icon: "/favicon.ico",
   },
-
-  // Öppna grafdata för sociala medier (Open Graph)
   openGraph: {
     title: "MotionZone Växjö",
-    description: "MotionZone Växjö - Buy and book dance courses",
+    description: "MotionZone Växjö - Köp och boka danskurser",
     url: "https://motionzone.se",
     siteName: "MotionZone Växjö",
     images: [
       {
-        url: "https://dinwebbplats.se/LogoGP.jpg",
+        url: "https://motionzone.se/LogoGP.jpg",
         width: 400,
         height: 100,
         alt: "MotionZone Växjö Dansstudio",
@@ -56,8 +41,8 @@ export default async function RootLayout({
   });
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
+    <html lang="sv" suppressHydrationWarning>
+      <body className="antialiased min-h-screen flex flex-col">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -68,9 +53,9 @@ export default async function RootLayout({
             session={session?.session ?? null}
             user={session?.user ?? null}
           >
-            <NavBar></NavBar>
-            {children}
-            <Footer></Footer>
+            <NavBar />
+            <div className="flex-1 flex flex-col">{children}</div>
+            <Footer />
             <Toaster richColors position="top-center" />
           </SessionProvider>
         </ThemeProvider>
