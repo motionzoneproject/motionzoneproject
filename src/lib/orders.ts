@@ -1,4 +1,3 @@
-import type { Prisma } from "@/generated/prisma/client";
 import prisma from "./prisma";
 
 export type OrderItemInput = {
@@ -27,7 +26,7 @@ export async function createOrder(params: {
       data: {
         userId,
         postalcode,
-        totalPrice: totalStr as unknown as Prisma.Decimal,
+        totalPrice: Number.parseFloat(totalStr),
         // default status is PENDING_PAYMENT per schema
       },
     });
@@ -37,7 +36,7 @@ export async function createOrder(params: {
         orderId: order.id,
         productId: it.productId,
         count: it.count,
-        price: String(it.price) as unknown as Prisma.Decimal,
+        price: it.price,
       })),
       skipDuplicates: true,
     });

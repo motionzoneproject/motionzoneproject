@@ -54,6 +54,11 @@ export default function AddTerminForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // (parameter) values: {
+    //     name: string;
+    //     startDate: Date;
+    //     endDate: Date;
+    // }
     const res = await addNewTermin(values);
     if (res.success) {
       toast.success(res.msg);

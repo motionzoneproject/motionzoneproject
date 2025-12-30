@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { editLessonItem, type LessonWithBookings } from "@/lib/actions/admin";
+import type { Lesson } from "@/generated/prisma/client";
+import { editLessonItem } from "@/lib/actions/admin";
 import { adminLessonFormSchema } from "@/validations/adminforms";
 
 const formSchema = adminLessonFormSchema;
@@ -34,7 +35,7 @@ type FormInput = z.input<typeof adminLessonFormSchema>;
 type FormOutput = z.output<typeof adminLessonFormSchema>;
 
 interface Props {
-  lesson: LessonWithBookings;
+  lesson: Lesson;
 }
 
 export default function LessonItemForm({ lesson }: Props) {

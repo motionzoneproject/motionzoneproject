@@ -3,6 +3,7 @@
 /// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -30,19 +31,26 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addNewCourse } from "@/lib/actions/admin";
+import { addNewProduct } from "@/lib/actions/admin";
+import { adminAddProductSchema } from "@/validations/adminforms";
 
-import { adminAddCourseSchema } from "@/validations/adminforms";
+const formSchema = adminAddProductSchema;
 
-const formSchema = adminAddCourseSchema;
+type CourseFormInput = z.input<typeof formSchema>;
+type CourseFormOutput = z.output<typeof formSchema>;
 
-type CourseFormInput = z.input<typeof adminAddCourseSchema>;
-type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
-
-export default function AddCourseForm() {
+export default function AddProductForm() {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: {
+      clipcard: false,
+      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
+      description: "",
+      name: "",
+      price: 0,
+      clipCount: 0,
+      maxCustomers: 0,
+    },
   });
 
   const router = useRouter();
@@ -54,15 +62,7 @@ export default function AddCourseForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (
-      // fix: se över detta, kanske räcker med zod när vi fixat det.
-      (form.watch("maxbookings") as number) <= 0 ||
-      (form.watch("maxbookings") as string).trim()
-    ) {
-      values.maxbookings = 0;
-    }
-
-    const res = await addNewCourse(values);
+    const res = await addNewProduct(values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -71,15 +71,6 @@ export default function AddCourseForm() {
       toast.error(res.msg);
     }
   }
-
-  const minAgeValue = form.watch("minAge");
-  const minAgeTrim: string = String(minAgeValue ?? "").trim();
-
-  const maxAgeValue = form.watch("maxAge");
-  const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
-
-  const maxBookValue = form.watch("maxbookings");
-  const maxBookTrim: string = String(maxBookValue ?? "").trim();
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -92,6 +83,9 @@ export default function AddCourseForm() {
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Skapa en ny produkt</DialogTitle>
+          <DialogDescription>
+            Kurser läggs in efter att produkten har skapats.
+          </DialogDescription>
         </DialogHeader>
 
         <Card>
@@ -120,7 +114,7 @@ export default function AddCourseForm() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Beskrivning av kursen</FormLabel>
+                      <FormLabel>Beskrivning av produkten</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
@@ -133,18 +127,34 @@ export default function AddCourseForm() {
 
                 <FormField
                   control={form.control}
-                  name="maxbookings"
+                  name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Max bokningar per tillfälle
-                        {((form.watch("maxbookings") as number) <= 0 ||
-                          maxBookTrim === "") && (
-                          <div className="text-yellow-800">
-                            (ingen gräns är satt)
-                          </div>
-                        )}
-                      </FormLabel>
+                      <FormLabel>Pris</FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                          value={
+                            field.value === undefined ? "" : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
 
                       <FormControl>
                         <Input
@@ -163,80 +173,13 @@ export default function AddCourseForm() {
                   )}
                 />
 
+                {/**Klippkort kommer sen. fix. */}
                 <FormField
                   control={form.control}
-                  name="minAge"
+                  name="clipcard"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Minsta ålder
-                        {(form.watch("minAge") as number) <= 0 ||
-                        minAgeTrim === "" ? (
-                          <div className="text-yellow-800">
-                            (ingen minsta ålder är satt)
-                          </div>
-                        ) : (
-                          ""
-                        )}
-                      </FormLabel>
-
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
-                        />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="maxAge"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Hösta ålder
-                        {(form.watch("maxAge") as number) <= 0 ||
-                        maxAgeTrim === "" ? (
-                          <div className="text-yellow-800">
-                            (ingen minsta ålder är satt)
-                          </div>
-                        ) : (
-                          ""
-                        )}
-                      </FormLabel>
-
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
-                        />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="adult"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Vuxen</FormLabel>
+                      <FormLabel>Klippkort (kommer snart)</FormLabel>
 
                       <FormControl>
                         <Checkbox
@@ -245,6 +188,7 @@ export default function AddCourseForm() {
                             field.onChange(checked)
                           }
                           className="w-6 h-6"
+                          disabled
                         />
                       </FormControl>
 
@@ -255,29 +199,28 @@ export default function AddCourseForm() {
 
                 <FormField
                   control={form.control}
-                  name="level"
+                  name="clipCount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nivå:</FormLabel>
+                      <FormLabel>
+                        Antal bokningar (för klippkort, 0 = obegränsat)
+                      </FormLabel>
 
                       <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="teacherid"
-                  render={({ field }) => (
-                    <FormItem className="hidden">
-                      <FormLabel>Lärare:</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} readOnly />
+                        <Input
+                          disabled={form.watch("clipcard") === false}
+                          type="number"
+                          min="0"
+                          step="1"
+                          {...field}
+                          value={
+                            form.watch("clipcard") === false
+                              ? 0
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
+                          }
+                        />
                       </FormControl>
 
                       <FormMessage />

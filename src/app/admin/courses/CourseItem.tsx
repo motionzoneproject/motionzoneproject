@@ -5,18 +5,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type {
-  CourseWithTeacher,
-  LessonWithBookings,
+import {
+  type CourseWithTeacher,
+  countOrderItemsAndProductsCourse,
 } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
-import LessonsBrowser from "./components/LessonsBrowser";
+import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
-  course: CourseWithTeacher;
+  course: CourseWithTeacher; // fix: varför har jag lärare med här?
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
@@ -24,16 +24,11 @@ interface Props {
 //           ställa in -och skicka meddelande, se antal bokningar / platser.
 
 export default async function CourseItem({ course }: Props) {
-  const lessonsWithBooking: LessonWithBookings[] = await prisma.lesson.findMany(
-    {
-      where: { courseId: course.id },
-      include: { bookings: true },
-    },
-  );
+  // fix: Vi skickar med alla lärare men vi har inte gjort så admin kan välja lärare för en kurs än.
+  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
-  const terminer = await prisma.termin.findMany({
-    where: { schemaItems: { some: { courseId: course.id } } },
-  });
+  // Räknar ut hur många som köpt produkten? Nej, ska utgå från order m.m. Fix!
+  const counts = await countOrderItemsAndProductsCourse(course.id); //
 
   return (
     <div className="p-2 ">
@@ -45,21 +40,30 @@ export default async function CourseItem({ course }: Props) {
             </CardTitle>
 
             <div className="p-2 flex gap-2">
-              <EditCourseForm course={course} />
+              <EditCourseForm teachers={teachers} course={course} />
               <DeleteCourseBtn courseId={course.id} />
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
+          <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
+            <div>
+              <span className="font-bold">Kunder:</span> {counts.count ?? 0} /{" "}
+              {course.maxCustomer > 0 ? course.maxCustomer : "Obegränsat"}
+            </div>
+
+            <div>
+              <span className="font-bold">Produkter:</span>{" "}
+              {counts.countProd ?? 0} st
+            </div>
+          </div>
+
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>Lektioner</AccordionTrigger>
               <AccordionContent>
-                <LessonsBrowser
-                  lessonsWithBookings={lessonsWithBooking}
-                  terminer={terminer}
-                />
+                <LessonBrowserData courseId={course.id} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

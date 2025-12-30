@@ -13,19 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Termin } from "@/generated/prisma/client";
-import type { LessonWithBookings } from "@/lib/actions/admin";
+import type { Lesson, Termin } from "@/generated/prisma/client";
 import LessonItem from "./LessonItem";
 
 interface Props {
-  lessonsWithBookings: LessonWithBookings[];
+  lessons: Lesson[];
   terminer: Termin[];
 }
 
-export default function LessonsBrowser({
-  lessonsWithBookings: lessons,
-  terminer,
-}: Props) {
+export default function LessonsBrowser({ lessons, terminer }: Props) {
   const [selTermin, setselTermin] = useState<string>();
   const [showOldLessons, setShowOldLessons] = useState<boolean>(false);
 
@@ -35,7 +31,7 @@ export default function LessonsBrowser({
         <div className="md:flex gap-2 w-full">
           <div>
             <Select onValueChange={(value) => setselTermin(value)}>
-              <SelectTrigger className="min-w-[200px]">
+              <SelectTrigger className="min-w-50">
                 <SelectValue placeholder="Välj en termin" />
               </SelectTrigger>
               <SelectContent>
@@ -61,7 +57,7 @@ export default function LessonsBrowser({
               }
             />
             <Label htmlFor="showOld" className="text-md">
-              Visa gamla tillfällen.
+              Visa gamla lektioner.
             </Label>
           </div>
         </div>
@@ -83,7 +79,7 @@ export default function LessonsBrowser({
         )}
       </CardContent>
       <CardFooter>
-        <p>Kursen har totalt {lessons.length}st tillfällen.</p>
+        <p>Kursen har totalt {lessons.length}st lektioner.</p>
       </CardFooter>
     </Card>
   );

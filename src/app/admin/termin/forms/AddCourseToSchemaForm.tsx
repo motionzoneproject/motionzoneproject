@@ -99,7 +99,7 @@ export default function AddCourseToSchemaForm({
           variant={"default"}
           className="bg-green-500 cursor-pointer mb-3"
         >
-          Lägg till kurstillfälle
+          Lägg till kurs
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">

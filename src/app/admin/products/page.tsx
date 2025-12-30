@@ -2,6 +2,7 @@ import type { Product } from "@/generated/prisma/client";
 import { getAllProducts } from "@/lib/actions/admin";
 import AddProductForm from "./components/AddProductForm";
 import ProductItem from "./components/ProductItem";
+import SearchInputProd from "./components/SearchProducts";
 
 export default async function Page({
   searchParams,
@@ -21,7 +22,9 @@ export default async function Page({
             <span className="font-bold text-2xl">Produkter</span>
           </div>
 
-          <div>(filter)</div>
+          <div>
+            <SearchInputProd />
+          </div>
 
           <div>
             <AddProductForm />

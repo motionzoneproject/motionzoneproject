@@ -1,7 +1,11 @@
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { isAdminRole } from "@/lib/actions/admin";
-import { approveOrder, markOrderPaid } from "@/lib/actions/orders";
+import {
+  approveOrder,
+  createPurchaseFromOrder,
+  markOrderPaid,
+} from "@/lib/actions/orders";
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
@@ -75,6 +79,7 @@ export default async function Page({
     const orderId = String(formData.get("orderId"));
     const note = formData.get("note")?.toString();
     await approveOrder(orderId, note);
+    await createPurchaseFromOrder(orderId); // fix: kanske se så purchase är skapad osv.
     revalidatePath("/admin/orders");
   }
 

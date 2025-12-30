@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -27,26 +26,46 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { Termin } from "@/generated/prisma/client";
-import { checkTerminDateChange, editTermin } from "@/lib/actions/admin";
-import { adminAddTerminSchema } from "@/validations/adminforms";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  addBooking,
+  type UserPurchaseWithProduct,
+} from "@/lib/actions/server-actions";
+import { useSession } from "@/lib/session-provider";
+import { UserBookLessonSchema } from "@/validations/userforms";
 
-const formSchema = adminAddTerminSchema;
+const formSchema = UserBookLessonSchema;
 
-type FormInput = z.input<typeof adminAddTerminSchema>;
-type FormOutput = z.output<typeof adminAddTerminSchema>;
+type FormInput = z.input<typeof formSchema>;
+type FormOutput = z.output<typeof formSchema>;
 
 interface Props {
-  termin: Termin;
+  courseId: string;
+  lessonId: string;
+  purschaseItems: UserPurchaseWithProduct[];
 }
 
-export default function EditTerminForm({ termin }: Props) {
+export default function AddTerminForm({
+  courseId,
+  lessonId,
+  purschaseItems,
+}: Props) {
+  const { user } = useSession();
+
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: termin.name,
-      startDate: termin.startDate,
-      endDate: termin.endDate,
+      courseId: courseId,
+      lessonId: lessonId,
+      purchaseId: "",
     },
   });
 
@@ -59,23 +78,7 @@ export default function EditTerminForm({ termin }: Props) {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const check = await checkTerminDateChange(
-      termin.id,
-      values.startDate,
-      values.endDate,
-    );
-
-    if (check.count > 0) {
-      const confirm = window.confirm(
-        `Varning: ${check.count} bokningar ligger utanför de nya datumen. ` +
-          `Dessa kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
-      );
-      if (!confirm) return;
-    }
-
-    // 2. Kör den vanliga editTermin om man godkänt
-
-    const res = await editTermin(termin.id, values);
+    const res = await addBooking(values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -85,40 +88,19 @@ export default function EditTerminForm({ termin }: Props) {
     }
   }
 
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
+  if (!user) return notFound();
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
-          Ändra termin
+        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+          Boka
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Ändra terminen</DialogTitle>
-          <DialogDescription>
-            Ange terminens namn och vilka datum terminen har.
-          </DialogDescription>
+          <DialogTitle>Boka lektionen</DialogTitle>
         </DialogHeader>
 
         <Card>
@@ -130,12 +112,12 @@ export default function EditTerminForm({ termin }: Props) {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="courseId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                    <FormItem className="hidden">
+                      <FormLabel>Kurs id</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} disabled />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -144,20 +126,13 @@ export default function EditTerminForm({ termin }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="startDate"
+                  name="lessonId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start datum</FormLabel>
-
+                    <FormItem className="hidden">
+                      <FormLabel>lektion id</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={formatDateToInput(field.value)}
-                          onChange={field.onChange}
-                        />
+                        <Input {...field} disabled />
                       </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
@@ -165,18 +140,37 @@ export default function EditTerminForm({ termin }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="endDate"
+                  name="purchaseId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slut datum</FormLabel>
+                      <FormLabel>Välj kurs:</FormLabel>
 
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={formatDateToInput(field.value)}
-                          onChange={field.onChange}
-                        />
+                        <Select
+                          defaultValue={field.value || ""}
+                          onValueChange={async (value) => {
+                            field.onChange(
+                              value === "none" ? undefined : value,
+                            ); // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Välj kurs" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Välj kurs</SelectLabel>
+                              {purschaseItems.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.purchase.product.name} ({c.remainingCount}{" "}
+                                  )
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
                       </FormControl>
 
                       <FormMessage />
@@ -185,7 +179,7 @@ export default function EditTerminForm({ termin }: Props) {
                 />
 
                 <Button type="submit" className="w-full">
-                  Skapa
+                  Boka
                 </Button>
               </form>
             </Form>

@@ -4,11 +4,11 @@ import type { SchemaItemWithCourse } from "@/lib/actions/admin";
 import SchemaDay from "./SchemaDay";
 
 interface SchemaProps {
-  schemaItems: SchemaItemWithCourse[];
+  schemaItems: SchemaItemWithCourse[]; // Tar emot alla schemaItems (som har denna terminId) inkl kursdata.
 }
 
 export default function Schema({ schemaItems }: SchemaProps) {
-  const weekdays = Object.keys(Weekday);
+  const weekdays = Object.keys(Weekday); // Hämta veckodagar från prismaschemats enum.
 
   return (
     <Accordion type="single" className="p-2 border-2 rounded" collapsible>

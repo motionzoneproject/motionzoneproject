@@ -46,9 +46,12 @@ export const adminAddCourseSchema = z.object({
   name: z.string().min(3),
   maxbookings: z.coerce
     .number()
+    .int("Antal bokningar måste vara ett heltal.")
+    .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
+  maxCustomers: z.coerce
+    .number()
     .int("Antal platser måste vara ett heltal.")
     .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
-  // ------------------------------
   description: z.string(),
   level: z.string().optional(),
   minAge: z.coerce
@@ -69,8 +72,25 @@ export const adminLessonFormSchema = z.object({
   cancelled: z.coerce.boolean().optional(),
 });
 
-// Så man
-const ProductCourseItemSchema = z.object({
+export const adminAddProductSchema = z.object({
+  name: z.string().min(1),
+  description: z.string(),
+  maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
+  price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+  clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
+  clipCount: z.coerce
+    .number()
+    .int()
+    .nonnegative("Antalet tillfällen får inte vara negativt."),
+  // courses: z
+  // .array(AdminProductCourseItemSchema)
+  // .min(1, "Du måste koppla produkten till minst en kurs."),
+  // Bytt metod, men sparr detta ifall vi vill ha ett och samma formulär sen istället. Prioriterar att få det funka nu.
+});
+
+export const AdminProductCourseItemSchema = z.object({
+  productId: z.string().min(1),
+  isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
   courseId: z.string().min(1, "Kurs-ID måste anges."),
   lessonsIncluded: z.coerce
     .number()
@@ -78,12 +98,8 @@ const ProductCourseItemSchema = z.object({
     .nonnegative("Antalet tillfällen får inte vara negativt."),
 });
 
-export const adminAddProductSchema = z.object({
-  name: z.string().min(1),
-  description: z.string(),
-  price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
-  clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
-  courses: z
-    .array(ProductCourseItemSchema)
-    .min(1, "Du måste koppla produkten till minst en kurs."),
+export const AdminAddUserInLessonSchema = z.object({
+  userId: z.string().min(1),
+  purchaseId: z.string().min(1),
+  lessonId: z.string().min(1),
 });
