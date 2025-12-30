@@ -351,3 +351,132 @@ export async function seedIsCourseInProduct(
     return { found: false };
   }
 }
+
+export async function seedCreateOrder(params: {
+  userId: string;
+  items: { productId: string; count: number; price: number }[];
+  status?:
+    | "CREATED"
+    | "PENDING_PAYMENT"
+    | "AWAITING_APPROVAL"
+    | "PAID"
+    | "APPROVED";
+}) {
+  const { userId, items, status = "PENDING_PAYMENT" } = params;
+  const total = items.reduce((acc, it) => acc + it.count * it.price, 0);
+
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        userId,
+        totalPrice: total,
+        status,
+      },
+    });
+
+    await tx.orderItem.createMany({
+      data: items.map((it) => ({
+        orderId: order.id,
+        productId: it.productId,
+        count: it.count,
+        price: it.price,
+      })),
+    });
+
+    await tx.orderStatusEvent.create({
+      data: {
+        orderId: order.id,
+        fromStatus: null,
+        toStatus: status,
+        changedByUserId: userId,
+        note: "Seed order",
+      },
+    });
+
+    return order;
+  });
+}
+
+export async function seedApproveOrder(orderId: string, adminUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.order.findUnique({ where: { id: orderId } });
+    if (!current) throw new Error("Order not found");
+
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: { status: "APPROVED" },
+    });
+
+    await tx.orderStatusEvent.create({
+      data: {
+        orderId: orderId,
+        fromStatus: current.status,
+        toStatus: "APPROVED",
+        changedByUserId: adminUserId,
+        note: "Seed approval",
+      },
+    });
+
+    return updated;
+  });
+}
+
+export async function seedCreatePurchaseFromOrder(orderId: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                courses: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) throw new Error("Order not found");
+
+    const purchase = await tx.purchase.create({
+      data: {
+        userId: order.userId,
+        orderId: order.id,
+        productId: order.orderItems[0]?.productId,
+      },
+    });
+
+    for (const orderItem of order.orderItems) {
+      for (const pc of orderItem.product.courses) {
+        await tx.purchaseItem.create({
+          data: {
+            purchaseId: purchase.id,
+            courseId: pc.courseId,
+            orderItemId: orderItem.id,
+            lessonsIncluded: pc.lessonsIncluded,
+            remainingCount: pc.lessonsIncluded,
+            unlimited: pc.unlimited ?? false,
+          },
+        });
+      }
+    }
+
+    return purchase;
+  });
+}
+
+export async function seedCreateBooking(params: {
+  userId: string;
+  lessonId: string;
+  purchaseItemId: string;
+}) {
+  return prisma.booking.create({
+    data: {
+      userId: params.userId,
+      lessonId: params.lessonId,
+      purchaseItemId: params.purchaseItemId,
+    },
+  });
+}
