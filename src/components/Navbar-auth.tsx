@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
@@ -68,6 +69,7 @@ export default function NavBarAuth() {
           </Button>
         </>
       )}
+      <ModeToggle />
     </div>
   );
 }
