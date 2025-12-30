@@ -91,7 +91,7 @@ export default function Hero({ isDark = true }: HeroProps) {
           <div className="flex justify-center order-1 lg:order-2">
             <div className="w-full max-w-md aspect-square rounded-3xl border-2 overflow-hidden">
               <Image
-                src="/LOGO.jpg"
+                src="/LOGO.png"
                 alt="Motion Zone Hero"
                 width={500}
                 height={500}
