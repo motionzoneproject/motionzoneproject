@@ -1,4 +1,4 @@
-import { Book, Calendar, CalendarDays, Clock, MapPin } from "lucide-react"; // Ikoner för bättre UX
+import { Book, Calendar, CalendarDays, Clock, MapPin } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { addToCart } from "@/lib/actions/cart";
 import {
   getAllCoursesInProduct,
   getAllProducts,
@@ -78,7 +79,6 @@ export default async function Page() {
                   Typ: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
                   <br />
                   {p.description}
-                  {/**fix: allt för klippkort */}
                 </CardDescription>
               </CardHeader>
 
@@ -104,7 +104,6 @@ export default async function Page() {
                 </div>
 
                 {/* Schema / Kurser */}
-
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1">
                     <AccordionTrigger>Innehåll och schema</AccordionTrigger>
@@ -176,12 +175,23 @@ export default async function Page() {
               </CardContent>
 
               <CardFooter className="pt-4 border-t bg-zinc-50/50 dark:bg-zinc-900/50">
-                <Button className="w-full font-bold uppercase tracking-wider group cursor-pointer">
-                  Köp nu
-                  <span className="ml-2 group-hover:translate-x-1 transition-transform">
-                    →
-                  </span>
-                </Button>
+                <form
+                  action={async () => {
+                    "use server";
+                    await addToCart({ productId: p.id, redirectTo: "/checkout" });
+                  }}
+                  className="w-full"
+                >
+                  <Button
+                    type="submit"
+                    className="w-full font-bold uppercase tracking-wider group cursor-pointer"
+                  >
+                    Köp nu
+                    <span className="ml-2 group-hover:translate-x-1 transition-transform">
+                      →
+                    </span>
+                  </Button>
+                </form>
               </CardFooter>
             </Card>
           );

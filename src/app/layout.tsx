@@ -4,6 +4,7 @@ import "./globals.css";
 import { headers } from "next/headers";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
@@ -54,20 +55,25 @@ export default async function RootLayout({
     headers: await headers(),
   });
 
-  //         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-
   return (
-    <html lang="en">
-      <body className={`antialiased`}>
-        <SessionProvider
-          session={session?.session ?? null}
-          user={session?.user ?? null}
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <NavBar></NavBar>
-          {children}
-          <Footer></Footer>
-          <Toaster richColors position="top-center" />
-        </SessionProvider>
+          <SessionProvider
+            session={session?.session ?? null}
+            user={session?.user ?? null}
+          >
+            <NavBar></NavBar>
+            {children}
+            <Footer></Footer>
+            <Toaster richColors position="top-center" />
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
