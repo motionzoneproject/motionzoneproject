@@ -9,7 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "prepare": "husky",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/newseed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

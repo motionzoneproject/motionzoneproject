@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { addTermin } from "@/lib/actions/seed-actions";
+import {
+  seedAddCourse,
+  seedAddCoursetoSchema,
+  seedAddTermin,
+} from "@/lib/actions/seed-actions";
+import { getCourseName } from "@/lib/tools";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 const dbUrl = process.env.DATABASE_URL;
@@ -32,7 +37,7 @@ async function main() {
 
   for (const user of users) {
     try {
-      const response = await fetch("/api/signup", {
+      const response = await fetch("http://localhost:3000/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -45,11 +50,13 @@ async function main() {
 
       const result = await response.json();
 
+      console.log(`Användaren ${result.user.name} skapades.`);
+
       createdUserIds.push(result.user.id);
     } catch (e) {
       // Gick ej skapa användare, throwa ett Error för resten av seeden kommer vilja connecta eleverna till saker.
       // Eventuellt gör vi ett annat case om det inte går, men försök lösa det tror jag blir bäst.
-      throw new Error(JSON.stringify(e));
+      console.error("DETALJERAT FEL:", e);
     }
   }
   // Elever klart.
@@ -65,12 +72,12 @@ async function main() {
   //     endDate: Date;
   // }
 
-  let _terminId: string = "";
+  let terminId: string = "";
 
   // enligt: https://www.instagram.com/p/DR_vmSpgv9y/ så börjar terminen 1 feb.
 
   try {
-    const terminRes = await addTermin({
+    const terminRes = await seedAddTermin({
       name: "Vårterminen 2026",
       startDate: new Date("2026-02-01"),
       endDate: new Date("2026-06-30"), // fix: gissar på det atm, får väl fråga kanske, de kanske har sommarstängt osv.
@@ -78,7 +85,8 @@ async function main() {
 
     if (!terminRes) throw new Error("Termin kunde inte skapas.");
 
-    _terminId = terminRes.id;
+    terminId = terminRes.id;
+    console.log(`Terminen ${terminRes.name} skapades! :)`);
   } catch (e) {
     throw new Error(JSON.stringify(e));
   }
@@ -107,9 +115,9 @@ async function main() {
       adult: false,
       level: "Nybörjare",
       description: "Jazzdans för barn.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Balett",
@@ -118,9 +126,9 @@ async function main() {
       adult: false,
       level: "Nybörjare/Mellan",
       description: "Klassisk balett.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Teater",
@@ -129,9 +137,9 @@ async function main() {
       adult: false,
       level: "Grundnivå",
       description: "Grundläggande teater.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Jazz",
@@ -140,9 +148,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Jazz för ungdomar och vuxna.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Salsa",
@@ -151,9 +159,9 @@ async function main() {
       adult: true,
       level: "Nybörjare",
       description: "Salsa i Studio B.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
 
     // TISDAG
@@ -164,9 +172,9 @@ async function main() {
       adult: false,
       level: "Nybörjare",
       description: "Hip hop för barn.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Hip Hop",
@@ -175,9 +183,9 @@ async function main() {
       adult: false,
       level: "Nybörjare",
       description: "Hip hop fortsättning.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Contemporary",
@@ -186,9 +194,9 @@ async function main() {
       adult: false,
       level: "Öppen nivå",
       description: "Modern dans.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Latin Rhythms",
@@ -197,9 +205,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Latinska rytmer.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Reggaeton",
@@ -208,9 +216,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Högintensiv dans.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Träning med band & stretching",
@@ -219,9 +227,9 @@ async function main() {
       adult: true,
       level: "Fys",
       description: "Styrka och rörlighet.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
 
     // ONSDAG
@@ -232,9 +240,9 @@ async function main() {
       adult: false,
       level: "Fortsättning",
       description: "Balett för äldre barn.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Balett",
@@ -243,9 +251,9 @@ async function main() {
       adult: false,
       level: "Mellan/Avancerad",
       description: "Avancerad teknik.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Pointe",
@@ -254,9 +262,9 @@ async function main() {
       adult: false,
       level: "Mellannivå",
       description: "Tåspetsteknik.",
-      maxBookings: 10,
+      maxbookings: 10,
       maxCustomers: 15,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Stretching",
@@ -265,9 +273,9 @@ async function main() {
       adult: false,
       level: "För dansare",
       description: "Specifik stretch för dansare.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Heels",
@@ -276,9 +284,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Dans i klackar.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
 
     // TORSDAG
@@ -289,9 +297,9 @@ async function main() {
       adult: false,
       level: "Nybörjare",
       description: "Barnbalett.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Barre",
@@ -300,9 +308,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Styrketräning vid stång.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Balett",
@@ -311,9 +319,9 @@ async function main() {
       adult: true,
       level: "Mellannivå",
       description: "Vuxenbalett.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Pointe",
@@ -322,9 +330,9 @@ async function main() {
       adult: false,
       level: "Nybörjare",
       description: "Introduktion till tåspets.",
-      maxBookings: 10,
+      maxbookings: 10,
       maxCustomers: 15,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Hip Hop",
@@ -333,9 +341,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Hip hop vuxen.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
 
     // LÖRDAG
@@ -346,9 +354,9 @@ async function main() {
       adult: true,
       level: "Lördagspass",
       description: "Förmiddagspass.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Balett",
@@ -357,9 +365,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Lördagsbalett.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Stretch & Relax",
@@ -368,9 +376,9 @@ async function main() {
       adult: true,
       level: "Lugnt pass",
       description: "Avkoppling och stretch.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Bachata",
@@ -379,9 +387,9 @@ async function main() {
       adult: true,
       level: "Öppen nivå",
       description: "Bachata i Studio B.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
 
     // SÖNDAG
@@ -392,9 +400,9 @@ async function main() {
       adult: true,
       level: "Nybörjare",
       description: "Grundkurs för vuxna.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Jazz",
@@ -403,9 +411,9 @@ async function main() {
       adult: false,
       level: "Öppen nivå",
       description: "Söndagsjazz.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Motion X Dance Crew",
@@ -414,9 +422,9 @@ async function main() {
       adult: false,
       level: "Uppvisningsgrupp",
       description: "Specialgrupp.",
-      maxBookings: 20,
+      maxbookings: 20,
       maxCustomers: 25,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Kids Art Lab",
@@ -425,9 +433,9 @@ async function main() {
       adult: false,
       level: "Kreativ workshop",
       description: "Konst och rörelse.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
     {
       name: "Art Lab Zone",
@@ -436,22 +444,354 @@ async function main() {
       adult: false,
       level: "Kreativ workshop",
       description: "Fördjupning konst.",
-      maxBookings: 15,
+      maxbookings: 15,
       maxCustomers: 20,
-      teacherId,
+      teacherid: teacherId,
     },
   ];
 
-  const _createdCoursesId = []; // en lista med id för alla kurser.
+  const createdCoursesId = []; // en lista med id för alla kurser, så de kan kopplas till produkter och terminer osv.
 
   try {
-    for (const _course of coursesToCreate) {
+    for (const course of coursesToCreate) {
+      const addedCourse = await seedAddCourse(course);
+      if (addedCourse) {
+        console.log(`Lade till kursen ${getCourseName(addedCourse)} i db`);
+        createdCoursesId.push(addedCourse.id); // spara id
+      } else {
+        throw new Error(`Gick ej skapa kursen ${JSON.stringify(course)}`);
+      }
     }
   } catch (e) {
     throw new Error(JSON.stringify(e));
   }
 
-  // Sådär då.
+  // Sådär då. Whats next...
+
+  // vi gör lite produkter? Eller nä, vi lägger in i schemat först.
+
+  // ****************************************************** Schema & Lektioner ******************************************************
+
+  const schemaToCreate = [
+    // MÅNDAG
+    {
+      name: "Jazz",
+      minAge: 5,
+      maxAge: 8,
+      day: "MONDAY",
+      start: "16:00",
+      end: "16:45",
+      place: "Studio A",
+    },
+    {
+      name: "Balett",
+      minAge: 9,
+      maxAge: 0,
+      day: "MONDAY",
+      start: "16:55",
+      end: "18:25",
+      place: "Studio A",
+    },
+    {
+      name: "Teater",
+      minAge: 10,
+      maxAge: 0,
+      day: "MONDAY",
+      start: "18:30",
+      end: "19:30",
+      place: "Studio A",
+    },
+    {
+      name: "Jazz",
+      minAge: 15,
+      maxAge: 0,
+      day: "MONDAY",
+      start: "19:40",
+      end: "20:55",
+      place: "Studio A",
+    },
+    {
+      name: "Salsa",
+      minAge: 19,
+      maxAge: 0,
+      day: "MONDAY",
+      start: "19:40",
+      end: "20:40",
+      place: "Studio B",
+    },
+
+    // TISDAG
+    {
+      name: "Hip Hop",
+      minAge: 5,
+      maxAge: 8,
+      day: "TUESDAY",
+      start: "16:00",
+      end: "16:45",
+      place: "Studio A",
+    },
+    {
+      name: "Hip Hop",
+      minAge: 9,
+      maxAge: 0,
+      day: "TUESDAY",
+      start: "16:55",
+      end: "17:55",
+      place: "Studio A",
+    },
+    {
+      name: "Contemporary",
+      minAge: 13,
+      maxAge: 0,
+      day: "TUESDAY",
+      start: "18:00",
+      end: "19:15",
+      place: "Studio A",
+    },
+    {
+      name: "Latin Rhythms",
+      minAge: 19,
+      maxAge: 0,
+      day: "TUESDAY",
+      start: "19:30",
+      end: "20:30",
+      place: "Studio A",
+    },
+    {
+      name: "Reggaeton",
+      minAge: 19,
+      maxAge: 0,
+      day: "TUESDAY",
+      start: "20:30",
+      end: "21:30",
+      place: "Studio A",
+    },
+    {
+      name: "Träning med band & stretching",
+      minAge: 0,
+      maxAge: 0,
+      day: "TUESDAY",
+      start: "19:25",
+      end: "20:10",
+      place: "Studio B",
+    },
+
+    // ONSDAG
+    {
+      name: "Balett",
+      minAge: 9,
+      maxAge: 0,
+      day: "WEDNESDAY",
+      start: "16:00",
+      end: "17:30",
+      place: "Studio A",
+    },
+    {
+      name: "Balett",
+      minAge: 0,
+      maxAge: 0,
+      day: "WEDNESDAY",
+      start: "17:40",
+      end: "19:10",
+      place: "Studio A",
+    },
+    {
+      name: "Pointe",
+      minAge: 0,
+      maxAge: 0,
+      day: "WEDNESDAY",
+      start: "19:15",
+      end: "19:45",
+      place: "Studio A",
+    },
+    {
+      name: "Stretching",
+      minAge: 0,
+      maxAge: 0,
+      day: "WEDNESDAY",
+      start: "19:45",
+      end: "20:05",
+      place: "Studio A",
+    },
+    {
+      name: "Heels",
+      minAge: 16,
+      maxAge: 0,
+      day: "WEDNESDAY",
+      start: "20:10",
+      end: "21:10",
+      place: "Studio A",
+    },
+
+    // TORSDAG
+    {
+      name: "Balett",
+      minAge: 5,
+      maxAge: 8,
+      day: "THURSDAY",
+      start: "16:00",
+      end: "16:45",
+      place: "Studio A",
+    },
+    {
+      name: "Barre",
+      minAge: 0,
+      maxAge: 0,
+      day: "THURSDAY",
+      start: "17:20",
+      end: "18:05",
+      place: "Studio A",
+    },
+    {
+      name: "Balett",
+      minAge: 13,
+      maxAge: 0,
+      day: "THURSDAY",
+      start: "18:10",
+      end: "19:40",
+      place: "Studio A",
+    },
+    {
+      name: "Pointe",
+      minAge: 12,
+      maxAge: 0,
+      day: "THURSDAY",
+      start: "19:40",
+      end: "20:10",
+      place: "Studio A",
+    },
+    {
+      name: "Hip Hop",
+      minAge: 15,
+      maxAge: 0,
+      day: "THURSDAY",
+      start: "20:15",
+      end: "21:15",
+      place: "Studio A",
+    },
+
+    // LÖRDAG
+    {
+      name: "Barre",
+      minAge: 0,
+      maxAge: 0,
+      day: "SATURDAY",
+      start: "15:15",
+      end: "16:15",
+      place: "Studio A",
+    },
+    {
+      name: "Balett",
+      minAge: 13,
+      maxAge: 0,
+      day: "SATURDAY",
+      start: "16:20",
+      end: "17:50",
+      place: "Studio A",
+    },
+    {
+      name: "Stretch & Relax",
+      minAge: 0,
+      maxAge: 0,
+      day: "SATURDAY",
+      start: "17:55",
+      end: "18:35",
+      place: "Studio A",
+    },
+    {
+      name: "Bachata",
+      minAge: 19,
+      maxAge: 0,
+      day: "SATURDAY",
+      start: "15:15",
+      end: "16:15",
+      place: "Studio B",
+    },
+
+    // SÖNDAG
+    {
+      name: "Balett Vuxen",
+      minAge: 0,
+      maxAge: 0,
+      day: "SUNDAY",
+      start: "10:30",
+      end: "11:45",
+      place: "Studio A",
+    },
+    {
+      name: "Jazz",
+      minAge: 12,
+      maxAge: 0,
+      day: "SUNDAY",
+      start: "13:55",
+      end: "14:55",
+      place: "Studio A",
+    },
+    {
+      name: "Motion X Dance Crew",
+      minAge: 12,
+      maxAge: 0,
+      day: "SUNDAY",
+      start: "15:00",
+      end: "17:00",
+      place: "Studio A",
+    },
+    {
+      name: "Kids Art Lab",
+      minAge: 5,
+      maxAge: 8,
+      day: "SUNDAY",
+      start: "10:30",
+      end: "11:30",
+      place: "Studio B",
+    },
+    {
+      name: "Art Lab Zone",
+      minAge: 9,
+      maxAge: 0,
+      day: "SUNDAY",
+      start: "13:30",
+      end: "15:00",
+      place: "Studio B",
+    },
+  ];
+
+  console.log("Börjar generera schema och lektioner...");
+
+  // Vi behöver hämta alla kurser vi nyss skapat från DB för att ha tillgång till deras data (ID, ålder, namn)
+  const dbCourses = await prisma.course.findMany();
+
+  for (const s of schemaToCreate) {
+    // Hitta rätt kurs-ID genom att matcha namn och minAge (unikt nog för detta schema). Aa jag förstår :)
+    const targetCourse = dbCourses.find(
+      (c) => c.name === s.name && c.minAge === s.minAge,
+    );
+
+    if (!targetCourse) {
+      console.warn(
+        `Kunde inte hitta kursobjektet för ${s.name} (${s.minAge}+) i databasen. Hoppar över.`,
+      );
+      continue;
+    }
+
+    try {
+      const res = await seedAddCoursetoSchema(terminId, {
+        courseId: targetCourse.id,
+        day: s.day,
+        timeStart: s.start,
+        timeEnd: s.end,
+        place: s.place,
+      });
+
+      if (res.success) {
+        console.log(`✅ ${res.msg}`);
+      } else {
+        console.error(`❌ Fel vid schemaläggning av ${s.name}: ${res.msg}`);
+      }
+    } catch (err) {
+      console.error(`Kritiskt fel för ${s.name}:`, err);
+    }
+  }
 }
 
 main()
