@@ -178,7 +178,10 @@ export default async function Page() {
                 <form
                   action={async () => {
                     "use server";
-                    await addToCart({ productId: p.id, redirectTo: "/checkout" });
+                    await addToCart({
+                      productId: p.id,
+                      redirectTo: "/checkout",
+                    });
                   }}
                   className="w-full"
                 >
