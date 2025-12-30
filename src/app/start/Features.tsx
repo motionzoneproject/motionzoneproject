@@ -1,120 +1,64 @@
-//features
-
 "use client";
 
-interface FeaturesProps {
-  isDark?: boolean;
-}
+import { Building2, Calendar, GraduationCap } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-export default function Features({ isDark = true }: FeaturesProps) {
+const features = [
+  {
+    icon: GraduationCap,
+    title: "Professionella instruktörer",
+    description:
+      "Våra erfarna lärare har lång erfarenhet och brinner för att dela sin passion för dans.",
+  },
+  {
+    icon: Calendar,
+    title: "Flexibla Kurstider",
+    description:
+      "Vi erbjuder kurser på olika tider för att passa ditt schema. Från morgon till kväll, alla dagar.",
+  },
+  {
+    icon: Building2,
+    title: "Moderna Lokaler",
+    description:
+      "Vår studio är utrustad med det senaste ljudsystemet och stora speglar för optimal träning.",
+  },
+];
+
+export default function Features() {
   return (
-    <section
-      id="varfor"
-      className={`py-16 md:py-24 transition-colors duration-300 ${
-        isDark
-          ? "bg-linear-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-white"
-      }`}
-    >
+    <section id="varfor" className="py-16 md:py-24 bg-muted/50">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <SectionHeader
-          isDark={isDark}
-          title="Varför Motion Zone?"
-          subtitle="Vi erbjuder en unik dansupplevelse i världsklass och moderna faciliteter"
-        />
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+            Varför Motion Zone?
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Vi erbjuder en unik dansupplevelse med instruktörer i världsklass
+            och moderna faciliteter
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FeatureCard
-            isDark={isDark}
-            icon="👨‍🏫"
-            title="Professionella instruktörer"
-            description="Våra erfarna lärare har lång av erfarenhet och brinner för att dela sin passion för dans."
-          />
-          <FeatureCard
-            isDark={isDark}
-            icon="📅"
-            title="Flexibla Kursider"
-            description="Vi erbjuder kurser på olika tider för att passa ditt schema. Från morgon till kväll, alla dagar."
-          />
-          <FeatureCard
-            isDark={isDark}
-            icon="🏢"
-            title="Moderna Lokaler"
-            description="Vår studio är utrustad med det senaste ljudsystemet och stora speglar för optimal träning."
-          />
+          {features.map((feature) => (
+            <Card
+              key={feature.title}
+              className="bg-card border-border hover:border-brand/50 transition-colors"
+            >
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-brand/10 flex items-center justify-center">
+                  <feature.icon className="w-6 h-6 text-brand" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </section>
-  );
-}
-
-function FeatureCard({
-  isDark,
-  icon,
-  title,
-  description,
-}: {
-  isDark: boolean;
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div
-      className={`group rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-10 text-center border ${
-        isDark
-          ? "bg-slate-800/50 backdrop-blur-sm border-slate-700 hover:border-pink-500/50 hover:shadow-pink-500/20"
-          : "bg-white border-gray-200 hover:border-pink-300 hover:shadow-pink-300/20"
-      }`}
-    >
-      <div className="text-6xl mb-6 group-hover:scale-125 transition-transform duration-300">
-        {icon}
-      </div>
-      <h3
-        className={`text-2xl font-bold mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-linear-to-r group-hover:from-pink-400 group-hover:to-orange-300 transition-all duration-300 ${
-          isDark ? "text-white" : "text-gray-900"
-        }`}
-      >
-        {title}
-      </h3>
-      <p
-        className={`font-light text-lg leading-relaxed ${
-          isDark ? "text-gray-400" : "text-gray-700"
-        }`}
-      >
-        {description}
-      </p>
-    </div>
-  );
-}
-
-function SectionHeader({
-  isDark,
-  title,
-  subtitle,
-}: {
-  isDark: boolean;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="text-center mb-16">
-      <h2
-        className={`text-5xl md:text-6xl font-bold mb-6 ${
-          isDark
-            ? "bg-linear-to-r from-white via-pink-200 to-pink-400 bg-clip-text text-transparent"
-            : "text-gray-900"
-        }`}
-      >
-        {title}
-      </h2>
-      <p
-        className={`text-xl max-w-2xl mx-auto leading-relaxed font-light ${
-          isDark ? "text-gray-300" : "text-gray-700"
-        }`}
-      >
-        {subtitle}
-      </p>
-    </div>
   );
 }
