@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { clearCart } from "@/lib/cart";
 import { createOrder } from "@/lib/orders";
 import { getSessionData } from "./sessiondata";
 
@@ -14,7 +15,6 @@ export async function createCheckout(params: {
   items: CheckoutItem[];
   postalcode?: string;
   note?: string;
-  // placeholder for future: paymentMethod?: "invoice" | "card" | "swish";
 }) {
   const session = await getSessionData();
   if (!session) throw new Error("Unauthorized");
@@ -31,6 +31,9 @@ export async function createCheckout(params: {
     note,
   });
 
+  // Clear cart after order
+  await clearCart();
+
   return {
     orderId: order.id,
     status: order.status ?? "PENDING_PAYMENT",
@@ -38,7 +41,6 @@ export async function createCheckout(params: {
   } as const;
 }
 
-// Helper when used directly as a form/action submit that should navigate immediately
 export async function createCheckoutAndRedirect(params: {
   items: CheckoutItem[];
   postalcode?: string;

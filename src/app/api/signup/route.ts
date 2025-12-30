@@ -21,7 +21,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     // get req as FormData.
     const formData = (await req.json()) as FormData;
-    // console.log("Recieved: " + JSON.stringify(formData));
 
     // safeParse it with zod:
     const result = SignUpFormSchema.safeParse(formData);
@@ -51,8 +50,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           data: { role: "admin" },
           where: { id: user.id },
         });
-
-        // console.log("Admin created.");
       }
     }
 
@@ -63,7 +60,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   } catch (e) {
     const err = e as string;
-    // console.log("Signup error: " + err);
 
     return NextResponse.json({ error: err }, { status: 500 });
   }
