@@ -843,6 +843,9 @@ async function main() {
   console.log(
     "✅ Allt klart! Nu har du elever, schema, lektioner och säljbara produkter.",
   );
+
+  // ****************************************************** Skapa 10 färdiga ordrar ******************************************************
+  // Tänker typ elev 2 - 5 har köpt produkt 1, elev 2 - 10 har köpt produkt 2
 }
 
 main()
