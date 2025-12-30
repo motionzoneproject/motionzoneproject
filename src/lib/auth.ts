@@ -11,7 +11,12 @@ export const auth = betterAuth({
     enabled: true,
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://dev.motionzoneworld.com",
+    "https://motionzoneworld.com",
+  ],
   plugins: [adminPlugin()],
   user: {
     additionalFields: {
