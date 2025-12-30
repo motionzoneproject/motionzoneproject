@@ -381,11 +381,11 @@ export async function getFullCourseNameFromId(id: string) {
 }
 
 export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+  // const sessionData = await getSessionData();
+  // const user = sessionData?.user;
 
-  // Säkerställ att användaren bara kan ta bort sina egna bokningar
-  if (!user) return [];
+  // // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  // if (!user) return [];
 
   try {
     const courses: Course[] = [];
@@ -407,13 +407,15 @@ export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+  // const sessionData = await getSessionData();
+  // const user = sessionData?.user;
 
-  // Säkerställ att användaren bara kan ta bort sina egna bokningar
-  if (!user) return [];
+  // // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  // if (!user) return [];s
   try {
     const products = await prisma.product.findMany();
+
+    console.log("\n\n\nHämtar produkter. ", products.length);
 
     return products;
   } catch (e) {
@@ -423,11 +425,11 @@ export async function getAllProducts(): Promise<Product[]> {
 }
 
 export async function getProductTermin(pid: string): Promise<Termin[]> {
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+  // const sessionData = await getSessionData();
+  // const user = sessionData?.user;
 
-  // Säkerställ att användaren bara kan ta bort sina egna bokningar
-  if (!user) return [];
+  // // Säkerställ att användaren bara kan ta bort sina egna bokningar
+  // if (!user) return [];
   try {
     // 1. Hämta produkten och gå djupt ner i relationerna på en gång
     const product = await prisma.product.findUnique({
@@ -471,9 +473,6 @@ export async function getProductTermin(pid: string): Promise<Termin[]> {
 }
 
 export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
-  const sessionData = await getSessionData();
-  if (!sessionData?.user) return [];
-
   try {
     const schemaItems = await prisma.schemaItem.findMany({
       where: {
@@ -505,8 +504,8 @@ export async function getCourseCountInProduct(
   productId: string,
   courseId: string,
 ): Promise<number> {
-  const sessionData = await getSessionData();
-  if (!sessionData?.user) return 0;
+  // const sessionData = await getSessionData();
+  // if (!sessionData?.user) return 0;
 
   try {
     // fix: ej för klippkort än.

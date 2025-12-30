@@ -27,7 +27,7 @@ import {
 import { getVeckodag } from "../admin/termin/SchemaDay";
 
 export default async function Page() {
-  const products = await getAllProducts();
+  const products = await getAllProducts(); // Hämtaa alla produkter.. ? fixed (no user cehck.)
 
   return (
     <main className="bg-background">

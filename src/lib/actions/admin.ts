@@ -908,7 +908,7 @@ export async function editLessonItem(
  * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
  * @auth Admin
  */
-export async function getAllProducts(): Promise<Product[]> {
+export async function adminGetAllProducts(): Promise<Product[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
