@@ -7,6 +7,7 @@ import {
   seedAddTermin,
   seedNewProduct,
 } from "@/lib/actions/seed-actions";
+import { auth } from "@/lib/auth";
 import { getCourseName } from "@/lib/tools";
 import { PrismaClient } from "../src/generated/prisma/client";
 
@@ -39,25 +40,38 @@ async function main() {
 
   for (const user of users) {
     try {
-      const response = await fetch("http://localhost:3000/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: user.name,
-          email: user.email,
-          password: user.password,
-          confirmPassword: user.password,
-        }),
+      let userId: string;
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email },
       });
 
-      const result = await response.json();
+      if (existingUser) {
+        userId = existingUser.id;
+        console.log(`Användaren ${user.name} fanns redan.`);
+      } else {
+        const { user: createdUser } = await auth.api.signUpEmail({
+          body: {
+            name: user.name,
+            email: user.email,
+            password: user.password,
+          },
+        });
 
-      console.log(`Användaren ${result.user.name} skapades.`);
+        if (!createdUser) throw new Error("User creation failed");
+        userId = createdUser.id;
+        console.log(`Användaren ${createdUser.name} skapades.`);
+      }
 
-      createdUserIds.push(result.user.id);
+      // Gör första användaren till admin om det behövs
+      if (user.email === "admin@motionzoneworld.com") {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { role: "admin" },
+        });
+      }
+
+      createdUserIds.push(userId);
     } catch (e) {
-      // Gick ej skapa användare, throwa ett Error för resten av seeden kommer vilja connecta eleverna till saker.
-      // Eventuellt gör vi ett annat case om det inte går, men försök lösa det tror jag blir bäst.
       console.error("DETALJERAT FEL:", e);
     }
   }
@@ -765,18 +779,18 @@ async function main() {
 
   if (!dbCourses)
     throw new Error(
-      "Nope, dbCourses hittade inga kurser så kurserna skapades aldrig.."
+      "Nope, dbCourses hittade inga kurser så kurserna skapades aldrig..",
     );
 
   for (const s of schemaToCreate) {
     // Hitta rätt kurs-ID genom att matcha namn och minAge (unikt nog för detta schema). Aa jag förstår :)
     const targetCourse = dbCourses.find(
-      (c) => c.name === s.name && c.minAge === s.minAge
+      (c) => c.name === s.name && c.minAge === s.minAge,
     );
 
     if (!targetCourse) {
       console.warn(
-        `Kunde inte hitta kursobjektet för ${s.name} (${s.minAge}+) i databasen. Hoppar över.`
+        `Kunde inte hitta kursobjektet för ${s.name} (${s.minAge}+) i databasen. Hoppar över.`,
       );
       continue;
     }
@@ -841,7 +855,7 @@ async function main() {
   }
 
   console.log(
-    "✅ Allt klart! Nu har du elever, schema, lektioner och säljbara produkter."
+    "✅ Allt klart! Nu har du elever, schema, lektioner och säljbara produkter.",
   );
 
   // Lämnar över till Tarek // Tobbe
