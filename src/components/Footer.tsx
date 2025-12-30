@@ -1,4 +1,4 @@
-// components/Footer.js
+// components/Footer.tsx
 import { Facebook, Instagram, Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-white mb-4">
               Snabblänkar
             </h3>
-            <ul className=" space-y-2 text-md text-rose-200 höver:text-blue-200">
+            <ul className="space-y-2 text-md text-rose-200">
               {[
                 { name: "Hem", href: "/" },
                 { name: "Mina kurser", href: "/courses" },
@@ -85,7 +85,7 @@ const Footer = () => {
 
           <div className="items-center mx-auto space-y-3">
             <h3 className="text-lg text-white font-bold mb-4">Bli medlem</h3>
-            <p className="text-sm text-white-600">
+            <p className="text-sm text-gray-400">
               Vill du börja dansan? skapa ett konto och boka din första kurs
               idag
             </p>
