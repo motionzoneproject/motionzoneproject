@@ -1,57 +1,54 @@
-// components/Footer.tsx
 import { Facebook, Instagram, Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+
+const quickLinks = [
+  { name: "Hem", href: "/" },
+  { name: "Kurser", href: "/courses" },
+  { name: "Om oss", href: "/about" },
+  { name: "Galleri", href: "/gallery" },
+];
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-950 text-gray-300">
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              MotionZone Växjö
-            </h2>
-            <p className="text-sm leading-relaxed text-gray-400 mb-6">
+    <footer className="bg-card text-card-foreground border-t border-brand/20">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid gap-8 md:grid-cols-4">
+          {/* Brand */}
+          <div>
+            <h2 className="text-lg font-bold mb-3">MotionZone</h2>
+            <p className="text-sm text-muted-foreground mb-4">
               Din plats för dans, glädje och gemenskap.
-              <br />
-              Kurser för alla åldrar och nivåer.
             </p>
-
-            <div className="flex items-center gap-4">
+            <div className="flex gap-3">
               <Link
                 href="https://facebook.com"
                 target="_blank"
-                className="hover:text-yellow-400 transition"
+                className="text-muted-foreground hover:text-brand transition-colors"
+                aria-label="Facebook"
               >
                 <Facebook className="w-5 h-5" />
               </Link>
               <Link
                 href="https://instagram.com"
                 target="_blank"
-                className="hover:text-yellow-400 transition"
+                className="text-muted-foreground hover:text-brand transition-colors"
+                aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </Link>
             </div>
           </div>
 
+          {/* Links */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Snabblänkar
-            </h3>
-            <ul className="space-y-2 text-md text-rose-200">
-              {[
-                { name: "Hem", href: "/" },
-                { name: "Mina kurser", href: "/courses" },
-                { name: "Om oss", href: "/about" },
-                { name: "Kontakta oss", href: "/contact" },
-              ].map((link) => (
+            <h3 className="text-sm font-semibold mb-3">Sidor</h3>
+            <ul className="space-y-2 text-sm">
+              {quickLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="hover:text-yellow-400 transition"
+                    className="text-muted-foreground hover:text-brand transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -60,22 +57,23 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Kontakt</h3>
-            <ul className="space-y-4 text-sm">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-rose-400" />
-                <span>Dansgatan 12, 352 30 Växjö</span>
+            <h3 className="text-sm font-semibold mb-3">Kontakt</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-brand" />
+                Dansgatan 12, 352 30 Växjö
               </li>
-              <li className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-rose-400" />
-                <span>0470 – 123 45</span>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-brand" />
+                0470 – 123 45
               </li>
-              <li className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-rose-400" />
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-brand" />
                 <Link
                   href="mailto:info@motionzone.se"
-                  className="hover:text-rose-400 transition"
+                  className="hover:text-brand transition-colors"
                 >
                   info@motionzone.se
                 </Link>
@@ -83,25 +81,24 @@ const Footer = () => {
             </ul>
           </div>
 
-          <div className="items-center mx-auto space-y-3">
-            <h3 className="text-lg text-white font-bold mb-4">Bli medlem</h3>
-            <p className="text-sm text-gray-400">
-              Vill du börja dansan? skapa ett konto och boka din första kurs
-              idag
+          {/* CTA */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Bli medlem</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Skapa ett konto och boka din första kurs idag!
             </p>
-            <Button asChild className="mt-6 w-full bg-red-600 hover:bg-red-500">
-              <Link href="/signup">Bli medlem</Link>
+            <Button
+              asChild
+              size="sm"
+              className="bg-brand hover:bg-brand-light text-white"
+            >
+              <Link href="/signup">Skapa konto</Link>
             </Button>
           </div>
         </div>
 
-        <Separator className="my-10 bg-gray-800" />
-
-        <div className="max-w-7xl mx-auto bg-sky-400 ">
-          <p className=" border-neutral-200 text-md font-bold text-black px-6 py-2 text-center w-full">
-            © {new Date().getFullYear()} MotionZone Växjö. Alla rättigheter
-            förbehållna.
-          </p>
+        <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} MotionZone Växjö
         </div>
       </div>
     </footer>
