@@ -1,98 +1,117 @@
+import { Card, CardContent } from "@/components/ui/card";
+
+const teachers = [
+  {
+    name: "Maria Johansson",
+    specialty: "Hip Hop & Street",
+    description:
+      "Med över 10 års erfarenhet skapar Maria energifyllda klasser där uttryck och självförtroende står i fokus.",
+  },
+  {
+    name: "Erik Svensson",
+    specialty: "Balett & Modern dans",
+    description:
+      "Erik kombinerar teknik och konstnärligt uttryck för att hjälpa varje elev att utvecklas i sin egen takt.",
+  },
+];
+
+const danceStyles = [
+  "Hip Hop",
+  "Balett",
+  "Salsa",
+  "Jazz",
+  "Latin rhythms",
+  "Contemporary",
+  "Reggaeton",
+  "Pointe Mellannivå",
+  "Heels",
+  "Barre",
+  "Stretch & relaxation",
+  "Art Lab Zone",
+];
+
 export default function About() {
   return (
-    <main className="bg-gradient-to-br from-blue-200 to-purple-50 text-gray-800">
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl font-bold tracking-tight mb-6">
-          Om vår dansstudio
-        </h1>
-        <p className="max-w-2xl mx-auto text-lg font-extrabold text-blue-600">
-          En plats där rörelse möter gemenskap, kreativitet och passion.
-        </p>
+    <main className="bg-background">
+      {/* Hero */}
+      <section className="py-16 md:py-20 text-center border-b border-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
+            Om vår dansstudio
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            En plats där rörelse möter gemenskap, kreativitet och passion.
+          </p>
+        </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-extrabold mb-12 text-center">
-          Våra lärare
-        </h2>
+      {/* Teachers */}
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold mb-8 text-center text-foreground">
+            Våra lärare
+          </h2>
 
-        <div className="grid gap-10 md:grid-cols-2">
-          <div className="bg-white rounded-2xl shadow-sm p-8 flex gap-6 items-center">
-            <div className="w-28 h-28 rounded-full bg-green-100 flex-shrink-0" />
-            <div>
-              <h3 className="text-2xl font-extrabold">Maria Johansson</h3>
-              <p className="text-green-600 font-medium mb-6">
-                Hip Hop & Street
-              </p>
-              <p className="text-blue-600">
-                Med över 10 års erfarenhet skapar Maria energifyllda klasser där
-                uttryck och självförtroende står i fokus.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm p-8 flex gap-6 items-center">
-            <div className="w-28 h-28 rounded-full bg-green-100 flex-shrink-0" />
-            <div>
-              <h3 className="text-2xl font-extrabold">Erik Svensson</h3>
-              <p className="text-green-600 font-medium mb-6">
-                Balett & Modern dans
-              </p>
-              <p className="text-blue-600">
-                Erik kombinerar teknik och konstnärligt uttryck för att hjälpa
-                varje elev att utvecklas i sin egen takt.
-              </p>
-            </div>
+          <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+            {teachers.map((teacher) => (
+              <Card key={teacher.name} className="bg-card border-border">
+                <CardContent className="p-6 flex gap-4 items-start">
+                  <div className="w-14 h-14 rounded-full bg-brand/20 shrink-0 flex items-center justify-center">
+                    <span className="text-xl font-bold text-brand">
+                      {teacher.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">
+                      {teacher.name}
+                    </h3>
+                    <p className="text-brand text-sm mb-2">
+                      {teacher.specialty}
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      {teacher.description}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-20">
-          <h2 className="text-3xl font-extrabold mb-10 text-center">
+      {/* Dance Styles */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold mb-8 text-center text-foreground">
             Dansstilar
           </h2>
 
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 font-bold">
-            {[
-              "Hip Hop",
-              "Balett",
-              "Salsa",
-              "Jazz",
-              "Latin rhythms",
-              "Contemporary",
-              "Reggaeton",
-              "Pointe Mellannivå",
-              "Heels",
-              "Barre",
-              "Stretch & relaxation",
-              "Art Lab Zone",
-            ].map((style) => (
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4 max-w-3xl mx-auto">
+            {danceStyles.map((style) => (
               <div
                 key={style}
-                className="rounded-3xl border border-gray-200 p-6 text-center hover:border-slate-400 transition"
+                className="bg-card border border-border rounded-lg p-3 text-center text-foreground text-sm hover:border-brand/50 transition-colors"
               >
-                <p className="text-lg font-medium">{style}</p>
+                {style}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="flex flex-col items-center justify-center">
-          <div>
-            <h2 className="text-3xl text-green-600 font-extrabold mb-6">
-              Vår studio
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Vår studio är designad för att kännas inspirerande, trygg och
-              professionell. Ljusa salar, speglar och högkvalitativa golv skapar
-              den perfekta miljön för dans.
-            </p>
-          </div>
-
-          <div className="h-24 rounded-2xl bg-gradient-to-br from-blue-200 to-purple-200">
-            <p className="text-blue-800 text-3xl font-bold mt-8 text-center">
+      {/* Studio */}
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-foreground">
+            Vår studio
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            Vår studio är designad för att kännas inspirerande, trygg och
+            professionell. Ljusa salar, speglar och högkvalitativa golv skapar
+            den perfekta miljön för dans.
+          </p>
+          <div className="bg-brand rounded-lg p-6">
+            <p className="text-white text-lg font-semibold">
               Här är alla välkomna – oavsett nivå.
             </p>
           </div>
