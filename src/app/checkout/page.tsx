@@ -32,7 +32,7 @@ export default async function Page() {
       select: { id: true, price: true },
     });
     const byId = new Map(
-      products.map((p) => [p.id, parseFloat(String(p.price))])
+      products.map((p) => [p.id, parseFloat(String(p.price))]),
     );
     const items = currentCart.items.map((it) => ({
       productId: it.productId,
@@ -112,7 +112,7 @@ export default async function Page() {
                   >
                     <Link
                       href={`/signin?callbackUrl=${encodeURIComponent(
-                        "/checkout"
+                        "/checkout",
                       )}`}
                     >
                       Logga in
@@ -121,7 +121,7 @@ export default async function Page() {
                   <Button asChild variant="outline" className="flex-1">
                     <Link
                       href={`/signup?callbackUrl=${encodeURIComponent(
-                        "/checkout"
+                        "/checkout",
                       )}`}
                     >
                       Skapa konto
