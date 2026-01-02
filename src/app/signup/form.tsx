@@ -38,57 +38,49 @@ export default function SignUpForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
+      phoneNumber: "",
+      address: "",
+      postalCode: "",
+      city: "",
+      dateOfBirth: "",
     },
   });
 
   async function onSubmit(values: FormValues) {
     try {
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          confirmPassword: values.confirmPassword,
-        }),
+      const { error } = await authClient.signUp.email({
+        email: values.email,
+        password: values.password,
+        name: `${values.firstName} ${values.lastName}`,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phoneNumber: values.phoneNumber,
+        address: values.address,
+        postalCode: values.postalCode,
+        city: values.city,
+        dateOfBirth: new Date(values.dateOfBirth),
+        callbackURL: callbackUrl,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        const { error } = await authClient.signIn.email({
-          email: values.email,
-          password: values.password,
-        });
-
-        if (error) {
-          toast.error("Registrering lyckades, men inloggning misslyckades", {
-            description: "Försök logga in manuellt.",
-          });
-          router.push("/signin");
-        } else {
-          toast.success("Konto skapat!", {
-            description: "Välkommen till MotionZone!",
-          });
-          router.push(callbackUrl);
-          router.refresh();
-        }
-      } else {
+      if (error) {
         const errorMessage =
-          typeof result.error === "string"
-            ? result.error
-            : result.error?.body?.message ||
-              result.error?.message ||
-              "Registrering misslyckades.";
+          error.body?.message || error.message || "Registrering misslyckades.";
         toast.error("Registrering misslyckades", {
           description: errorMessage,
         });
+        return;
       }
+
+      toast.success("Konto skapat!", {
+        description: "Välkommen till MotionZone!",
+      });
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Ett nätverksfel inträffade";
@@ -113,23 +105,42 @@ export default function SignUpForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Namn</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ditt namn"
-                      autoComplete="name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Förnamn</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Förnamn"
+                        autoComplete="given-name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Efternamn</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Efternamn"
+                        autoComplete="family-name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="email"
@@ -143,6 +154,89 @@ export default function SignUpForm() {
                       autoComplete="email"
                       {...field}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefonnummer</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="070-123 45 67"
+                      autoComplete="tel"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gatuadress</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Gatuadress"
+                      autoComplete="street-address"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="postalCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postnummer</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 45"
+                        autoComplete="postal-code"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ort</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ort"
+                        autoComplete="address-level2"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Födelsedatum</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

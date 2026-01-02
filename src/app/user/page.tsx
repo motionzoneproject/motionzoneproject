@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getUserOrders } from "@/lib/actions/orders";
 import {
   getFullCourseNameFromId,
   getUserBookings,
@@ -21,6 +22,7 @@ import {
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import BookingCal from "./BookingCal";
+import OrderHistory from "./OrderHistory";
 
 export default async function Page() {
   const sessionData = await getSessionData();
@@ -29,6 +31,7 @@ export default async function Page() {
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
   const purschaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
+  const orders = await getUserOrders();
 
   const groupedPurchases = purschaseItems.reduce(
     (acc, item) => {
@@ -170,6 +173,8 @@ export default async function Page() {
             )}
           </Accordion>
         </div>
+
+        <OrderHistory orders={orders} />
       </CardContent>
     </Card>
   );

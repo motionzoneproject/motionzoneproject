@@ -42,7 +42,13 @@ model User {
   bookings        Booking[] @relation("StudentBookings") //är elev på dessa bokningar.
 
   bio           String?  
-  phone         String?  
+  phoneNumber   String?  
+  firstName     String?
+  lastName      String?
+  address       String?
+  postalCode    String?
+  city          String?
+  dateOfBirth   DateTime?
 
   
 
