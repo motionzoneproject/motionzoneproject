@@ -4,7 +4,6 @@ export const revalidate = 0;
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createCheckoutAndRedirect } from "@/lib/actions/checkout";
@@ -20,7 +19,10 @@ export default async function Page() {
 
   async function action(formData: FormData) {
     "use server";
-    const postalcode = formData.get("postalcode")?.toString();
+    const session = await getSessionData();
+    if (!session) throw new Error("Unauthorized");
+
+    const postalcode = session.user.postalCode;
     const note = formData.get("note")?.toString();
     const currentCart = await readCart();
     if (!currentCart.items.length) throw new Error("Varukorgen är tom");
@@ -70,19 +72,6 @@ export default async function Page() {
               <CardContent>
                 <form action={action} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="postalcode">Postnummer</Label>
-                    <Input
-                      id="postalcode"
-                      name="postalcode"
-                      type="text"
-                      placeholder="123 45"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Valfritt, men hjälper oss med planering.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="note">Notering till beställningen</Label>
                     <Textarea
                       id="note"
@@ -122,14 +111,18 @@ export default async function Page() {
                     className="flex-1 bg-brand hover:bg-brand-light text-white"
                   >
                     <Link
-                      href={`/signin?callbackUrl=${encodeURIComponent("/checkout")}`}
+                      href={`/signin?callbackUrl=${encodeURIComponent(
+                        "/checkout",
+                      )}`}
                     >
                       Logga in
                     </Link>
                   </Button>
                   <Button asChild variant="outline" className="flex-1">
                     <Link
-                      href={`/signup?callbackUrl=${encodeURIComponent("/checkout")}`}
+                      href={`/signup?callbackUrl=${encodeURIComponent(
+                        "/checkout",
+                      )}`}
                     >
                       Skapa konto
                     </Link>

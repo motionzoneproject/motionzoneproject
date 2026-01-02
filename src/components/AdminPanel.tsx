@@ -7,15 +7,15 @@ export default async function AdminPanel() {
   if (!isAdmin) return notFound(); // This stops all adminpages to be rendered since its on the layout for admin.
 
   return (
-    <nav className="bg-white p-2 border-b-2 border-cyan-400">
-      <div className="md:flex items-center space-x-6">
-        <span className="text-gray-900 text-sm font-bold">Admin:</span>
+    <nav className="bg-card p-2 border-b-2 border-brand-secondary shadow-sm">
+      <div className="md:flex items-center space-x-6 px-4">
+        <span className="text-foreground text-sm font-bold">Admin:</span>
 
         <ul className="md:flex space-x-4 text-sm">
           <li>
             <Link
               href="/admin/start"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Startsida
             </Link>
@@ -23,7 +23,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/omoss"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Om oss
             </Link>
@@ -31,7 +31,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/courses"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Kurser
             </Link>
@@ -39,7 +39,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/products"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Produkter
             </Link>
@@ -47,7 +47,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/orders"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Ordrar
             </Link>
@@ -55,7 +55,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/events"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Event
             </Link>
@@ -63,7 +63,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/gallery"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Galleri
             </Link>
@@ -71,7 +71,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/students"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Elever
             </Link>
@@ -79,7 +79,7 @@ export default async function AdminPanel() {
           <li>
             <Link
               href="/admin/termin"
-              className="text-gray-800 hover:text-gray-900"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Terminer / Scheman
             </Link>
