@@ -95,7 +95,7 @@ export default async function Page() {
                   >
                     <Link
                       href={`/signin?callbackUrl=${encodeURIComponent(
-                        "/checkout",
+                        "/checkout"
                       )}`}
                     >
                       Logga in
@@ -104,7 +104,7 @@ export default async function Page() {
                   <Button asChild variant="outline" className="flex-1">
                     <Link
                       href={`/signup?callbackUrl=${encodeURIComponent(
-                        "/checkout",
+                        "/checkout"
                       )}`}
                     >
                       Skapa konto

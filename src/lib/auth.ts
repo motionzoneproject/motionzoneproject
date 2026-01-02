@@ -24,6 +24,27 @@ export const auth = betterAuth({
         type: "string",
         input: false,
       },
+      firstName: {
+        type: "string",
+      },
+      lastName: {
+        type: "string",
+      },
+      phoneNumber: {
+        type: "string",
+      },
+      address: {
+        type: "string",
+      },
+      postalCode: {
+        type: "string",
+      },
+      city: {
+        type: "string",
+      },
+      dateOfBirth: {
+        type: "date",
+      },
     },
   },
 });
