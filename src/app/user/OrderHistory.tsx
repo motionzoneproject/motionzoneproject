@@ -126,7 +126,7 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                   "PPP p",
                                   {
                                     locale: sv,
-                                  },
+                                  }
                                 )}
                               </span>
                             </div>
