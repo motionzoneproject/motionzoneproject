@@ -46,7 +46,7 @@ export async function signUpWithDetails(values: SignUpValues) {
       // så att de kan försöka igen (annars blir de "fast" med ett konto utan detaljer)
       console.error(
         "Failed to create user details, rolling back user:",
-        detailError,
+        detailError
       );
       await prisma.user.delete({ where: { id: result.user.id } });
       throw detailError;
@@ -55,7 +55,10 @@ export async function signUpWithDetails(values: SignUpValues) {
     return { success: true };
   } catch (error: unknown) {
     console.error("Signup error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Ett oväntat fel inträffade vid registrering";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade vid registrering";
     return {
       success: false,
       error: errorMessage,
