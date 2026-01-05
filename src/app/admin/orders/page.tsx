@@ -59,8 +59,8 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
   if (filter === "PENDING") {
     return orders.filter((o) =>
       ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
-        String(o.status),
-      ),
+        String(o.status)
+      )
     );
   }
   return orders.filter((o) => String(o.status) === filter);
@@ -77,7 +77,7 @@ export default async function Page({
 
   const raw = (searchParams?.status || "PENDING").toUpperCase();
   const status: StatusFilter = ["ALL", "PENDING", "APPROVED", "PAID"].includes(
-    raw,
+    raw
   )
     ? (raw as StatusFilter)
     : "PENDING";
