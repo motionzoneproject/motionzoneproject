@@ -66,9 +66,9 @@ export default function SignUpForm() {
       }
 
       toast.success("Konto skapat!", {
-        description: "Välkommen till MotionZone!",
+        description: "Välkommen till MotionZone! Logga in för att fortsätta.",
       });
-      router.push(callbackUrl);
+      router.push(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       router.refresh();
     } catch (error) {
       const errorMessage =
