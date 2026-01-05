@@ -63,11 +63,11 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-brand" />
-                Dansgatan 12, 352 30 Växjö
+                Smedsvängen 70 Växjö, 35254
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-brand" />
-                0470 – 123 45
+                0707825273
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-brand" />
@@ -75,7 +75,7 @@ const Footer = () => {
                   href="mailto:info@motionzone.se"
                   className="hover:text-brand transition-colors"
                 >
-                  info@motionzone.se
+                  sophiebretonesh@gmail.com
                 </Link>
               </li>
             </ul>
