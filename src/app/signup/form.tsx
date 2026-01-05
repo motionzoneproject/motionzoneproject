@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -23,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { signUpWithDetails } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth-client";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
 
@@ -48,30 +50,17 @@ export default function SignUpForm() {
       postalCode: "",
       city: "",
       dateOfBirth: "",
+      allowPhotoVideo: false,
     },
   });
 
   async function onSubmit(values: FormValues) {
     try {
-      const { error } = await authClient.signUp.email({
-        email: values.email,
-        password: values.password,
-        name: `${values.firstName} ${values.lastName}`,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        phoneNumber: values.phoneNumber,
-        address: values.address,
-        postalCode: values.postalCode,
-        city: values.city,
-        dateOfBirth: new Date(values.dateOfBirth),
-        callbackURL: callbackUrl,
-      });
+      const result = await signUpWithDetails(values);
 
-      if (error) {
-        const errorMessage =
-          error.body?.message || error.message || "Registrering misslyckades.";
+      if (!result.success) {
         toast.error("Registrering misslyckades", {
-          description: errorMessage,
+          description: result.error,
         });
         return;
       }
@@ -239,6 +228,25 @@ export default function SignUpForm() {
                     <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="allowPhotoVideo"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Jag godkänner att foton och videor på mig får delas
+                    </FormLabel>
+                  </div>
                 </FormItem>
               )}
             />

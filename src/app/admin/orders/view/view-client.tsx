@@ -36,19 +36,22 @@ type OrderDetail = {
   userId: string;
   user?: {
     email?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
-    phoneNumber?: string | null;
-    address?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-    dateOfBirth?: string | Date | null;
-    bio?: string | null;
     role?: string | null;
     image?: string | null;
     banned?: boolean | null;
     banReason?: string | null;
     createdAt?: string | Date | null;
+    details?: {
+      firstName?: string | null;
+      lastName?: string | null;
+      phoneNumber?: string | null;
+      address?: string | null;
+      postalCode?: string | null;
+      city?: string | null;
+      dateOfBirth?: string | Date | null;
+      bio?: string | null;
+      allowPhotoVideo?: boolean | null;
+    } | null;
   } | null;
   totalPrice: unknown;
   createdAt: string | Date;
@@ -270,24 +273,36 @@ export default function OrderDetailsClient() {
                   </h3>
                   <div className="space-y-1">
                     <p className="text-base font-medium">
-                      {order.user?.firstName} {order.user?.lastName}
+                      {order.user?.details?.firstName}{" "}
+                      {order.user?.details?.lastName}
                     </p>
                     <p className="text-muted-foreground">{order.user?.email}</p>
-                    {order.user?.phoneNumber && (
+                    {order.user?.details?.phoneNumber && (
                       <p className="text-muted-foreground">
-                        {order.user.phoneNumber}
+                        {order.user.details.phoneNumber}
                       </p>
                     )}
-                    {order.user?.dateOfBirth && (
+                    {order.user?.details?.dateOfBirth && (
                       <p className="text-muted-foreground">
-                        {new Date(order.user.dateOfBirth).toLocaleDateString(
-                          "sv-SE",
-                        )}{" "}
+                        {new Date(
+                          order.user.details.dateOfBirth,
+                        ).toLocaleDateString("sv-SE")}{" "}
                         <span className="text-muted-foreground/60 ml-1">
-                          ({calculateAge(order.user.dateOfBirth)} år)
+                          ({calculateAge(order.user.details.dateOfBirth)} år)
                         </span>
                       </p>
                     )}
+                    <div className="pt-2">
+                      {order.user?.details?.allowPhotoVideo ? (
+                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase">
+                          📸 Foto/Video OK
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase">
+                          🚫 Inga foton/videos
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </section>
 
@@ -296,11 +311,12 @@ export default function OrderDetailsClient() {
                     Adress
                   </h3>
                   <div className="text-muted-foreground">
-                    {order.user?.address ? (
+                    {order.user?.details?.address ? (
                       <>
-                        <p>{order.user.address}</p>
+                        <p>{order.user.details.address}</p>
                         <p>
-                          {order.user.postalCode} {order.user.city}
+                          {order.user.details.postalCode}{" "}
+                          {order.user.details.city}
                         </p>
                       </>
                     ) : (
@@ -318,7 +334,7 @@ export default function OrderDetailsClient() {
                     Om kunden
                   </h3>
                   <div className="bg-muted/30 p-3 rounded border text-foreground min-h-[60px]">
-                    {order.user?.bio || (
+                    {order.user?.details?.bio || (
                       <p className="italic text-muted-foreground/60">
                         Ingen bio tillgänglig
                       </p>

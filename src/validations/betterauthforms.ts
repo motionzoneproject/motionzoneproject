@@ -8,8 +8,8 @@ import z from "zod";
 // So this is for our sign-up form.
 export const SignUpFormSchema = z
   .object({
-    firstName: z.string().min(2, "Förnamn måste vara minst 2 tecken").max(100),
-    lastName: z.string().min(2, "Efternamn måste vara minst 2 tecken").max(100),
+    firstName: z.string().min(1, "Förnamn krävs").max(100),
+    lastName: z.string().min(1, "Efternamn krävs").max(100),
     email: z.string().email("Ogiltig e-postadress").max(250),
     password: z
       .string()
@@ -21,13 +21,12 @@ export const SignUpFormSchema = z
     confirmPassword: z.string(),
     phoneNumber: z.string().min(5, "Ogiltigt telefonnummer"),
     address: z.string().min(5, "Adressen är för kort"),
-    postalCode: z
-      .string()
-      .regex(/^\d{3}\s?\d{2}$/, "Ogiltigt postnummer (t.ex. 123 45)"),
-    city: z.string().min(2, "Ort måste vara minst 2 tecken"),
+    postalCode: z.string().min(5, "Ogiltigt postnummer"),
+    city: z.string().min(1, "Ort krävs"),
     dateOfBirth: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Ogiltigt datum (ÅÅÅÅ-MM-DD)"),
+    allowPhotoVideo: z.boolean(),
   })
   .superRefine((values, ctx) => {
     if (values.confirmPassword !== values.password)

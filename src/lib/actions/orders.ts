@@ -69,7 +69,7 @@ export async function adminGetOrder(orderId: string) {
   return prisma.order.findUnique({
     where: { id },
     include: {
-      user: true,
+      user: { include: { details: true } },
       orderItems: { include: { product: true } },
       statusEvents: {
         include: { changedBy: true },

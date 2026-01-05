@@ -41,16 +41,7 @@ model User {
   enrolledCourses Course[] @relation("StudentCourses") // är elev på dessa kurser.
   bookings        Booking[] @relation("StudentBookings") //är elev på dessa bokningar.
 
-  bio           String?  
-  phoneNumber   String?  
-  firstName     String?
-  lastName      String?
-  address       String?
-  postalCode    String?
-  city          String?
-  dateOfBirth   DateTime?
-
-  
+  details       UserDetails?
 
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
@@ -59,6 +50,24 @@ model User {
 
   @@unique([email])
   @@map("user")
+}
+
+model UserDetails {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  firstName   String?
+  lastName    String?
+  phoneNumber String?
+  address     String?
+  postalCode  String?
+  city        String?
+  dateOfBirth DateTime?
+  bio         String?
+  allowPhotoVideo Boolean @default(false)
+
+  @@map("user_details")
 }
 
 model Session {

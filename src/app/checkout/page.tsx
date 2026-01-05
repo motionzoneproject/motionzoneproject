@@ -22,7 +22,10 @@ export default async function Page() {
     const session = await getSessionData();
     if (!session) throw new Error("Unauthorized");
 
-    const postalcode = session.user.postalCode;
+    const userDetails = await prisma.userDetails.findUnique({
+      where: { userId: session.user.id },
+    });
+    const postalcode = userDetails?.postalCode ?? undefined;
     const note = formData.get("note")?.toString();
     const currentCart = await readCart();
     if (!currentCart.items.length) throw new Error("Varukorgen är tom");

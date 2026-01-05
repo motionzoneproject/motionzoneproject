@@ -17,8 +17,10 @@ type OrderLite = {
   userId: string;
   user?: {
     email?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    details?: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } | null;
   } | null;
   totalPrice: unknown;
   createdAt: string | Date;
@@ -174,9 +176,9 @@ export default function OrdersView({
                     {o.id.slice(0, 8)}...
                   </td>
                   <td className="p-3">
-                    {o.user?.firstName || o.user?.lastName
-                      ? `${o.user.firstName ?? ""} ${
-                          o.user.lastName ?? ""
+                    {o.user?.details?.firstName || o.user?.details?.lastName
+                      ? `${o.user.details.firstName ?? ""} ${
+                          o.user.details.lastName ?? ""
                         }`.trim()
                       : (o.user?.email ?? o.userId)}
                   </td>

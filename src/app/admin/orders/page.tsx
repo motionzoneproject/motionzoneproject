@@ -24,7 +24,13 @@ type OrderStatus =
 type OrderLite = {
   id: string;
   userId: string;
-  user?: { email?: string | null } | null;
+  user?: {
+    email?: string | null;
+    details?: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } | null;
+  } | null;
   totalPrice: unknown;
   createdAt: string | Date;
   status?: OrderStatus;
@@ -36,7 +42,7 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
     // Always fetch all, then filter in memory to avoid enum mismatch issues
     orderBy: [{ createdAt: "desc" }],
     include: {
-      user: true,
+      user: { include: { details: true } },
       orderItems: { include: { product: true } },
     },
   })) as unknown as OrderLite[];
