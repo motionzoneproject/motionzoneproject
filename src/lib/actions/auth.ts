@@ -1,5 +1,4 @@
 "use server";
-
 import { headers } from "next/headers";
 import type z from "zod";
 import { auth } from "@/lib/auth";
@@ -56,10 +55,7 @@ export async function signUpWithDetails(values: SignUpValues) {
     return { success: true };
   } catch (error: unknown) {
     console.error("Signup error:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Ett oväntat fel inträffade vid registrering";
+    const errorMessage = error instanceof Error ? error.message : "Ett oväntat fel inträffade vid registrering";
     return {
       success: false,
       error: errorMessage,
