@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -23,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { signUpWithDetails } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth-client";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
 
@@ -38,57 +40,36 @@ export default function SignUpForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
+      phoneNumber: "",
+      address: "",
+      postalCode: "",
+      city: "",
+      dateOfBirth: "",
+      allowPhotoVideo: false,
     },
   });
 
   async function onSubmit(values: FormValues) {
     try {
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          confirmPassword: values.confirmPassword,
-        }),
-      });
+      const result = await signUpWithDetails(values);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        const { error } = await authClient.signIn.email({
-          email: values.email,
-          password: values.password,
-        });
-
-        if (error) {
-          toast.error("Registrering lyckades, men inloggning misslyckades", {
-            description: "Försök logga in manuellt.",
-          });
-          router.push("/signin");
-        } else {
-          toast.success("Konto skapat!", {
-            description: "Välkommen till MotionZone!",
-          });
-          router.push(callbackUrl);
-          router.refresh();
-        }
-      } else {
-        const errorMessage =
-          typeof result.error === "string"
-            ? result.error
-            : result.error?.body?.message ||
-              result.error?.message ||
-              "Registrering misslyckades.";
+      if (!result.success) {
         toast.error("Registrering misslyckades", {
-          description: errorMessage,
+          description: result.error,
         });
+        return;
       }
+
+      toast.success("Konto skapat!", {
+        description: "Välkommen till MotionZone!",
+      });
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Ett nätverksfel inträffade";
@@ -113,23 +94,42 @@ export default function SignUpForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Namn</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ditt namn"
-                      autoComplete="name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Förnamn</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Förnamn"
+                        autoComplete="given-name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Efternamn</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Efternamn"
+                        autoComplete="family-name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="email"
@@ -145,6 +145,108 @@ export default function SignUpForm() {
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefonnummer</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="070-123 45 67"
+                      autoComplete="tel"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gatuadress</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Gatuadress"
+                      autoComplete="street-address"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="postalCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postnummer</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 45"
+                        autoComplete="postal-code"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ort</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ort"
+                        autoComplete="address-level2"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Födelsedatum</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="allowPhotoVideo"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Jag godkänner att foton och videor på mig får delas
+                    </FormLabel>
+                  </div>
                 </FormItem>
               )}
             />

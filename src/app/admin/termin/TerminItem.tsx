@@ -66,7 +66,7 @@ export default async function TerminItem({ termin }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 gap-2 rounded ">
             <div className="flex items-center gap-2">
-              <div className="flex flex-col items-center justify-center bg-white border rounded-md p-2 shadow-sm min-w-[100px]">
+              <div className="flex flex-col items-center justify-center bg-muted/50 border rounded-md p-2 shadow-sm min-w-[100px]">
                 <span className="text-[10px] uppercase text-muted-foreground font-bold">
                   <Calendar className="inline-block" /> Start
                 </span>
@@ -74,9 +74,9 @@ export default async function TerminItem({ termin }: Props) {
                   {termin.startDate.toLocaleDateString()}
                 </span>
               </div>
-              <div className="h-px w-4 bg-gray-300" />{" "}
+              <div className="h-px w-4 bg-border" />{" "}
               {/* En liten horisontell linje emellan */}
-              <div className="flex flex-col items-center justify-center bg-white border rounded-md p-2 shadow-sm min-w-[100px]">
+              <div className="flex flex-col items-center justify-center bg-muted/50 border rounded-md p-2 shadow-sm min-w-[100px]">
                 <span className="text-[10px] uppercase text-muted-foreground font-bold">
                   <Calendar className="inline-block" /> Slut
                 </span>
