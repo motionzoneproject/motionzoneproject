@@ -69,7 +69,7 @@ export async function adminGetOrder(orderId: string) {
   return prisma.order.findUnique({
     where: { id },
     include: {
-      user: true,
+      user: { include: { details: true } },
       orderItems: { include: { product: true } },
       statusEvents: {
         include: { changedBy: true },
@@ -163,4 +163,48 @@ export async function getPurchaseFromOrder(id: string) {
   const p = await prisma.purchase.findMany({ where: { orderId: id } });
 
   return p;
+}
+
+export async function getUserOrders() {
+  const session = await getSessionData();
+  if (!session) throw new Error("Unauthorized");
+
+  return prisma.order.findMany({
+    where: { userId: session.user.id },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getUserOrder(orderId: string) {
+  const session = await getSessionData();
+  if (!session) throw new Error("Unauthorized");
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      user: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+      statusEvents: {
+        include: { changedBy: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!order || order.userId !== session.user.id) {
+    throw new Error("Order not found or access denied");
+  }
+
+  return order;
 }

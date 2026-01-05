@@ -9,13 +9,7 @@ import {
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
-type StatusFilter =
-  | "ALL"
-  | "CREATED"
-  | "PENDING_PAYMENT"
-  | "AWAITING_APPROVAL"
-  | "APPROVED"
-  | "PAID";
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +24,13 @@ type OrderStatus =
 type OrderLite = {
   id: string;
   userId: string;
-  user?: { email?: string | null } | null;
+  user?: {
+    email?: string | null;
+    details?: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } | null;
+  } | null;
   totalPrice: unknown;
   createdAt: string | Date;
   status?: OrderStatus;
@@ -42,12 +42,19 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
     // Always fetch all, then filter in memory to avoid enum mismatch issues
     orderBy: [{ createdAt: "desc" }],
     include: {
-      user: true,
+      user: { include: { details: true } },
       orderItems: { include: { product: true } },
     },
   })) as unknown as OrderLite[];
 
   if (!filter || filter === "ALL") return orders;
+  if (filter === "PENDING") {
+    return orders.filter((o) =>
+      ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
+        String(o.status),
+      ),
+    );
+  }
   return orders.filter((o) => String(o.status) === filter);
 }
 
@@ -60,17 +67,12 @@ export default async function Page({
   const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
 
-  const raw = (searchParams?.status || "PENDING_PAYMENT").toUpperCase();
-  const status: StatusFilter = [
-    "ALL",
-    "CREATED",
-    "PENDING_PAYMENT",
-    "AWAITING_APPROVAL",
-    "APPROVED",
-    "PAID",
-  ].includes(raw)
+  const raw = (searchParams?.status || "PENDING").toUpperCase();
+  const status: StatusFilter = ["ALL", "PENDING", "APPROVED", "PAID"].includes(
+    raw,
+  )
     ? (raw as StatusFilter)
-    : "PENDING_PAYMENT";
+    : "PENDING";
 
   const orders = await getOrders("ALL");
 
