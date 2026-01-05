@@ -19,7 +19,7 @@ export async function updateOrderStatus(
     | "AWAITING_APPROVAL"
     | "PAID"
     | "APPROVED",
-  note?: string,
+  note?: string
 ) {
   const adminUserId = await requireAdmin();
 
@@ -151,7 +151,7 @@ export async function createPurchaseFromOrder(orderId: string) {
             remainingCount: pc.lessonsIncluded,
             unlimited: pc.unlimited ?? false,
           },
-        }),
+        })
       );
 
       await Promise.all(itemPromises);
