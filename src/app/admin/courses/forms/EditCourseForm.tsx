@@ -64,7 +64,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
       level: course.level ?? "",
       adult: course.adult,
       teacherid: course.teacherId, // fix: gör så man kan välja lärare. (select)
-      maxCustomers: course.maxBookings,
+      maxCustomers: course.maxCustomer, // fixed bug.
     },
   });
 
@@ -83,6 +83,14 @@ export default function EditCourseForm({ course, teachers }: Props) {
       (form.watch("maxbookings") as string).trim()
     ) {
       values.maxbookings = 0;
+    }
+
+    if (
+      // fix: se över detta, kanske räcker med zod när vi fixat det.
+      (form.watch("maxCustomers") as number) <= 0 ||
+      (form.watch("maxCustomers") as string).trim()
+    ) {
+      values.maxCustomers = 0;
     }
 
     const res = await editCourse(course.id, values);
