@@ -4,6 +4,7 @@ export type OrderItemInput = {
   productId: string;
   count: number;
   price: number; // unit price in currency minor unit (or use decimal number)
+  participantId?: string | null;
 };
 
 export async function createOrder(params: {
@@ -37,6 +38,7 @@ export async function createOrder(params: {
         productId: it.productId,
         count: it.count,
         price: it.price,
+        participantId: it.participantId || null,
       })),
       skipDuplicates: true,
     });
