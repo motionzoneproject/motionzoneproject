@@ -70,7 +70,7 @@ export async function adminGetOrder(orderId: string) {
     where: { id },
     include: {
       user: { include: { details: true } },
-      orderItems: { include: { product: true } },
+      orderItems: { include: { product: true, participant: true } },
       statusEvents: {
         include: { changedBy: true },
         orderBy: { createdAt: "asc" },
@@ -123,18 +123,25 @@ export async function createPurchaseFromOrder(orderId: string) {
       throw new Error("Ordern är inte godkänd/betald ännu.");
     }
 
-    // 3. Skapa huvudpurchasen
-    const purchase = await tx.purchase.create({
-      data: {
-        userId: order.userId,
-        orderId: order.id,
-        productId: order.orderItems[0]?.productId,
-      },
-    });
+    // 3. Skapa Purchases för varje OrderItem (en purchase per produkt i ordern)
+    const purchaseResults = [];
 
-    // 4. Skapa PurchaseItems
-    const purchaseItemPromises = order.orderItems.flatMap((orderItem) =>
-      orderItem.product.courses.map((pc) =>
+    for (const orderItem of order.orderItems) {
+      // Skapa en purchase för varje enskild enhet i count?
+      // För enkelhetens skull skapar vi en purchase per orderItem rad.
+      // Om användaren vill ha olika deltagare bör de ha olika rader.
+      const purchase = await tx.purchase.create({
+        data: {
+          userId: order.userId,
+          orderId: order.id,
+          productId: orderItem.productId,
+          participantId: orderItem.participantId,
+          // (Fler fält för klippkort kan behövas här om de finns i orderItem)
+        },
+      });
+
+      // 4. Skapa PurchaseItems för kurserna i denna produkt
+      const itemPromises = orderItem.product.courses.map((pc) =>
         tx.purchaseItem.create({
           data: {
             purchaseId: purchase.id,
@@ -145,15 +152,16 @@ export async function createPurchaseFromOrder(orderId: string) {
             unlimited: pc.unlimited ?? false,
           },
         }),
-      ),
-    );
+      );
 
-    await Promise.all(purchaseItemPromises);
+      await Promise.all(itemPromises);
+      purchaseResults.push(purchase.id);
+    }
 
     return {
       success: true,
-      purchaseId: purchase.id,
-      itemCount: purchaseItemPromises.length,
+      purchaseIds: purchaseResults,
+      message: `${purchaseResults.length} köp skapade.`,
     };
   });
 }
