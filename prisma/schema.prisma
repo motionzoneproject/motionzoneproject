@@ -213,6 +213,9 @@ model SchemaItem {
 
     place String?
 
+    customStartDate DateTime? // Om kursens datum börjar senare / tidigare än terminens.
+    customEndDate   DateTime? // Om kursens datum börjar senare / tidigare än terminens.
+
     maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
 
     Lessons Lesson[]
