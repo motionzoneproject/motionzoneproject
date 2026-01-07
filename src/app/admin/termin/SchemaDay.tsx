@@ -3,18 +3,21 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { Termin } from "@/generated/prisma/client";
+import type { Course, Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName } from "@/lib/tools";
 import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";
+import EditCourseToSchemaForm from "./forms/EditCourseToSchemaForm";
 
 interface Props {
   schemaItems: SchemaItemWithCourse[];
   weekday: Weekday;
   weekdayIndex: number;
   termin: Termin;
+  allCourses: Course[];
+  weekdays: string[];
 }
 
 export const veckodagar = [
@@ -53,6 +56,8 @@ export default async function SchemaDay({
   weekday,
   weekdayIndex,
   termin,
+  allCourses,
+  weekdays,
 }: Props) {
   if (schemaItems.filter((itm) => itm.weekday === weekday).length === 0)
     return null;
@@ -90,6 +95,12 @@ export default async function SchemaDay({
                   <span className="font-bold">Plats: {itm.place}</span>
                 </div>
                 <div>
+                  <EditCourseToSchemaForm
+                    allCourses={allCourses}
+                    weekdays={weekdays}
+                    termin={termin}
+                    schemaItem={itm}
+                  />
                   <DeleteSchemaItemBtn itemId={itm.id} />
                 </div>
               </div>

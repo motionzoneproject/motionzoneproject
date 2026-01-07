@@ -434,6 +434,108 @@ export async function addCoursetoSchema(
 }
 
 /**
+ * Flyttar en kurs i en termins schema och genererar automatiskt alla lektionstillfällen (tar bort de gamla)
+ * * Funktionen utför följande steg:
+ * 1. Validerar indata och kontrollerar att kursen existerar.
+ * 2. Uppdaterar ett `SchemaItem` som fungerar som en veckomall för kursen.
+ * 3. Tar bort aööa öesspms. sedam anropar `createLessons` för att generera faktiska `Lesson`-poster för varje aktuell
+ * veckodag mellan terminens start- och slutdatum.
+ * 4. Om inga lektioner kan skapas (t.ex. om terminen är för kort) rullas skapandet
+ * av schemaposten tillbaka för att undvika inkonsistent data.
+ * * @param terminId - ID för den termin där kursen ska läggas till.
+ * @param schemaItemId - ID för det schemaItem som skall ändras.
+ * @param formData - Validerad data innehållande kurs-ID, plats, veckodag samt start- och sluttid.
+ * @returns Ett objekt med framgångsstatus och ett beskrivande meddelande om hur många lektioner som skapades.
+ * @auth Admin
+ */
+export async function editCourseInSchema(
+  terminId: string,
+  schemaItemId: string,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+    const getCourse = await prisma.course.findUnique({
+      where: { id: validated.courseId },
+    });
+    if (!getCourse) throw new Error("Course was not found.");
+
+    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
+    if (!termin) throw new Error("No termin.");
+
+    // Datum-tvätt
+    const inputStartDate = validated.customStartDate
+      ? new Date(validated.customStartDate)
+      : null;
+    const inputEndDate = validated.customEndDate
+      ? new Date(validated.customEndDate)
+      : null;
+
+    const finalStartDate =
+      inputStartDate && inputStartDate.getTime() === termin.startDate.getTime()
+        ? null
+        : inputStartDate;
+    const finalEndDate =
+      inputEndDate && inputEndDate.getTime() === termin.endDate.getTime()
+        ? null
+        : inputEndDate;
+
+    // Kör allt i en transaktion så vi inte förstör något om createLessons misslyckas
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedSchemaItem = await tx.schemaItem.update({
+        where: { id: schemaItemId },
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customEndDate: finalEndDate,
+          customStartDate: finalStartDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
+      });
+
+      // Ta bort gamla lektioner för detta schemaItem
+      await tx.lesson.deleteMany({
+        where: { schemaItemId: updatedSchemaItem.id },
+      });
+
+      return updatedSchemaItem;
+    });
+
+    // Skapa de nya lektionerna
+    const lessons = await createLessons(schemaItemId);
+
+    if (!lessons.success) {
+      // Istället för att radera schemaItem vid EDIT, kastar vi bara ett fel.
+      // Admin får behålla raden men måste fixa datumen.
+      throw new Error(
+        "Kunde inte generera nya lektioner. Kontrollera dina datum.",
+      );
+    }
+
+    revalidatePath("/admin/termin");
+
+    return {
+      success: true,
+      msg: `Kursen ${result.course.name} har uppdaterats i ${result.termin.name}. ${lessons.msg}`,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      success: false,
+      msg: e instanceof Error ? e.message : "Ett okänt fel uppstod.",
+    };
+  }
+}
+
+/**
  * Tar bort ett SchemaItem från en termin.
  * * @important På grund av databasens konfiguration (Cascade Delete) kommer detta även
  * att radera samtliga lektionstillfällen (Lessons) och tillhörande bokningar.
