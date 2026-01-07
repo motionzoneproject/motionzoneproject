@@ -3,8 +3,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import type { Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
-
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName } from "@/lib/tools";
@@ -14,6 +14,7 @@ interface Props {
   schemaItems: SchemaItemWithCourse[];
   weekday: Weekday;
   weekdayIndex: number;
+  termin: Termin;
 }
 
 export const veckodagar = [
@@ -51,6 +52,7 @@ export default async function SchemaDay({
   schemaItems,
   weekday,
   weekdayIndex,
+  termin,
 }: Props) {
   if (schemaItems.filter((itm) => itm.weekday === weekday).length === 0)
     return null;
@@ -75,10 +77,13 @@ export default async function SchemaDay({
                 <div>
                   {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
                   <br />
-                  {itm.customStartDate &&
-                    itm.customStartDate.toLocaleDateString() +
-                      " - " +
-                      itm.customEndDate?.toLocaleDateString()}{" "}
+                  {itm.customStartDate
+                    ? itm.customStartDate.toLocaleDateString()
+                    : termin.startDate.toLocaleDateString()}
+                  -
+                  {itm.customEndDate
+                    ? itm.customEndDate.toLocaleDateString()
+                    : termin.endDate.toLocaleDateString()}
                   <br />
                   <span className="font-bold">{getCourseName(itm.course)}</span>
                   <br />
