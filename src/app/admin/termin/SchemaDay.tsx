@@ -75,6 +75,11 @@ export default async function SchemaDay({
                 <div>
                   {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
                   <br />
+                  {itm.customStartDate &&
+                    itm.customStartDate.toLocaleDateString() +
+                      " - " +
+                      itm.customEndDate?.toLocaleDateString()}{" "}
+                  <br />
                   <span className="font-bold">{getCourseName(itm.course)}</span>
                   <br />
                   <span className="font-bold">Plats: {itm.place}</span>
