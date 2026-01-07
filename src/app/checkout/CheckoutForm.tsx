@@ -69,7 +69,7 @@ export default function CheckoutForm({
     Array.from({ length: it.qty }).map((_, idx) => ({
       ...it,
       slotIndex: idx,
-    })),
+    }))
   );
 
   // State for each slot
@@ -78,8 +78,8 @@ export default function CheckoutForm({
       flattenedItems.map((_, idx) => [
         `slot-${idx}`,
         { isSelf: idx === 0 }, // Default only THE first item in cart to self
-      ]),
-    ),
+      ])
+    )
   );
 
   // Filter out the current user from the existing participants dropdown
