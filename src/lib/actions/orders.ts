@@ -161,7 +161,7 @@ export async function createPurchaseFromOrder(orderId: string) {
 
     // okej så vi bokar väl in automatiskt då:
     const courseIds = order.orderItems.flatMap((oi) =>
-      oi.product.courses.map((pc) => pc.courseId),
+      oi.product.courses.map((pc) => pc.courseId)
     );
 
     const _lessons = await tx.lesson.findMany({
