@@ -67,11 +67,33 @@ export default function AddCourseToSchemaForm({
     defaultValues: {
       courseId: "",
       place: "",
+      customEndDate: termin.endDate.toLocaleDateString(),
+      customStartDate: termin.startDate.toLocaleDateString(),
       day: "MONDAY",
       timeStart: "0",
       timeEnd: "1",
     },
   });
+
+  const formatDateToInput = (date: unknown) => {
+    if (!date) {
+      return "";
+    }
+
+    if (date instanceof Date) {
+      if (Number.isNaN(date.getTime())) {
+        return "";
+      }
+      return date.toISOString().split("T")[0];
+    }
+
+    if (typeof date === "string") {
+      return date;
+    }
+
+    // Fallback: Returnera tomt
+    return "";
+  };
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -82,6 +104,8 @@ export default function AddCourseToSchemaForm({
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
+    console.log(JSON.stringify(values));
+
     const res = await addCoursetoSchema(termin.id, values);
     if (res.success) {
       toast.success(res.msg);
@@ -217,6 +241,48 @@ export default function AddCourseToSchemaForm({
 
                       <FormControl>
                         <Input type="time" step="300" {...field} className="" />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="customStartDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start datum</FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={formatDateToInput(field.value)}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="customEndDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slut datum</FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={formatDateToInput(field.value)}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
 
                       <FormMessage />

@@ -15,6 +15,9 @@ export const adminAddCourseToSchemaSchema = z
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
+    customStartDate: z.string().optional(),
+    customEndDate: z.string().optional(),
+
     day: z.enum(Object.values(Weekday) as [string, ...string[]]),
   })
   .refine(

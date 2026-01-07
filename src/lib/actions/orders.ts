@@ -80,7 +80,8 @@ export async function adminGetOrder(orderId: string) {
 }
 
 // fix: klippkort.
-// kör denna när man accepterar ordern.
+// // kör denna när man accepterar ordern.
+// fix: Om det bara är 1 kurs, boka alla tillfällen.
 export async function createPurchaseFromOrder(orderId: string) {
   await requireAdmin();
 
@@ -149,6 +150,19 @@ export async function createPurchaseFromOrder(orderId: string) {
     );
 
     await Promise.all(purchaseItemPromises);
+
+    // okej så vi bokar väl in automatiskt då:
+    const courseIds = order.orderItems.flatMap((oi) =>
+      oi.product.courses.map((pc) => pc.courseId),
+    );
+
+    const _lessons = await tx.lesson.findMany({
+      where: {
+        courseId: { in: courseIds },
+        // Valfritt: Boka bara in på framtida lektioner? Japp, inget annat makes sense för mig atm.
+        startTime: { gte: new Date() },
+      },
+    });
 
     return {
       success: true,

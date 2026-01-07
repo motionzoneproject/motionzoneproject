@@ -356,6 +356,8 @@ export async function addCoursetoSchema(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    console.log("Creating!");
+
     const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
 
     const getCourse = await prisma.course.findUnique({
@@ -364,6 +366,9 @@ export async function addCoursetoSchema(
 
     if (!getCourse) throw new Error("Course was not found.");
 
+    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
+
+    if (!termin) throw new Error("No termin.");
     // fix: lägg in så den kopplar terminen till kursen också?
 
     const newSchemaItem = await prisma.schemaItem.create({
@@ -374,6 +379,12 @@ export async function addCoursetoSchema(
         maxBookings: getCourse?.maxBookings,
         timeStart: formToDbDate(validated.timeStart),
         timeEnd: formToDbDate(validated.timeEnd),
+        customEndDate: validated.customEndDate
+          ? new Date(validated.customEndDate)
+          : termin.endDate,
+        customStartDate: validated.customStartDate
+          ? new Date(validated.customStartDate)
+          : termin.startDate,
         weekday: validated.day as Weekday,
       },
       include: { course: true, termin: true },
@@ -401,6 +412,7 @@ export async function addCoursetoSchema(
       msg: `Kursen ${newSchemaItem.course.name} lades till i terminen ${newSchemaItem.termin.name}. ${lessons.msg}`,
     };
   } catch (e) {
+    console.error(e);
     return { success: false, msg: JSON.stringify(e) };
   }
 }
@@ -719,7 +731,7 @@ export async function editCourse(
 
 /**
  * Genererar fysiska lektionstillfällen baserat på SchemaItem.
- * * Funktionen itererar genom varje dag mellan terminens start- och slutdatum,
+ * * Funktionen itererar genom varje dag mellan terminens start- och slutdatum (eller customStart/EndDate i schemaItem om det är satt),
  * identifierar alla datum som matchar den angivna veckodagen och skapar
  * lektionsobjekt med korrekta tidsstämplar.
  * * @param schemaItemId - ID:t för den schemamall som ska användas som underlag.
@@ -757,8 +769,12 @@ async function createLessons(
 
     const targetDay = WEEKDAY_MAP[schemaItm?.weekday]; // Få targetday som rätt nummer.
 
-    const startDate = schemaItm.termin.startDate;
-    const endDate = schemaItm.termin.endDate;
+    const startDate = schemaItm.customStartDate
+      ? schemaItm.customStartDate
+      : schemaItm.termin.startDate;
+    const endDate = schemaItm.customEndDate
+      ? schemaItm.customEndDate
+      : schemaItm.termin.endDate;
     const teacherId = schemaItm.course.teacherId;
 
     const lessonsToCreate = []; // Dessa lessions ska skapas.
@@ -820,6 +836,7 @@ async function createLessons(
       msg: `Successfully created ${result.count} lessons.`,
     };
   } catch (e) {
+    console.error(e);
     return { success: false, msg: JSON.stringify(e) };
   }
 }
