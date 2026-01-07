@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -113,13 +112,6 @@ export default function AddCourseForm({ teachers }: Props) {
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Skapa en ny kurs</DialogTitle>
-          <div className="w-full flex items-end bg-amber-200 text-black p-2 rounded">
-            <Flag className="w-16 h-16 text-red-600" />{" "}
-            <div className="font-bold">
-              Du sätts som lärare automatiskt, så om du inte är läraren vänligen
-              logga in som rätt lärare och skapa kursen.
-            </div>
-          </div>
         </DialogHeader>
 
         <Card>
