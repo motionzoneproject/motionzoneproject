@@ -95,7 +95,7 @@ export default async function TerminItem({ termin }: Props) {
             <AccordionItem value="item-1">
               <AccordionTrigger>Veckoschema</AccordionTrigger>
               <AccordionContent>
-                <Schema schemaItems={schemaItems} />
+                <Schema termin={termin} schemaItems={schemaItems} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
