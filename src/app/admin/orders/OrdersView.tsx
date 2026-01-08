@@ -22,6 +22,14 @@ type OrderLite = {
       lastName?: string | null;
     } | null;
   } | null;
+  orderItems?:
+    | {
+        product: { name: string };
+        participant?: {
+          name: string;
+        } | null;
+      }[]
+    | null;
   totalPrice: unknown;
   createdAt: string | Date;
   status?: OrderStatus;
@@ -40,6 +48,7 @@ export default function OrdersView({
 }) {
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
+  const searchInput = sp.get("q")?.toLowerCase() || "";
 
   const counts = useMemo(() => {
     const acc: Record<string, number> = {
@@ -63,16 +72,39 @@ export default function OrdersView({
   }, [orders]);
 
   const filtered = useMemo(() => {
-    if (!active || active === "ALL") return orders;
+    let result = orders;
+
     if (active === "PENDING") {
-      return orders.filter((o) =>
+      result = result.filter((o) =>
         ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
           String(o.status),
         ),
       );
+    } else if (active !== "ALL") {
+      result = result.filter((o) => String(o.status) === active);
     }
-    return orders.filter((o) => String(o.status) === active);
-  }, [orders, active]);
+
+    if (searchInput) {
+      result = result.filter((o) => {
+        const userEmail = o.user?.email?.toLowerCase() || "";
+        const userName = `${o.user?.details?.firstName || ""} ${
+          o.user?.details?.lastName || ""
+        }`.toLowerCase();
+        const participantNames =
+          o.orderItems
+            ?.map((oi) => oi.participant?.name.toLowerCase() || "")
+            .join(" ") || "";
+
+        return (
+          userEmail.includes(searchInput) ||
+          userName.includes(searchInput) ||
+          participantNames.includes(searchInput)
+        );
+      });
+    }
+
+    return result;
+  }, [orders, active, searchInput]);
 
   const tabs = [
     { id: "PENDING", label: "Väntar" },
@@ -132,25 +164,42 @@ export default function OrdersView({
 
   return (
     <>
-      <div className="flex gap-3 text-sm">
-        <form action="/admin/orders" method="GET" className="contents">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="submit"
-              name="status"
-              value={t.id}
-              aria-current={active === t.id ? "page" : undefined}
-              className={`px-2 py-1 rounded border transition-colors ${
-                active === t.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-foreground hover:bg-muted"
-              }`}
-            >
-              {t.label}
-              {typeof counts[t.id] === "number" ? ` (${counts[t.id]})` : ""}
-            </button>
-          ))}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex gap-3 text-sm flex-wrap">
+          <form action="/admin/orders" method="GET" className="contents">
+            <input type="hidden" name="q" value={searchInput} />
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="submit"
+                name="status"
+                value={t.id}
+                aria-current={active === t.id ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-full border transition-colors ${
+                  active === t.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-foreground hover:bg-muted"
+                }`}
+              >
+                {t.label}
+                {typeof counts[t.id] === "number" ? ` (${counts[t.id]})` : ""}
+              </button>
+            ))}
+          </form>
+        </div>
+
+        <form
+          action="/admin/orders"
+          method="GET"
+          className="relative w-full md:w-64"
+        >
+          <input type="hidden" name="status" value={active} />
+          <input
+            name="q"
+            defaultValue={searchInput}
+            placeholder="Sök kund eller deltagare..."
+            className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand outline-none transition-all"
+          />
         </form>
       </div>
 
@@ -159,30 +208,88 @@ export default function OrdersView({
           <thead>
             <tr className="bg-muted/50 text-muted-foreground border-b">
               <th className="p-3 text-left font-medium">Order</th>
-              <th className="p-3 text-left font-medium">Kund</th>
+              <th className="p-3 text-left font-medium">Beställare</th>
+              <th className="p-3 text-left font-medium">Deltagare</th>
+              <th className="p-3 text-left font-medium">Produkter</th>
               <th className="p-3 text-left font-medium">Total</th>
               <th className="p-3 text-left font-medium">Status</th>
-              <th className="p-3 text-left font-medium">Skapad</th>
               <th className="p-3 text-left font-medium">Detaljer</th>
               <th className="p-3 text-left font-medium">Åtgärder</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {filtered.map((o) => {
-              // const purchase = await getPurchaseFromOrder(o.id);
+              const participants = Array.from(
+                new Set(
+                  o.orderItems
+                    ?.map((oi) => oi.participant?.name)
+                    .filter(Boolean),
+                ),
+              );
+
               return (
                 <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-mono text-xs">
-                    {o.id.slice(0, 8)}...
+                  <td className="p-3">
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        #{o.id.slice(0, 8)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(o.createdAt).toLocaleDateString("sv-SE")}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-3">
-                    {o.user?.details?.firstName || o.user?.details?.lastName
-                      ? `${o.user.details.firstName ?? ""} ${
-                          o.user.details.lastName ?? ""
-                        }`.trim()
-                      : (o.user?.email ?? o.userId)}
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {o.user?.details?.firstName || o.user?.details?.lastName
+                          ? `${o.user.details.firstName ?? ""} ${
+                              o.user.details.lastName ?? ""
+                            }`.trim()
+                          : (o.user?.email ?? o.userId)}
+                      </span>
+                      {o.user?.details?.firstName && (
+                        <span className="text-xs text-muted-foreground">
+                          {o.user.email}
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td className="p-3 font-medium">{String(o.totalPrice)} kr</td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-1">
+                      {participants.length > 0 ? (
+                        participants.map((p, i) => (
+                          <span
+                            key={`${o.id}-p-${i}`}
+                            className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-[10px] font-medium"
+                          >
+                            {p}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">
+                          Samma som kund
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-col max-w-[200px]">
+                      {o.orderItems?.slice(0, 2).map((oi) => (
+                        <span key={oi.id} className="truncate text-xs">
+                          {oi.product.name}
+                        </span>
+                      ))}
+                      {(o.orderItems?.length || 0) > 2 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          + {(o.orderItems?.length || 0) - 2} till...
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3 font-semibold">
+                    {String(o.totalPrice)} kr
+                  </td>
                   <td className="p-3">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusStyles(
@@ -191,9 +298,6 @@ export default function OrdersView({
                     >
                       {getStatusLabel(o.status || "PENDING_PAYMENT")}
                     </span>
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(o.createdAt).toLocaleString("sv-SE")}
                   </td>
                   <td className="p-3">
                     <Link
@@ -217,11 +321,6 @@ export default function OrdersView({
                           className="flex items-center gap-2"
                         >
                           <input type="hidden" name="orderId" value={o.id} />
-                          <input
-                            name="note"
-                            placeholder="Notering"
-                            className="bg-background border rounded px-2 py-1 text-xs w-24 focus:ring-1 focus:ring-brand"
-                          />
                           <SubmitButton
                             className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
                             pendingText="..."
@@ -241,11 +340,6 @@ export default function OrdersView({
                           className="flex items-center gap-2"
                         >
                           <input type="hidden" name="orderId" value={o.id} />
-                          <input
-                            name="note"
-                            placeholder="Notering"
-                            className="bg-background border rounded px-2 py-1 text-xs w-24 focus:ring-1 focus:ring-brand"
-                          />
                           <SubmitButton
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
                             pendingText="..."

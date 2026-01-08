@@ -1,3 +1,5 @@
+import { Clock, Users } from "lucide-react";
+import EditParticipantForm from "@/components/EditParticipantForm";
 import {
   Accordion,
   AccordionContent,
@@ -13,10 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getUserOrders } from "@/lib/actions/orders";
+import { getMyParticipants } from "@/lib/actions/participants";
 import {
-  getFullCourseNameFromId,
   getUserBookings,
   getUserLessons,
+  getUserPendingRegistrations,
   getUserPurchases,
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
@@ -36,6 +39,8 @@ export default async function Page() {
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
   const purschaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
+  const pendingRegistrations = await getUserPendingRegistrations();
+  const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
 
   const groupedPurchases = purschaseItems.reduce(
@@ -122,110 +127,181 @@ export default async function Page() {
           </h3>
 
           <Accordion type="single" collapsible className="space-y-2">
-            {Object.entries(groupedPurchases).map(
-              async ([purchaseId, group]) => (
-                <AccordionItem
-                  key={purchaseId}
-                  value={purchaseId}
-                  className="border rounded-lg px-4"
-                >
-                  <AccordionTrigger className="hover:no-underline py-4">
-                    <div className="flex flex-1 items-center justify-between text-left pr-4">
-                      <div>
-                        <span className="text-xs text-brand">
-                          Produkt / Paket
-                        </span>
-                        <p className="font-medium">{group.productName}</p>
-                      </div>
-                      <Badge variant="outline">
-                        {group.items.length}{" "}
-                        {group.items.length === 1 ? "kurs" : "kurser"}
-                      </Badge>
+            {Object.entries(groupedPurchases).map(([purchaseId, group]) => (
+              <AccordionItem
+                key={purchaseId}
+                value={purchaseId}
+                className="border rounded-lg px-4"
+              >
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex flex-1 items-center justify-between text-left pr-4">
+                    <div>
+                      <span className="text-xs text-brand">
+                        Produkt / Paket
+                      </span>
+                      <p className="font-medium">{group.productName}</p>
                     </div>
-                  </AccordionTrigger>
+                    <Badge variant="outline">
+                      {group.items.length}{" "}
+                      {group.items.length === 1 ? "kurs" : "kurser"}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
 
-                  <AccordionContent className="border-t pt-4 pb-2">
-                    <div className="space-y-3">
-                      {group.items.map(async (pi) => {
-                        const courseName = await getFullCourseNameFromId(
-                          pi.courseId,
-                        );
-                        const isLow = !pi.unlimited && pi.remainingCount <= 1;
+                <AccordionContent className="border-t pt-4 pb-2">
+                  <div className="space-y-3">
+                    {group.items.map((pi) => {
+                      const courseName = pi.course.name;
+                      const isLow = !pi.unlimited && pi.remainingCount <= 1;
 
-                        return (
-                          <div
-                            key={pi.id}
-                            className="flex items-start justify-between bg-muted p-3 rounded border"
-                          >
-                            <div className="space-y-1">
-                              <p className="font-medium text-sm">
-                                {courseName}
-                              </p>
-                              <p className="text-muted-foreground text-xs">
-                                Dina bokningar:
-                              </p>
-                              {bookings.filter(
-                                (b) => b.purchaseItemId === pi.id,
-                              ).length > 0 ? (
-                                <ul className="space-y-1 mt-1">
-                                  {bookings
-                                    .filter((b) => b.purchaseItemId === pi.id)
-                                    .map((b) => (
-                                      <li
-                                        key={b.id}
-                                        className="text-xs bg-background p-2 rounded"
-                                      >
-                                        {new Date(
-                                          b.lesson.startTime,
-                                        ).toLocaleDateString("sv-SE", {
-                                          day: "numeric",
-                                          month: "short",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                        {b.lesson.cancelled && (
-                                          <span className="text-destructive ml-1">
-                                            (inställd)
-                                          </span>
-                                        )}
-                                      </li>
-                                    ))}
-                                </ul>
-                              ) : (
-                                <p className="text-xs text-muted-foreground italic">
-                                  Inga bokningar gjorda än.
+                      return (
+                        <div
+                          key={pi.id}
+                          className="flex items-start justify-between bg-muted p-3 rounded border"
+                        >
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">{courseName}</p>
+                            {pi.purchase.participant &&
+                              pi.purchase.participant.name !== user?.name && (
+                                <p className="text-[10px] text-brand font-medium">
+                                  Deltagare: {pi.purchase.participant.name}
                                 </p>
                               )}
-                            </div>
-
-                            <div className="text-right">
-                              <span
-                                className={`text-lg font-bold ${
-                                  isLow ? "text-destructive" : ""
-                                }`}
-                              >
-                                {pi.unlimited ? "∞" : pi.remainingCount}
-                              </span>
-                              {!pi.unlimited && (
-                                <span className="text-xs text-muted-foreground">
-                                  {" "}
-                                  / {pi.lessonsIncluded}
-                                </span>
-                              )}
-                              <p className="text-xs text-muted-foreground">
-                                Lektioner
+                            <p className="text-muted-foreground text-xs">
+                              Dina bokningar:
+                            </p>
+                            {bookings.filter((b) => b.purchaseItemId === pi.id)
+                              .length > 0 ? (
+                              <ul className="space-y-1 mt-1">
+                                {bookings
+                                  .filter((b) => b.purchaseItemId === pi.id)
+                                  .map((b) => (
+                                    <li
+                                      key={b.id}
+                                      className="text-xs bg-background p-2 rounded"
+                                    >
+                                      {new Date(
+                                        b.lesson.startTime,
+                                      ).toLocaleDateString("sv-SE", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                      {b.lesson.cancelled && (
+                                        <span className="text-destructive ml-1">
+                                          (inställd)
+                                        </span>
+                                      )}
+                                    </li>
+                                  ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">
+                                Inga bokningar gjorda än.
                               </p>
-                            </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ),
-            )}
+
+                          <div className="text-right">
+                            <span
+                              className={`text-lg font-bold ${
+                                isLow ? "text-destructive" : ""
+                              }`}
+                            >
+                              {pi.unlimited ? "∞" : pi.remainingCount}
+                            </span>
+                            {!pi.unlimited && (
+                              <span className="text-xs text-muted-foreground">
+                                {" "}
+                                / {pi.lessonsIncluded}
+                              </span>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Lektioner
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
+
+        {myParticipants.length > 0 && (
+          <div className="mt-8 space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="w-4 h-4" /> Sparade deltagare (t.ex. barn)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {myParticipants.map((p) => (
+                <div
+                  key={p.id}
+                  className="p-3 border rounded-lg bg-muted/20 flex justify-between items-center group"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{p.name}</p>
+                    {p.email && (
+                      <p className="text-xs text-muted-foreground">{p.email}</p>
+                    )}
+                    <div className="flex gap-2 mt-1">
+                      {p.allowPhotoVideo ? (
+                        <span className="text-[9px] text-emerald-600 font-bold uppercase">
+                          📸 Foto OK
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-amber-600 font-bold uppercase">
+                          🚫 Inga foton
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <EditParticipantForm participant={p} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {pendingRegistrations.length > 0 && (
+          <div className="mt-8 space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Väntande anmälningar
+            </h3>
+            <div className="space-y-2">
+              {pendingRegistrations.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="p-4 border rounded-lg bg-amber-500/5 border-amber-500/20 flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{reg.product.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Status:{" "}
+                      <span className="text-amber-600 font-medium">
+                        Väntar på betalning / godkännande
+                      </span>
+                    </p>
+                    {reg.participant && reg.participant.name !== user?.name && (
+                      <p className="text-[10px] text-brand mt-1 uppercase font-bold">
+                        Deltagare: {reg.participant.name}
+                      </p>
+                    )}
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="text-amber-600 border-amber-600/20"
+                  >
+                    Behandlas
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <OrderHistory orders={orders} />
       </CardContent>

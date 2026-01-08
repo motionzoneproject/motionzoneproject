@@ -31,6 +31,14 @@ type OrderLite = {
       lastName?: string | null;
     } | null;
   } | null;
+  orderItems?:
+    | {
+        product: { name: string };
+        participant?: {
+          name: string;
+        } | null;
+      }[]
+    | null;
   totalPrice: unknown;
   createdAt: string | Date;
   status?: OrderStatus;
@@ -43,7 +51,7 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
     orderBy: [{ createdAt: "desc" }],
     include: {
       user: { include: { details: true } },
-      orderItems: { include: { product: true } },
+      orderItems: { include: { product: true, participant: true } },
     },
   })) as unknown as OrderLite[];
 
