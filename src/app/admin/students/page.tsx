@@ -113,7 +113,7 @@ export default async function StudentsPage(props: {
         ) : (
           participants.map((p) => {
             const activePurchases = p.purchases.filter(
-              (pur) => pur.PurchaseItems.length > 0
+              (pur) => pur.PurchaseItems.length > 0,
             );
             if (terminId && activePurchases.length === 0) return null;
 
@@ -186,7 +186,7 @@ export default async function StudentsPage(props: {
                                   </span>
                                 </div>
                               </div>
-                            ))
+                            )),
                           )}
                         </div>
                       )}
