@@ -15,8 +15,6 @@ const teachers = [
   },
 ];
 
-import Image from "next/image";
-
 import {
   Dialog,
   DialogContent,
