@@ -78,6 +78,7 @@ export const adminLessonFormSchema = z.object({
 export const adminAddProductSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
+  imageURL: z.string().optional(), // Här måste vi ha rätt URL också.
   maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
   price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
   clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.

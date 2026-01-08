@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,6 +47,7 @@ export default function AddProductForm() {
       clipcard: false,
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: "",
+      imageURL: "", // or maybe image data.
       name: "",
       price: 0,
       clipCount: 0,
@@ -62,7 +64,39 @@ export default function AddProductForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewProduct(values);
+    let finalImageURL = values.imageURL;
+
+    // 1. Om vi har en bild (förhandsgranskad som base64),
+    // men vi laddar upp den som en FIL till API:et
+    if (values.imageURL?.startsWith("data:image")) {
+      // Konvertera Base64 tillbaka till en File-blob för uppladdning
+      const res = await fetch(values.imageURL);
+      const blob = await res.blob();
+      const formData = new FormData();
+      formData.append("file", blob, "image.jpg");
+
+      // Ladda upp till API Route istället för Server Action.
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        const data = await uploadRes.json();
+        finalImageURL = data.url;
+      } else {
+        toast.error("Uppladdning misslyckades");
+        return;
+      }
+    }
+
+    // 2. Nu anropar vi addNewProduct (Server Action) med bara den korta URL-strängen
+    const validatedValues = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageURL,
+    });
+
+    const res = await addNewProduct(validatedValues);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -118,6 +152,22 @@ export default function AddProductForm() {
 
                       <FormControl>
                         <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
                       </FormControl>
 
                       <FormMessage />
