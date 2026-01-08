@@ -24,6 +24,7 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
+        id?: string;
         product: { name: string };
         participant?: {
           name: string;
