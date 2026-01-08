@@ -3,8 +3,6 @@
 // big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas istället för useTotalCount i purchase-nivå).
 // Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
 
-// Ska gå igenom varje funktion här och skriva steg-för-steg så vi har bättre koll på varje funktion. Har testat de funktioner vi behöver ha fungerande nu till första lanseringen och de fungerar. Inaktiverar klippkort tills vidare i admin.
-
 import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import type z from "zod";
@@ -1690,3 +1688,107 @@ export async function removeUserFromLesson(
   }
 }
 // Klippkort fix!
+
+// // So this function is for decoding the base64 data url.
+// async function decodeBase64DataURL(
+//   dataUrl: string
+// ): Promise<{ buffer: Buffer; contentType: string } | null> {
+//   if (!dataUrl.startsWith("data:")) return null;
+
+//   const isAdmin = await isAdminRole();
+//   if (!isAdmin) return null;
+
+//   const parts = dataUrl.split(";base64,");
+//   if (parts.length !== 2) return null;
+
+//   const [mimePart, base64Data] = parts;
+//   const contentType = mimePart.split(":")[1];
+
+//   if (!contentType.startsWith("image/")) {
+//     return null;
+//   }
+
+//   try {
+//     const buffer = Buffer.from(base64Data, "base64");
+//     return { buffer, contentType };
+//   } catch (e) {
+//     console.log(JSON.stringify(e));
+//     return null;
+//   }
+// }
+
+// // Ok så den här tar en sån där Base64URL och läser av det some base64 och laddar upp till bucket.
+// export async function uploadBase64ToR2(
+//   base64DataUrl: string
+// ): Promise<{ success: boolean; msg?: string; imageURL?: string }> {
+//   const session = await getSessionData();
+//   const authorId = session?.user?.id;
+
+//   const decoded = await decodeBase64DataURL(base64DataUrl);
+
+//   const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"]; // Definiera tillåtna typer
+//   // const MAX_FILE_SIZE = 5 * 1024 * 1024; // Max 5 MB i byte
+
+//   if (!decoded) {
+//     return { success: false, msg: "Ogiltigt eller skadligt filformat." };
+//   }
+
+//   const { buffer: imageBuffer } = decoded;
+
+//   // 1. Storlekskontroll (Tänk på DoS-skydd)
+//   if (imageBuffer.length > 5 * 1024 * 1024) {
+//     // Max 5 MB
+//     return { success: false, msg: "Filen är för stor (max 5 MB)." };
+//   }
+
+//   // 1. Verifiera filtyp genom att läsa de första byten (Magic Bytes)
+//   const fileType = await fileTypeFromBuffer(imageBuffer);
+
+//   if (!fileType) {
+//     // Filen kunde inte identifieras som en känd filtyp.
+//     return {
+//       success: false,
+//       msg: "Kunde inte identifiera filens innehåll som en bild. Avbrutet av säkerhetsskäl.",
+//     };
+//   }
+
+//   // 2. Kontrollera att den identifierade typen är tillåten
+//   if (!ALLOWED_MIME_TYPES.includes(fileType.mime)) {
+//     // Filen är en känd typ, men inte tillåten (t.ex. en .zip eller .exe)
+//     return {
+//       success: false,
+//       msg: `Filtypen ${fileType.ext} är inte tillåten.`,
+//     };
+//   }
+
+//   // Nu vet vi med hög säkerhet att filen är en äkta bild av en tillåten typ.
+//   const fileContentType = fileType.mime;
+//   const fileExtension = fileType.ext;
+
+//   const filename = `articles/${crypto.randomUUID()}.${fileExtension}`;
+
+//   try {
+//     // Sådär då nu inväntar vi alex här bara.
+
+//     // await s3Client.send(
+//     //   new PutObjectCommand({
+//     //     Bucket: process.env.R2_BUCKET_NAME,
+//     //     Key: filename,
+//     //     Body: imageBuffer,
+//     //     ContentType: fileContentType,
+//     //     CacheControl: "max-age=3600", // 1 timmes cache
+//     //   })
+//     // );
+
+//     // const imageUrl = `${process.env.R2_PUBLIC_URL}/${filename}`;
+
+//     return { success: true, imageURL: "No bucket yet, sorry." };
+//   } catch (e) {
+//     console.error("R2 Upload Error:", e);
+
+//     return {
+//       success: false,
+//       msg: "Misslyckades med att ladda upp till bucket.",
+//     };
+//   }
+// }
