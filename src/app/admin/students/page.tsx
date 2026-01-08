@@ -84,6 +84,7 @@ export default async function StudentsPage(props: {
           />
           <select
             name="termin"
+            aria-label="Välj termin"
             defaultValue={terminId}
             className="h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -112,7 +113,7 @@ export default async function StudentsPage(props: {
         ) : (
           participants.map((p) => {
             const activePurchases = p.purchases.filter(
-              (pur) => pur.PurchaseItems.length > 0,
+              (pur) => pur.PurchaseItems.length > 0
             );
             if (terminId && activePurchases.length === 0) return null;
 
@@ -185,7 +186,7 @@ export default async function StudentsPage(props: {
                                   </span>
                                 </div>
                               </div>
-                            )),
+                            ))
                           )}
                         </div>
                       )}
