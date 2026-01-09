@@ -84,7 +84,39 @@ export default function EditProductForm({
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await editProduct(productId, values);
+    let finalImageUrl = values.imageURL;
+    let newImg: boolean = false;
+
+    if (values.imageURL.startsWith("blob:")) {
+      const res = await fetch(values.imageURL);
+
+      const blob = await res.blob(); // Få bilden som den blob det är.
+      const formData = new FormData();
+      formData.append("file", blob, "image.jpg");
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        const data = await uploadRes.json();
+        finalImageUrl = data.url;
+        newImg = true;
+
+        URL.revokeObjectURL(values.imageURL);
+      } else {
+        toast.error("Uppladdning misslyckades");
+        return;
+      }
+    }
+
+    const validatedValues = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageUrl,
+    });
+
+    const res = await editProduct(productId, validatedValues, newImg);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);

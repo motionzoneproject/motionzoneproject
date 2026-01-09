@@ -1081,6 +1081,15 @@ export async function addNewProduct(
 
   try {
     const validated = await adminAddProductSchema.parseAsync(formData);
+
+    // dubbelchecka så det blev rätt vid upload (eftersom blob tillåts)
+    if (validated.imageURL.startsWith("blob:")) {
+      return {
+        success: false,
+        msg: "Bilden laddades inte upp korrekt till molnet.",
+      };
+    }
+
     // fix för klippkort precis som allt annat - med ny logik kring TYPE.
     const newProd = await prisma.product.create({
       data: {
@@ -1123,12 +1132,21 @@ export async function addNewProduct(
 export async function editProduct(
   id: string,
   formData: z.output<typeof adminAddProductSchema>,
+  newImg?: boolean,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
     const validated = await adminAddProductSchema.parseAsync(formData);
+
+    // dubbelchecka så det blev rätt vid upload (eftersom blob tillåts)
+    if (validated.imageURL.startsWith("blob:")) {
+      return {
+        success: false,
+        msg: "Bilden laddades inte upp korrekt till molnet.",
+      };
+    }
 
     // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
     const salesCount = await prisma.purchase.count({
@@ -1139,6 +1157,16 @@ export async function editProduct(
         success: false,
         msg: "Kan inte sänka maxantalet under redan sålt antal.",
       };
+    }
+
+    const oldImageURL = await prisma.product.findFirst({
+      where: { id },
+      select: { imageURL: true },
+    });
+
+    if (oldImageURL?.imageURL !== validated.imageURL || newImg) {
+      // Delete the old pic from bucket
+      // fix.
     }
 
     const newProd = await prisma.product.update({
