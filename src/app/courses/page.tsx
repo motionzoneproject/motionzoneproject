@@ -1,4 +1,5 @@
 import { Book, Calendar, CalendarDays, Clock, MapPin } from "lucide-react";
+import Image from "next/image";
 import {
   Accordion,
   AccordionContent,
@@ -16,43 +17,44 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
-import {
-  getAllCoursesInProduct,
-  getAllProducts,
-  getCourseCountInProduct,
-  getFullCourseNameFromId,
-  getProductSchema,
-  getProductTermin,
-} from "@/lib/actions/server-actions";
+import { getAllProductsWithData } from "@/lib/actions/server-actions";
+import { getCourseName } from "@/lib/tools";
 import { getVeckodag } from "../admin/termin/SchemaDay";
 
 export default async function Page() {
-  const products = await getAllProducts();
+  const products = await getAllProductsWithData(); // Gör om här så all data hämtas här istället. fix.
+  // Vi behöver: produkterna, deras termin, deras kurser, och schema.
 
   return (
     <main className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="text-center py-8 border-b border-border mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-            Köp våra kurser
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+            Här hittar du våra kurser, paket och klippkort!
           </h1>
-          <p className="text-muted-foreground">
-            Paket och klippkort kommer inom kort
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map(async (p) => {
-            const [terminer, schemaItems] = await Promise.all([
-              getProductTermin(p.id),
-              getProductSchema(p.id),
-            ]);
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          {products.map((p) => {
+            const allSchemaItems = p.courses.flatMap(
+              (pc) => pc.course.schemaItems,
+            );
+            const terminer = Array.from(
+              new Map(
+                allSchemaItems.flatMap((s) =>
+                  s.termin ? [[s.termin.id, s.termin]] : [],
+                ),
+              ).values(),
+            ).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-            const courses = await getAllCoursesInProduct(p.id);
-
+            // Om maxCustomer är > 0 räknar vi ut diffen, annars är det null (obegränsat)
             const spotsLeft =
-              p.maxCustomer > 0 ? p.maxCustomer - (p.totalCount ?? 0) : null;
+              p.maxCustomer > 0
+                ? p.maxCustomer - (p._count?.purchases || 0)
+                : null;
 
+            // Man kan bara bli "full" om det faktiskt finns ett tak satt (spotsLeft !== null)
+            const isFull = spotsLeft !== null && spotsLeft <= 0;
             return (
               <Card
                 key={p.id}
@@ -63,23 +65,37 @@ export default async function Page() {
                     <Badge className="font-bold text-lg bg-brand text-white border-0">
                       {p.price} kr
                     </Badge>
-                    {spotsLeft !== null && (
-                      <Badge
-                        variant={spotsLeft <= 3 ? "destructive" : "outline"}
-                      >
-                        {spotsLeft} platser kvar
-                      </Badge>
-                    )}
+                    {spotsLeft && <div>{spotsLeft} platser kvar</div>}
                   </div>
                   <CardTitle className="text-lg">{p.name}</CardTitle>
                   <CardDescription>
-                    {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
-                    {p.description && ` – ${p.description}`}
+                    Produkt-typ: {p.type}
+                    <br />
+                    <div className="relative w-full min-h-48 border rounded p-1">
+                      {p.imageURL && (
+                        <Image
+                          src={p.imageURL}
+                          alt={`${p.name} produktbild.`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        ></Image>
+                      )}
+                    </div>
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex-1 space-y-4">
-                  <div className="space-y-2">
+                <CardContent className="flex-1 space-y-2">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="item-1">
+                      <AccordionTrigger className="text-sm hover:text-brand">
+                        Beskrivning
+                      </AccordionTrigger>
+                      <AccordionContent>{p.description}</AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <CalendarDays className="w-3 h-3" />
                       Giltig under
@@ -109,14 +125,16 @@ export default async function Page() {
                             <span className="font-medium flex items-center gap-1 mb-2">
                               <Book className="w-4 h-4" /> Kurser:
                             </span>
-                            {courses.map(async (c) => (
+                            {p.courses.map((c) => (
                               <Badge
-                                key={c.id}
+                                key={c.course.id}
                                 variant="outline"
                                 className="mr-1 mb-1"
                               >
-                                {c.name} –{" "}
-                                {await getCourseCountInProduct(p.id, c.id)}st
+                                {c.course.name} –{" "}
+                                {c.unlimited
+                                  ? "Obegränsad"
+                                  : `${c.lessonsIncluded} tillfällen`}
                               </Badge>
                             ))}
                           </div>
@@ -124,10 +142,8 @@ export default async function Page() {
                             <span className="font-medium flex items-center gap-1 mb-2">
                               <Calendar className="w-4 h-4" /> Schema:
                             </span>
-                            {schemaItems.map(async (s) => {
-                              const courseName = await getFullCourseNameFromId(
-                                s.courseId,
-                              );
+                            {allSchemaItems.map((s) => {
+                              const courseName = getCourseName(s.course);
                               return (
                                 <div
                                   key={s.id}
@@ -176,9 +192,12 @@ export default async function Page() {
                   >
                     <Button
                       type="submit"
-                      className="w-full bg-brand hover:bg-brand-light text-white font-medium"
+                      disabled={isFull}
+                      className={`w-full ${
+                        isFull ? "bg-gray-400" : "bg-brand hover:bg-brand-light"
+                      } text-white font-medium`}
                     >
-                      Köp nu →
+                      {isFull ? "Fullbokat" : "Köp nu →"}
                     </Button>
                   </form>
                 </CardFooter>

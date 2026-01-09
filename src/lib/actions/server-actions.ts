@@ -446,6 +446,40 @@ export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
   }
 }
 
+export async function getAllProductsWithData() {
+  try {
+    const products = await prisma.product.findMany({
+      include: {
+        // termin: true,
+        // // Hämta kopplingen mellan produkt och kurs. Denna används ej. fix: ta bort från db.
+        courses: {
+          include: {
+            course: {
+              include: {
+                // Här hämtar vi schemat direkt via kursen!
+                schemaItems: {
+                  orderBy: { weekday: "asc" },
+                  include: { termin: true, course: true },
+                },
+              },
+            },
+          },
+        },
+        // För att räkna platser kvar
+        _count: {
+          select: { purchases: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return products;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+}
+
 export async function getAllProducts(): Promise<Product[]> {
   try {
     const products = await prisma.product.findMany();
