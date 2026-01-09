@@ -51,14 +51,12 @@ export default function ImageInput({
 
   return (
     <div className="p-2 border-2 rounded-lg">
-      val:{value}
-      <br />
       {value && (
         <Image
           src={value ?? ""}
           width={512}
           height={512}
-          className="w-full p-2"
+          className="w-[80%] p-2"
           alt="Preview image"
           unoptimized={value.startsWith("blob:")} // Skippa server-optimering för lokala filer
         ></Image>
