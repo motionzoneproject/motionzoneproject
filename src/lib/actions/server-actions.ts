@@ -2,13 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type z from "zod";
-import type {
-  Course,
-  Prisma,
-  Product,
-  SchemaItem,
-  Termin,
-} from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
@@ -213,7 +207,7 @@ export async function getUserPendingRegistrations() {
 }
 
 export async function addBooking(
-  formData: z.output<typeof UserBookLessonSchema>
+  formData: z.output<typeof UserBookLessonSchema>,
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -321,7 +315,7 @@ export async function addBooking(
 }
 
 export async function delBooking(
-  lessonId: string
+  lessonId: string,
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -419,31 +413,11 @@ export async function getFullCourseNameFromId(id: string) {
             : "+ år" // Lägger till "+ år" om maxAge saknas
         }${course.adult ? ` / Vuxen` : ""}`
       : course.adult
-      ? "Vuxen" // Om minAge saknas, men adult är true
-      : ""; // Om varken minAge eller adult är true
+        ? "Vuxen" // Om minAge saknas, men adult är true
+        : ""; // Om varken minAge eller adult är true
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;
-}
-
-export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
-  try {
-    const courses: Course[] = [];
-
-    const c = await prisma.productOnCourse.findMany({
-      where: { productId: pid },
-      include: { course: true },
-    });
-
-    c.forEach((itm) => {
-      courses.push(itm.course);
-    });
-
-    return courses;
-  } catch (e) {
-    console.error(e);
-    return [];
-  }
 }
 
 export async function getAllProductsWithData() {
@@ -477,115 +451,5 @@ export async function getAllProductsWithData() {
   } catch (e) {
     console.error(e);
     return [];
-  }
-}
-
-//fix: används ej?
-export async function getAllProducts(): Promise<Product[]> {
-  try {
-    const products = await prisma.product.findMany();
-
-    return products;
-  } catch (e) {
-    console.error(e);
-    return [];
-  }
-}
-
-export async function getProductTermin(pid: string): Promise<Termin[]> {
-  try {
-    // 1. Hämta produkten och gå djupt ner i relationerna på en gång
-    const product = await prisma.product.findUnique({
-      where: { id: pid },
-      include: {
-        courses: {
-          include: {
-            course: {
-              include: {
-                schemaItems: {
-                  include: {
-                    termin: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!product) return [];
-
-    // 2. Extrahera alla unika terminer med hjälp av en Map (för att undvika dubbletter)
-    const terminMap = new Map<string, Termin>();
-
-    product.courses.forEach((pc) => {
-      pc.course.schemaItems.forEach((si) => {
-        if (si.termin) {
-          terminMap.set(si.termin.id, si.termin);
-        }
-      });
-    });
-
-    // Returnera som en array
-    return Array.from(terminMap.values());
-  } catch (e) {
-    console.error("Fel vid hämtning av terminer för produkt:", e);
-    return [];
-  }
-}
-
-export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
-  try {
-    const schemaItems = await prisma.schemaItem.findMany({
-      where: {
-        course: {
-          products: {
-            some: {
-              productId: pid,
-            },
-          },
-        },
-      },
-      // include: { // eventuellt.
-      //   termin: true,
-      //   course: true,
-      // },
-      orderBy: {
-        weekday: "asc", // Eller vad som passar din sortering
-      },
-    });
-
-    return schemaItems;
-  } catch (e) {
-    console.error("Fel vid hämtning av schema för produkt:", e);
-    return [];
-  }
-}
-
-export async function getCourseCountInProduct(
-  productId: string,
-  courseId: string
-): Promise<number> {
-  try {
-    // fix: ej för klippkort än.
-
-    // Vi letar i kopplingstabellen mellan produkt och kurs
-    const relation = await prisma.productOnCourse.findUnique({
-      where: {
-        courseId_productId: {
-          productId: productId,
-          courseId: courseId,
-        },
-      },
-      select: {
-        lessonsIncluded: true,
-      },
-    });
-
-    return relation?.lessonsIncluded ?? 0;
-  } catch (e) {
-    console.error("Fel vid hämtning av bokningsgräns:", e);
-    return 0;
   }
 }
