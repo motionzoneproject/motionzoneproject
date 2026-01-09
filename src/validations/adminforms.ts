@@ -106,6 +106,7 @@ export const AdminProductCourseItemSchema = z.object({
   productId: z.string().min(1),
   isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
   courseId: z.string().min(1, "Kurs-ID måste anges."),
+  unlimited: z.coerce.boolean().optional(),
   lessonsIncluded: z.coerce
     .number()
     .int()
