@@ -30,7 +30,7 @@ export default function About() {
             professionell. Ljusa salar, speglar och högkvalitativa golv skapar
             den perfekta miljön för dans.
           </p>
-          <div className="bg-brand rounded-lg p-6">
+          <div className="bg-brand rounded-lg p-6 mb-10">
             <p className="text-white text-lg font-semibold">
               Här är alla välkomna – oavsett nivå.
             </p>
