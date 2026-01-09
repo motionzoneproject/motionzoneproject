@@ -63,19 +63,18 @@ export default function AddProductForm() {
     if (!isOpen) form.reset();
   }, [isOpen, form]);
 
+  // Ladda upp bild och lägg in produkt.
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Vi byter ut imageURL i values oavsett, bara för att göra det lite enkelt för oss.
     let finalImageURL = values.imageURL;
 
-    // 1. Om vi har en bild (förhandsgranskad som base64),
-    // men vi laddar upp den som en FIL till API:et
-    if (values.imageURL?.startsWith("data:image")) {
-      // Konvertera Base64 tillbaka till en File-blob för uppladdning
+    if (values.imageURL?.startsWith("blob:")) {
       const res = await fetch(values.imageURL);
-      const blob = await res.blob();
+
+      const blob = await res.blob(); // Få bilden som den blob det är.
       const formData = new FormData();
       formData.append("file", blob, "image.jpg");
 
-      // Ladda upp till API Route istället för Server Action.
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -84,13 +83,15 @@ export default function AddProductForm() {
       if (uploadRes.ok) {
         const data = await uploadRes.json();
         finalImageURL = data.url;
+
+        // Mycket viktigt: Frigör minnet i webbläsaren när uppladdningen är klar
+        URL.revokeObjectURL(values.imageURL);
       } else {
         toast.error("Uppladdning misslyckades");
         return;
       }
     }
 
-    // 2. Nu anropar vi addNewProduct (Server Action) med bara den korta URL-strängen
     const validatedValues = await formSchema.parseAsync({
       ...values,
       imageURL: finalImageURL,
