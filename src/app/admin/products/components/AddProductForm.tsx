@@ -68,7 +68,7 @@ export default function AddProductForm() {
     // Vi byter ut imageURL i values oavsett, bara för att göra det lite enkelt för oss.
     let finalImageURL = values.imageURL;
 
-    if (values.imageURL?.startsWith("blob:")) {
+    if (values.imageURL.startsWith("blob:")) {
       const res = await fetch(values.imageURL);
 
       const blob = await res.blob(); // Få bilden som den blob det är.
