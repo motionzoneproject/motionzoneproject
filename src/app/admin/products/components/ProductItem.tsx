@@ -6,11 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/generated/prisma/client";
-import {
-  countOrderItems,
-  getAllCourses,
-  type ProdCourse,
-} from "@/lib/actions/admin";
+import { countOrderItems, getAllCourses } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
@@ -22,7 +18,7 @@ interface Props {
 }
 
 export default async function ProductItem({ product }: Props) {
-  const prodCourse: ProdCourse[] = await prisma.productOnCourse.findMany({
+  const prodCourse = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
     include: { course: true },
   });
@@ -113,7 +109,13 @@ export default async function ProductItem({ product }: Props) {
                           </div>
 
                           {!product.useTotalCount ? (
-                            <div> Tillfällen: {pc.lessonsIncluded}st</div>
+                            <div>
+                              {" "}
+                              Tillfällen:{" "}
+                              {pc.unlimited
+                                ? "obegränsat"
+                                : `${pc.lessonsIncluded}`}
+                            </div>
                           ) : (
                             <div>(klippkort)</div>
                           )}

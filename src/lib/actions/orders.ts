@@ -150,7 +150,7 @@ export async function createPurchaseFromOrder(orderId: string) {
             orderItemId: orderItem.id,
             lessonsIncluded: pc.lessonsIncluded,
             remainingCount: pc.lessonsIncluded,
-            unlimited: pc.unlimited ?? false,
+            unlimited: pc.unlimited ?? false, //okej, så denna är iaf med.
           },
         })
       );
