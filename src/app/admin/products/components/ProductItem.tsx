@@ -49,6 +49,7 @@ export default async function ProductItem({ product }: Props) {
               ></AddCoursesToProductForm>
               <EditProductForm
                 maxCustomers={product.maxCustomer}
+                imageURL={product.imageURL ?? ""}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}
                 clipcard={product.useTotalCount}

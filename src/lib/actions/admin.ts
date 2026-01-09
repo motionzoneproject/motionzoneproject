@@ -1087,6 +1087,7 @@ export async function addNewProduct(
         name: validated.name,
         description: validated.description,
         price: validated.price,
+        imageURL: validated.imageURL,
         maxCustomer: validated.maxCustomers,
         useTotalCount: validated.clipcard,
         totalCount: validated.clipCount,
@@ -1146,6 +1147,7 @@ export async function editProduct(
         name: validated.name,
         description: validated.description,
         price: validated.price,
+        imageURL: validated.imageURL,
         useTotalCount: validated.clipcard, // fix: har lagt till type i db istället.
         maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,

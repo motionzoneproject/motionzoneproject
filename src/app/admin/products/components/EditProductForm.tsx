@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +44,7 @@ interface Props {
   productId: string;
   clipcard: boolean;
   description: string;
+  imageURL: string;
   name: string;
   price: number;
   clipCount: number;
@@ -56,6 +58,7 @@ export default function EditProductForm({
   description,
   name,
   price,
+  imageURL,
   maxCustomers,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
@@ -63,6 +66,7 @@ export default function EditProductForm({
     defaultValues: {
       clipcard: clipcard,
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
+      imageURL: imageURL,
       description: description,
       name: name,
       price: price,
@@ -136,6 +140,22 @@ export default function EditProductForm({
 
                       <FormControl>
                         <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
                       </FormControl>
 
                       <FormMessage />

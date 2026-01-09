@@ -26,44 +26,33 @@ export default function ImageInput({
 
   const fileImg = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
-      // Check that its a valid image (png or jpg)
       const file = e.target.files?.[0];
-
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+      const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
       if (file) {
-        if (!file.type.startsWith("image/")) {
-          alert("Only images are allowed."); // Vi kör en säkrare validering i server-action.
-          e.target.value = "";
-          return;
-        }
-
         if (file.size > MAX_FILE_SIZE) {
           alert(`Max 5 MB`);
-          e.target.value = ""; // Återställ input
           return;
         }
-        // 1. Initialize FileReader
-        const reader = new FileReader();
 
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
+        // SKAPA EN TEMPORÄR URL
+        const previewUrl = URL.createObjectURL(file);
 
-          onChange(dataUrl);
-          onBlur();
-        };
+        // Skicka previewUrl till din form så att <Image /> kan visa den
+        onChange(previewUrl);
+        onBlur();
 
-        // 4. Starta läsningen av filen som en Data URL (Base64)
-        reader.readAsDataURL(file);
+        // VIKTIGT: Om du vill använda fetch(blobUrl) senare i onSubmit,
+        // så fungerar det faktiskt utmärkt! Webbläsaren "laddar ner" filen från sitt eget minne.
       }
-
-      // read the file as base64 and set it as value
     },
     [onChange, onBlur],
   );
 
   return (
     <div className="p-2 border-2 rounded-lg">
+      val:{value}
+      <br />
       {value && (
         <Image
           src={value ?? ""}
@@ -71,6 +60,7 @@ export default function ImageInput({
           height={512}
           className="w-full p-2"
           alt="Preview image"
+          unoptimized={value.startsWith("blob:")} // Skippa server-optimering för lokala filer
         ></Image>
       )}
       <div className="sm:grid sm:grid-cols-2 gap-1 p-2 border-2 rounded-lg">
