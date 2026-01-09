@@ -213,7 +213,7 @@ export async function getUserPendingRegistrations() {
 }
 
 export async function addBooking(
-  formData: z.output<typeof UserBookLessonSchema>,
+  formData: z.output<typeof UserBookLessonSchema>
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -321,7 +321,7 @@ export async function addBooking(
 }
 
 export async function delBooking(
-  lessonId: string,
+  lessonId: string
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -419,8 +419,8 @@ export async function getFullCourseNameFromId(id: string) {
             : "+ år" // Lägger till "+ år" om maxAge saknas
         }${course.adult ? ` / Vuxen` : ""}`
       : course.adult
-        ? "Vuxen" // Om minAge saknas, men adult är true
-        : ""; // Om varken minAge eller adult är true
+      ? "Vuxen" // Om minAge saknas, men adult är true
+      : ""; // Om varken minAge eller adult är true
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;
@@ -480,6 +480,7 @@ export async function getAllProductsWithData() {
   }
 }
 
+//fix: används ej?
 export async function getAllProducts(): Promise<Product[]> {
   try {
     const products = await prisma.product.findMany();
@@ -564,7 +565,7 @@ export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
 
 export async function getCourseCountInProduct(
   productId: string,
-  courseId: string,
+  courseId: string
 ): Promise<number> {
   try {
     // fix: ej för klippkort än.
