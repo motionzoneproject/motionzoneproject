@@ -147,7 +147,7 @@ export default function EditProductForm({
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-2 p-2 rounded-xl"
+                className="space-y-2 p-2 rounded-xl max-w-full"
               >
                 <FormField
                   control={form.control}
