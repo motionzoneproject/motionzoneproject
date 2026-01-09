@@ -1063,6 +1063,7 @@ export type ProdCourse = {
 } & {
   courseId: string;
   productId: string;
+  unlimited: boolean;
   lessonsIncluded: number;
 };
 
@@ -1242,6 +1243,16 @@ export async function addCourseToProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
+    // const theProd = await prisma.product.findUnique({
+    //   where: { id: validated.productId },
+    // });
+
+    // if (!theProd)
+    //   throw new Error(`No product found with id ${validated.productId}`);
+    // const type = theProd.type;
+
+    // Fast spelar det verkligen någon roll? Nej. Men sparar tanken.
+
     // fix: använd upsert?
     // Kolla om den redan är inlagd (för att enkelt kunna ändra istället för att skapa.)
     const isInProd = await isCourseInProduct(
@@ -1258,19 +1269,21 @@ export async function addCourseToProduct(
           },
         },
         data: {
+          unlimited: validated.unlimited,
           lessonsIncluded: validated.lessonsIncluded,
         },
       });
 
       return {
         success: true,
-        msg: `Kursen ändrades i produkten.`, // fix
+        msg: `Kursen ändrades i produkten.`, // fix?
       };
     } else {
       await prisma.productOnCourse.create({
         data: {
           productId: validated.productId,
           courseId: validated.courseId,
+          unlimited: validated.unlimited,
           lessonsIncluded: validated.lessonsIncluded,
         },
       });
@@ -1284,7 +1297,7 @@ export async function addCourseToProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort, kanske kolla om produkten är ett klippkort isfåall ska väl lessonsIncluded vara 0 (?)
+// fix: klippkort, kanske kolla om produkten är ett klippkort isfåall ska väl lessonsIncluded vara 0 också. Spelar ingen roll, kommer inte användas eller synas någonstans.
 
 /**
  * Tar bort kopplingen mellan en specifik kurs och en produkt.
@@ -1332,7 +1345,7 @@ export async function removeCourseInProduct(
 export async function isCourseInProduct(
   courseId: string,
   productId: string,
-): Promise<{ found: boolean; lessonsIncluded?: number }> {
+): Promise<{ found: boolean; lessonsIncluded?: number; unlimited?: boolean }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
 
@@ -1341,7 +1354,12 @@ export async function isCourseInProduct(
       where: { courseId_productId: { courseId, productId } },
     });
 
-    if (found) return { found: true, lessonsIncluded: found.lessonsIncluded };
+    if (found)
+      return {
+        found: true,
+        lessonsIncluded: found.lessonsIncluded,
+        unlimited: found.unlimited,
+      };
     return { found: false };
   } catch (e) {
     console.error(e);

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -56,7 +57,7 @@ type CourseFormOutput = z.output<typeof formSchema>;
 
 interface Props {
   productId: string;
-  useTotalCount: boolean;
+  useTotalCount: boolean; //fix: här ska type finnas istället.
   productCourses: ProdCourse[];
   allCourses: Course[];
 }
@@ -73,6 +74,7 @@ export default function AddCoursesToProductForm({
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       productId: productId,
       lessonsIncluded: 0,
+      unlimited: false,
       courseId: "",
     },
   });
@@ -87,10 +89,13 @@ export default function AddCoursesToProductForm({
     const checkIsInProd = async () => {
       const inProd = await isCourseInProduct(selCourse, productId);
       setIsInProd(inProd.found);
+
       if (inProd.found) {
         form.setValue("lessonsIncluded", inProd.lessonsIncluded);
+        form.setValue("unlimited", inProd.unlimited);
       } else {
         form.setValue("lessonsIncluded", 0);
+        form.setValue("unlimited", false);
       }
     };
     checkIsInProd();
@@ -204,6 +209,29 @@ export default function AddCoursesToProductForm({
 
                 <FormField
                   control={form.control}
+                  name="unlimited"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            form.setValue("lessonsIncluded", 0);
+                          }}
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="lessonsIncluded"
                   render={({ field }) => (
                     <FormItem className={useTotalCount ? "hidden" : ""}>
@@ -214,10 +242,16 @@ export default function AddCoursesToProductForm({
                           type="number"
                           min="0"
                           step="1"
-                          disabled={useTotalCount}
+                          disabled={
+                            (form.watch("unlimited") as boolean) === true
+                          }
                           {...field}
                           value={
-                            field.value === undefined ? "" : String(field.value)
+                            (form.watch("unlimited") as boolean) === true
+                              ? 0
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
                           }
                         />
                       </FormControl>
@@ -243,10 +277,14 @@ export default function AddCoursesToProductForm({
                 key={pc.courseId}
                 className="w-full p-2 flex justify-between"
               >
-                <div>
+                <div className="p-1 border rounded w-full">
                   {getCourseName(pc.course)}
+                  <br />
                   {!useTotalCount && (
-                    <span>Antal tillfällen: {pc.lessonsIncluded}</span>
+                    <span>
+                      Antal tillfällen:{" "}
+                      {pc.unlimited ? "Obegränsat" : pc.lessonsIncluded}
+                    </span>
                   )}
                 </div>
                 <div>
