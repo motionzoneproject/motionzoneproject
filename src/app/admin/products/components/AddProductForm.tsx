@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -53,6 +53,8 @@ export default function AddProductForm() {
   });
 
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -103,7 +105,11 @@ export default function AddProductForm() {
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
-      router.refresh();
+      if (res.productId) {
+        const params = new URLSearchParams(searchParams);
+        params.set("openCoursesFor", res.productId);
+        router.push(`${pathname}?${params.toString()}`);
+      }
     } else {
       toast.error(res.msg);
     }
@@ -112,7 +118,7 @@ export default function AddProductForm() {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Ny produkt
         </Button>
       </DialogTrigger>
@@ -283,7 +289,7 @@ export default function AddProductForm() {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Skapa
                 </Button>
               </form>

@@ -78,7 +78,7 @@ export default async function SchemaDay({
 
           return (
             <AccordionContent key={itm.id}>
-              <div className="bg-blue-500/10 border-blue-500/20 text-foreground border-2 p-2 rounded-lg flex justify-between">
+              <div className="bg-muted/30 border-border text-foreground border p-2 rounded-lg flex justify-between">
                 <div>
                   {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
                   <br />

@@ -106,8 +106,8 @@ export default function LessonAttendanceForm({ lesson }: Props) {
     >
       <DialogTrigger asChild>
         <Button
-          variant={"default"}
-          className="bg-green-500 cursor-pointer mb-3"
+          variant={"secondary"}
+          className="cursor-pointer mb-3"
           // disabled={lesson.cancelled} // fix: närvaro tes ej bort om den ställs in som det är nu.s
         >
           Närvaro
@@ -145,7 +145,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
                 return (
                   <div
                     key={b.id}
-                    className="w-full flex m-1 justify-between items-center hover:bg-accent p-2 rounded"
+                    className="w-full flex m-1 justify-between items-center hover:bg-muted/30 p-2 rounded"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">
@@ -173,7 +173,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
               })
             ) : (
               <div className="w-full text-center">
-                <div className="w-12 h-12 rounded-full border-3 border-blue-500 border-t-blue-300 animate-spin mx-auto"></div>
+                <div className="w-12 h-12 rounded-full border-3 border-border border-t-foreground/40 animate-spin mx-auto"></div>
               </div>
             )}
           </CardContent>

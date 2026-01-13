@@ -69,7 +69,7 @@ export default async function ProductItem({ product }: Props) {
         </CardHeader>
 
         <CardContent>
-          <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
+          <div className="p-2 grid grid-cols-2 gap-2 bg-muted/30 border border-border rounded">
             <div>
               <span className="font-bold">Produkt-typ:</span> {typeLabel}
             </div>
@@ -93,7 +93,7 @@ export default async function ProductItem({ product }: Props) {
             <div>
               <span className="font-bold">Sålda / max:</span> {purchasesCount} /{" "}
               {product.maxCustomer > 0 ? product.maxCustomer : "Obegränsat"}
-              {isFull && <span className="ml-2 text-red-600">Fullt</span>}
+              {isFull && <span className="ml-2 text-destructive">Fullt</span>}
             </div>
           </div>
 
@@ -107,7 +107,7 @@ export default async function ProductItem({ product }: Props) {
                       {prodCourse.map((pc) => (
                         <div
                           key={pc.courseId}
-                          className="p-2 border-2 flex justify-between border-blue-800 rounded bg-card space-y-2"
+                          className="p-2 border flex justify-between border-border rounded bg-card space-y-2"
                         >
                           <div>
                             <span className="font-bold">

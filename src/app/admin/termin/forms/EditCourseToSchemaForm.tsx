@@ -150,7 +150,7 @@ export default function EditCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-blue-500 cursor-pointer mb-3">
+        <Button variant={"secondary"} className="cursor-pointer mb-3">
           Ändra
         </Button>
       </DialogTrigger>
@@ -334,7 +334,7 @@ export default function EditCourseToSchemaForm({
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Ändra
                 </Button>
               </form>

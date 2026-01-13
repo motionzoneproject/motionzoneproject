@@ -104,7 +104,7 @@ export default function AddCourseForm({ teachers }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Ny kurs
         </Button>
       </DialogTrigger>
@@ -213,7 +213,7 @@ export default function AddCourseForm({ teachers }: Props) {
                         Minsta ålder
                         {(form.watch("minAge") as number) <= 0 ||
                         minAgeTrim === "" ? (
-                          <div className="text-yellow-800">
+                          <div className="text-muted-foreground">
                             (ingen minsta ålder är satt)
                           </div>
                         ) : (
@@ -247,7 +247,7 @@ export default function AddCourseForm({ teachers }: Props) {
                         Hösta ålder
                         {(form.watch("maxAge") as number) <= 0 ||
                         maxAgeTrim === "" ? (
-                          <div className="text-yellow-800">
+                          <div className="text-muted-foreground">
                             (ingen högsta ålder är satt)
                           </div>
                         ) : (
@@ -346,7 +346,7 @@ export default function AddCourseForm({ teachers }: Props) {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Skapa
                 </Button>
               </form>

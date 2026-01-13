@@ -114,7 +114,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Ändra kursen
         </Button>
       </DialogTrigger>
@@ -173,7 +173,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                         Max bokningar per tillfälle
                         {((form.watch("maxbookings") as number) <= 0 ||
                           maxBookTrim === "") && (
-                          <div className="text-yellow-800">
+                          <div className="text-muted-foreground">
                             (ingen gräns är satt)
                           </div>
                         )}
@@ -229,7 +229,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                         Minsta ålder
                         {(form.watch("minAge") as number) <= 0 ||
                         minAgeTrim === "" ? (
-                          <div className="text-yellow-800">
+                          <div className="text-muted-foreground">
                             (ingen minsta ålder är satt)
                           </div>
                         ) : (
@@ -263,7 +263,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                         Hösta ålder
                         {(form.watch("maxAge") as number) <= 0 ||
                         maxAgeTrim === "" ? (
-                          <div className="text-yellow-800">
+                          <div className="text-muted-foreground">
                             (ingen minsta ålder är satt)
                           </div>
                         ) : (
@@ -362,7 +362,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Ändra
                 </Button>
               </form>

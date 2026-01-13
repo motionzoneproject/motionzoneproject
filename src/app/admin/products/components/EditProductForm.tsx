@@ -129,7 +129,7 @@ export default function EditProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Ändra produkt
         </Button>
       </DialogTrigger>
@@ -300,7 +300,7 @@ export default function EditProductForm({
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Ändra
                 </Button>
               </form>

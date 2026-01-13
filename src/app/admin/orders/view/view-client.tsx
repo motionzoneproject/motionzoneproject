@@ -111,7 +111,7 @@ export default function OrderDetailsClient() {
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
             href={`/admin/orders?status=${status}`}
-            className="underline text-blue-500 hover:text-blue-600"
+            className="underline text-foreground hover:text-foreground/80"
           >
             Tillbaka
           </Link>
@@ -130,7 +130,7 @@ export default function OrderDetailsClient() {
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
             href={`/admin/orders?status=${status}`}
-            className="underline text-blue-500 hover:text-blue-600"
+            className="underline text-foreground hover:text-foreground/80"
           >
             Tillbaka
           </Link>
@@ -147,7 +147,7 @@ export default function OrderDetailsClient() {
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
             href={`/admin/orders?status=${status}`}
-            className="underline text-blue-500 hover:text-blue-600"
+            className="underline text-foreground hover:text-foreground/80"
           >
             Tillbaka
           </Link>
@@ -170,7 +170,7 @@ export default function OrderDetailsClient() {
         </div>
         <Link
           href={`/admin/orders?status=${status}`}
-          className="text-sm font-medium text-blue-600 hover:underline"
+          className="text-sm font-medium text-foreground hover:underline"
         >
           ← Tillbaka till listan
         </Link>
@@ -184,7 +184,7 @@ export default function OrderDetailsClient() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
-                <span className="font-bold px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-xs uppercase">
+                <span className="font-bold px-2 py-0.5 bg-muted text-muted-foreground border border-border rounded text-xs uppercase">
                   {order.status ?? "PENDING_PAYMENT"}
                 </span>
               </div>
@@ -259,12 +259,12 @@ export default function OrderDetailsClient() {
               </div>
               <div className="flex gap-2">
                 {order.user?.role && (
-                  <span className="px-2 py-1 bg-purple-500/10 text-purple-500 rounded text-[10px] font-bold uppercase">
+                  <span className="px-2 py-1 bg-muted text-muted-foreground border border-border rounded text-[10px] font-bold uppercase">
                     {order.user.role}
                   </span>
                 )}
                 {order.user?.banned && (
-                  <span className="px-2 py-1 bg-red-500/10 text-red-500 rounded text-[10px] font-bold uppercase">
+                  <span className="px-2 py-1 bg-muted text-muted-foreground border border-border rounded text-[10px] font-bold uppercase">
                     Avstängd
                   </span>
                 )}
@@ -300,11 +300,11 @@ export default function OrderDetailsClient() {
                     )}
                     <div className="pt-2">
                       {order.user?.details?.allowPhotoVideo ? (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase">
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground border border-border rounded text-[10px] font-bold uppercase">
                           📸 Foto/Video OK
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase">
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground border border-border rounded text-[10px] font-bold uppercase">
                           🚫 Inga foton/videos
                         </span>
                       )}
@@ -403,10 +403,10 @@ export default function OrderDetailsClient() {
                       </span>
                       {it.participant ? (
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] bg-brand text-white px-1.5 py-0.5 rounded uppercase font-bold">
+                          <span className="text-[10px] bg-muted text-muted-foreground border border-border px-1.5 py-0.5 rounded uppercase font-bold">
                             Deltagare
                           </span>
-                          <span className="text-xs text-brand font-semibold">
+                          <span className="text-xs text-foreground font-semibold">
                             {it.participant.name}
                           </span>
                           {it.participant.allowPhotoVideo ? (
@@ -472,10 +472,12 @@ export default function OrderDetailsClient() {
                     {ev.fromStatus ?? "START"}
                   </span>
                   <span className="text-muted-foreground/40">→</span>
-                  <span className="font-bold text-blue-500">{ev.toStatus}</span>
+                  <span className="font-bold text-foreground">
+                    {ev.toStatus}
+                  </span>
                 </div>
                 {ev.note && (
-                  <div className="text-foreground bg-blue-500/10 p-2 rounded border border-blue-500/20 text-xs">
+                  <div className="text-foreground bg-muted/30 p-2 rounded border border-border text-xs">
                     {ev.note}
                   </div>
                 )}

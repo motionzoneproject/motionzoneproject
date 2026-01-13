@@ -97,7 +97,7 @@ export default async function StudentsPage(props: {
           </select>
           <button
             type="submit"
-            className="bg-brand text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-light transition-colors"
+            className="bg-card border px-4 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
           >
             Filtrera
           </button>
@@ -118,14 +118,11 @@ export default async function StudentsPage(props: {
             if (terminId && activePurchases.length === 0) return null;
 
             return (
-              <Card
-                key={p.id}
-                className="overflow-hidden border-l-4 border-l-brand"
-              >
+              <Card key={p.id} className="overflow-hidden">
                 <CardHeader className="py-4 bg-muted/20">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-brand/10 text-brand flex items-center justify-center font-bold text-lg">
+                      <div className="w-10 h-10 rounded-full bg-muted text-foreground flex items-center justify-center font-bold text-lg">
                         {p.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -139,11 +136,11 @@ export default async function StudentsPage(props: {
                     <div className="flex items-center gap-2">
                       <EditParticipantForm participant={p} />
                       {p.allowPhotoVideo ? (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase border border-emerald-500/20">
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-[10px] font-bold uppercase border border-border">
                           📸 Foto OK
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase border border-amber-500/20">
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-[10px] font-bold uppercase border border-border">
                           🚫 Inga foton
                         </span>
                       )}
@@ -178,7 +175,7 @@ export default async function StudentsPage(props: {
                                   <span
                                     className={
                                       item.remainingCount > 0
-                                        ? "text-brand"
+                                        ? "text-muted-foreground"
                                         : "text-destructive"
                                     }
                                   >
@@ -201,7 +198,7 @@ export default async function StudentsPage(props: {
                       </span>
                       <Link
                         href={`/admin/orders?q=${encodeURIComponent(p.name)}`}
-                        className="text-brand hover:underline"
+                        className="text-foreground hover:underline"
                       >
                         Visa orderhistorik →
                       </Link>
