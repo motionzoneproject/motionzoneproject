@@ -1165,7 +1165,7 @@ export async function addNewProduct(
     const validated = await adminAddProductSchema.parseAsync(formData);
 
     // dubbelchecka så det blev rätt vid upload (eftersom blob tillåts)
-    if (validated.imageURL.startsWith("blob:")) {
+    if (validated.imageURL?.startsWith("blob:")) {
       return {
         success: false,
         msg: "Bilden laddades inte upp korrekt till molnet.",
@@ -1224,7 +1224,7 @@ export async function editProduct(
     const validated = await adminAddProductSchema.parseAsync(formData);
 
     // dubbelchecka så det blev rätt vid upload (eftersom blob tillåts)
-    if (validated.imageURL.startsWith("blob:")) {
+    if (validated.imageURL?.startsWith("blob:")) {
       return {
         success: false,
         msg: "Bilden laddades inte upp korrekt till molnet.",
