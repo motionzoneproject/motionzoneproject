@@ -2,6 +2,7 @@
 
 // big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas istället för useTotalCount i purchase-nivå).
 // Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
+// allright, im on it. Ska ba byta branch. Eller? Bör jag verkligen göra det?
 
 import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
