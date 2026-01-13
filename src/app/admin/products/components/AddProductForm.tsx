@@ -226,22 +226,26 @@ export default function AddProductForm() {
                   )}
                 />
 
-                {/**Klippkort kommer sen. fix. */}
                 <FormField
                   control={form.control}
                   name="clipcard"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Klippkort (kommer snart)</FormLabel>
+                      <FormLabel>Klippkort</FormLabel>
 
                       <FormControl>
                         <Checkbox
                           checked={field.value as boolean}
-                          onCheckedChange={(checked: boolean) =>
-                            field.onChange(checked)
-                          }
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            const currentClipCount = Number(
+                              form.getValues("clipCount") ?? 0,
+                            );
+                            if (checked && currentClipCount < 1) {
+                              form.setValue("clipCount", 1);
+                            }
+                          }}
                           className="w-6 h-6"
-                          disabled
                         />
                       </FormControl>
 
@@ -255,15 +259,13 @@ export default function AddProductForm() {
                   name="clipCount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Antal bokningar (för klippkort, 0 = obegränsat)
-                      </FormLabel>
+                      <FormLabel>Antal klipp</FormLabel>
 
                       <FormControl>
                         <Input
                           disabled={form.watch("clipcard") === false}
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
                           {...field}
                           value={

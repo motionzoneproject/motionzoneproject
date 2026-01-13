@@ -75,32 +75,37 @@ export const adminLessonFormSchema = z.object({
   cancelled: z.coerce.boolean().optional(),
 });
 
-export const adminAddProductSchema = z.object({
-  name: z.string().min(1),
-  description: z.string(),
-  imageURL: z.url().refine((url) => {
-    const r2Url = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+export const adminAddProductSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string(),
+    imageURL: z.url().refine((url) => {
+      const r2Url = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 
-    // Tillåt R2-länkar
-    if (r2Url && url.startsWith(r2Url)) return true;
+      // Tillåt R2-länkar
+      if (r2Url && url.startsWith(r2Url)) return true;
 
-    // Tillåt temporära webbläsarlänkar (för preview)
-    if (url.startsWith("blob:")) return true;
+      // Tillåt temporära webbläsarlänkar (för preview)
+      if (url.startsWith("blob:")) return true;
 
-    return false;
-  }, "Bilden måste komma från vår lagring eller vara en nyss vald fil"),
-  maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
-  price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
-  clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
-  clipCount: z.coerce
-    .number()
-    .int()
-    .nonnegative("Antalet tillfällen får inte vara negativt."),
-  // courses: z
-  // .array(AdminProductCourseItemSchema)
-  // .min(1, "Du måste koppla produkten till minst en kurs."),
-  // Bytt metod, men sparr detta ifall vi vill ha ett och samma formulär sen istället. Prioriterar att få det funka nu.
-});
+      return false;
+    }, "Bilden måste komma från vår lagring eller vara en nyss vald fil"),
+    maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
+    price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+    clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
+    clipCount: z.coerce
+      .number()
+      .int()
+      .nonnegative("Antalet tillfällen får inte vara negativt."),
+    // courses: z
+    // .array(AdminProductCourseItemSchema)
+    // .min(1, "Du måste koppla produkten till minst en kurs."),
+    // Bytt metod, men sparr detta ifall vi vill ha ett och samma formulär sen istället. Prioriterar att få det funka nu.
+  })
+  .refine((data) => !data.clipcard || data.clipCount >= 1, {
+    message: "Antalet klipp måste vara minst 1.",
+    path: ["clipCount"],
+  });
 
 export const AdminProductCourseItemSchema = z.object({
   productId: z.string().min(1),
