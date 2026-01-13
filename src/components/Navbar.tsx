@@ -10,7 +10,7 @@ import NavBarAuth from "./Navbar-auth";
 
 const navLinks = [
   { href: "/", label: "Hem" },
-  { href: "/courses", label: "Kurser" },
+  { href: "/courses", label: "Våra kurser" },
   { href: "/about", label: "Om oss" },
   { href: "/gallery", label: "Galleri" },
 ];
