@@ -47,11 +47,17 @@ export default async function Page() {
               ).values(),
             ).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
+            const purchasesCount = p._count?.purchases ?? 0;
+            const typeLabel =
+              p.type === "CLIP"
+                ? "Klippkort"
+                : p.type === "PACK"
+                  ? "Paket"
+                  : "Kurs";
+
             // Om maxCustomer är > 0 räknar vi ut diffen, annars är det null (obegränsat)
             const spotsLeft =
-              p.maxCustomer > 0
-                ? p.maxCustomer - (p._count?.purchases || 0)
-                : null;
+              p.maxCustomer > 0 ? p.maxCustomer - purchasesCount : null;
 
             // Man kan bara bli "full" om det faktiskt finns ett tak satt (spotsLeft !== null)
             const isFull = spotsLeft !== null && spotsLeft <= 0;
@@ -65,11 +71,15 @@ export default async function Page() {
                     <Badge className="font-bold text-lg bg-brand text-white border-0">
                       {p.price} kr
                     </Badge>
-                    {spotsLeft && <div>{spotsLeft} platser kvar</div>}
+                    {spotsLeft === null ? (
+                      <div>Obegränsat antal platser</div>
+                    ) : (
+                      <div>Platser kvar: {Math.max(spotsLeft, 0)}</div>
+                    )}
                   </div>
                   <CardTitle className="text-lg">{p.name}</CardTitle>
                   <CardDescription>
-                    Produkt-typ: {p.type}
+                    Produkt-typ: {typeLabel}
                     <br />
                     <div className="relative w-full min-h-48 border rounded p-1">
                       {p.imageURL && (
@@ -125,6 +135,11 @@ export default async function Page() {
                             <span className="font-medium flex items-center gap-1 mb-2">
                               <Book className="w-4 h-4" /> Kurser:
                             </span>
+                            {p.type === "CLIP" && (
+                              <div className="text-xs mb-2">
+                                Antal klipp: {p.totalCount ?? 0}
+                              </div>
+                            )}
                             {p.courses.map((c) => (
                               <Badge
                                 key={c.course.id}
@@ -132,9 +147,11 @@ export default async function Page() {
                                 className="mr-1 mb-1"
                               >
                                 {c.course.name} –{" "}
-                                {c.unlimited
-                                  ? "Obegränsad"
-                                  : `${c.lessonsIncluded} tillfällen`}
+                                {p.type === "CLIP"
+                                  ? "Bokas med klippkort"
+                                  : c.unlimited
+                                    ? "Obegränsat antal platser"
+                                    : `Antal tillfällen: ${c.lessonsIncluded}`}
                               </Badge>
                             ))}
                           </div>
