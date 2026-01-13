@@ -18,10 +18,13 @@ import {
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
 import { getAllProductsWithData } from "@/lib/actions/server-actions";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import { getCourseName } from "@/lib/tools";
 import { getVeckodag } from "../admin/termin/SchemaDay";
 
 export default async function Page() {
+  const session = await getSessionData();
+  const isAdmin = session?.user?.role === "admin";
   const products = await getAllProductsWithData(); // Gör om här så all data hämtas här istället. fix.
   // Vi behöver: produkterna, deras termin, deras kurser, och schema.
 
@@ -209,12 +212,18 @@ export default async function Page() {
                   >
                     <Button
                       type="submit"
-                      disabled={isFull}
+                      disabled={isFull || isAdmin}
                       className={`w-full ${
-                        isFull ? "bg-gray-400" : "bg-brand hover:bg-brand-light"
+                        isFull || isAdmin
+                          ? "bg-gray-400"
+                          : "bg-brand hover:bg-brand-light"
                       } text-white font-medium`}
                     >
-                      {isFull ? "Fullbokat" : "Köp nu →"}
+                      {isAdmin
+                        ? "Admin kan inte köpa"
+                        : isFull
+                          ? "Fullbokat"
+                          : "Köp nu →"}
                     </Button>
                   </form>
                 </CardFooter>

@@ -47,7 +47,7 @@ export default async function CourseItem({ course }: Props) {
         </CardHeader>
 
         <CardContent>
-          <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
+          <div className="p-2 grid grid-cols-2 gap-2 bg-muted/30 border border-border rounded">
             <div>
               <span className="font-bold">Kunder:</span> {counts.count ?? 0} /{" "}
               {course.maxCustomer > 0 ? course.maxCustomer : "Obegränsat"}

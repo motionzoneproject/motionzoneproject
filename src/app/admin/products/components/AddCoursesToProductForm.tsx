@@ -5,7 +5,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Info } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -79,10 +79,23 @@ export default function AddCoursesToProductForm({
   });
 
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selCourse, setSelCourse] = useState<string>("");
   const [isInProd, setIsInProd] = useState<boolean | number>();
+
+  useEffect(() => {
+    const targetId = searchParams.get("openCoursesFor");
+    if (targetId && targetId === productId) {
+      setIsOpen(true);
+      const params = new URLSearchParams(searchParams);
+      params.delete("openCoursesFor");
+      const nextQuery = params.toString();
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    }
+  }, [searchParams, productId, pathname, router]);
 
   useEffect(() => {
     const checkIsInProd = async () => {
@@ -118,7 +131,7 @@ export default function AddCoursesToProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Hantera kurser i produkten
         </Button>
       </DialogTrigger>
@@ -201,28 +214,30 @@ export default function AddCoursesToProductForm({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="unlimited"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Obegränsat</FormLabel>
+                {!isClip && (
+                  <FormField
+                    control={form.control}
+                    name="unlimited"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Obegränsat</FormLabel>
 
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value as boolean}
-                          onCheckedChange={(checked: boolean) => {
-                            field.onChange(checked);
-                            form.setValue("lessonsIncluded", 0);
-                          }}
-                          className="w-6 h-6"
-                        />
-                      </FormControl>
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value as boolean}
+                            onCheckedChange={(checked: boolean) => {
+                              field.onChange(checked);
+                              form.setValue("lessonsIncluded", 0);
+                            }}
+                            className="w-6 h-6"
+                          />
+                        </FormControl>
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
@@ -255,7 +270,7 @@ export default function AddCoursesToProductForm({
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   {isInProd ? "Ändra" : "Lägg till"}
                 </Button>
               </form>

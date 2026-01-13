@@ -166,11 +166,11 @@ export default function AdminLessonCal({
           </div>
           <div className="mt-4 flex flex-col gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full border-2 border-green-500" />
+              <div className="h-3 w-3 rounded-full border border-foreground/40" />
               <span>Lektioner finns</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-red-500" />
+              <div className="h-3 w-3 rounded-full bg-destructive" />
               <span>Inställd lektion</span>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function AdminLessonCal({
                           <p className="text-sm text-muted-foreground">
                             {lesson.course.name}{" "}
                             {lesson.cancelled && (
-                              <span className="font-bold text-red-500">
+                              <span className="font-bold text-destructive">
                                 (INSTÄLLD)
                               </span>
                             )}

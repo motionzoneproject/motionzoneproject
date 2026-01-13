@@ -92,7 +92,7 @@ export default function AddTerminForm() {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button variant={"secondary"} className="cursor-pointer">
           Ny termin
         </Button>
       </DialogTrigger>
@@ -168,7 +168,7 @@ export default function AddTerminForm() {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant={"secondary"} className="w-full">
                   Skapa
                 </Button>
               </form>

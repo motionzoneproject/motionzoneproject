@@ -133,16 +133,8 @@ export default function OrdersView({
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case "CREATED":
-      case "PENDING_PAYMENT":
-      case "AWAITING_APPROVAL":
-        return "bg-amber-500/10 text-amber-500";
-      case "APPROVED":
-        return "bg-emerald-500/10 text-emerald-500";
-      case "PAID":
-        return "bg-blue-500/10 text-blue-500";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border border-border";
     }
   };
 
@@ -199,7 +191,7 @@ export default function OrdersView({
             name="q"
             defaultValue={searchInput}
             placeholder="Sök kund eller deltagare..."
-            className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand outline-none transition-all"
+            className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-ring outline-none transition-all"
           />
         </form>
       </div>
@@ -262,7 +254,7 @@ export default function OrdersView({
                         participants.map((p, i) => (
                           <span
                             key={`${o.id}-p-${i}`}
-                            className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-[10px] font-medium"
+                            className="px-1.5 py-0.5 bg-muted text-muted-foreground border border-border rounded text-[10px] font-medium"
                           >
                             {p}
                           </span>
@@ -305,7 +297,7 @@ export default function OrdersView({
                       href={`/admin/orders/view?status=${encodeURIComponent(
                         active,
                       )}&orderId=${encodeURIComponent(o.id)}`}
-                      className="text-blue-500 hover:underline font-medium"
+                      className="text-foreground hover:underline font-medium"
                     >
                       Visa
                     </Link>
@@ -316,6 +308,7 @@ export default function OrdersView({
                         "CREATED",
                         "PENDING_PAYMENT",
                         "AWAITING_APPROVAL",
+                        "PAID",
                       ].includes(o.status || "") && (
                         <form
                           action={onApprove}
@@ -323,7 +316,7 @@ export default function OrdersView({
                         >
                           <input type="hidden" name="orderId" value={o.id} />
                           <SubmitButton
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
+                            className="px-3 py-1 bg-card border rounded text-xs font-medium transition-colors hover:bg-muted"
                             pendingText="..."
                           >
                             Godkänn
@@ -342,7 +335,7 @@ export default function OrdersView({
                         >
                           <input type="hidden" name="orderId" value={o.id} />
                           <SubmitButton
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                            className="px-3 py-1 bg-card border rounded text-xs font-medium transition-colors hover:bg-muted"
                             pendingText="..."
                           >
                             Betald

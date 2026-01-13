@@ -1,6 +1,6 @@
 "use server";
 
-// big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas istället för useTotalCount i purchase-nivå).
+// big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas i purchase-nivå).
 // Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
 // allright, im on it. Ska ba byta branch. Eller? Bör jag verkligen göra det?
 
@@ -1073,9 +1073,6 @@ export async function editLessonItem(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
-// fix: klippkort
-// fix: Resultat: Prismas decrement på ett heltal kan (beroende på databasinställning) resultera i ett negativt saldo om du inte har en check.
-// Lösning: För admin-verktyg brukar man ofta tillåta detta (admin har sista ordet), men det är bra att veta att det kan ske.
 
 /**
  * Hämtar samtliga produkter från databasen sorterade i alfabetisk ordning efter namn.
@@ -1154,13 +1151,13 @@ async function updateProductType(
 /**
  * Skapar en ny produkt i systemet baserat på validerad formulärdata.
  * * @param formData - Validerad data från `adminAddProductSchema`. Innehåller namn,
- * beskrivning, pris, kundbegränsning samt (fix) gammal logik för klippkort (useTotalCount/totalCount), detta kommer ändras.
+ * beskrivning, pris, kundbegränsning samt (fix) gammal logik för klippkort (totalCount), detta kommer ändras.
  * @returns Ett objekt med success-status och ett bekräftande meddelande med produktens namn.
  * @auth Admin
  */
 export async function addNewProduct(
   formData: z.output<typeof adminAddProductSchema>,
-): Promise<{ success: boolean; msg: string }> {
+): Promise<{ success: boolean; msg: string; productId?: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
@@ -1175,7 +1172,6 @@ export async function addNewProduct(
       };
     }
 
-    // fix för klippkort precis som allt annat - med ny logik kring TYPE.
     const newProd = await prisma.product.create({
       data: {
         name: validated.name,
@@ -1183,20 +1179,21 @@ export async function addNewProduct(
         price: validated.price,
         imageURL: validated.imageURL,
         maxCustomer: validated.maxCustomers,
-        useTotalCount: validated.clipcard,
         totalCount: validated.clipCount,
         type: validated.clipcard ? "CLIP" : "COURSE",
       },
     });
+
+    revalidatePath("/admin/products");
     return {
       success: true,
-      msg: `Produkten ${newProd.name} skapades.`, // fix
+      msg: `Produkten ${newProd.name} skapades.`,
+      productId: newProd.id,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort
 
 /**
  * Uppdaterar informationen för en befintlig produkt och validerar försäljningskapacitet.
@@ -1204,7 +1201,7 @@ export async function addNewProduct(
  * @param formData - Validerad data från `adminAddProductSchema`. Innehåller:
  * - `name` & `description`: Produktens rubrik och information.
  * - `price`: Det nya priset för framtida köp.
- * - `clipcard`: Boolean (`useTotalCount`) som avgör om produkten fungerar som ett klippkort.
+ * - `clipcard`: Boolean som avgör om produkten fungerar som ett klippkort.
  * - `maxCustomers`: Det totala taket för hur många kunder som kan köpa produkten.
  * - `clipCount`: Antalet tillgängliga bokningar per köp (om klippkort).
  * * @description
@@ -1252,7 +1249,6 @@ export async function editProduct(
 
     if (oldImageURL?.imageURL !== validated.imageURL || newImg) {
       // Delete the old pic from bucket
-      // fix.
     }
 
     const newProd = await prisma.product.update({
@@ -1262,7 +1258,6 @@ export async function editProduct(
         description: validated.description,
         price: validated.price,
         imageURL: validated.imageURL,
-        useTotalCount: validated.clipcard, // fix: har lagt till type i db istället.
         maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,
       },
@@ -1272,13 +1267,12 @@ export async function editProduct(
 
     return {
       success: true,
-      msg: `Produkten ${newProd.name} ändrades.`, // fix
+      msg: `Produkten ${newProd.name} ändrades.`,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort (lägg till type istället).
 
 /**
  * Raderar en produkt permanent från systemet.
@@ -1299,13 +1293,12 @@ export async function removeProduct(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // fix:
     const remProd = await prisma.product.delete({
       where: { id },
     });
     return {
       success: true,
-      msg: `Produkten ${remProd.name} togs bort.`, // fix
+      msg: `Produkten ${remProd.name} togs bort.`,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
@@ -1368,7 +1361,7 @@ export async function addCourseToProduct(
 
       return {
         success: true,
-        msg: `Kursen ändrades i produkten.`, // fix?
+        msg: `Kursen ändrades i produkten.`,
       };
     } else {
       await prisma.$transaction(async (tx) => {
@@ -1389,7 +1382,7 @@ export async function addCourseToProduct(
 
       return {
         success: true,
-        msg: `Kursen lades in i produkten.`, // fix
+        msg: `Kursen lades in i produkten.`,
       };
     }
   } catch (e) {
@@ -1429,7 +1422,7 @@ export async function removeCourseInProduct(
     });
     return {
       success: true,
-      msg: `Kursen togs bort i produkten.`, // fix
+      msg: `Kursen togs bort i produkten.`,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
