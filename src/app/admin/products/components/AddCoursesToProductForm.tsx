@@ -71,7 +71,6 @@ export default function AddCoursesToProductForm({
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       productId: productId,
       lessonsIncluded: 0,
       unlimited: false,
@@ -104,11 +103,6 @@ export default function AddCoursesToProductForm({
   useEffect(() => {
     if (!isOpen) form.reset();
   }, [isOpen, form]);
-
-  //   const isPC = async (courseId: string): Promise<boolean> => {
-  //     const isIt = await isCourseInProduct(courseId, productId);
-  //     return isIt;
-  //   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await addCourseToProduct(values);
@@ -181,7 +175,7 @@ export default function AddCoursesToProductForm({
                             setSelCourse(value);
                             field.onChange(
                               value === "none" ? undefined : value,
-                            ); // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                            );
                           }}
                         >
                           <FormControl>

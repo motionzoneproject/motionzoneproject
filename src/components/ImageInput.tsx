@@ -9,18 +9,14 @@ interface ImageInputProps {
   // RHFs Controller:
   onChange: (value: string | undefined) => void;
   onBlur: () => void;
-  value: string | undefined; // Här kommer Base64 Data URL (temporärt) eller den slutliga R2 URL:en
+  value: string | undefined;
   name: string;
 }
-
-// Bara för att snabbt spara.
-// // Return the Base64 string as a data URL for client-side use
-// const dataUrl = `data:image/png;base64,${base64Image}`;
 
 export default function ImageInput({
   onChange,
   onBlur,
-  value, // So this will hold the image as base64 data.
+  value,
 }: ImageInputProps) {
   const [_genMsg, _setgenMsg] = useState("");
 
@@ -35,15 +31,10 @@ export default function ImageInput({
           return;
         }
 
-        // SKAPA EN TEMPORÄR URL
         const previewUrl = URL.createObjectURL(file);
 
-        // Skicka previewUrl till din form så att <Image /> kan visa den
         onChange(previewUrl);
         onBlur();
-
-        // VIKTIGT: Om du vill använda fetch(blobUrl) senare i onSubmit,
-        // så fungerar det faktiskt utmärkt! Webbläsaren "laddar ner" filen från sitt eget minne.
       }
     },
     [onChange, onBlur],

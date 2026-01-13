@@ -1,7 +1,5 @@
 "use client";
 
-/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
@@ -45,9 +43,8 @@ export default function AddProductForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: false,
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: "",
-      imageURL: "", // or maybe image data.
+      imageURL: "",
       name: "",
       price: 0,
       clipCount: 0,
@@ -69,25 +66,30 @@ export default function AddProductForm() {
     let finalImageURL = values.imageURL;
 
     if (values.imageURL.startsWith("blob:")) {
-      const res = await fetch(values.imageURL);
+      try {
+        const res = await fetch(values.imageURL);
 
-      const blob = await res.blob(); // Få bilden som den blob det är.
-      const formData = new FormData();
-      formData.append("file", blob, "image.jpg");
+        const blob = await res.blob();
+        const formData = new FormData();
+        formData.append("file", blob, "image.jpg");
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (uploadRes.ok) {
-        const data = await uploadRes.json();
-        finalImageURL = data.url;
+        if (uploadRes.ok) {
+          const data = await uploadRes.json();
+          finalImageURL = data.url;
 
-        // Mycket viktigt: Frigör minnet i webbläsaren när uppladdningen är klar
-        URL.revokeObjectURL(values.imageURL);
-      } else {
-        toast.error("Uppladdning misslyckades");
+          URL.revokeObjectURL(values.imageURL);
+        } else {
+          toast.error(`Uppladdning misslyckades. ${uploadRes.statusText}`);
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error(`Uppladdning misslyckades. ${JSON.stringify(e)}`);
         return;
       }
     }

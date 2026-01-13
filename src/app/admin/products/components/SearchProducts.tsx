@@ -12,6 +12,7 @@ export default function SearchInputProd() {
   const { replace } = useRouter();
 
   const params = new URLSearchParams(searchParams);
+
   // Använd debouncing för att vänta 300ms innan sökningen körs. fix.
   // Samt kanske ändra så filtrering sker på databasnivå för bättre prestanda.
 

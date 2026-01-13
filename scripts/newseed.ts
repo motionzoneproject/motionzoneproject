@@ -73,7 +73,7 @@ async function main() {
     const terminRes = await addTermin({
       name: "Vårterminen 2026",
       startDate: new Date("2026-02-01"),
-      endDate: new Date("2026-06-30"), // fix: gissar på det atm, får väl fråga kanske, de kanske har sommarstängt osv.
+      endDate: new Date("2026-06-30"),
     });
 
     if (!terminRes) throw new Error("Termin kunde inte skapas.");
