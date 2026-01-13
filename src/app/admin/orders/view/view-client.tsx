@@ -291,7 +291,7 @@ export default function OrderDetailsClient() {
                     {order.user?.details?.dateOfBirth && (
                       <p className="text-muted-foreground">
                         {new Date(
-                          order.user.details.dateOfBirth
+                          order.user.details.dateOfBirth,
                         ).toLocaleDateString("sv-SE")}{" "}
                         <span className="text-muted-foreground/60 ml-1">
                           ({calculateAge(order.user.details.dateOfBirth)} år)
@@ -359,7 +359,7 @@ export default function OrderDetailsClient() {
                       </span>{" "}
                       {order.user?.createdAt
                         ? new Date(order.user.createdAt).toLocaleDateString(
-                            "sv-SE"
+                            "sv-SE",
                           )
                         : "Okänt"}
                     </p>

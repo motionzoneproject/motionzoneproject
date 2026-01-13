@@ -78,8 +78,8 @@ export default function OrdersView({
     if (active === "PENDING") {
       result = result.filter((o) =>
         ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
-          String(o.status)
-        )
+          String(o.status),
+        ),
       );
     } else if (active !== "ALL") {
       result = result.filter((o) => String(o.status) === active);
@@ -224,8 +224,8 @@ export default function OrdersView({
                 new Set(
                   o.orderItems
                     ?.map((oi) => oi.participant?.name)
-                    .filter(Boolean)
-                )
+                    .filter(Boolean),
+                ),
               );
 
               return (
@@ -247,7 +247,7 @@ export default function OrdersView({
                           ? `${o.user.details.firstName ?? ""} ${
                               o.user.details.lastName ?? ""
                             }`.trim()
-                          : o.user?.email ?? o.userId}
+                          : (o.user?.email ?? o.userId)}
                       </span>
                       {o.user?.details?.firstName && (
                         <span className="text-xs text-muted-foreground">
@@ -294,7 +294,7 @@ export default function OrdersView({
                   <td className="p-3">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusStyles(
-                        o.status || "PENDING_PAYMENT"
+                        o.status || "PENDING_PAYMENT",
                       )}`}
                     >
                       {getStatusLabel(o.status || "PENDING_PAYMENT")}
@@ -303,7 +303,7 @@ export default function OrdersView({
                   <td className="p-3">
                     <Link
                       href={`/admin/orders/view?status=${encodeURIComponent(
-                        active
+                        active,
                       )}&orderId=${encodeURIComponent(o.id)}`}
                       className="text-blue-500 hover:underline font-medium"
                     >

@@ -19,7 +19,7 @@ export async function updateOrderStatus(
     | "AWAITING_APPROVAL"
     | "PAID"
     | "APPROVED",
-  note?: string
+  note?: string,
 ) {
   const adminUserId = await requireAdmin();
 
@@ -152,7 +152,7 @@ export async function createPurchaseFromOrder(orderId: string) {
             remainingCount: pc.lessonsIncluded,
             unlimited: pc.unlimited ?? false, //okej, så denna är iaf med.
           },
-        })
+        }),
       );
 
       await Promise.all(itemPromises);
@@ -161,7 +161,7 @@ export async function createPurchaseFromOrder(orderId: string) {
 
     // okej så vi bokar väl in automatiskt då:
     const courseIds = order.orderItems.flatMap((oi) =>
-      oi.product.courses.map((pc) => pc.courseId)
+      oi.product.courses.map((pc) => pc.courseId),
     );
 
     const _lessons = await tx.lesson.findMany({

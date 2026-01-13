@@ -43,17 +43,20 @@ export default async function Page() {
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
 
-  const groupedPurchases = purschaseItems.reduce((acc, item) => {
-    const purchaseId = item.purchaseId;
-    if (!acc[purchaseId]) {
-      acc[purchaseId] = {
-        productName: item.purchase.product.name,
-        items: [],
-      };
-    }
-    acc[purchaseId].items.push(item);
-    return acc;
-  }, {} as Record<string, { productName: string; items: typeof purschaseItems }>);
+  const groupedPurchases = purschaseItems.reduce(
+    (acc, item) => {
+      const purchaseId = item.purchaseId;
+      if (!acc[purchaseId]) {
+        acc[purchaseId] = {
+          productName: item.purchase.product.name,
+          items: [],
+        };
+      }
+      acc[purchaseId].items.push(item);
+      return acc;
+    },
+    {} as Record<string, { productName: string; items: typeof purschaseItems }>,
+  );
 
   return (
     <Card>
@@ -178,7 +181,7 @@ export default async function Page() {
                                       className="text-xs bg-background p-2 rounded"
                                     >
                                       {new Date(
-                                        b.lesson.startTime
+                                        b.lesson.startTime,
                                       ).toLocaleDateString("sv-SE", {
                                         day: "numeric",
                                         month: "short",
