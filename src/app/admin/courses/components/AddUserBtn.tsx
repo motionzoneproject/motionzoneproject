@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -60,15 +59,12 @@ export default function AddUserBtn({
     },
   });
 
-  const router = useRouter();
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await addUserInLesson(values); // This function we can use later maybe? fix.
 
     if (res.success) {
       toast.success(res.msg);
       refresher();
-      router.refresh();
     } else {
       toast.error(res.msg);
     }
@@ -93,7 +89,7 @@ export default function AddUserBtn({
                   name="userId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Välj elev:</FormLabel>
+                      <FormLabel>Välj köpare:</FormLabel>
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -103,7 +99,7 @@ export default function AddUserBtn({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Välj en elev i kursen" />
+                            <SelectValue placeholder="Välj köpare i kursen" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -124,7 +120,7 @@ export default function AddUserBtn({
                   name="purchaseId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Produkt att boka ifrån:</FormLabel>
+                      <FormLabel>Produkt (deltagare):</FormLabel>
                       {/* Ta bort defaultValue och använd value={field.value} */}
                       <Select
                         onValueChange={field.onChange}
@@ -137,7 +133,7 @@ export default function AddUserBtn({
                               placeholder={
                                 selectedUserId
                                   ? "Välj produkt"
-                                  : "Välj elev först"
+                                  : "Välj köpare först"
                               }
                             />
                           </SelectTrigger>
@@ -153,6 +149,8 @@ export default function AddUserBtn({
                               >
                                 {pu.product.name} (
                                 {pu.PurchaseItems[0].remainingCount} kvar)
+                                {pu.participant?.name &&
+                                  ` – ${pu.participant.name}`}
                               </SelectItem>
                             ))}
                           </SelectGroup>

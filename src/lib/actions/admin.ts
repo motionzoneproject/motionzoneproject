@@ -57,6 +57,34 @@ export type LessonWithBookings = Lesson & { bookings: Booking[] };
 // fix: Varför skicka med lärare här? Används inte. (se admin / courses). Inte dumt i sig, men då borde vi använda det.
 export type CourseWithTeacher = Course & { teacher: User };
 
+export type AdminLessonWithCourse = Lesson & { course: Course };
+
+export type BookingWithPurchaseParticipant = Prisma.BookingGetPayload<{
+  include: {
+    purchaseItem: {
+      include: {
+        purchase: {
+          include: {
+            participant: { select: { id: true; name: true } };
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export async function getAdminLessons(): Promise<AdminLessonWithCourse[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  const lessons = await prisma.lesson.findMany({
+    include: { course: true },
+    orderBy: { startTime: "asc" },
+  });
+
+  return lessons;
+}
+
 /**
  * Hämtar alla schemaposter för en specifik termin.
  * Kräver admin-behörighet.
@@ -100,12 +128,25 @@ export async function getAllCourses(
 
 export async function getBookingsFromLesson(
   lessonId: string,
-): Promise<Booking[]> {
+): Promise<BookingWithPurchaseParticipant[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   try {
-    const b = await prisma.booking.findMany({ where: { lessonId: lessonId } });
+    const b = await prisma.booking.findMany({
+      where: { lessonId: lessonId },
+      include: {
+        purchaseItem: {
+          include: {
+            purchase: {
+              include: {
+                participant: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
     return b;
   } catch (e) {
     console.error(JSON.stringify(e));
@@ -1542,6 +1583,7 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
       select: {
         id: true;
         product: { select: { id: true; name: true } };
+        participant: { select: { id: true; name: true } };
         PurchaseItems: {
           select: {
             id: true;
@@ -1606,6 +1648,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
             product: {
               select: { id: true, name: true },
             },
+            participant: { select: { id: true, name: true } },
             PurchaseItems: {
               where: { courseId, remainingCount: { gt: 0 } },
               select: {
