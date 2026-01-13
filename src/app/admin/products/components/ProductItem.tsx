@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/generated/prisma/client";
-import { countOrderItems, getAllCourses } from "@/lib/actions/admin";
+import { getAllCourses } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
@@ -21,6 +21,10 @@ export default async function ProductItem({ product }: Props) {
   const isClip = product.type === "CLIP";
   const isPack = product.type === "PACK";
 
+  const purchasesCount = await prisma.purchase.count({
+    where: { productId: product.id },
+  });
+
   const prodCourse = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
     include: { course: true },
@@ -29,6 +33,9 @@ export default async function ProductItem({ product }: Props) {
   //   const terminer = await prisma.termin.findMany({
   //     where: { schemaItems: { some: { courseId: course.id } } },
   //   });
+  const typeLabel = isClip ? "Klippkort" : isPack ? "Paket" : "Kurs";
+  const isFull =
+    product.maxCustomer > 0 && purchasesCount >= product.maxCustomer;
 
   return (
     <div className="p-2 ">
@@ -54,7 +61,7 @@ export default async function ProductItem({ product }: Props) {
                 clipcard={isClip}
                 description={product.description}
                 name={product.name}
-                price={product.price} // .toNumber() om vi ska köra decimal
+                price={product.price}
               />
               <DeleteProductBtn productId={product.id} />
             </div>
@@ -64,13 +71,14 @@ export default async function ProductItem({ product }: Props) {
         <CardContent>
           <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
             <div>
-              <span className="font-bold">Produkt-typ:</span>{" "}
-              {isClip ? "Klippkort" : isPack ? "Paket" : "Kurs"}
+              <span className="font-bold">Produkt-typ:</span> {typeLabel}
             </div>
             <div>
-              <span className="font-bold">Antal tillfällen (totalt):</span>{" "}
+              <span className="font-bold">
+                {isClip ? "Antal klipp:" : "Antal tillfällen (totalt):"}
+              </span>{" "}
               {isClip
-                ? product.totalCount
+                ? (product.totalCount ?? 0)
                 : prodCourse.reduce((a, b) => a + b.lessonsIncluded, 0)}
             </div>
             <div>
@@ -83,9 +91,9 @@ export default async function ProductItem({ product }: Props) {
               kr
             </div>
             <div>
-              <span className="font-bold">Platser:</span>{" "}
-              {(await countOrderItems(product.id)).count ?? 0} /{" "}
+              <span className="font-bold">Sålda / max:</span> {purchasesCount} /{" "}
               {product.maxCustomer > 0 ? product.maxCustomer : "Obegränsat"}
+              {isFull && <span className="ml-2 text-red-600">Fullt</span>}
             </div>
           </div>
 
