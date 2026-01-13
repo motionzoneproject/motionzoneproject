@@ -9,7 +9,10 @@ import { handleClips } from "./admin";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{
-  include: { lesson: true };
+  include: {
+    lesson: true;
+    purchaseItem: { include: { purchase: { include: { participant: true } } } };
+  };
 }>;
 
 export async function getUserBookings(): Promise<{
@@ -33,6 +36,13 @@ export async function getUserBookings(): Promise<{
       include: {
         lesson: {
           include: { course: true },
+        },
+        purchaseItem: {
+          include: {
+            purchase: {
+              include: { participant: true },
+            },
+          },
         },
       },
     });

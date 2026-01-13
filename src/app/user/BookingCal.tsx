@@ -119,14 +119,15 @@ export default function BookingCal({
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
                 // Okej så här kollar vi om den redan är bokad genom att söka efter lessonId i bookings:
-                const isAlreadyBooked = bookings.some(
-                  (b) => b.lessonId === lesson.id,
-                );
+                const booking = bookings.find((b) => b.lessonId === lesson.id);
+                const isAlreadyBooked = Boolean(booking);
+                const participantName =
+                  booking?.purchaseItem.purchase.participant?.name;
 
                 return (
                   <div
                     key={lesson.id}
-                    className="flex items-center justify-between border-b pb-4 last:border-0"
+                    className="flex items-center justify-between border rounded-lg p-4 bg-muted/20"
                   >
                     <div>
                       <p className="font-semibold">
@@ -144,6 +145,12 @@ export default function BookingCal({
                         )}
                         <br />
                         {lesson.message}
+                        {participantName && (
+                          <>
+                            <br />
+                            Deltagare: {participantName}
+                          </>
+                        )}
                       </p>
                     </div>
                     {lesson.cancelled ? (

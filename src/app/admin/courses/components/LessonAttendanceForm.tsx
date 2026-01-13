@@ -17,8 +17,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Booking, Lesson } from "@/generated/prisma/client";
+import type { Lesson } from "@/generated/prisma/client";
 import {
+  type BookingWithPurchaseParticipant,
   getBookingsFromLesson,
   getUsersWithPurchasedProductsWithCourseInIt,
   removeUserFromLesson,
@@ -35,7 +36,9 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
   const [loading, setLoading] = useState(false);
 
-  const [bookings, setBookings] = useState<Booking[]>([]); // State för bokningar.
+  const [bookings, setBookings] = useState<BookingWithPurchaseParticipant[]>(
+    [],
+  ); // State för bokningar.
   const [gotBookings, setGotBookings] = useState<boolean>(false);
 
   const [usersInCourse, setUsersInCourse] =
@@ -70,6 +73,8 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
   const refresher = useCallback(() => {
     setUicSet(false); // fixed - detta tar lång tid att uppdaatera, är en ganska lång lista att hämta. Kommer bli bättre om vi inte kör "use client"
+    setGotBookings(false);
+    setBookings([]);
   }, []);
 
   const removeUser = useCallback(
@@ -112,7 +117,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
         <DialogHeader>
           <DialogTitle>Närvaro</DialogTitle>
           <DialogDescription>
-            Här kan du se, lägga till eller ta bort elever från tillfället.
+            Här kan du se, lägga till eller ta bort deltagare från tillfället.
           </DialogDescription>
         </DialogHeader>
         <Card>
@@ -134,6 +139,9 @@ export default function LessonAttendanceForm({ lesson }: Props) {
                   p.PurchaseItems.some((pi) => pi.id === b.purchaseItemId),
                 )?.product.name;
 
+                const participantName =
+                  b.purchaseItem.purchase.participant?.name;
+
                 return (
                   <div
                     key={b.id}
@@ -141,8 +149,13 @@ export default function LessonAttendanceForm({ lesson }: Props) {
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {user?.name || "Laddar..."}
+                        {participantName || user?.name || "Laddar..."}
                       </span>
+                      {participantName && user?.name && (
+                        <span className="text-xs text-muted-foreground">
+                          Köpare: {user.name}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground uppercase">
                         {productName || "Produkt saknas"}
                       </span>
