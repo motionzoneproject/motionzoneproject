@@ -18,6 +18,9 @@ interface Props {
 }
 
 export default async function ProductItem({ product }: Props) {
+  const isClip = product.type === "CLIP";
+  const isPack = product.type === "PACK";
+
   const prodCourse = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
     include: { course: true },
@@ -40,7 +43,7 @@ export default async function ProductItem({ product }: Props) {
               <AddCoursesToProductForm
                 allCourses={await getAllCourses()}
                 productId={product.id}
-                useTotalCount={product.useTotalCount}
+                isClip={isClip}
                 productCourses={prodCourse}
               ></AddCoursesToProductForm>
               <EditProductForm
@@ -48,7 +51,7 @@ export default async function ProductItem({ product }: Props) {
                 imageURL={product.imageURL ?? ""}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}
-                clipcard={product.useTotalCount}
+                clipcard={isClip}
                 description={product.description}
                 name={product.name}
                 price={product.price} // .toNumber() om vi ska köra decimal
@@ -62,15 +65,11 @@ export default async function ProductItem({ product }: Props) {
           <div className="p-2 grid grid-cols-2 gap-2 bg-accent rounded">
             <div>
               <span className="font-bold">Produkt-typ:</span>{" "}
-              {product.useTotalCount
-                ? "Klippkort"
-                : prodCourse.length > 1
-                  ? "Paket"
-                  : "Kurs"}
+              {isClip ? "Klippkort" : isPack ? "Paket" : "Kurs"}
             </div>
             <div>
               <span className="font-bold">Antal tillfällen (totalt):</span>{" "}
-              {product.useTotalCount
+              {isClip
                 ? product.totalCount
                 : prodCourse.reduce((a, b) => a + b.lessonsIncluded, 0)}
             </div>
@@ -108,7 +107,7 @@ export default async function ProductItem({ product }: Props) {
                             </span>
                           </div>
 
-                          {!product.useTotalCount ? (
+                          {!isClip ? (
                             <div>
                               {" "}
                               Tillfällen:{" "}

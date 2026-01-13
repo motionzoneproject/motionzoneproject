@@ -990,19 +990,19 @@ export async function editLessonItem(
       // 2. Kolla om vi ställer in lektionen NU (från false till true)
       if (!currentLesson.cancelled && validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
       // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
       else if (currentLesson.cancelled && !validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { decrement: 1 } },
-          });
+          const clipResult = await handleClips(tx, booking.purchaseItemId, -1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -1068,6 +1068,48 @@ export type ProdCourse = {
   lessonsIncluded: number;
 };
 
+// Så denna funktion körs om man skapar en produkt eller ändrar en produkt eller lägger in en kurs i en produkt, ändrar en kurs i en produkt eller tar bort en kurs ur en produkt.
+// Den kollar om det är ett klippkort, eller om den bara innehåller 1 kurs eller flera kurser, och avgör därefter produkttypen och ställer in det i produkten.
+async function updateProductType(
+  productId: string,
+  options?: { isClip?: boolean; tx?: PrismaTx },
+): Promise<"COURSE" | "PACK" | "CLIP"> {
+  const client = options?.tx ?? prisma; //
+  const product = await client.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      type: true,
+      courses: { select: { courseId: true } },
+    },
+  });
+
+  if (!product) {
+    throw new Error("Product not found.");
+  }
+
+  const isClip = options?.isClip ?? product.type === "CLIP";
+  const nextType = isClip
+    ? "CLIP"
+    : product.courses.length > 1
+      ? "PACK"
+      : "COURSE";
+
+  if (product.type !== nextType) {
+    await client.product.update({
+      where: { id: product.id },
+      data: { type: nextType },
+    });
+  }
+
+  await client.productOnCourse.updateMany({
+    where: { productId: product.id },
+    data: { type: nextType },
+  });
+
+  return nextType;
+}
+
 /**
  * Skapar en ny produkt i systemet baserat på validerad formulärdata.
  * * @param formData - Validerad data från `adminAddProductSchema`. Innehåller namn,
@@ -1102,6 +1144,7 @@ export async function addNewProduct(
         maxCustomer: validated.maxCustomers,
         useTotalCount: validated.clipcard,
         totalCount: validated.clipCount,
+        type: validated.clipcard ? "CLIP" : "COURSE",
       },
     });
     return {
@@ -1183,6 +1226,9 @@ export async function editProduct(
         totalCount: validated.clipCount,
       },
     });
+
+    await updateProductType(id, { isClip: validated.clipcard });
+
     return {
       success: true,
       msg: `Produkten ${newProd.name} ändrades.`, // fix
@@ -1262,17 +1308,21 @@ export async function addCourseToProduct(
     );
 
     if (isInProd.found) {
-      await prisma.productOnCourse.update({
-        where: {
-          courseId_productId: {
-            courseId: validated.courseId,
-            productId: validated.productId,
+      await prisma.$transaction(async (tx) => {
+        await tx.productOnCourse.update({
+          where: {
+            courseId_productId: {
+              courseId: validated.courseId,
+              productId: validated.productId,
+            },
           },
-        },
-        data: {
-          unlimited: validated.unlimited,
-          lessonsIncluded: validated.lessonsIncluded,
-        },
+          data: {
+            unlimited: validated.unlimited,
+            lessonsIncluded: validated.lessonsIncluded,
+          },
+        });
+
+        await updateProductType(validated.productId, { tx });
       });
 
       return {
@@ -1280,13 +1330,20 @@ export async function addCourseToProduct(
         msg: `Kursen ändrades i produkten.`, // fix?
       };
     } else {
-      await prisma.productOnCourse.create({
-        data: {
-          productId: validated.productId,
-          courseId: validated.courseId,
-          unlimited: validated.unlimited,
-          lessonsIncluded: validated.lessonsIncluded,
-        },
+      await prisma.$transaction(async (tx) => {
+        const productType = await updateProductType(validated.productId, {
+          tx,
+        });
+
+        await tx.productOnCourse.create({
+          data: {
+            productId: validated.productId,
+            courseId: validated.courseId,
+            unlimited: validated.unlimited,
+            lessonsIncluded: validated.lessonsIncluded,
+            type: productType,
+          },
+        });
       });
 
       return {
@@ -1317,13 +1374,17 @@ export async function removeCourseInProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
-    await prisma.productOnCourse.delete({
-      where: {
-        courseId_productId: {
-          productId: validated.productId,
-          courseId: validated.courseId,
+    await prisma.$transaction(async (tx) => {
+      await tx.productOnCourse.delete({
+        where: {
+          courseId_productId: {
+            productId: validated.productId,
+            courseId: validated.courseId,
+          },
         },
-      },
+      });
+
+      await updateProductType(validated.productId, { tx });
     });
     return {
       success: true,
@@ -1645,17 +1706,11 @@ export async function addUserInLesson(
         },
       });
 
-      const updatedItem = await tx.purchaseItem.update({
-        where: {
-          id: validated.purchaseId,
-          remainingCount: { gt: 0 }, // Uppdatera ENDAST om det finns klipp kvar
-        },
-        data: {
-          remainingCount: { decrement: 1 },
-        },
-      });
+      const clipResult = await handleClips(tx, validated.purchaseId, -1);
 
-      console.log("Nytt saldo i databasen:", updatedItem.remainingCount);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
+      }
     });
 
     revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
@@ -1723,10 +1778,7 @@ export async function removeUserFromLesson(
       });
 
       // 3. Ge tillbaka klippet på rätt köp
-      await tx.purchaseItem.update({
-        where: { id: booking.purchaseItemId },
-        data: { remainingCount: { increment: 1 } },
-      });
+      await handleClips(tx, booking.purchaseItemId, 1);
     });
 
     revalidatePath("/admin/courses");
@@ -1736,9 +1788,7 @@ export async function removeUserFromLesson(
     return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
-// Klippkort fix!
 
-// Detta fixar jag från egen branch sen...
 export type PrismaTx = Prisma.TransactionClient;
 
 // // Okej, så nu den magiska funktionen handleClips då :)
