@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import type z from "zod";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
+import { handleClips } from "./admin";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{
@@ -110,9 +111,9 @@ export type UserPurchaseWithProduct = {
       totalCount: number | null;
       id: string;
       name: string;
-      useTotalCount: boolean;
+      type: ProductType;
     };
-    useTotalCount: boolean;
+    type: ProductType;
     remainingCount: number | null;
     participant?: {
       id: string;
@@ -153,9 +154,9 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
         purchase: {
           select: {
             id: true,
-            useTotalCount: true,
             totalCount: true,
             remainingCount: true,
+            type: true,
             participantId: true,
             participant: {
               select: {
@@ -167,8 +168,8 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
               select: {
                 id: true,
                 name: true,
-                useTotalCount: true,
                 totalCount: true,
+                type: true,
               },
             },
           },
@@ -233,7 +234,7 @@ export async function addBooking(
     const purchase = pItem.purchase;
 
     // 2. Kontrollera saldo baserat på typ (Klippkort vs Kursbundet)
-    if (purchase.useTotalCount) {
+    if (purchase.type === "CLIP") {
       if ((purchase.remainingCount ?? 0) <= 0) {
         return { success: false, msg: "Inga klipp kvar på klippkortet." };
       }
@@ -284,24 +285,9 @@ export async function addBooking(
         },
       });
 
-      if (purchase.useTotalCount) {
-        // Minska saldo på huvudköpet (Klippkort)
-        await tx.purchase.update({
-          where: {
-            id: purchase.id,
-            remainingCount: { gt: 0 },
-          },
-          data: { remainingCount: { decrement: 1 } },
-        });
-      } else {
-        // Minska saldo på purchaseItem (Kursbundet)
-        await tx.purchaseItem.update({
-          where: {
-            id: pItem.id,
-            remainingCount: { gt: 0 },
-          },
-          data: { remainingCount: { decrement: 1 } },
-        });
+      const clipResult = await handleClips(tx, pItem.id, -1);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
       }
     });
 
@@ -365,27 +351,15 @@ export async function delBooking(
         throw new Error("Ingen bokning hittades.");
       }
 
-      const purchase = booking.purchaseItem.purchase;
-
       // 3. Ta bort bokningen
       await tx.booking.delete({
         where: { id: booking.id },
       });
 
-      // fix: Här har vi förberett för att hantera klippkort, men använder inte type. Alla kommer vara course så det behövs ej fixas nu innan. Behåller för att påminna mig om logiken. (//tobias)
-      // Ge tillbaka klippet på RÄTT nivå
-      if (purchase.useTotalCount) {
-        // Återställ till Klippkortet (Purchase för klippkort)
-        await tx.purchase.update({
-          where: { id: purchase.id },
-          data: { remainingCount: { increment: 1 } },
-        });
-      } else {
-        // Återställ till den specifika kursen (PurchaseItem)
-        await tx.purchaseItem.update({
-          where: { id: booking.purchaseItemId },
-          data: { remainingCount: { increment: 1 } },
-        });
+      // Ge tillbaka klippet på rätt nivå
+      const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
       }
     });
 
