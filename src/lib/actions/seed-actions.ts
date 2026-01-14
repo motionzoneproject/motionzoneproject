@@ -35,7 +35,6 @@ export async function addTermin(
  * - `name`: Kursens namn.
  * - `teacherid`: ID för läraren/admin som ska hålla kursen.
  * - `maxbookings`: Antal platser per lektionstillfälle.
- * - `maxCustomers`: Totalt antal unika kunder som kan köpa in sig på kursen.
  * - `description`: Kursbeskrivning och detaljer.
  * - `minAge`/`maxAge`/`level`: Kriterier för deltagande.
  * * @returns Ett objekt med success-status och ett bekräftande meddelande med kursens namn.
@@ -61,7 +60,6 @@ export async function addCourse(
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,

@@ -94,6 +94,10 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
   // fix: när profilsidan för elever är gjort, blir det lättare att göra det sista här.
 
+  const activeBookingsCount = bookings.filter((b) => !b.cancelled).length;
+  const isFull =
+    lesson.maxBookings > 0 && activeBookingsCount >= lesson.maxBookings;
+
   return (
     <Dialog
       open={isOpen}
@@ -126,6 +130,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
               refresher={refresher}
               lessonId={lesson.id}
               usersInCourse={usersInCourse ?? []}
+              isFull={isFull}
             />
 
             <div className="w-full flex justify-between"></div>

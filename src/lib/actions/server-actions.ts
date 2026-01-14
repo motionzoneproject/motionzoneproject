@@ -58,7 +58,10 @@ export async function getUserBookings(): Promise<{
 }
 
 export type LessonWithCourse = Prisma.LessonGetPayload<{
-  include: { course: true };
+  include: {
+    course: true;
+    bookings: { where: { cancelled: false }; select: { id: true } };
+  };
 }>;
 
 export async function getUserLessons(): Promise<{
@@ -98,7 +101,10 @@ export async function getUserLessons(): Promise<{
         // cancelled: false, // Vi visar nog bara lektioner som inte är inställda. Fel.
         // startTime: { gte: new Date() } // Valfritt: Visa bara framtida lektioner. Nej man kanske vill se sina tidigare boknignar.
       },
-      include: { course: true },
+      include: {
+        course: true,
+        bookings: { where: { cancelled: false }, select: { id: true } },
+      },
       orderBy: { startTime: "asc" },
     });
 
@@ -271,10 +277,10 @@ export async function addBooking(
       return { success: false, msg: "Du är redan bokad på denna lektion." };
     }
 
-    // 4. Kolla status på lektionen
+    // 4. Kolla status och kapacitet på lektionen
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
-      select: { cancelled: true },
+      select: { cancelled: true, maxBookings: true },
     });
 
     if (!lesson || lesson.cancelled) {
@@ -284,8 +290,37 @@ export async function addBooking(
       };
     }
 
+    if (lesson.maxBookings > 0) {
+      const currentBookings = await prisma.booking.count({
+        where: { lessonId: validated.lessonId, cancelled: false },
+      });
+
+      if (currentBookings >= lesson.maxBookings) {
+        return { success: false, msg: "Lektionen är fullbokad." };
+      }
+    }
+
     // 5. Utför bokning och saldo-dragning i en transaktion
     await prisma.$transaction(async (tx) => {
+      const txLesson = await tx.lesson.findUnique({
+        where: { id: validated.lessonId },
+        select: { cancelled: true, maxBookings: true },
+      });
+
+      if (!txLesson || txLesson.cancelled) {
+        throw new Error("Lektionen är inställd eller hittades inte.");
+      }
+
+      if (txLesson.maxBookings > 0) {
+        const currentBookings = await tx.booking.count({
+          where: { lessonId: validated.lessonId, cancelled: false },
+        });
+
+        if (currentBookings >= txLesson.maxBookings) {
+          throw new Error("Lektionen är fullbokad.");
+        }
+      }
+
       // Skapa bokningen
       await tx.booking.create({
         data: {
@@ -306,6 +341,13 @@ export async function addBooking(
     return { success: true, msg: "Du är nu inbokad på lektionen!" };
   } catch (e) {
     console.error("Fel vid bokning:", e);
+    const msg = e instanceof Error ? e.message : "";
+    if (msg === "Lektionen är fullbokad.") {
+      return { success: false, msg };
+    }
+    if (msg === "Lektionen är inställd eller hittades inte.") {
+      return { success: false, msg };
+    }
     return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };
   }
 }

@@ -39,6 +39,7 @@ interface Props {
   usersInCourse: UserPurchasesForCourse[]; // So only users with a product with bookings left in the course.
   lessonId: string;
   refresher: () => void;
+  isFull?: boolean;
 }
 const formSchema = AdminAddUserInLessonSchema;
 
@@ -49,6 +50,7 @@ export default function AddUserBtn({
   usersInCourse,
   lessonId,
   refresher,
+  isFull = false,
 }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
@@ -75,8 +77,15 @@ export default function AddUserBtn({
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="item-1">
-        <AccordionTrigger>Lägg till elev</AccordionTrigger>
+        <AccordionTrigger>
+          {isFull ? "Lägg till elev (fullbokad)" : "Lägg till elev"}
+        </AccordionTrigger>
         <AccordionContent>
+          {isFull && (
+            <div className="text-sm text-destructive mb-2">
+              Lektionen är fullbokad.
+            </div>
+          )}
           <div>
             <Form {...form}>
               <form
@@ -175,7 +184,7 @@ export default function AddUserBtn({
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={isFull}>
                   Lägg till i lektionen
                 </Button>
               </form>

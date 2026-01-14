@@ -121,6 +121,9 @@ export default function BookingCal({
                 // Okej så här kollar vi om den redan är bokad genom att söka efter lessonId i bookings:
                 const booking = bookings.find((b) => b.lessonId === lesson.id);
                 const isAlreadyBooked = Boolean(booking);
+                const isFull =
+                  lesson.maxBookings > 0 &&
+                  lesson.bookings.length >= lesson.maxBookings;
                 const participantName =
                   booking?.purchaseItem.purchase.participant?.name;
 
@@ -162,6 +165,12 @@ export default function BookingCal({
                           onClick={async () => await delBooking(lesson.id)}
                         >
                           Avboka
+                        </Button>
+                      </div>
+                    ) : isFull ? (
+                      <div>
+                        <Button variant="secondary" disabled>
+                          Fullbokad
                         </Button>
                       </div>
                     ) : (

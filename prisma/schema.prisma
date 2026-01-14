@@ -238,8 +238,6 @@ model Course {
 
   maxBookings Int @default(0) // Per tillfälle (standardvärdet, det går att ändra i veckorschemat eller per tillfälle med).
 
-  maxCustomer Int @default(0) // Detta sätter ett tak även ifall kursen säljs i flera produkter, så alla produkter inaktiveras om det blir fyllt..
-
   lessons Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
   schemaItems SchemaItem[] // Veckoschemat.
 
@@ -326,6 +324,7 @@ model Product {
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
 
   maxCustomer Int @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
+  unlimitedCustomers Boolean @default(false) // Obegränsat antal köp
 
   imageURL String?
 

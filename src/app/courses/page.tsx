@@ -101,9 +101,11 @@ export default async function Page({
                     ? "Paket"
                     : "Kurs";
 
-              // Om maxCustomer är > 0 räknar vi ut diffen, annars är det null (obegränsat)
-              const spotsLeft =
-                p.maxCustomer > 0 ? p.maxCustomer - purchasesCount : null;
+              const isUnlimitedCustomers =
+                p.unlimitedCustomers || p.maxCustomer <= 0;
+              const spotsLeft = isUnlimitedCustomers
+                ? null
+                : p.maxCustomer - purchasesCount;
 
               // Man kan bara bli "full" om det faktiskt finns ett tak satt (spotsLeft !== null)
               const isFull = spotsLeft !== null && spotsLeft <= 0;
@@ -118,9 +120,9 @@ export default async function Page({
                         {p.price} kr
                       </Badge>
                       {spotsLeft === null ? (
-                        <div>Obegränsat antal platser</div>
+                        <div>Obegränsat antal köp</div>
                       ) : (
-                        <div>Platser kvar: {Math.max(spotsLeft, 0)}</div>
+                        <div>Köp kvar: {Math.max(spotsLeft, 0)}</div>
                       )}
                     </div>
                     <CardTitle className="text-lg">{p.name}</CardTitle>

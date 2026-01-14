@@ -49,6 +49,7 @@ interface Props {
   price: number;
   clipCount: number;
   maxCustomers: number;
+  unlimitedCustomers: boolean;
 }
 
 export default function EditProductForm({
@@ -60,6 +61,7 @@ export default function EditProductForm({
   price,
   imageURL,
   maxCustomers,
+  unlimitedCustomers,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -72,6 +74,7 @@ export default function EditProductForm({
       price: price,
       clipCount: clipCount,
       maxCustomers: maxCustomers,
+      unlimitedCustomers: unlimitedCustomers,
     },
   });
 
@@ -221,13 +224,39 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
+                  name="unlimitedCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat antal köp</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("maxCustomers", 0);
+                            }
+                          }}
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+                      <FormLabel>Max antal köp</FormLabel>
 
                       <FormControl>
                         <Input
+                          disabled={form.watch("unlimitedCustomers") === true}
                           type="number"
                           min="0"
                           step="1"

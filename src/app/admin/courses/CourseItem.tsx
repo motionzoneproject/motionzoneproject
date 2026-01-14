@@ -5,10 +5,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type CourseWithTeacher,
-  countOrderItemsAndProductsCourse,
-} from "@/lib/actions/admin";
+import type { Course } from "@/generated/prisma/client";
+import { countOrderItemsAndProductsCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
@@ -16,7 +14,7 @@ import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
-  course: CourseWithTeacher; // fix: varför har jag lärare med här?
+  course: Course;
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
@@ -49,8 +47,8 @@ export default async function CourseItem({ course }: Props) {
         <CardContent>
           <div className="p-2 grid grid-cols-2 gap-2 bg-muted/30 border border-border rounded">
             <div>
-              <span className="font-bold">Kunder:</span> {counts.count ?? 0} /{" "}
-              {course.maxCustomer > 0 ? course.maxCustomer : "Obegränsat"}
+              <span className="font-bold">Antal köp med tillgång:</span>{" "}
+              {counts.purchaseItemCount ?? 0}
             </div>
 
             <div>

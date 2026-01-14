@@ -59,12 +59,12 @@ export default function AddCourseForm({ teachers }: Props) {
       name: "",
       description: "",
       maxbookings: 0,
+      unlimitedBookings: false,
       minAge: "",
       maxAge: "",
       level: "",
       adult: false,
       teacherid: user?.id, // fix: select för lärare.
-      maxCustomers: 0,
     },
   });
 
@@ -77,6 +77,10 @@ export default function AddCourseForm({ teachers }: Props) {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (form.watch("unlimitedBookings") === true) {
+      values.maxbookings = 0;
+    }
+
     if (
       // fix: se över detta, kanske räcker med zod när vi fixat det.
       (form.watch("maxbookings") as number) <= 0 ||
@@ -156,22 +160,23 @@ export default function AddCourseForm({ teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="maxbookings"
+                  name="unlimitedBookings"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Max bokningar per tillfälle (0 = obegränsat)
+                        Obegränsat antal bokningar per tillfälle
                       </FormLabel>
 
                       <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("maxbookings", 0);
+                            }
+                          }}
+                          className="w-6 h-6"
                         />
                       </FormControl>
 
@@ -182,13 +187,14 @@ export default function AddCourseForm({ teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="maxCustomers"
+                  name="maxbookings"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max kunder (0=obegränsat).</FormLabel>
+                      <FormLabel>Max bokningar per tillfälle</FormLabel>
 
                       <FormControl>
                         <Input
+                          disabled={form.watch("unlimitedBookings") === true}
                           type="number"
                           min="0"
                           step="1"

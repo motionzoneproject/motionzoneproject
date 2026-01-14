@@ -35,7 +35,9 @@ export default async function ProductItem({ product }: Props) {
   //   });
   const typeLabel = isClip ? "Klippkort" : isPack ? "Paket" : "Kurs";
   const isFull =
-    product.maxCustomer > 0 && purchasesCount >= product.maxCustomer;
+    !product.unlimitedCustomers &&
+    product.maxCustomer > 0 &&
+    purchasesCount >= product.maxCustomer;
 
   return (
     <div className="p-2 ">
@@ -55,6 +57,7 @@ export default async function ProductItem({ product }: Props) {
               ></AddCoursesToProductForm>
               <EditProductForm
                 maxCustomers={product.maxCustomer}
+                unlimitedCustomers={product.unlimitedCustomers}
                 imageURL={product.imageURL ?? ""}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}
@@ -91,8 +94,11 @@ export default async function ProductItem({ product }: Props) {
               kr
             </div>
             <div>
-              <span className="font-bold">Sålda / max:</span> {purchasesCount} /{" "}
-              {product.maxCustomer > 0 ? product.maxCustomer : "Obegränsat"}
+              <span className="font-bold">Sålda / max köp:</span>{" "}
+              {purchasesCount} /{" "}
+              {product.unlimitedCustomers || product.maxCustomer <= 0
+                ? "Obegränsat"
+                : product.maxCustomer}
               {isFull && <span className="ml-2 text-destructive">Fullt</span>}
             </div>
           </div>
