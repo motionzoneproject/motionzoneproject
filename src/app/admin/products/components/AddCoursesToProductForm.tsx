@@ -137,9 +137,9 @@ export default function AddCoursesToProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
           <Pencil className="h-4 w-4" />
-          <span className="sr-only">Hantera kurser i produkten</span>
+          <span>Ändra kurser</span>
         </Button>
       </DialogTrigger>
 
