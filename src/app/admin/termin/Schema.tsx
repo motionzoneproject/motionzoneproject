@@ -16,13 +16,49 @@ export default function Schema({
   allCourses,
 }: SchemaProps) {
   const weekdays = Object.keys(Weekday); // Hämta veckodagar från prismaschemats enum.
+  const scheduleDates = schemaItems.map((item) => ({
+    start: item.customStartDate ?? termin.startDate,
+    end: item.customEndDate ?? termin.endDate,
+  }));
+  const earliestStart =
+    scheduleDates.length > 0
+      ? scheduleDates.reduce(
+          (min, current) => (current.start < min ? current.start : min),
+          scheduleDates[0].start,
+        )
+      : null;
+  const latestEnd =
+    scheduleDates.length > 0
+      ? scheduleDates.reduce(
+          (max, current) => (current.end > max ? current.end : max),
+          scheduleDates[0].end,
+        )
+      : null;
 
   return (
-    <Accordion type="single" className="p-2 border-2 rounded" collapsible>
-      {schemaItems.length === 0
-        ? "Inga kurser i veckoschemat."
-        : weekdays.map((day) => {
-            return (
+    <div className="border rounded-lg bg-muted/20">
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Veckoschema
+          </p>
+          {earliestStart && latestEnd && (
+            <p className="text-sm text-muted-foreground">
+              {earliestStart.toLocaleDateString()} -{" "}
+              {latestEnd.toLocaleDateString()}
+            </p>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {schemaItems.length} kurstillfällen
+        </div>
+      </div>
+      <div className="p-2">
+        {schemaItems.length === 0 ? (
+          "Inga kurser i veckoschemat."
+        ) : (
+          <Accordion type="single" collapsible>
+            {weekdays.map((day) => (
               <SchemaDay
                 allCourses={allCourses}
                 weekdays={weekdays}
@@ -31,9 +67,11 @@ export default function Schema({
                 weekday={day as Weekday}
                 weekdayIndex={weekdays.indexOf(day)}
                 key={day}
-              ></SchemaDay>
-            );
-          })}
-    </Accordion>
+              />
+            ))}
+          </Accordion>
+        )}
+      </div>
+    </div>
   );
 }

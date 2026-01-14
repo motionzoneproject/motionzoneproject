@@ -1,3 +1,4 @@
+import { AlertTriangle, Calendar, Clock, Layers } from "lucide-react";
 import {
   AccordionContent,
   AccordionItem,
@@ -64,9 +65,17 @@ export default async function SchemaDay({
 
   return (
     <AccordionItem value={weekday}>
-      <AccordionTrigger>
-        {veckodagar[weekdayIndex]} (
-        {schemaItems.filter((itm) => itm.weekday === weekday).length})
+      <AccordionTrigger className="rounded-md px-3 py-2 hover:bg-muted/40">
+        <div className="flex w-full items-center justify-between pr-2">
+          <div className="text-left">
+            <p className="font-semibold">{veckodagar[weekdayIndex]}</p>
+            <p className="text-xs text-muted-foreground">
+              {schemaItems.filter((itm) => itm.weekday === weekday).length}{" "}
+              kurstillfällen
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground">Visa</div>
+        </div>
       </AccordionTrigger>
       {schemaItems
         .filter((itm) => itm.weekday === weekday)
@@ -78,23 +87,47 @@ export default async function SchemaDay({
 
           return (
             <AccordionContent key={itm.id}>
-              <div className="bg-muted/30 border-border text-foreground border p-2 rounded-lg flex justify-between">
-                <div>
-                  {dbToFormTime(itm.timeStart)} - {dbToFormTime(itm.timeEnd)}
-                  <br />
-                  {itm.customStartDate
-                    ? itm.customStartDate.toLocaleDateString()
-                    : termin.startDate.toLocaleDateString()}
-                  -
-                  {itm.customEndDate
-                    ? itm.customEndDate.toLocaleDateString()
-                    : termin.endDate.toLocaleDateString()}
-                  <br />
-                  <span className="font-bold">{getCourseName(itm.course)}</span>
-                  <br />
-                  <span className="font-bold">Plats: {itm.place}</span>
+              <div className="bg-muted/30 border-border text-foreground border p-3 rounded-lg flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {dbToFormTime(itm.timeStart)} -{" "}
+                      {dbToFormTime(itm.timeEnd)}
+                    </span>
+                    <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {itm.customStartDate
+                        ? itm.customStartDate.toLocaleDateString()
+                        : termin.startDate.toLocaleDateString()}
+                      {" - "}
+                      {itm.customEndDate
+                        ? itm.customEndDate.toLocaleDateString()
+                        : termin.endDate.toLocaleDateString()}
+                    </span>
+                    <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
+                      <Layers className="h-3 w-3" />
+                      {itm.Lessons.length} lektioner
+                    </span>
+                    {itm.Lessons.some((lesson) => lesson.cancelled) && (
+                      <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1 text-red-500 border-red-500/40">
+                        <AlertTriangle className="h-3 w-3" />
+                        {
+                          itm.Lessons.filter((lesson) => lesson.cancelled)
+                            .length
+                        }{" "}
+                        st inställda
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base font-semibold">
+                    {getCourseName(itm.course)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Plats: {itm.place || "Ej angiven"}
+                  </div>
                 </div>
-                <div>
+                <div className="flex items-center gap-2 md:flex-col md:items-end">
                   <EditCourseToSchemaForm
                     allCourses={allCourses}
                     weekdays={weekdays}

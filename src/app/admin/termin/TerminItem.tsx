@@ -1,15 +1,10 @@
 import { Calendar } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Termin, Weekday } from "@/generated/prisma/client";
 import {
   getAllCourses,
   getSchemaItems,
+  getTerminStats,
   type SchemaItemWithCourse,
 } from "@/lib/actions/admin";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
@@ -35,6 +30,7 @@ export default async function TerminItem({ termin }: Props) {
   const schemaItems: SchemaItemWithCourse[] = await getSchemaItems(termin.id);
 
   const allCourses = await getAllCourses();
+  const stats = await getTerminStats(termin.id);
 
   return (
     <div className="p-2 ">
@@ -84,24 +80,19 @@ export default async function TerminItem({ termin }: Props) {
                 </span>
               </div>
             </div>
-            <div className="p-2 text-muted-foreground">
-              (statistik kommer...)
+            <div className="p-2 text-muted-foreground text-sm">
+              Kurser: {stats.courseCount} · Produkter: {stats.productCount} ·
+              Sålda produkter: {stats.soldProductCount}
             </div>
           </div>
 
           <br />
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Veckoschema</AccordionTrigger>
-              <AccordionContent>
-                <Schema
-                  allCourses={allCourses}
-                  termin={termin}
-                  schemaItems={schemaItems}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+
+          <Schema
+            allCourses={allCourses}
+            termin={termin}
+            schemaItems={schemaItems}
+          />
         </CardContent>
       </Card>
     </div>

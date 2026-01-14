@@ -44,7 +44,10 @@ export async function getTermin(): Promise<Termin[]> {
 }
 
 // Behövs i admin - Termin för att läsa in alla SChemaItems, inkluderar course för att få kursdatan också. Kursnamnet byggs ihop baserat på flera uppgifter i Course (namn + ålder - nivå, se GetCourseName i tools), därför skickar vi just nu med all data.
-export type SchemaItemWithCourse = SchemaItem & { course: Course };
+export type SchemaItemWithCourse = SchemaItem & {
+  course: Course;
+  Lessons: Lesson[];
+};
 
 // Tyo för att lista alla Lektioner inkl alla bokningar.
 export type LessonWithBookings = Lesson & { bookings: Booking[] };
@@ -92,10 +95,51 @@ export async function getSchemaItems(
 
   const schemaItems = await prisma.schemaItem.findMany({
     where: { terminId },
-    include: { course: true },
+    include: { course: true, Lessons: true },
   });
 
   return schemaItems;
+}
+
+export async function getTerminStats(terminId: string): Promise<{
+  courseCount: number;
+  productCount: number;
+  soldProductCount: number;
+}> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { courseCount: 0, productCount: 0, soldProductCount: 0 };
+
+  const schemaCourses = await prisma.schemaItem.findMany({
+    where: { terminId },
+    select: { courseId: true },
+  });
+
+  const uniqueCourseIds = Array.from(
+    new Set(schemaCourses.map((item) => item.courseId)),
+  );
+
+  if (uniqueCourseIds.length === 0) {
+    return { courseCount: 0, productCount: 0, soldProductCount: 0 };
+  }
+
+  const [productCount, soldProductCount] = await Promise.all([
+    prisma.product.count({
+      where: {
+        courses: { some: { courseId: { in: uniqueCourseIds } } },
+      },
+    }),
+    prisma.purchase.count({
+      where: {
+        product: { courses: { some: { courseId: { in: uniqueCourseIds } } } },
+      },
+    }),
+  ]);
+
+  return {
+    courseCount: uniqueCourseIds.length,
+    productCount,
+    soldProductCount,
+  };
 }
 
 /**
