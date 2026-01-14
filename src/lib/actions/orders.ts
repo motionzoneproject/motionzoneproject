@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "../prisma";
+import { handleClips } from "./admin";
 import { getSessionData } from "./sessiondata";
 
 async function requireAdmin() {
@@ -86,6 +87,8 @@ export async function createPurchaseFromOrder(orderId: string) {
   await requireAdmin();
 
   return prisma.$transaction(async (tx) => {
+    const now = new Date();
+
     // 1. SÄKERHETSSPÄRR: Kolla om ordern redan har genererat ett köp
     const existingPurchase = await tx.purchase.findFirst({
       where: { orderId: orderId },
@@ -142,35 +145,99 @@ export async function createPurchaseFromOrder(orderId: string) {
       });
 
       // 4. Skapa PurchaseItems för kurserna i denna produkt
-      const itemPromises = orderItem.product.courses.map((pc) =>
-        tx.purchaseItem.create({
-          data: {
-            purchaseId: purchase.id,
-            courseId: pc.courseId,
-            orderItemId: orderItem.id,
-            lessonsIncluded: pc.lessonsIncluded,
-            remainingCount: pc.lessonsIncluded,
-            unlimited: pc.unlimited ?? false, //okej, så denna är iaf med.
-          },
-        }),
+      const purchaseItems = await Promise.all(
+        orderItem.product.courses.map((pc) =>
+          tx.purchaseItem.create({
+            data: {
+              purchaseId: purchase.id,
+              courseId: pc.courseId,
+              orderItemId: orderItem.id,
+              lessonsIncluded: pc.lessonsIncluded,
+              remainingCount: pc.lessonsIncluded,
+              unlimited: pc.unlimited ?? false, //okej, så denna är iaf med.
+            },
+          }),
+        ),
       );
 
-      await Promise.all(itemPromises);
+      const shouldAutoBook =
+        orderItem.product.type === "COURSE" &&
+        orderItem.product.courses.length === 1;
+
+      if (shouldAutoBook) {
+        const purchaseItem = purchaseItems[0];
+        const lessons = await tx.lesson.findMany({
+          where: {
+            courseId: purchaseItem.courseId,
+            cancelled: false,
+            startTime: { gte: now },
+          },
+          select: { id: true, maxBookings: true },
+        });
+
+        const lessonIds = lessons.map((lesson) => lesson.id);
+        if (lessonIds.length > 0) {
+          const existingBookings = await tx.booking.findMany({
+            where: {
+              userId: purchase.userId,
+              lessonId: { in: lessonIds },
+            },
+            select: { lessonId: true },
+          });
+
+          const existingSet = new Set(
+            existingBookings.map((booking) => booking.lessonId),
+          );
+
+          const lessonsToBook = lessons.filter(
+            (lesson) => !existingSet.has(lesson.id),
+          );
+
+          if (
+            !purchaseItem.unlimited &&
+            purchaseItem.remainingCount < lessonsToBook.length
+          ) {
+            throw new Error(
+              "Not enough remaining lessons to auto-book this course.",
+            );
+          }
+
+          const bookingCounts = await tx.booking.groupBy({
+            by: ["lessonId"],
+            where: { lessonId: { in: lessonIds }, cancelled: false },
+            _count: { _all: true },
+          });
+
+          const bookingCountMap = new Map(
+            bookingCounts.map((b) => [b.lessonId, b._count._all]),
+          );
+
+          for (const lesson of lessonsToBook) {
+            const currentCount = bookingCountMap.get(lesson.id) ?? 0;
+            if (lesson.maxBookings > 0 && currentCount >= lesson.maxBookings) {
+              throw new Error("Lektionen är fullbokad.");
+            }
+
+            await tx.booking.create({
+              data: {
+                lessonId: lesson.id,
+                userId: purchase.userId,
+                purchaseItemId: purchaseItem.id,
+              },
+            });
+
+            const clipResult = await handleClips(tx, purchaseItem.id, -1);
+            if (!clipResult.success) {
+              throw new Error(clipResult.msg || "Clip update failed.");
+            }
+
+            bookingCountMap.set(lesson.id, currentCount + 1);
+          }
+        }
+      }
+
       purchaseResults.push(purchase.id);
     }
-
-    // okej så vi bokar väl in automatiskt då:
-    const courseIds = order.orderItems.flatMap((oi) =>
-      oi.product.courses.map((pc) => pc.courseId),
-    );
-
-    const _lessons = await tx.lesson.findMany({
-      where: {
-        courseId: { in: courseIds },
-        // Valfritt: Boka bara in på framtida lektioner? Japp, inget annat makes sense för mig atm.
-        startTime: { gte: new Date() },
-      },
-    });
 
     return {
       success: true,
