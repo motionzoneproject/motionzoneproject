@@ -26,20 +26,22 @@ import AddUserBtn from "./AddUserBtn";
 
 interface Props {
   lesson: Lesson;
-  initialBookings: BookingWithPurchaseParticipant[];
-  initialUsers: UserPurchasesForCourse[];
+  initialBookings?: BookingWithPurchaseParticipant[];
+  initialUsers?: UserPurchasesForCourse[];
 }
 
 export default function LessonAttendanceForm({
   lesson,
-  initialBookings,
-  initialUsers,
+  initialBookings = [],
+  initialUsers = [],
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [bookings, setBookings] = useState(initialBookings);
-  const [usersInCourse, setUsersInCourse] = useState(initialUsers);
+  const [bookings, setBookings] =
+    useState<BookingWithPurchaseParticipant[]>(initialBookings);
+  const [usersInCourse, setUsersInCourse] =
+    useState<UserPurchasesForCourse[]>(initialUsers);
 
   useEffect(() => {
     setBookings(initialBookings);
@@ -52,7 +54,7 @@ export default function LessonAttendanceForm({
       getBookingsFromLesson(lesson.id),
       getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId),
     ]);
-    setBookings(nextBookings);
+    setBookings(nextBookings ?? []);
     setUsersInCourse(usersResult.users ?? []);
     setLoading(false);
   }, [lesson.courseId, lesson.id]);
@@ -74,7 +76,9 @@ export default function LessonAttendanceForm({
 
   // fix: när profilsidan för elever är gjort, blir det lättare att göra det sista här.
 
-  const activeBookingsCount = bookings.filter((b) => !b.cancelled).length;
+  const activeBookingsCount = (bookings ?? []).filter(
+    (b) => !b.cancelled,
+  ).length;
   const isFull =
     lesson.maxBookings > 0 && activeBookingsCount >= lesson.maxBookings;
 
