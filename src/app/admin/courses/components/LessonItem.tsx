@@ -14,14 +14,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Lesson } from "@/generated/prisma/client";
+import type {
+  BookingWithPurchaseParticipant,
+  UserPurchasesForCourse,
+} from "@/lib/actions/admin";
 import LessonAttendanceForm from "./LessonAttendanceForm";
 import LessonItemForm from "./LessonItemForm";
 
 interface Props {
   lesson: Lesson;
+  initialBookings: BookingWithPurchaseParticipant[];
+  initialUsers: UserPurchasesForCourse[];
 }
 
-export default function LessonItem({ lesson }: Props) {
+export default function LessonItem({
+  lesson,
+  initialBookings,
+  initialUsers,
+}: Props) {
   return (
     <Card>
       <CardHeader>
@@ -49,7 +59,11 @@ export default function LessonItem({ lesson }: Props) {
           })}
         </CardDescription>
         <CardAction>
-          <LessonAttendanceForm lesson={lesson} />
+          <LessonAttendanceForm
+            lesson={lesson}
+            initialBookings={initialBookings}
+            initialUsers={initialUsers}
+          />
         </CardAction>
       </CardHeader>
       <CardContent>

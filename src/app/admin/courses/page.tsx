@@ -12,7 +12,7 @@ export default async function Page({
   const params = await searchParams;
   const query = params.q || "";
 
-  const allCourses = await getAllCourses(query); // fix: debounce.
+  const allCourses = await getAllCourses(query);
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
   return (

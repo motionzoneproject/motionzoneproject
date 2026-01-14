@@ -17,16 +17,14 @@ interface Props {
   lessons: LessonWithCourse[]; // Alla lektioner i alla kurser som kunden har tillgång till.
   bookings: BookingWithLesson[]; // Alla bokningar gjorda av kunden.
   purschaseItems: UserPurchaseWithProduct[]; // Alla produkter (purschaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
-  initDate?: Date;
 }
 
 export default function BookingCal({
   lessons,
   bookings,
   purschaseItems,
-  initDate,
 }: Props) {
-  const [date, setDate] = useState<Date | undefined>(initDate ?? new Date());
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
   const bookedDays = useMemo(
     () =>

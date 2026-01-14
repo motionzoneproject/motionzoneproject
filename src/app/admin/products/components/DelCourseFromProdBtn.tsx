@@ -1,7 +1,5 @@
 "use client";
 
-// ev fix: Gör en generisk ta bort-knapp och passa funktionen som den ska köra.
-
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { type ProdCourse, removeCourseInProduct } from "@/lib/actions/admin";

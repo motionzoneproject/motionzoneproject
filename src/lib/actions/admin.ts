@@ -1,9 +1,5 @@
 "use server";
 
-// big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas i purchase-nivå).
-// Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
-// allright, im on it. Ska ba byta branch. Eller? Bör jag verkligen göra det?
-
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
@@ -599,10 +595,10 @@ export async function delSchemaItem(
     const result = await prisma.$transaction(async (tx) => {
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -626,7 +622,6 @@ export async function delSchemaItem(
     };
   }
 }
-// fix: klippkort!
 
 /**
  * Raderar en hel termin från systemet. Bokningar betalas tillbaka.
@@ -658,10 +653,10 @@ export async function delTermin(
       // Återställ alla klipp
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -688,7 +683,6 @@ export async function delTermin(
     };
   }
 }
-// fix: klippkort.
 
 /**
  * Raderar en kurs permanent från systemet.
@@ -726,10 +720,10 @@ export async function delCourse(
       // Återställ klipp för de bokningar som kommer raderas via cascade
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -757,7 +751,6 @@ export async function delCourse(
     };
   }
 }
-// fix: klippkort!
 
 /**
  * Skapar en ny kurs i systemet och kopplar den till en lärare.
@@ -1304,18 +1297,6 @@ export async function addCourseToProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
-    // const theProd = await prisma.product.findUnique({
-    //   where: { id: validated.productId },
-    // });
-
-    // if (!theProd)
-    //   throw new Error(`No product found with id ${validated.productId}`);
-    // const type = theProd.type;
-
-    // Fast spelar det verkligen någon roll? Nej. Men sparar tanken.
-
-    // fix: använd upsert?
-    // Kolla om den redan är inlagd (för att enkelt kunna ändra istället för att skapa.)
     const isInProd = await isCourseInProduct(
       formData.courseId,
       formData.productId,
@@ -1323,6 +1304,14 @@ export async function addCourseToProduct(
 
     if (isInProd.found) {
       await prisma.$transaction(async (tx) => {
+        const product = await tx.product.findUnique({
+          where: { id: validated.productId },
+          select: { type: true },
+        });
+        if (!product) throw new Error("Product not found.");
+        const lessonsIncluded =
+          product.type === "CLIP" ? 0 : validated.lessonsIncluded;
+
         await tx.productOnCourse.update({
           where: {
             courseId_productId: {
@@ -1332,7 +1321,7 @@ export async function addCourseToProduct(
           },
           data: {
             unlimited: validated.unlimited,
-            lessonsIncluded: validated.lessonsIncluded,
+            lessonsIncluded,
           },
         });
 
@@ -1354,7 +1343,8 @@ export async function addCourseToProduct(
             productId: validated.productId,
             courseId: validated.courseId,
             unlimited: validated.unlimited,
-            lessonsIncluded: validated.lessonsIncluded,
+            lessonsIncluded:
+              productType === "CLIP" ? 0 : validated.lessonsIncluded,
             type: productType,
           },
         });
@@ -1369,7 +1359,6 @@ export async function addCourseToProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort, kanske kolla om produkten är ett klippkort isfåall ska väl lessonsIncluded vara 0 också. Spelar ingen roll, kommer inte användas eller synas någonstans.
 
 /**
  * Tar bort kopplingen mellan en specifik kurs och en produkt.
@@ -1442,36 +1431,6 @@ export async function isCourseInProduct(
     return { found: false };
   }
 }
-// fix: logik om klippkort? Kolla hur den används.
-
-/**
- * Räknar hur många gånger en specifik produkt har köpts (sålda orderrader).
- * Används ofta som kontrollsteg för att se om en produkt har en köphistorik
- * innan den raderas eller ändras.
- * * @param productId - ID:t för produkten som ska kontrolleras.
- * @returns Ett objekt med `found: boolean` (om sökningen lyckades) och `count` (antalet sålda enheter).
- * Returnerar `found: false` om användaren saknar behörighet eller om ett databasfel uppstår.
- * @auth Admin
- */
-export async function countOrderItems(
-  productId: string,
-): Promise<{ found: boolean; count?: number }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
-  try {
-    // ev. fix: Kolla orderstatus osv?
-
-    const count = await prisma.orderItem.count({
-      where: { productId: productId },
-    });
-    // Vi returnerar success: true även om count är 0
-    return { found: true, count };
-  } catch (e) {
-    console.error(e);
-    return { found: false, count: 0 };
-  }
-}
-// ev fix, den används nu som "platser kvar".
 
 /**
  * Analyserar användningen av en specifik kurs i relation till produkter och försäljning.
@@ -1479,7 +1438,7 @@ export async function countOrderItems(
  * * @param courseId - ID för kursen som ska analyseras.
  * @returns Ett objekt som innehåller:
  * - `found`: Om sökningen lyckades.
- * - `count`: Totalt antal sålda orderrader (OrderItems) för produkter där denna kurs ingår.
+ * - `orderItemCount`: Totalt antal sålda orderrader (OrderItems) för produkter där denna kurs ingår.
  * - `countProd`: Antal unika produkter som inkluderar denna kurs i sitt utbud.
  * - `purchaseItemCount`: Antal PurchaseItems kopplade till kursen (antal köp med tillgång).
  * * @description Denna funktion är avgörande för att bedöma konsekvenserna av att radera eller ändra en kurs,
@@ -1490,7 +1449,7 @@ export async function countOrderItemsAndProductsCourse(
   courseId: string,
 ): Promise<{
   found: boolean;
-  count?: number;
+  orderItemCount?: number;
   countProd?: number;
   purchaseItemCount?: number;
 }> {
@@ -1501,7 +1460,7 @@ export async function countOrderItemsAndProductsCourse(
       where: { courseId },
     });
 
-    const count = await prisma.orderItem.count({
+    const orderItemCount = await prisma.orderItem.count({
       where: { product: { courses: { some: { courseId } } } },
     });
 
@@ -1509,37 +1468,7 @@ export async function countOrderItemsAndProductsCourse(
       where: { courses: { some: { courseId } } },
     });
     // Vi returnerar success: true även om count är 0
-    return { found: true, count, countProd, purchaseItemCount };
-  } catch (e) {
-    console.error(e);
-    return { found: false };
-  }
-}
-// ev. fix (utredning pågår)
-// Varför den inte räknar "platser kvar":
-// Om du vill veta hur många som just nu har tillgång till en kurs ska du titta på PurchaseItem.
-// Ett OrderItem är bara ett kvitto på ett köp.
-// Ett PurchaseItem är det faktiska "medlemskapet" som ger eleven rätt att boka.
-
-/**
- * Hämtar information om en specifik lärare (användare) baserat på dess unika ID.
- * * @param userId - ID för den användare/lärare som ska hämtas.
- * @returns Ett objekt med:
- * - `found`: Boolean som indikerar om sökningen lyckades.
- * - `teacher`: Det fullständiga användarobjektet om det hittades, annars undefined.
- * * @description Funktionen används främst för att verifiera lärarens existens och hämta detaljer
- * vid tilldelning av lärare till kurser eller redigering av profiler.
- * @auth Admin
- */
-export async function getTeacher(userId: string) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
-  try {
-    const teacher = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    return { found: true, teacher: teacher };
+    return { found: true, orderItemCount, countProd, purchaseItemCount };
   } catch (e) {
     console.error(e);
     return { found: false };
@@ -1567,11 +1496,13 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
         id: true;
         product: { select: { id: true; name: true } };
         participant: { select: { id: true; name: true } };
+        type: true;
+        remainingCount: true;
         PurchaseItems: {
           select: {
             id: true;
             remainingCount: true;
-            unlimited: true; // fix senare.
+            unlimited: true;
             lessonsIncluded: true; // Bra att ha för "X av Y" logik
             course: { select: { name: true } }; // Hämtar namnet direkt
           };
@@ -1604,14 +1535,24 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
   try {
-    // fix: för klippkort!
-
     const usersWithData = await prisma.user.findMany({
       where: {
         purchases: {
           some: {
             PurchaseItems: {
-              some: { courseId: courseId, remainingCount: { gt: 0 } },
+              some: {
+                courseId,
+                OR: [
+                  { unlimited: true },
+                  {
+                    purchase: { type: "CLIP", remainingCount: { gt: 0 } },
+                  },
+                  {
+                    remainingCount: { gt: 0 },
+                    purchase: { type: { not: "CLIP" } },
+                  },
+                ],
+              },
             },
           },
         },
@@ -1623,7 +1564,19 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
         purchases: {
           where: {
             PurchaseItems: {
-              some: { courseId, remainingCount: { gt: 0 } },
+              some: {
+                courseId,
+                OR: [
+                  { unlimited: true },
+                  {
+                    purchase: { type: "CLIP", remainingCount: { gt: 0 } },
+                  },
+                  {
+                    remainingCount: { gt: 0 },
+                    purchase: { type: { not: "CLIP" } },
+                  },
+                ],
+              },
             },
           },
           select: {
@@ -1632,8 +1585,22 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
               select: { id: true, name: true },
             },
             participant: { select: { id: true, name: true } },
+            type: true,
+            remainingCount: true,
             PurchaseItems: {
-              where: { courseId, remainingCount: { gt: 0 } },
+              where: {
+                courseId,
+                OR: [
+                  { unlimited: true },
+                  {
+                    purchase: { type: "CLIP", remainingCount: { gt: 0 } },
+                  },
+                  {
+                    remainingCount: { gt: 0 },
+                    purchase: { type: { not: "CLIP" } },
+                  },
+                ],
+              },
               select: {
                 id: true,
                 remainingCount: true,
@@ -1663,7 +1630,6 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
     return { success: false };
   }
 }
-// fix: klippkort, samt kolla hur det används.
 
 /**
  * Registrerar en elev på en specifik lektion och drar av ett klipp från deras saldo.
@@ -1687,19 +1653,35 @@ export async function addUserInLesson(
 
     const purchase = await prisma.purchaseItem.findUnique({
       where: { id: validated.purchaseId },
+      include: { purchase: true },
     });
 
     if (!purchase)
       return { success: false, msg: "Could not find the purchase" };
 
-    if (purchase.remainingCount === 0)
-      return { success: false, msg: "No remaining count." };
+    if (!purchase.unlimited) {
+      const remaining =
+        purchase.purchase.type === "CLIP"
+          ? (purchase.purchase.remainingCount ?? 0)
+          : purchase.remainingCount;
+      if (remaining <= 0) {
+        return { success: false, msg: "No remaining count." };
+      }
+    }
 
+    const participantId = purchase.purchase.participantId;
+    const duplicateClauses = participantId
+      ? [{ purchaseItem: { purchase: { participantId } } }]
+      : [
+          {
+            userId: validated.userId,
+            purchaseItem: { purchase: { participantId: null } },
+          },
+        ];
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
-        userId: validated.userId,
-        //purchaseItemId: purchase.id, // Tog bort för förhindrar därmed att en elev kan boka in sig 2ggr oavsett vilken produkt han väljer.
+        OR: duplicateClauses,
       },
     });
 
@@ -1792,7 +1774,6 @@ export async function addUserInLesson(
     return { success: false };
   }
 }
-// Klippkort fix!
 
 /**
  * Tar bort en elevs bokning från en specifik lektion och återför ett klipp till saldot.
