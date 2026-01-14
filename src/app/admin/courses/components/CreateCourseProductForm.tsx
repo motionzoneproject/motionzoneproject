@@ -1,13 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DialogDescription } from "@radix-ui/react-dialog";
+import { PackagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
-import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,106 +28,79 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { addNewProduct } from "@/lib/actions/admin";
-import { adminAddProductSchema } from "@/validations/adminforms";
+import { createCourseProduct } from "@/lib/actions/admin";
+import { adminCreateCourseProductSchema } from "@/validations/adminforms";
 
-const formSchema = adminAddProductSchema;
+type FormInput = z.input<typeof adminCreateCourseProductSchema>;
+type FormOutput = z.output<typeof adminCreateCourseProductSchema>;
 
-type CourseFormInput = z.input<typeof formSchema>;
-type CourseFormOutput = z.output<typeof formSchema>;
+interface Props {
+  courseId: string;
+  courseName: string;
+}
 
-export default function AddProductForm() {
-  const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
-    resolver: zodResolver(formSchema),
+export default function CreateCourseProductForm({
+  courseId,
+  courseName,
+}: Props) {
+  const form = useForm<FormInput, unknown, FormOutput>({
+    resolver: zodResolver(adminCreateCourseProductSchema),
     defaultValues: {
-      clipcard: false,
-      description: "",
-      imageURL: "",
-      name: "",
+      courseId,
+      productName: courseName,
       price: 0,
-      clipCount: 0,
+      unlimitedCustomers: false,
       maxCustomers: 1,
-      unlimitedCustomers: true,
+      unlimitedLessons: false,
+      lessonsIncluded: 1,
     },
   });
 
   const router = useRouter();
-
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
-
-  // Ladda upp bild och lägg in produkt.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Vi byter ut imageURL i values oavsett, bara för att göra det lite enkelt för oss.
-    let finalImageURL = values.imageURL;
-
-    if (values.imageURL?.startsWith("blob:")) {
-      try {
-        const res = await fetch(values.imageURL);
-
-        const blob = await res.blob();
-        const formData = new FormData();
-        formData.append("file", blob, "image.jpg");
-
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (uploadRes.ok) {
-          const data = await uploadRes.json();
-          finalImageURL = data.url;
-
-          URL.revokeObjectURL(values.imageURL);
-        } else {
-          toast.error(`Uppladdning misslyckades. ${uploadRes.statusText}`);
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-        toast.error(`Uppladdning misslyckades. ${JSON.stringify(e)}`);
-        return;
-      }
+    if (!isOpen) {
+      form.reset({
+        courseId,
+        productName: courseName,
+        price: 0,
+        unlimitedCustomers: true,
+        maxCustomers: 0,
+        unlimitedLessons: true,
+        lessonsIncluded: 0,
+      });
     }
+  }, [courseId, form, isOpen, courseName]);
 
-    const validatedValues = await formSchema.parseAsync({
-      ...values,
-      imageURL: finalImageURL,
-    });
-
-    const res = await addNewProduct(validatedValues);
+  async function onSubmit(
+    values: z.infer<typeof adminCreateCourseProductSchema>,
+  ) {
+    const res = await createCourseProduct(values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
-      if (res.productId) {
-        const toastId = toast.loading("Öppnar kursdialog...");
-        sessionStorage.setItem("openCoursesFor", res.productId);
-        sessionStorage.setItem("openCoursesToastId", String(toastId));
-        router.refresh();
-      }
+      router.refresh();
     } else {
       toast.error(res.msg);
     }
   }
 
+  const hasUnlimitedCustomers = form.watch("unlimitedCustomers") === true;
+  const hasUnlimitedLessons = form.watch("unlimitedLessons") === true;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={"secondary"} className="cursor-pointer">
-          Ny produkt
+        <Button variant="ghost" className="gap-2">
+          <PackagePlus className="h-4 w-4" />
+          Skapa kurs-produkt
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Skapa en ny produkt</DialogTitle>
-          <DialogDescription>
-            Kurser läggs in efter att produkten har skapats.
-          </DialogDescription>
+          <DialogTitle>Skapa kurs-produkt för {courseName}</DialogTitle>
         </DialogHeader>
 
         <Card>
@@ -136,49 +108,31 @@ export default function AddProductForm() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-2 p-2 rounded-xl"
+                className="space-y-3 p-2 rounded-xl"
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="courseId"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormLabel></FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="productName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                      <FormLabel>Produktnamn</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Beskrivning av produkten</FormLabel>
-
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="imageURL"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bild</FormLabel>
-
-                      <FormControl>
-                        <ImageInput {...field} />
-                      </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
@@ -190,7 +144,6 @@ export default function AddProductForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Pris</FormLabel>
-
                       <FormControl>
                         <Input
                           type="number"
@@ -202,7 +155,6 @@ export default function AddProductForm() {
                           }
                         />
                       </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
@@ -214,7 +166,6 @@ export default function AddProductForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Obegränsat antal köp</FormLabel>
-
                       <FormControl>
                         <Checkbox
                           checked={field.value as boolean}
@@ -222,32 +173,27 @@ export default function AddProductForm() {
                             field.onChange(checked);
                             if (checked) {
                               form.setValue("maxCustomers", 0);
-                            } else {
-                              const currentMax = Number(
-                                form.getValues("maxCustomers") ?? 0,
-                              );
-                              if (currentMax < 1) {
-                                form.setValue("maxCustomers", 1);
-                              }
+                            } else if (
+                              Number(form.getValues("maxCustomers")) < 1
+                            ) {
+                              form.setValue("maxCustomers", 1);
                             }
                           }}
                           className="w-6 h-6"
                         />
                       </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {form.watch("unlimitedCustomers") !== true && (
+                {!hasUnlimitedCustomers && (
                   <FormField
                     control={form.control}
                     name="maxCustomers"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Max antal köp (minst 1)</FormLabel>
-
                         <FormControl>
                           <Input
                             type="number"
@@ -261,7 +207,6 @@ export default function AddProductForm() {
                             }
                           />
                         </FormControl>
-
                         <FormMessage />
                       </FormItem>
                     )}
@@ -270,63 +215,59 @@ export default function AddProductForm() {
 
                 <FormField
                   control={form.control}
-                  name="clipcard"
+                  name="unlimitedLessons"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Klippkort</FormLabel>
-
+                      <FormLabel>Obegränsat antal tillfällen</FormLabel>
                       <FormControl>
                         <Checkbox
                           checked={field.value as boolean}
                           onCheckedChange={(checked: boolean) => {
                             field.onChange(checked);
-                            const currentClipCount = Number(
-                              form.getValues("clipCount") ?? 0,
-                            );
-                            if (checked && currentClipCount < 1) {
-                              form.setValue("clipCount", 1);
+                            if (checked) {
+                              form.setValue("lessonsIncluded", 0);
+                            } else if (
+                              Number(form.getValues("lessonsIncluded")) < 1
+                            ) {
+                              form.setValue("lessonsIncluded", 1);
                             }
                           }}
                           className="w-6 h-6"
                         />
                       </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="clipCount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Antal klipp</FormLabel>
-
-                      <FormControl>
-                        <Input
-                          disabled={form.watch("clipcard") === false}
-                          type="number"
-                          min="1"
-                          step="1"
-                          {...field}
-                          value={
-                            form.watch("clipcard") === false
-                              ? 0
-                              : field.value === undefined
+                {!hasUnlimitedLessons && (
+                  <FormField
+                    control={form.control}
+                    name="lessonsIncluded"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Antal tillfällen (minst 1)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            {...field}
+                            value={
+                              field.value === undefined
                                 ? ""
                                 : String(field.value)
-                          }
-                        />
-                      </FormControl>
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" variant={"secondary"} className="w-full">
-                  Skapa
+                <Button type="submit" variant="secondary" className="w-full">
+                  Skapa produkt
                 </Button>
               </form>
             </Form>

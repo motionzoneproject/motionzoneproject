@@ -49,15 +49,10 @@ export default async function ProductItem({ product }: Props) {
             </CardTitle>
 
             <div className="p-2 space-x-1 space-y-1">
-              <AddCoursesToProductForm
-                allCourses={await getAllCourses()}
-                productId={product.id}
-                isClip={isClip}
-                productCourses={prodCourse}
-              ></AddCoursesToProductForm>
               <EditProductForm
                 maxCustomers={product.maxCustomer}
                 unlimitedCustomers={product.unlimitedCustomers}
+                soldCount={purchasesCount}
                 imageURL={product.imageURL ?? ""}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}
@@ -96,16 +91,25 @@ export default async function ProductItem({ product }: Props) {
             <div>
               <span className="font-bold">Sålda / max köp:</span>{" "}
               {purchasesCount} /{" "}
-              {product.unlimitedCustomers || product.maxCustomer <= 0
-                ? "Obegränsat"
-                : product.maxCustomer}
+              {product.unlimitedCustomers ? "Obegränsat" : product.maxCustomer}
               {isFull && <span className="ml-2 text-destructive">Fullt</span>}
             </div>
           </div>
 
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
-              <AccordionTrigger>Kurser i produkten</AccordionTrigger>
+              <div className="flex items-center justify-between">
+                <AccordionTrigger className="flex-1">
+                  Kurser i produkten
+                </AccordionTrigger>
+                <AddCoursesToProductForm
+                  allCourses={await getAllCourses()}
+                  productId={product.id}
+                  productName={product.name}
+                  isClip={isClip}
+                  productCourses={prodCourse}
+                />
+              </div>
               <AccordionContent>
                 <Card>
                   <CardContent>

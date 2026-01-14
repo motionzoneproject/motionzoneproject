@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -164,8 +165,9 @@ export default function EditCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"secondary"} className="cursor-pointer mb-3">
-          Ändra
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 mb-3">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Redigera kurstillfälle</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">

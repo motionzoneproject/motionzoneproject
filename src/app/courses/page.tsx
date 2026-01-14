@@ -110,8 +110,7 @@ export default async function Page({
                     ? "Paket"
                     : "Kurs";
 
-              const isUnlimitedCustomers =
-                p.unlimitedCustomers || p.maxCustomer <= 0;
+              const isUnlimitedCustomers = p.unlimitedCustomers;
               const spotsLeft = isUnlimitedCustomers
                 ? null
                 : p.maxCustomer - purchasesCount;

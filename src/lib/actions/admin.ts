@@ -19,6 +19,7 @@ import {
   adminAddCourseToSchemaSchema,
   adminAddProductSchema,
   adminAddTerminSchema,
+  adminCreateCourseProductSchema,
   adminLessonFormSchema,
 } from "@/validations/adminforms";
 import prisma from "../prisma";
@@ -1213,6 +1214,74 @@ export async function addNewProduct(
       success: true,
       msg: `Produkten ${newProd.name} skapades.`,
       productId: newProd.id,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+/**
+ * Skapar en COURSE-produkt direkt från en kurs och kopplar kursen till produkten.
+ * @param formData - Validerad data för pris, maxkunder och antal tillfällen.
+ * @auth Admin
+ */
+export async function createCourseProduct(
+  formData: z.output<typeof adminCreateCourseProductSchema>,
+): Promise<{ success: boolean; msg: string; productId?: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminCreateCourseProductSchema.parseAsync(formData);
+
+    const course = await prisma.course.findUnique({
+      where: { id: validated.courseId },
+    });
+    if (!course) {
+      return { success: false, msg: "Kursen hittades inte." };
+    }
+
+    const productName = validated.productName;
+    const maxCustomer = validated.unlimitedCustomers
+      ? 0
+      : validated.maxCustomers;
+    const lessonsIncluded = validated.unlimitedLessons
+      ? 0
+      : validated.lessonsIncluded;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          name: productName,
+          description: course.description ?? "",
+          price: validated.price,
+          imageURL: null,
+          maxCustomer,
+          unlimitedCustomers: validated.unlimitedCustomers ?? false,
+          totalCount: null,
+          type: "COURSE",
+        },
+      });
+
+      await tx.productOnCourse.create({
+        data: {
+          productId: product.id,
+          courseId: course.id,
+          unlimited: validated.unlimitedLessons ?? false,
+          lessonsIncluded,
+          type: "COURSE",
+        },
+      });
+
+      return product;
+    });
+
+    revalidatePath("/admin/products");
+
+    return {
+      success: true,
+      msg: `Produkten ${result.name} skapades.`,
+      productId: result.id,
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };

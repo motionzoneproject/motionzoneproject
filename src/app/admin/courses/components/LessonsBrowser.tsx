@@ -33,7 +33,7 @@ export default function LessonsBrowser({
   bookingsByLessonId,
   usersInCourse,
 }: Props) {
-  const [selTermin, setselTermin] = useState<string>();
+  const [selTermin, setselTermin] = useState<string>("all");
   const [showOldLessons, setShowOldLessons] = useState<boolean>(false);
 
   return (
@@ -43,12 +43,12 @@ export default function LessonsBrowser({
           <div>
             <Select onValueChange={(value) => setselTermin(value)}>
               <SelectTrigger className="min-w-50">
-                <SelectValue placeholder="Välj en termin" />
+                <SelectValue placeholder="Alla terminer" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Terminer</SelectLabel>
-                  <SelectItem value="none">Ingen</SelectItem>
+                  <SelectItem value="all">Alla terminer</SelectItem>
                   {terminer.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
@@ -73,17 +73,23 @@ export default function LessonsBrowser({
           </div>
         </div>
         <br />
-        {lessons
-          .filter((l) => l.terminId === selTermin)
-          .filter((l) => showOldLessons || l.startTime >= new Date())
-          .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
-          .length > 0 && (
-          <div className="w-full bg-secondary p-2 border-2 rounded grid md:grid-cols-2 gap-2 max-h-[80vh] overflow-auto">
-            {lessons
-              .filter((l) => l.terminId === selTermin)
-              .filter((l) => showOldLessons || l.startTime >= new Date())
-              .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
-              .map((l) => (
+        {(() => {
+          const filteredLessons = lessons
+            .filter((l) => selTermin === "all" || l.terminId === selTermin)
+            .filter((l) => showOldLessons || l.startTime >= new Date())
+            .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+
+          if (filteredLessons.length === 0) {
+            return (
+              <div className="rounded border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Inga lektioner hittades för vald termin.
+              </div>
+            );
+          }
+
+          return (
+            <div className="w-full max-h-[80vh] overflow-auto rounded border bg-background divide-y">
+              {filteredLessons.map((l) => (
                 <LessonItem
                   key={l.id}
                   lesson={l}
@@ -91,8 +97,9 @@ export default function LessonsBrowser({
                   initialUsers={usersInCourse}
                 />
               ))}
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </CardContent>
       <CardFooter>
         <p>Kursen har totalt {lessons.length}st lektioner.</p>

@@ -9,6 +9,7 @@ import type { Course } from "@/generated/prisma/client";
 import { countOrderItemsAndProductsCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
+import CreateCourseProductForm from "./components/CreateCourseProductForm";
 import DeleteCourseBtn from "./components/DelCourseBtn";
 import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
@@ -23,6 +24,7 @@ interface Props {
 
 export default async function CourseItem({ course }: Props) {
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+  const courseName = getCourseName(course);
 
   const counts = await countOrderItemsAndProductsCourse(course.id);
 
@@ -32,7 +34,7 @@ export default async function CourseItem({ course }: Props) {
         <CardHeader>
           <div className="w-full lg:flex md:justify-between md:items-start">
             <CardTitle>
-              <div>{getCourseName(course)}</div>
+              <div>{courseName}</div>
             </CardTitle>
 
             <div className="p-2 flex gap-2">
@@ -43,15 +45,21 @@ export default async function CourseItem({ course }: Props) {
         </CardHeader>
 
         <CardContent>
-          <div className="p-2 grid grid-cols-2 gap-2 bg-muted/30 border border-border rounded">
+          <div className="p-2 space-y-2 bg-muted/30 border border-border rounded">
             <div>
               <span className="font-bold">Antal köp med tillgång:</span>{" "}
               {counts.purchaseItemCount ?? 0}
             </div>
 
-            <div>
-              <span className="font-bold">Produkter:</span>{" "}
-              {counts.countProd ?? 0} st
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="font-bold">Produkter:</span>{" "}
+                {counts.countProd ?? 0} st
+              </div>
+              <CreateCourseProductForm
+                courseId={course.id}
+                courseName={courseName}
+              />
             </div>
           </div>
 

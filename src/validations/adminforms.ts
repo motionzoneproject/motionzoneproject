@@ -116,7 +116,42 @@ export const adminAddProductSchema = z
   .refine((data) => !data.clipcard || data.clipCount >= 1, {
     message: "Antalet klipp måste vara minst 1.",
     path: ["clipCount"],
-  });
+  })
+  .refine(
+    (data) => data.unlimitedCustomers === true || data.maxCustomers >= 1,
+    {
+      message: "Max antal köp måste vara minst 1 om inte obegränsat.",
+      path: ["maxCustomers"],
+    },
+  );
+
+export const adminCreateCourseProductSchema = z
+  .object({
+    courseId: z.string().min(1, "Kurs-ID måste anges."),
+    productName: z.string().min(1, "Produktnamn måste anges."),
+    price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+    maxCustomers: z.coerce.number().int().nonnegative(),
+    unlimitedCustomers: z.coerce.boolean().optional(),
+    lessonsIncluded: z.coerce
+      .number()
+      .int()
+      .nonnegative("Antalet tillfällen får inte vara negativt."),
+    unlimitedLessons: z.coerce.boolean().optional(),
+  })
+  .refine(
+    (data) => data.unlimitedCustomers === true || data.maxCustomers >= 1,
+    {
+      message: "Max antal köp måste vara minst 1 om inte obegränsat.",
+      path: ["maxCustomers"],
+    },
+  )
+  .refine(
+    (data) => data.unlimitedLessons === true || data.lessonsIncluded >= 1,
+    {
+      message: "Antal tillfällen måste vara minst 1 om inte obegränsat.",
+      path: ["lessonsIncluded"],
+    },
+  );
 
 export const AdminProductCourseItemSchema = z.object({
   productId: z.string().min(1),
