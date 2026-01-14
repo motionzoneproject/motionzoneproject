@@ -58,12 +58,12 @@ export default function EditCourseForm({ course, teachers }: Props) {
       name: course.name,
       description: course.description,
       maxbookings: course.maxBookings,
+      unlimitedBookings: course.maxBookings <= 0,
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
       adult: course.adult,
       teacherid: course.teacherId, // fix: gör så man kan välja lärare. (select)
-      maxCustomers: course.maxCustomer, // fixed bug.
     },
   });
 
@@ -76,20 +76,16 @@ export default function EditCourseForm({ course, teachers }: Props) {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (form.watch("unlimitedBookings") === true) {
+      values.maxbookings = 0;
+    }
+
     if (
       // fix: se över detta, kanske räcker med zod när vi fixat det.
       (form.watch("maxbookings") as number) <= 0 ||
       (form.watch("maxbookings") as string).trim()
     ) {
       values.maxbookings = 0;
-    }
-
-    if (
-      // fix: se över detta, kanske räcker med zod när vi fixat det.
-      (form.watch("maxCustomers") as number) <= 0 ||
-      (form.watch("maxCustomers") as string).trim()
-    ) {
-      values.maxCustomers = 0;
     }
 
     const res = await editCourse(course.id, values);
@@ -110,6 +106,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
   const maxBookValue = form.watch("maxbookings");
   const maxBookTrim: string = String(maxBookValue ?? "").trim();
+  const unlimitedBookings = form.watch("unlimitedBookings") === true;
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -166,28 +163,23 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="maxbookings"
+                  name="unlimitedBookings"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Max bokningar per tillfälle
-                        {((form.watch("maxbookings") as number) <= 0 ||
-                          maxBookTrim === "") && (
-                          <div className="text-muted-foreground">
-                            (ingen gräns är satt)
-                          </div>
-                        )}
+                        Obegränsat antal bokningar per tillfälle
                       </FormLabel>
 
                       <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("maxbookings", 0);
+                            }
+                          }}
+                          className="w-6 h-6"
                         />
                       </FormControl>
 
@@ -198,13 +190,23 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="maxCustomers"
+                  name="maxbookings"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max kunder (0=obegränsat).</FormLabel>
+                      <FormLabel>
+                        Max bokningar per tillfälle
+                        {((form.watch("maxbookings") as number) <= 0 ||
+                          maxBookTrim === "") &&
+                          !unlimitedBookings && (
+                            <div className="text-muted-foreground">
+                              (ingen gräns är satt)
+                            </div>
+                          )}
+                      </FormLabel>
 
                       <FormControl>
                         <Input
+                          disabled={unlimitedBookings}
                           type="number"
                           min="0"
                           step="1"

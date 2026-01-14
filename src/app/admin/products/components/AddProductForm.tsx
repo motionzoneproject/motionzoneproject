@@ -49,6 +49,7 @@ export default function AddProductForm() {
       price: 0,
       clipCount: 0,
       maxCustomers: 0,
+      unlimitedCustomers: false,
     },
   });
 
@@ -210,13 +211,39 @@ export default function AddProductForm() {
 
                 <FormField
                   control={form.control}
+                  name="unlimitedCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat antal köp</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("maxCustomers", 0);
+                            }
+                          }}
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+                      <FormLabel>Max antal köp</FormLabel>
 
                       <FormControl>
                         <Input
+                          disabled={form.watch("unlimitedCustomers") === true}
                           type="number"
                           min="0"
                           step="1"

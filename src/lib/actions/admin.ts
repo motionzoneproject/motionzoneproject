@@ -4,7 +4,6 @@
 // Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
 // allright, im on it. Ska ba byta branch. Eller? Bör jag verkligen göra det?
 
-import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
@@ -53,9 +52,6 @@ export type SchemaItemWithCourse = SchemaItem & { course: Course };
 
 // Tyo för att lista alla Lektioner inkl alla bokningar.
 export type LessonWithBookings = Lesson & { bookings: Booking[] };
-
-// fix: Varför skicka med lärare här? Används inte. (se admin / courses). Inte dumt i sig, men då borde vi använda det.
-export type CourseWithTeacher = Course & { teacher: User };
 
 export type AdminLessonWithCourse = Lesson & { course: Course };
 
@@ -108,19 +104,15 @@ export async function getSchemaItems(
 
 /**
  * Hämtar samtliga kurser i systemet sorterade alfabetiskt efter namn.
- * Inkluderar läraren som en User för varje kurs.
- * * @returns En Promise som löser ut till en array av CourseWithTeacher.
+ * * @returns En Promise som löser ut till en array av Course.
  * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
  */
-export async function getAllCourses(
-  q: string = "",
-): Promise<CourseWithTeacher[]> {
+export async function getAllCourses(q: string = ""): Promise<Course[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const courses = await prisma.course.findMany({
     where: { name: { contains: q, mode: "insensitive" } },
-    include: { teacher: true },
     orderBy: { name: "asc" },
   });
   return courses;
@@ -776,7 +768,6 @@ export async function delCourse(
  * - `name`: Kursens namn.
  * - `teacherid`: ID för läraren/admin som ska hålla kursen.
  * - `maxbookings`: Antal platser per lektionstillfälle.
- * - `maxCustomers`: Totalt antal unika kunder som kan köpa in sig på kursen.
  * - `description`: Kursbeskrivning och detaljer.
  * - `minAge`/`maxAge`/`level`: Kriterier för deltagande.
  * * @returns Ett objekt med success-status och ett bekräftande meddelande med kursens namn.
@@ -805,7 +796,6 @@ export async function addNewCourse(
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -851,24 +841,10 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
-    // Kolla hur många som redan har kursen via ett köp
-    const currentSubscribers = await prisma.purchaseItem.count({
-      where: { courseId: id },
-    });
-
-    // Om admin försöker sänka taket under antalet nuvarande kunder
-    if (validated.maxCustomers < currentSubscribers) {
-      return {
-        success: false,
-        msg: `Kan inte sänka max antal kunder till ${validated.maxCustomers}. Det finns redan ${currentSubscribers} kunder som äger kursen.`,
-      };
-    }
-
     const newCourseItem = await prisma.course.update({
       data: {
         name: validated.name,
         maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -1179,6 +1155,7 @@ export async function addNewProduct(
         price: validated.price,
         imageURL: validated.imageURL,
         maxCustomer: validated.maxCustomers,
+        unlimitedCustomers: validated.unlimitedCustomers ?? false,
         totalCount: validated.clipCount,
         type: validated.clipcard ? "CLIP" : "COURSE",
       },
@@ -1231,15 +1208,17 @@ export async function editProduct(
       };
     }
 
-    // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
-    const salesCount = await prisma.purchase.count({
-      where: { productId: id },
-    });
-    if (validated.maxCustomers < salesCount) {
-      return {
-        success: false,
-        msg: "Kan inte sänka maxantalet under redan sålt antal.",
-      };
+    if (!validated.unlimitedCustomers) {
+      // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
+      const salesCount = await prisma.purchase.count({
+        where: { productId: id },
+      });
+      if (validated.maxCustomers < salesCount) {
+        return {
+          success: false,
+          msg: "Kan inte sänka maxantalet under redan sålt antal.",
+        };
+      }
     }
 
     const oldImageURL = await prisma.product.findFirst({
@@ -1259,6 +1238,7 @@ export async function editProduct(
         price: validated.price,
         imageURL: validated.imageURL,
         maxCustomer: validated.maxCustomers,
+        unlimitedCustomers: validated.unlimitedCustomers ?? false,
         totalCount: validated.clipCount,
       },
     });
@@ -1501,16 +1481,26 @@ export async function countOrderItems(
  * - `found`: Om sökningen lyckades.
  * - `count`: Totalt antal sålda orderrader (OrderItems) för produkter där denna kurs ingår.
  * - `countProd`: Antal unika produkter som inkluderar denna kurs i sitt utbud.
+ * - `purchaseItemCount`: Antal PurchaseItems kopplade till kursen (antal köp med tillgång).
  * * @description Denna funktion är avgörande för att bedöma konsekvenserna av att radera eller ändra en kurs,
  * då den visar om kursen är bunden till befintliga kundavtal och paket.
  * @auth Admin
  */
 export async function countOrderItemsAndProductsCourse(
   courseId: string,
-): Promise<{ found: boolean; count?: number; countProd?: number }> {
+): Promise<{
+  found: boolean;
+  count?: number;
+  countProd?: number;
+  purchaseItemCount?: number;
+}> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { found: false };
   try {
+    const purchaseItemCount = await prisma.purchaseItem.count({
+      where: { courseId },
+    });
+
     const count = await prisma.orderItem.count({
       where: { product: { courses: { some: { courseId } } } },
     });
@@ -1519,7 +1509,7 @@ export async function countOrderItemsAndProductsCourse(
       where: { courses: { some: { courseId } } },
     });
     // Vi returnerar success: true även om count är 0
-    return { found: true, count, countProd };
+    return { found: true, count, countProd, purchaseItemCount };
   } catch (e) {
     console.error(e);
     return { found: false };
@@ -1527,7 +1517,7 @@ export async function countOrderItemsAndProductsCourse(
 }
 // ev. fix (utredning pågår)
 // Varför den inte räknar "platser kvar":
-// Om du vill veta hur många som just nu har tillgång till en kurs för att jämföra med maxCustomer (platser kvar), ska du titta på PurchaseItem.
+// Om du vill veta hur många som just nu har tillgång till en kurs ska du titta på PurchaseItem.
 // Ett OrderItem är bara ett kvitto på ett köp.
 // Ett PurchaseItem är det faktiska "medlemskapet" som ger eleven rätt att boka.
 
@@ -1720,11 +1710,15 @@ export async function addUserInLesson(
       };
     }
 
-    // KOLLA STATUS PÅ LEKTIONEN
+    // KOLLA STATUS OCH KAPACITET PÅ LEKTIONEN
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
-      select: { cancelled: true },
+      select: { cancelled: true, maxBookings: true },
     });
+
+    if (!lesson) {
+      return { success: false, msg: "Lektionen hittades inte." };
+    }
 
     if (lesson?.cancelled) {
       return {
@@ -1733,7 +1727,40 @@ export async function addUserInLesson(
       };
     }
 
+    if (lesson?.maxBookings && lesson.maxBookings > 0) {
+      const currentBookings = await prisma.booking.count({
+        where: { lessonId: validated.lessonId, cancelled: false },
+      });
+
+      if (currentBookings >= lesson.maxBookings) {
+        return { success: false, msg: "Lektionen är fullbokad." };
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
+      const txLesson = await tx.lesson.findUnique({
+        where: { id: validated.lessonId },
+        select: { cancelled: true, maxBookings: true },
+      });
+
+      if (!txLesson) {
+        throw new Error("Lektionen hittades inte.");
+      }
+
+      if (txLesson?.cancelled) {
+        throw new Error("Kan inte lägga till elever i en inställd lektion.");
+      }
+
+      if (txLesson?.maxBookings && txLesson.maxBookings > 0) {
+        const currentBookings = await tx.booking.count({
+          where: { lessonId: validated.lessonId, cancelled: false },
+        });
+
+        if (currentBookings >= txLesson.maxBookings) {
+          throw new Error("Lektionen är fullbokad.");
+        }
+      }
+
       await tx.booking.create({
         data: {
           lessonId: validated.lessonId,
@@ -1754,6 +1781,14 @@ export async function addUserInLesson(
     return { success: true, msg: "Eleven blev tillagd i lektionen." };
   } catch (e) {
     console.error(e);
+    const msg = e instanceof Error ? e.message : "";
+    if (
+      msg === "Lektionen är fullbokad." ||
+      msg === "Kan inte lägga till elever i en inställd lektion." ||
+      msg === "Lektionen hittades inte."
+    ) {
+      return { success: false, msg };
+    }
     return { success: false };
   }
 }
