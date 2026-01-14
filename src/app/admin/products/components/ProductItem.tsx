@@ -90,7 +90,7 @@ export default async function ProductItem({ product }: Props) {
             </div>
             <div>
               <span className="font-bold">Pris:</span>
-              {/* fix:  .toNumber() om det ska vara decimal */} {product.price}
+              {product.price}
               kr
             </div>
             <div>

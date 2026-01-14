@@ -14,14 +14,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Lesson, Termin } from "@/generated/prisma/client";
+import type {
+  BookingWithPurchaseParticipant,
+  UserPurchasesForCourse,
+} from "@/lib/actions/admin";
 import LessonItem from "./LessonItem";
 
 interface Props {
   lessons: Lesson[];
   terminer: Termin[];
+  bookingsByLessonId: Record<string, BookingWithPurchaseParticipant[]>;
+  usersInCourse: UserPurchasesForCourse[];
 }
 
-export default function LessonsBrowser({ lessons, terminer }: Props) {
+export default function LessonsBrowser({
+  lessons,
+  terminer,
+  bookingsByLessonId,
+  usersInCourse,
+}: Props) {
   const [selTermin, setselTermin] = useState<string>();
   const [showOldLessons, setShowOldLessons] = useState<boolean>(false);
 
@@ -73,7 +84,12 @@ export default function LessonsBrowser({ lessons, terminer }: Props) {
               .filter((l) => showOldLessons || l.startTime >= new Date())
               .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
               .map((l) => (
-                <LessonItem key={l.id} lesson={l} />
+                <LessonItem
+                  key={l.id}
+                  lesson={l}
+                  initialBookings={bookingsByLessonId[l.id] ?? []}
+                  initialUsers={usersInCourse}
+                />
               ))}
           </div>
         )}

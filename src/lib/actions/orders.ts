@@ -80,9 +80,6 @@ export async function adminGetOrder(orderId: string) {
   });
 }
 
-// fix: klippkort.
-// // kör denna när man accepterar ordern.
-// fix: Om det bara är 1 kurs, boka alla tillfällen.
 export async function createPurchaseFromOrder(orderId: string) {
   await requireAdmin();
 
@@ -140,6 +137,12 @@ export async function createPurchaseFromOrder(orderId: string) {
           orderId: order.id,
           productId: orderItem.productId,
           participantId: orderItem.participantId,
+          type: orderItem.product.type,
+          totalCount: orderItem.product.totalCount ?? null,
+          remainingCount:
+            orderItem.product.type === "CLIP"
+              ? (orderItem.product.totalCount ?? 0)
+              : null,
           // (Fler fält för klippkort kan behövas här om de finns i orderItem)
         },
       });
@@ -160,6 +163,7 @@ export async function createPurchaseFromOrder(orderId: string) {
         ),
       );
 
+      // Autoboka om det är 1 kurs. Om det går såklart sett till inställt eller antl klipp.
       const shouldAutoBook =
         orderItem.product.type === "COURSE" &&
         orderItem.product.courses.length === 1;
@@ -193,9 +197,14 @@ export async function createPurchaseFromOrder(orderId: string) {
             (lesson) => !existingSet.has(lesson.id),
           );
 
+          const remainingByType =
+            purchase.type === "CLIP"
+              ? (purchase.remainingCount ?? 0)
+              : purchaseItem.remainingCount;
+
           if (
             !purchaseItem.unlimited &&
-            purchaseItem.remainingCount < lessonsToBook.length
+            remainingByType < lessonsToBook.length
           ) {
             throw new Error(
               "Not enough remaining lessons to auto-book this course.",

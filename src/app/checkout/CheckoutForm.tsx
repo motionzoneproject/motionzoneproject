@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -82,6 +84,21 @@ export default function CheckoutForm({
     ),
   );
 
+  const draftParticipants = Object.entries(slots)
+    .map(([key, slot]) => {
+      if (slot.isSelf || !slot.customData?.name) return null;
+      return {
+        id: `draft-${key}`,
+        name: slot.customData.name,
+        data: slot.customData,
+      };
+    })
+    .filter(Boolean) as {
+    id: string;
+    name: string;
+    data: ParticipantData;
+  }[];
+
   // Filter out the current user from the existing participants dropdown
   // because we have the "Jag själv" checkbox for that.
   const otherParticipants = existingParticipants.filter((p) => {
@@ -103,6 +120,7 @@ export default function CheckoutForm({
 
     try {
       const orderItems = [];
+      const draftMap = new Map<string, string>();
 
       for (let idx = 0; idx < flattenedItems.length; idx++) {
         const it = flattenedItems[idx];
@@ -120,15 +138,41 @@ export default function CheckoutForm({
           });
           participantId = p.id;
         } else if (slot.participantId && slot.participantId !== "new") {
-          participantId = slot.participantId;
+          if (slot.participantId.startsWith("draft-")) {
+            const draft = draftParticipants.find(
+              (p) => p.id === slot.participantId,
+            );
+            if (!draft) {
+              toast.error(`Välj deltagare för ${it.name}`);
+              setIsSubmitting(false);
+              return;
+            }
+            const existing = draftMap.get(draft.id);
+            if (existing) {
+              participantId = existing;
+            } else {
+              const p = await getOrCreateParticipant(draft.data);
+              participantId = p.id;
+              draftMap.set(draft.id, p.id);
+            }
+          } else {
+            participantId = slot.participantId;
+          }
         } else if (slot.customData) {
           if (!slot.customData.name) {
             toast.error(`Ange namn för deltagare på ${it.name}`);
             setIsSubmitting(false);
             return;
           }
-          const p = await getOrCreateParticipant(slot.customData);
-          participantId = p.id;
+          const draftId = `draft-${key}`;
+          const existing = draftMap.get(draftId);
+          if (existing) {
+            participantId = existing;
+          } else {
+            const p = await getOrCreateParticipant(slot.customData);
+            participantId = p.id;
+            draftMap.set(draftId, p.id);
+          }
         } else {
           toast.error(`Välj deltagare för ${it.name}`);
           setIsSubmitting(false);
@@ -174,6 +218,9 @@ export default function CheckoutForm({
             {flattenedItems.map((it, idx) => {
               const key = `slot-${idx}`;
               const slot = slots[key] || { isSelf: false };
+              const draftOptions = draftParticipants.filter(
+                (p) => p.id !== `draft-${key}`,
+              );
 
               return (
                 <div
@@ -214,11 +261,28 @@ export default function CheckoutForm({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="new">+ Ny person</SelectItem>
-                            {otherParticipants.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.name}
-                              </SelectItem>
-                            ))}
+                            {draftOptions.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>
+                                  Nya i denna beställning
+                                </SelectLabel>
+                                {draftOptions.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+                            {otherParticipants.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Sparade deltagare</SelectLabel>
+                                {otherParticipants.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

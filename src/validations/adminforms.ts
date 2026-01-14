@@ -4,7 +4,6 @@ import { Weekday } from "@/generated/prisma/enums";
 
 const TIME_REGEX = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
 
-// fix: max-booking per tillfälle (t.ex om de har ett tillfälle i studio-1 och ett annat i studio-2 eller bara vill kunna ha olika per dag.)
 export const adminAddCourseToSchemaSchema = z
   .object({
     courseId: z.string().min(1),

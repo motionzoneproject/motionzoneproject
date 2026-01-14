@@ -49,7 +49,7 @@ type CourseFormInput = z.input<typeof adminAddCourseSchema>;
 type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
-  teachers: User[]; // fix: select för lärare
+  teachers: User[];
 }
 
 export default function AddCourseForm({ teachers }: Props) {
@@ -65,7 +65,7 @@ export default function AddCourseForm({ teachers }: Props) {
       maxAge: "",
       level: "",
       adult: false,
-      teacherid: user?.id, // fix: select för lärare.
+      teacherid: user?.id,
     },
   });
 

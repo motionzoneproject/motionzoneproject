@@ -1,8 +1,5 @@
 "use client";
 
-// Här har jag nog nästlan in mig i en "use client"-lösning, som förmodligen går att lösa utan. Har försökt använda best practice i övrigt, men kommer inte snabbt på hur jag kan ändra allt för att undvika detta eftersom filtrering på termin osv sker på komponentnivå för varje lektion. Det här kan jag klura ut sen, om detta är tillräckligt säkert för första lanseringen. Inser att det skulle gå att ev manupilera hur många bokningar en kund har, men isf som admin, och använder transaction samt descrement i server-actions.
-// Provar göra PR på detta, för att gå vidare till viktigare funktionalitet.
-
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,53 +26,36 @@ import AddUserBtn from "./AddUserBtn";
 
 interface Props {
   lesson: Lesson;
+  initialBookings: BookingWithPurchaseParticipant[];
+  initialUsers: UserPurchasesForCourse[];
 }
 
-export default function LessonAttendanceForm({ lesson }: Props) {
+export default function LessonAttendanceForm({
+  lesson,
+  initialBookings,
+  initialUsers,
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
-
-  const [bookings, setBookings] = useState<BookingWithPurchaseParticipant[]>(
-    [],
-  ); // State för bokningar.
-  const [gotBookings, setGotBookings] = useState<boolean>(false);
-
-  const [usersInCourse, setUsersInCourse] =
-    useState<UserPurchasesForCourse[]>();
-  const [uicSet, setUicSet] = useState<boolean>();
+  const [bookings, setBookings] = useState(initialBookings);
+  const [usersInCourse, setUsersInCourse] = useState(initialUsers);
 
   useEffect(() => {
-    // fix: klippkortslogik också.
+    setBookings(initialBookings);
+    setUsersInCourse(initialUsers);
+  }, [initialBookings, initialUsers]);
 
-    if (!isOpen) return; // Kör bara om dialogen faktiskt är öppen
-
-    const getBookingsFromDb = async (lessonId: string) => {
-      const b = await getBookingsFromLesson(lessonId);
-      setBookings(b);
-      if (b) setGotBookings(true);
-    };
-
-    const getAllStudentsWithCourse = async () => {
-      setLoading(true);
-      setUicSet(true);
-      const response = await getUsersWithPurchasedProductsWithCourseInIt(
-        lesson.courseId,
-      );
-
-      if (response.users) setUsersInCourse(response.users);
-      setLoading(false);
-    };
-
-    if (!uicSet) getAllStudentsWithCourse();
-    if (!gotBookings) getBookingsFromDb(lesson.id);
-  }, [uicSet, lesson.courseId, gotBookings, isOpen, lesson.id]);
-
-  const refresher = useCallback(() => {
-    setUicSet(false); // fixed - detta tar lång tid att uppdaatera, är en ganska lång lista att hämta. Kommer bli bättre om vi inte kör "use client"
-    setGotBookings(false);
-    setBookings([]);
-  }, []);
+  const refreshData = useCallback(async () => {
+    setLoading(true);
+    const [nextBookings, usersResult] = await Promise.all([
+      getBookingsFromLesson(lesson.id),
+      getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId),
+    ]);
+    setBookings(nextBookings);
+    setUsersInCourse(usersResult.users ?? []);
+    setLoading(false);
+  }, [lesson.courseId, lesson.id]);
 
   const removeUser = useCallback(
     async (userId: string) => {
@@ -83,12 +63,12 @@ export default function LessonAttendanceForm({ lesson }: Props) {
 
       if (response.success) {
         toast.success(response.msg);
-        refresher();
+        await refreshData();
       } else {
         toast.error(response.msg);
       }
     },
-    [refresher, lesson.id],
+    [lesson.id, refreshData],
   );
   //   const router = useRouter();
 
@@ -103,9 +83,6 @@ export default function LessonAttendanceForm({ lesson }: Props) {
       open={isOpen}
       onOpenChange={(e) => {
         setIsOpen(e);
-        if (e === true) {
-          refresher(); // Kör hämta-data-loopen varje gång man öppnar dialogen så det uppdateraas om lektionen har ställt in t.ex.
-        }
       }}
     >
       <DialogTrigger asChild>
@@ -127,7 +104,7 @@ export default function LessonAttendanceForm({ lesson }: Props) {
         <Card>
           <CardContent>
             <AddUserBtn
-              refresher={refresher}
+              refresher={refreshData}
               lessonId={lesson.id}
               usersInCourse={usersInCourse ?? []}
               isFull={isFull}

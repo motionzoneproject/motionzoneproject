@@ -1,7 +1,5 @@
 "use client";
 
-// fix: gör detta till en "global" komponent (om vi inte ska ändra admin helt med annat filter osv)
-
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 

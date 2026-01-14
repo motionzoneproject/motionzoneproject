@@ -1,7 +1,5 @@
 "use client";
 
-/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
@@ -90,7 +88,7 @@ export default function EditProductForm({
     let finalImageUrl = values.imageURL;
     let newImg: boolean = false;
 
-    if (values.imageURL.startsWith("blob:")) {
+    if (values.imageURL?.startsWith("blob:")) {
       const res = await fetch(values.imageURL);
 
       const blob = await res.blob(); // Få bilden som den blob det är.

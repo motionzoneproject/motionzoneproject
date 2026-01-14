@@ -157,7 +157,12 @@ export default function AddUserBtn({
                                 value={pu.PurchaseItems[0].id}
                               >
                                 {pu.product.name} (
-                                {pu.PurchaseItems[0].remainingCount} kvar)
+                                {pu.PurchaseItems[0].unlimited
+                                  ? "obegränsat"
+                                  : pu.type === "CLIP"
+                                    ? (pu.remainingCount ?? 0)
+                                    : pu.PurchaseItems[0].remainingCount}{" "}
+                                kvar)
                                 {pu.participant?.name &&
                                   ` – ${pu.participant.name}`}
                               </SelectItem>

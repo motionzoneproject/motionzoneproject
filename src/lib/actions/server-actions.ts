@@ -264,12 +264,24 @@ export async function addBooking(
     }
 
     // 3. Kontrollera om användaren redan är bokad på lektionen
+    const duplicateClauses = purchase.participantId
+      ? [
+          {
+            purchaseItem: {
+              purchase: { participantId: purchase.participantId },
+            },
+          },
+        ]
+      : [
+          {
+            userId: user.id,
+            purchaseItem: { purchase: { participantId: null } },
+          },
+        ];
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
-        userId: user.id,
-        // Vi kollar på lektionsnivå, användaren ska inte kunna boka samma lektion två gånger
-        // oavsett vilket purchaseItem de använder.
+        OR: duplicateClauses,
       },
     });
 
@@ -377,6 +389,7 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
             userId: true,
             type: true,
             remainingCount: true,
+            participantId: true,
           },
         },
       },
@@ -404,10 +417,27 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
     }
 
     const lessonIds = lessons.map((lesson) => lesson.id);
+    const duplicateClauses = purchaseItem.purchase.participantId
+      ? [
+          {
+            purchaseItem: {
+              purchase: {
+                participantId: purchaseItem.purchase.participantId,
+              },
+            },
+          },
+        ]
+      : [
+          {
+            userId: user.id,
+            purchaseItem: { purchase: { participantId: null } },
+          },
+        ];
+
     const existingBookings = await prisma.booking.findMany({
       where: {
-        userId: user.id,
         lessonId: { in: lessonIds },
+        OR: duplicateClauses,
       },
       select: { lessonId: true },
     });
@@ -653,8 +683,6 @@ export async function getAllProductsWithData(filters?: {
     const products = await prisma.product.findMany({
       where: andFilters.length > 0 ? { AND: andFilters } : undefined,
       include: {
-        // termin: true,
-        // // Hämta kopplingen mellan produkt och kurs. Denna används ej. fix: ta bort från db.
         courses: {
           include: {
             course: {

@@ -174,7 +174,7 @@ model Termin {
 
   schemaItems SchemaItem[] // Implicit relation - SchemaItem pekar på Termin
 
-  products Product[] // Vilka produkter är kopplade till terminen. På omvägar här kan man se vilka kunder som köpt produkter kopplade till terminen, även deras kurser.
+
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
 
   // Denna verkar hittils iaf inte vara nödvändig: fix
@@ -250,10 +250,6 @@ model Course {
 
   purchaseItems PurchaseItem[]
 
-  // terminId String? 
-  // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
-  // Detta är om man bara ska kunna ha en kurs på en termin.
-
   terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna?
 
   level String? 
@@ -263,7 +259,6 @@ model Course {
   adult Boolean @default(false)
 
   @@index([teacherId])
-  // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
   @@map("course")
 
 }
@@ -309,9 +304,6 @@ model Product {
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt.
 
-  terminId String? // fix: Detta hämtas i nulöäget istället från vart kurserna i produkten faktiskt har lagts in i veckoschemat (se GetProductTermin i server-action). Kanske gör en koppling hit senare.
-  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull) // fix: se ovan.
-
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
@@ -332,7 +324,6 @@ model Product {
   updatedAt DateTime @updatedAt
 
 
-  @@index([terminId])
   @@map("product")
 }
 
@@ -443,10 +434,6 @@ model PurchaseItem {
   course Course @relation(fields: [courseId], references: [id], onDelete: Restrict) 
 
   
-  // terminId String
-  // termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
-  // Denna info finns i purschase.
-
   type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
   lessonsIncluded Int // 0 om klippkort, precis som produkt. Men inför kommande fix är inte logiken baserad på detta utan TYPE.
   remainingCount Int 
@@ -460,7 +447,6 @@ model PurchaseItem {
 
   @@index([purchaseId])
   @@index([courseId])
-  // @@index([terminId])
   @@unique([purchaseId, courseId])
   @@map("purchase_item")
 
