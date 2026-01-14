@@ -10,13 +10,13 @@ export default function SearchInputProd() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  const [searchInput, setSearchInput] = useState(
-    searchParams.get("q")?.toString() ?? "",
-  );
+  const currentQuery = searchParams.get("q")?.toString() ?? "";
+  const [searchInput, setSearchInput] = useState(currentQuery);
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const handleSearch = useCallback(
     (term: string) => {
+      if (term === currentQuery) return; // Aaa smart.
       const params = new URLSearchParams(searchParams);
       if (term) {
         params.set("q", term);
@@ -26,12 +26,12 @@ export default function SearchInputProd() {
 
       replace(`${pathname}?${params.toString()}`);
     },
-    [pathname, replace, searchParams],
+    [currentQuery, pathname, replace, searchParams],
   );
 
   useEffect(() => {
-    setSearchInput(searchParams.get("q")?.toString() ?? "");
-  }, [searchParams]);
+    setSearchInput(currentQuery);
+  }, [currentQuery]);
 
   useEffect(() => {
     if (debouncedSearch === undefined) return;
