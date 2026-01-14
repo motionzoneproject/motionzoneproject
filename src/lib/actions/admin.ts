@@ -8,6 +8,7 @@ import type {
   Lesson,
   Prisma,
   Product,
+  ProductType,
   SchemaItem,
   Termin,
   Weekday,
@@ -1104,11 +1105,40 @@ export async function editLessonItem(
  * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
  * @auth Admin
  */
-export async function getAllProducts(): Promise<Product[]> {
+export async function getAllProducts(options?: {
+  query?: string;
+  type?: ProductType;
+  terminId?: string;
+  sort?: "name_asc" | "name_desc" | "price_asc" | "price_desc";
+}): Promise<Product[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
+  const orderBy =
+    options?.sort === "price_asc"
+      ? { price: "asc" }
+      : options?.sort === "price_desc"
+        ? { price: "desc" }
+        : options?.sort === "name_desc"
+          ? { name: "desc" }
+          : { name: "asc" };
+
+  const products = await prisma.product.findMany({
+    where: {
+      name: options?.query
+        ? { contains: options.query, mode: "insensitive" }
+        : undefined,
+      type: options?.type,
+      courses: options?.terminId
+        ? {
+            some: {
+              course: { terms: { some: { terminId: options.terminId } } },
+            },
+          }
+        : undefined,
+    },
+    orderBy,
+  });
 
   return products;
 }

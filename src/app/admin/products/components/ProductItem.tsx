@@ -1,10 +1,11 @@
+import Image from "next/image";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
@@ -30,9 +31,6 @@ export default async function ProductItem({ product }: Props) {
     include: { course: true },
   });
 
-  //   const terminer = await prisma.termin.findMany({
-  //     where: { schemaItems: { some: { courseId: course.id } } },
-  //   });
   const typeLabel = isClip ? "Klippkort" : isPack ? "Paket" : "Kurs";
   const isFull =
     !product.unlimitedCustomers &&
@@ -40,67 +38,41 @@ export default async function ProductItem({ product }: Props) {
     purchasesCount >= product.maxCustomer;
 
   return (
-    <div className="p-2 ">
-      <Card>
-        <CardHeader>
-          <div className="w-full flex justify-between md:items-start">
-            <CardTitle>
-              <div>{product.name}</div>
-            </CardTitle>
-
-            <div className="p-2 space-x-1 space-y-1">
-              <EditProductForm
-                maxCustomers={product.maxCustomer}
-                unlimitedCustomers={product.unlimitedCustomers}
-                soldCount={purchasesCount}
-                imageURL={product.imageURL ?? ""}
-                productId={product.id}
-                clipCount={product.totalCount ?? 0}
-                clipcard={isClip}
-                description={product.description}
-                name={product.name}
-                price={product.price}
+    <>
+      <TableRow className="border-t hover:bg-muted/30">
+        <TableCell className="p-3">
+          <div className="h-12 w-12 rounded border border-border bg-muted flex items-center justify-center overflow-hidden">
+            {product.imageURL ? (
+              <Image
+                src={product.imageURL}
+                alt={product.name}
+                width={48}
+                height={48}
+                className="h-full w-full object-cover"
               />
-              <DeleteProductBtn productId={product.id} />
-            </div>
+            ) : (
+              <span className="text-[10px] text-muted-foreground">
+                Ingen bild
+              </span>
+            )}
           </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="p-2 grid grid-cols-2 gap-2 bg-muted/30 border border-border rounded">
-            <div>
-              <span className="font-bold">Produkt-typ:</span> {typeLabel}
-            </div>
-            <div>
-              <span className="font-bold">
-                {isClip ? "Antal klipp:" : "Antal tillfällen (totalt):"}
-              </span>{" "}
-              {isClip
-                ? (product.totalCount ?? 0)
-                : prodCourse.reduce((a, b) => a + b.lessonsIncluded, 0)}
-            </div>
-            <div>
-              <span className="font-bold">Antal bokningsbara kurser:</span>{" "}
-              {prodCourse.length}
-            </div>
-            <div>
-              <span className="font-bold">Pris:</span>
-              {product.price}
-              kr
-            </div>
-            <div>
-              <span className="font-bold">Sålda / max köp:</span>{" "}
-              {purchasesCount} /{" "}
-              {product.unlimitedCustomers ? "Obegränsat" : product.maxCustomer}
-              {isFull && <span className="ml-2 text-destructive">Fullt</span>}
-            </div>
+        </TableCell>
+        <TableCell className="p-3">
+          <div className="font-semibold">{product.name}</div>
+          <div className="text-xs text-muted-foreground">
+            Sålda / max: {purchasesCount} /{" "}
+            {product.unlimitedCustomers ? "Obegränsat" : product.maxCustomer}
+            {isFull && <span className="ml-2 text-destructive">Fullt</span>}
           </div>
-
+        </TableCell>
+        <TableCell className="p-3">{typeLabel}</TableCell>
+        <TableCell className="p-3">{product.price} kr</TableCell>
+        <TableCell className="p-3">
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <AccordionTrigger className="flex-1">
-                  Kurser i produkten
+                  Kurser ({prodCourse.length})
                 </AccordionTrigger>
                 <AddCoursesToProductForm
                   allCourses={await getAllCourses()}
@@ -111,41 +83,54 @@ export default async function ProductItem({ product }: Props) {
                 />
               </div>
               <AccordionContent>
-                <Card>
-                  <CardContent>
-                    <div className="w-full bg-secondary p-2 border-2 rounded max-h-[80vh] space-y-2 overflow-auto">
-                      {prodCourse.map((pc) => (
-                        <div
-                          key={pc.courseId}
-                          className="p-2 border flex justify-between border-border rounded bg-card space-y-2"
-                        >
-                          <div>
-                            <span className="font-bold">
-                              {getCourseName(pc.course)}
-                            </span>
-                          </div>
+                <div className="w-full overflow-hidden rounded-md border border-border bg-muted/20">
+                  {prodCourse.map((pc) => (
+                    <div
+                      key={pc.courseId}
+                      className="px-3 py-2 flex items-center justify-between border-t first:border-t-0 border-border"
+                    >
+                      <div className="text-sm font-medium">
+                        {getCourseName(pc.course)}
+                      </div>
 
-                          {!isClip ? (
-                            <div>
-                              {" "}
-                              Tillfällen:{" "}
-                              {pc.unlimited
-                                ? "obegränsat"
-                                : `${pc.lessonsIncluded}`}
-                            </div>
-                          ) : (
-                            <div>(klippkort)</div>
-                          )}
+                      {!isClip ? (
+                        <div className="text-xs text-muted-foreground">
+                          Tillfällen:{" "}
+                          {pc.unlimited ? "obegränsat" : pc.lessonsIncluded}
                         </div>
-                      ))}
+                      ) : (
+                        <div className="text-xs text-muted-foreground">
+                          Klippkort
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </CardContent>
-      </Card>
-    </div>
+        </TableCell>
+        <TableCell className="p-3">
+          <div className="flex items-center justify-end gap-1">
+            <EditProductForm
+              maxCustomers={product.maxCustomer}
+              unlimitedCustomers={product.unlimitedCustomers}
+              soldCount={purchasesCount}
+              imageURL={product.imageURL ?? ""}
+              productId={product.id}
+              clipCount={product.totalCount ?? 0}
+              clipcard={isClip}
+              description={product.description}
+              name={product.name}
+              price={product.price}
+            />
+            <DeleteProductBtn productId={product.id} />
+          </div>
+        </TableCell>
+      </TableRow>
+      <TableRow aria-hidden="true">
+        <TableCell colSpan={6} className="h-2 p-0" />
+      </TableRow>
+    </>
   );
 }
