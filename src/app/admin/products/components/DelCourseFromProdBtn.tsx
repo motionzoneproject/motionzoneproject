@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { type ProdCourse, removeCourseInProduct } from "@/lib/actions/admin";
@@ -45,8 +46,13 @@ export default function DeleteCourseFromProdBtn({ pc }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant={"destructive"} className="cursor-pointer">
-          Ta bort
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">Ta bort kurs från produkt</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

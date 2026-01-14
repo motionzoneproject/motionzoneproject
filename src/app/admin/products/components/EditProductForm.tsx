@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -48,6 +49,7 @@ interface Props {
   clipCount: number;
   maxCustomers: number;
   unlimitedCustomers: boolean;
+  soldCount: number;
 }
 
 export default function EditProductForm({
@@ -60,7 +62,9 @@ export default function EditProductForm({
   imageURL,
   maxCustomers,
   unlimitedCustomers,
+  soldCount,
 }: Props) {
+  const isUnlimitedDefault = unlimitedCustomers;
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -72,7 +76,7 @@ export default function EditProductForm({
       price: price,
       clipCount: clipCount,
       maxCustomers: maxCustomers,
-      unlimitedCustomers: unlimitedCustomers,
+      unlimitedCustomers: isUnlimitedDefault,
     },
   });
 
@@ -84,7 +88,31 @@ export default function EditProductForm({
     if (!isOpen) form.reset();
   }, [isOpen, form]);
 
+  const hasUnlimitedCustomers = form.watch("unlimitedCustomers") === true;
+  const minRequiredCustomers = Math.max(1, soldCount);
+
+  useEffect(() => {
+    if (hasUnlimitedCustomers) return;
+    const currentMax = Number(form.getValues("maxCustomers") ?? 0);
+    if (currentMax < minRequiredCustomers) {
+      form.setValue("maxCustomers", minRequiredCustomers);
+    }
+  }, [form, hasUnlimitedCustomers, minRequiredCustomers]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (values.unlimitedCustomers) {
+      values.maxCustomers = 0;
+    }
+    if (
+      !values.unlimitedCustomers &&
+      values.maxCustomers < minRequiredCustomers
+    ) {
+      form.setError("maxCustomers", {
+        message: `Måste vara minst ${minRequiredCustomers}`,
+      });
+      return;
+    }
+
     let finalImageUrl = values.imageURL;
     let newImg: boolean = false;
 
@@ -130,8 +158,9 @@ export default function EditProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"secondary"} className="cursor-pointer">
-          Ändra produkt
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Redigera produkt</span>
         </Button>
       </DialogTrigger>
 
@@ -245,18 +274,20 @@ export default function EditProductForm({
                   )}
                 />
 
-                {form.watch("unlimitedCustomers") !== true && (
+                {!hasUnlimitedCustomers && (
                   <FormField
                     control={form.control}
                     name="maxCustomers"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Max antal köp</FormLabel>
+                        <FormLabel>
+                          Max antal köp (minst {minRequiredCustomers})
+                        </FormLabel>
 
                         <FormControl>
                           <Input
                             type="number"
-                            min="0"
+                            min={minRequiredCustomers}
                             step="1"
                             {...field}
                             value={

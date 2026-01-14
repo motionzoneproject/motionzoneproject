@@ -4,8 +4,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { Info } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Info, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -57,6 +57,7 @@ type CourseFormOutput = z.output<typeof formSchema>;
 
 interface Props {
   productId: string;
+  productName: string;
   isClip: boolean;
   productCourses: ProdCourse[];
   allCourses: Course[];
@@ -64,6 +65,7 @@ interface Props {
 
 export default function AddCoursesToProductForm({
   productId,
+  productName,
   isClip,
   productCourses,
   allCourses,
@@ -79,23 +81,27 @@ export default function AddCoursesToProductForm({
   });
 
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selCourse, setSelCourse] = useState<string>("");
   const [isInProd, setIsInProd] = useState<boolean | number>();
 
   useEffect(() => {
-    const targetId = searchParams.get("openCoursesFor");
+    const targetId = sessionStorage.getItem("openCoursesFor");
     if (targetId && targetId === productId) {
       setIsOpen(true);
-      const params = new URLSearchParams(searchParams);
-      params.delete("openCoursesFor");
-      const nextQuery = params.toString();
-      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+      sessionStorage.removeItem("openCoursesFor");
     }
-  }, [searchParams, productId, pathname, router]);
+  }, [productId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const toastIdRaw = sessionStorage.getItem("openCoursesToastId");
+    if (!toastIdRaw) return;
+    const toastId = Number(toastIdRaw);
+    toast.dismiss(Number.isNaN(toastId) ? toastIdRaw : toastId);
+    sessionStorage.removeItem("openCoursesToastId");
+  }, [isOpen]);
 
   useEffect(() => {
     const checkIsInProd = async () => {
@@ -131,14 +137,15 @@ export default function AddCoursesToProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"secondary"} className="cursor-pointer">
-          Hantera kurser i produkten
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Hantera kurser i produkten</span>
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Lägg till kurser i produkt</DialogTitle>
+          <DialogTitle>Lägg till kurser i {productName}</DialogTitle>
           <DialogDescription>
             Lägg in de kurser som skall kunna bokas med produkten, samt hur
             många bokningar som kan göras.
