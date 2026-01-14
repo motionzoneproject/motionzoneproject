@@ -65,15 +65,27 @@ export default function SignUpForm() {
         return;
       }
 
-      toast.success("Konto skapat!", {
-        description: "Välkommen till MotionZone! Logga in för att fortsätta.",
+      const { error } = await authClient.signIn.email({
+        email: values.email,
+        password: values.password,
       });
 
       // Reset form to clear inputs
       form.reset();
 
-      // Use replace to avoid back-button issues and redirect to signin
-      router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      if (error) {
+        toast.error("Konto skapat, men inloggning misslyckades.", {
+          description: error.message || "Försök logga in manuellt.",
+        });
+        router.replace(
+          `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        );
+        return;
+      }
+
+      toast.success("Konto skapat! Du är nu inloggad.");
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Ett nätverksfel inträffade";

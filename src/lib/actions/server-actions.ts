@@ -352,6 +352,168 @@ export async function addBooking(
   }
 }
 
+export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
+  success: boolean;
+  msg: string;
+  bookedCount?: number;
+  skippedFull?: number;
+  skippedAlreadyBooked?: number;
+}> {
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  if (!user) return { success: false, msg: "Ingen giltig session." };
+
+  try {
+    const purchaseItem = await prisma.purchaseItem.findUnique({
+      where: { id: purchaseItemId },
+      select: {
+        id: true,
+        courseId: true,
+        remainingCount: true,
+        unlimited: true,
+        purchase: {
+          select: {
+            userId: true,
+            type: true,
+            remainingCount: true,
+          },
+        },
+      },
+    });
+
+    if (!purchaseItem) {
+      return { success: false, msg: "Kunde inte hitta köpet." };
+    }
+
+    if (purchaseItem.purchase.userId !== user.id) {
+      return { success: false, msg: "Obehörig åtkomst till köpet." };
+    }
+
+    const lessons = await prisma.lesson.findMany({
+      where: {
+        courseId: purchaseItem.courseId,
+        cancelled: false,
+        startTime: { gte: new Date() },
+      },
+      select: { id: true, maxBookings: true },
+    });
+
+    if (lessons.length === 0) {
+      return { success: false, msg: "Inga kommande lektioner att boka." };
+    }
+
+    const lessonIds = lessons.map((lesson) => lesson.id);
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        userId: user.id,
+        lessonId: { in: lessonIds },
+      },
+      select: { lessonId: true },
+    });
+
+    const existingSet = new Set(
+      existingBookings.map((booking) => booking.lessonId),
+    );
+
+    const lessonsToBook = lessons.filter(
+      (lesson) => !existingSet.has(lesson.id),
+    );
+
+    if (lessonsToBook.length === 0) {
+      return { success: true, msg: "Du är redan bokad på alla tillfällen." };
+    }
+
+    const bookingCounts = await prisma.booking.groupBy({
+      by: ["lessonId"],
+      where: { lessonId: { in: lessonIds }, cancelled: false },
+      _count: { _all: true },
+    });
+
+    const bookingCountMap = new Map(
+      bookingCounts.map((b) => [b.lessonId, b._count._all]),
+    );
+
+    let skippedFull = 0;
+    const lessonsWithSpace = lessonsToBook.filter((lesson) => {
+      if (lesson.maxBookings <= 0) return true;
+      const currentCount = bookingCountMap.get(lesson.id) ?? 0;
+      if (currentCount >= lesson.maxBookings) {
+        skippedFull += 1;
+        return false;
+      }
+      return true;
+    });
+
+    if (lessonsWithSpace.length === 0) {
+      return { success: false, msg: "Alla kommande lektioner är fullbokade." };
+    }
+
+    if (!purchaseItem.unlimited) {
+      const remaining =
+        purchaseItem.purchase.type === "CLIP"
+          ? (purchaseItem.purchase.remainingCount ?? 0)
+          : purchaseItem.remainingCount;
+
+      if (remaining < lessonsWithSpace.length) {
+        return {
+          success: false,
+          msg: "Inte tillräckligt många bokningar kvar för att autoboka.",
+        };
+      }
+    }
+
+    let bookedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      for (const lesson of lessonsWithSpace) {
+        if (lesson.maxBookings > 0) {
+          const currentCount = await tx.booking.count({
+            where: { lessonId: lesson.id, cancelled: false },
+          });
+
+          if (currentCount >= lesson.maxBookings) {
+            skippedFull += 1;
+            continue;
+          }
+        }
+
+        await tx.booking.create({
+          data: {
+            lessonId: lesson.id,
+            userId: user.id,
+            purchaseItemId: purchaseItem.id,
+          },
+        });
+
+        const clipResult = await handleClips(tx, purchaseItem.id, -1);
+        if (!clipResult.success) {
+          throw new Error(clipResult.msg || "Clip update failed.");
+        }
+
+        bookedCount += 1;
+      }
+    });
+
+    const skippedAlreadyBooked = existingSet.size;
+    const msgParts = [`Bokade ${bookedCount} lektioner.`];
+    if (skippedFull > 0) msgParts.push(`${skippedFull} fullbokade.`);
+    if (skippedAlreadyBooked > 0)
+      msgParts.push(`${skippedAlreadyBooked} redan bokade.`);
+
+    return {
+      success: true,
+      msg: msgParts.join(" "),
+      bookedCount,
+      skippedFull,
+      skippedAlreadyBooked,
+    };
+  } catch (e) {
+    console.error("Fel vid autobokning:", e);
+    return { success: false, msg: "Ett tekniskt fel uppstod vid autobokning." };
+  }
+}
+
 export async function delBooking(
   lessonId: string,
 ): Promise<{ success: boolean; msg?: string }> {
@@ -446,9 +608,50 @@ export async function getFullCourseNameFromId(id: string) {
   return `${course.name} ${ageRange} ${levelInfo}`;
 }
 
-export async function getAllProductsWithData() {
+// Har lagt in filtrring här också.
+export async function getAllProductsWithData(filters?: {
+  type?: ProductType | "all";
+  adult?: "adult" | "child" | "all";
+  sort?: "price-asc" | "price-desc" | "name-asc" | "name-desc";
+  q?: string;
+}) {
   try {
+    const andFilters: Prisma.ProductWhereInput[] = [];
+    const query = filters?.q?.trim();
+
+    if (filters?.type && filters.type !== "all") {
+      andFilters.push({ type: filters.type });
+    }
+
+    if (filters?.adult && filters.adult !== "all") {
+      const wantsAdult = filters.adult === "adult";
+      andFilters.push({
+        courses: { some: { course: { adult: wantsAdult } } },
+      });
+    }
+
+    if (query) {
+      andFilters.push({ name: { contains: query, mode: "insensitive" } });
+    }
+
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { name: "asc" };
+    switch (filters?.sort) {
+      case "price-desc":
+        orderBy = { price: "desc" };
+        break;
+      case "name-asc":
+        orderBy = { name: "asc" };
+        break;
+      case "name-desc":
+        orderBy = { name: "desc" };
+        break;
+      default:
+        orderBy = { price: "asc" };
+        break;
+    }
+
     const products = await prisma.product.findMany({
+      where: andFilters.length > 0 ? { AND: andFilters } : undefined,
       include: {
         // termin: true,
         // // Hämta kopplingen mellan produkt och kurs. Denna används ej. fix: ta bort från db.
@@ -470,7 +673,7 @@ export async function getAllProductsWithData() {
           select: { purchases: true },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy,
     });
 
     return products;

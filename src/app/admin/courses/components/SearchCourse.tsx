@@ -1,32 +1,48 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import useDebounce from "@/hooks/useDebounce";
 
 export default function SearchInput() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  const [searchInput, setSearchInput] = useState(
+    searchParams.get("q")?.toString() ?? "",
+  );
+  const debouncedSearch = useDebounce(searchInput, 300);
 
-  const params = new URLSearchParams(searchParams);
-  // Använd debouncing för att vänta 300ms innan sökningen körs. fix.
+  const handleSearch = useCallback(
+    (term: string) => {
+      const params = new URLSearchParams(searchParams);
+      if (term) {
+        params.set("q", term);
+      } else {
+        params.delete("q");
+      }
 
-  const handleSearch = (term: string) => {
-    if (term) {
-      params.set("q", term);
-    } else {
-      params.delete("q");
-    }
+      replace(`${pathname}?${params.toString()}`);
+    },
+    [pathname, replace, searchParams],
+  );
 
-    replace(`${pathname}?${params.toString()}`);
-  };
+  useEffect(() => {
+    setSearchInput(searchParams.get("q")?.toString() ?? "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (debouncedSearch === undefined) return;
+    handleSearch(debouncedSearch);
+  }, [debouncedSearch, handleSearch]);
 
   return (
     <Input
       className="w-50"
       placeholder="Sök kurser..."
-      onChange={(e) => handleSearch(e.target.value)}
-      defaultValue={searchParams.get("q")?.toString()} // Behåll befintligt värde
+      onChange={(e) => setSearchInput(e.target.value)}
+      value={searchInput}
     />
   );
 }
