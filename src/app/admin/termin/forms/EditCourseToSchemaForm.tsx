@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -82,6 +83,9 @@ export default function EditCourseToSchemaForm({
     [schemaItem, termin],
   );
 
+  const terminStartValue = termin.startDate.toISOString().split("T")[0];
+  const terminEndValue = termin.endDate.toISOString().split("T")[0];
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(),
@@ -125,12 +129,22 @@ export default function EditCourseToSchemaForm({
   };
 
   const [isOpen, setIsOpen] = useState(false);
+  const [useTerminStart, setUseTerminStart] = useState(
+    !schemaItem.customStartDate,
+  );
+  const [useTerminEnd, setUseTerminEnd] = useState(!schemaItem.customEndDate);
+  const customStartBackupRef = useRef<string>("");
+  const customEndBackupRef = useRef<string>("");
 
   useEffect(() => {
     if (isOpen) {
       form.reset(getInitialValues());
+      setUseTerminStart(!schemaItem.customStartDate);
+      setUseTerminEnd(!schemaItem.customEndDate);
+      customStartBackupRef.current = "";
+      customEndBackupRef.current = "";
     }
-  }, [isOpen, form, getInitialValues]);
+  }, [isOpen, form, getInitialValues, schemaItem]);
 
   const router = useRouter();
 
@@ -281,7 +295,45 @@ export default function EditCourseToSchemaForm({
                   name="customStartDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start datum</FormLabel>
+                      <div className="flex items-center justify-between gap-2">
+                        <FormLabel>Start datum</FormLabel>
+                        <label
+                          htmlFor="follow-termin-start-edit"
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Checkbox
+                            id="follow-termin-start-edit"
+                            checked={useTerminStart}
+                            onCheckedChange={(checked) => {
+                              const isChecked = checked === true;
+                              setUseTerminStart(isChecked);
+                              if (isChecked) {
+                                customStartBackupRef.current =
+                                  form.getValues("customStartDate") ?? "";
+                                form.setValue(
+                                  "customStartDate",
+                                  terminStartValue,
+                                  {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  },
+                                );
+                              } else if (customStartBackupRef.current) {
+                                form.setValue(
+                                  "customStartDate",
+                                  customStartBackupRef.current,
+                                  {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  },
+                                );
+                              }
+                            }}
+                            className="w-5 h-5"
+                          />
+                          Följ termin
+                        </label>
+                      </div>
 
                       <FormControl>
                         <Input
@@ -289,6 +341,7 @@ export default function EditCourseToSchemaForm({
                           {...field}
                           value={formatDateToInput(field.value)}
                           onChange={field.onChange}
+                          disabled={useTerminStart}
                         />
                       </FormControl>
 
@@ -302,7 +355,41 @@ export default function EditCourseToSchemaForm({
                   name="customEndDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slut datum</FormLabel>
+                      <div className="flex items-center justify-between gap-2">
+                        <FormLabel>Slut datum</FormLabel>
+                        <label
+                          htmlFor="follow-termin-end-edit"
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Checkbox
+                            id="follow-termin-end-edit"
+                            checked={useTerminEnd}
+                            onCheckedChange={(checked) => {
+                              const isChecked = checked === true;
+                              setUseTerminEnd(isChecked);
+                              if (isChecked) {
+                                customEndBackupRef.current =
+                                  form.getValues("customEndDate") ?? "";
+                                form.setValue("customEndDate", terminEndValue, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                });
+                              } else if (customEndBackupRef.current) {
+                                form.setValue(
+                                  "customEndDate",
+                                  customEndBackupRef.current,
+                                  {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  },
+                                );
+                              }
+                            }}
+                            className="w-5 h-5"
+                          />
+                          Följ termin
+                        </label>
+                      </div>
 
                       <FormControl>
                         <Input
@@ -310,6 +397,7 @@ export default function EditCourseToSchemaForm({
                           {...field}
                           value={formatDateToInput(field.value)}
                           onChange={field.onChange}
+                          disabled={useTerminEnd}
                         />
                       </FormControl>
 

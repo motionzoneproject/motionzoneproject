@@ -400,6 +400,11 @@ export async function addCoursetoSchema(
     if (!termin) throw new Error("No termin.");
     // fix: lägg in så den kopplar terminen till kursen också?
 
+    const isSameDateUtc = (a: Date, b: Date) =>
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate();
+
     // Förbered datumen och kolla om de matchar terminen
     const inputStartDate = validated.customStartDate
       ? new Date(validated.customStartDate)
@@ -410,12 +415,12 @@ export async function addCoursetoSchema(
 
     // Om datumet finns och är exakt samma som terminens -> sätt till null
     const finalStartDate =
-      inputStartDate && inputStartDate.getTime() === termin.startDate.getTime()
+      inputStartDate && isSameDateUtc(inputStartDate, termin.startDate)
         ? null
         : inputStartDate;
 
     const finalEndDate =
-      inputEndDate && inputEndDate.getTime() === termin.endDate.getTime()
+      inputEndDate && isSameDateUtc(inputEndDate, termin.endDate)
         ? null
         : inputEndDate;
 
@@ -494,6 +499,11 @@ export async function editCourseInSchema(
     const termin = await prisma.termin.findUnique({ where: { id: terminId } });
     if (!termin) throw new Error("No termin.");
 
+    const isSameDateUtc = (a: Date, b: Date) =>
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate();
+
     // Datum-tvätt
     const inputStartDate = validated.customStartDate
       ? new Date(validated.customStartDate)
@@ -503,11 +513,11 @@ export async function editCourseInSchema(
       : null;
 
     const finalStartDate =
-      inputStartDate && inputStartDate.getTime() === termin.startDate.getTime()
+      inputStartDate && isSameDateUtc(inputStartDate, termin.startDate)
         ? null
         : inputStartDate;
     const finalEndDate =
-      inputEndDate && inputEndDate.getTime() === termin.endDate.getTime()
+      inputEndDate && isSameDateUtc(inputEndDate, termin.endDate)
         ? null
         : inputEndDate;
 
