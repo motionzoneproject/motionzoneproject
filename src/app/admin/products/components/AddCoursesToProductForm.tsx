@@ -239,36 +239,33 @@ export default function AddCoursesToProductForm({
                   />
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="lessonsIncluded"
-                  render={({ field }) => (
-                    <FormItem className={isClip ? "hidden" : ""}>
-                      <FormLabel>Antal tillfällen:</FormLabel>
+                {!isClip && form.watch("unlimited") !== true && (
+                  <FormField
+                    control={form.control}
+                    name="lessonsIncluded"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Antal tillfällen:</FormLabel>
 
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          disabled={
-                            (form.watch("unlimited") as boolean) === true
-                          }
-                          {...field}
-                          value={
-                            (form.watch("unlimited") as boolean) === true
-                              ? 0
-                              : field.value === undefined
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            {...field}
+                            value={
+                              field.value === undefined
                                 ? ""
                                 : String(field.value)
-                          }
-                        />
-                      </FormControl>
+                            }
+                          />
+                        </FormControl>
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <Button type="submit" variant={"secondary"} className="w-full">
                   {isInProd ? "Ändra" : "Lägg till"}

@@ -45,26 +45,36 @@ export const adminAddTerminSchema = z
     path: ["endDate"],
   });
 
-export const adminAddCourseSchema = z.object({
-  name: z.string().min(3),
-  maxbookings: z.coerce
-    .number()
-    .int("Antal bokningar måste vara ett heltal.")
-    .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
-  unlimitedBookings: z.coerce.boolean().optional(),
-  description: z.string(),
-  level: z.string().optional(),
-  minAge: z.coerce
-    .number()
-    .int("Ålder måste vara ett heltal.")
-    .nonnegative("Ålder måste vara noll eller ett positivt tal."),
-  maxAge: z.coerce
-    .number()
-    .int("Ålder måste vara ett heltal.")
-    .nonnegative("Ålder måste vara noll eller ett positivt tal."),
-  adult: z.coerce.boolean().optional(),
-  teacherid: z.string().min(1),
-});
+export const adminAddCourseSchema = z
+  .object({
+    name: z.string().min(3),
+    maxbookings: z.coerce
+      .number()
+      .int("Antal bokningar måste vara ett heltal.")
+      .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
+    unlimitedBookings: z.coerce.boolean().optional(),
+    description: z.string(),
+    level: z.string().optional(),
+    minAge: z.coerce
+      .number()
+      .int("Ålder måste vara ett heltal.")
+      .nonnegative("Ålder måste vara noll eller ett positivt tal."),
+    maxAge: z.coerce
+      .number()
+      .int("Ålder måste vara ett heltal.")
+      .nonnegative("Ålder måste vara noll eller ett positivt tal."),
+    adult: z.coerce.boolean().optional(),
+    teacherid: z.string().min(1),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.unlimitedBookings && data.maxbookings < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["maxbookings"],
+        message: "Max bokningar måste vara minst 1 om inte obegränsat.",
+      });
+    }
+  });
 
 export const adminLessonFormSchema = z.object({
   id: z.string().min(1),

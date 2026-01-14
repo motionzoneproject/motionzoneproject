@@ -23,6 +23,15 @@ import { getCourseName } from "@/lib/tools";
 import { getVeckodag } from "../admin/termin/SchemaDay";
 import CourseFilters from "./CourseFilters";
 
+const PRODUCT_TYPES = ["COURSE", "PACK", "CLIP"] as const;
+const SORT_VALUES = [
+  "price-asc",
+  "price-desc",
+  "name-asc",
+  "name-desc",
+] as const;
+const ADULT_VALUES = ["adult", "child"] as const;
+
 export default async function Page({
   searchParams,
 }: {
@@ -30,37 +39,36 @@ export default async function Page({
     type?: string;
     adult?: string;
     sort?: string;
+    q?: string;
   }>;
 }) {
   const params = await searchParams;
-  const typeFilter = params.type ?? "all";
-  const adultFilter = params.adult ?? "all";
-  const sortFilter = params.sort ?? "price-asc";
+  const typeFilter = PRODUCT_TYPES.includes(
+    params.type as (typeof PRODUCT_TYPES)[number],
+  )
+    ? (params.type as (typeof PRODUCT_TYPES)[number])
+    : "all";
+  const adultFilter = ADULT_VALUES.includes(
+    params.adult as (typeof ADULT_VALUES)[number],
+  )
+    ? (params.adult as (typeof ADULT_VALUES)[number])
+    : "all";
+  const sortFilter = SORT_VALUES.includes(
+    params.sort as (typeof SORT_VALUES)[number],
+  )
+    ? (params.sort as (typeof SORT_VALUES)[number])
+    : "price-asc";
+  const queryFilter = params.q ?? "";
 
   const session = await getSessionData();
   const isAdmin = session?.user?.role === "admin";
-  const products = await getAllProductsWithData(); // Gör om här så all data hämtas här istället. fix.
-  // Vi behöver: produkterna, deras termin, deras kurser, och schema.
 
-  const filteredProducts = products
-    .filter((p) => (typeFilter === "all" ? true : p.type === typeFilter))
-    .filter((p) => {
-      if (adultFilter === "all") return true;
-      const wantsAdult = adultFilter === "adult";
-      return p.courses.some((c) => Boolean(c.course.adult) === wantsAdult);
-    })
-    .sort((a, b) => {
-      switch (sortFilter) {
-        case "price-desc":
-          return b.price - a.price;
-        case "name-asc":
-          return a.name.localeCompare(b.name, "sv-SE");
-        case "name-desc":
-          return b.name.localeCompare(a.name, "sv-SE");
-        default:
-          return a.price - b.price;
-      }
-    });
+  const products = await getAllProductsWithData({
+    type: typeFilter,
+    adult: adultFilter,
+    sort: sortFilter,
+    q: queryFilter,
+  });
 
   return (
     <main className="bg-background">
@@ -77,11 +85,12 @@ export default async function Page({
               type={typeFilter}
               adult={adultFilter}
               sort={sortFilter}
+              q={queryFilter}
             />
           </aside>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2">
-            {filteredProducts.map((p) => {
+            {products.map((p) => {
               const allSchemaItems = p.courses.flatMap(
                 (pc) => pc.course.schemaItems,
               );

@@ -25,6 +25,7 @@ import {
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
+import AutoBookBtn from "./AutoBookBtn";
 import BookingCal from "./BookingCal";
 import OrderHistory from "./OrderHistory";
 
@@ -220,6 +221,14 @@ export default async function Page() {
                             <p className="text-xs text-muted-foreground">
                               Lektioner
                             </p>
+                            <div className="mt-2">
+                              <AutoBookBtn
+                                purchaseItemId={pi.id}
+                                disabled={
+                                  !pi.unlimited && pi.remainingCount <= 0
+                                }
+                              />
+                            </div>
                           </div>
                         </div>
                       );

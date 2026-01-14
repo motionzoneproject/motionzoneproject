@@ -39,6 +39,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Course, User } from "@/generated/prisma/client";
 import { editCourse } from "@/lib/actions/admin";
+import { getCourseName } from "@/lib/tools";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseSchema;
@@ -80,14 +81,6 @@ export default function EditCourseForm({ course, teachers }: Props) {
       values.maxbookings = 0;
     }
 
-    if (
-      // fix: se över detta, kanske räcker med zod när vi fixat det.
-      (form.watch("maxbookings") as number) <= 0 ||
-      (form.watch("maxbookings") as string).trim()
-    ) {
-      values.maxbookings = 0;
-    }
-
     const res = await editCourse(course.id, values);
     if (res.success) {
       toast.success(res.msg);
@@ -107,6 +100,22 @@ export default function EditCourseForm({ course, teachers }: Props) {
   const maxBookValue = form.watch("maxbookings");
   const maxBookTrim: string = String(maxBookValue ?? "").trim();
   const unlimitedBookings = form.watch("unlimitedBookings") === true;
+
+  const parseAge = (value: unknown): number | null => {
+    const trimmed = String(value ?? "").trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const levelInput = String(form.watch("level") ?? "").trim();
+  const previewCourseName = getCourseName({
+    name: String(form.watch("name") ?? "").trim() || "Kursnamn",
+    minAge: parseAge(form.watch("minAge")),
+    maxAge: parseAge(form.watch("maxAge")),
+    adult: Boolean(form.watch("adult")),
+    level: levelInput.length > 0 ? levelInput : undefined,
+  } as Course);
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -136,7 +145,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                      <FormLabel>Dansstil / kurs</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -188,39 +197,41 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="maxbookings"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Max bokningar per tillfälle
-                        {((form.watch("maxbookings") as number) <= 0 ||
-                          maxBookTrim === "") &&
-                          !unlimitedBookings && (
+                {!unlimitedBookings && (
+                  <FormField
+                    control={form.control}
+                    name="maxbookings"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Max bokningar per tillfälle
+                          {((form.watch("maxbookings") as number) <= 0 ||
+                            maxBookTrim === "") && (
                             <div className="text-muted-foreground">
                               (ingen gräns är satt)
                             </div>
                           )}
-                      </FormLabel>
+                        </FormLabel>
 
-                      <FormControl>
-                        <Input
-                          disabled={unlimitedBookings}
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
-                        />
-                      </FormControl>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            {...field}
+                            value={
+                              field.value === undefined
+                                ? ""
+                                : String(field.value)
+                            }
+                          />
+                        </FormControl>
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
@@ -363,6 +374,13 @@ export default function EditCourseForm({ course, teachers }: Props) {
                     </FormItem>
                   )}
                 />
+
+                <div className="rounded-md border border-border bg-muted/30 p-2 text-sm">
+                  <span className="text-muted-foreground">
+                    Förhandsvisning av kursnamn:
+                  </span>
+                  <div className="font-medium">{previewCourseName}</div>
+                </div>
 
                 <Button type="submit" variant={"secondary"} className="w-full">
                   Ändra

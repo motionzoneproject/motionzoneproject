@@ -13,5 +13,5 @@ export function getCourseName(course: Course) {
         : ""; // Om varken minAge eller adult är true
   const levelInfo = course.level && ` - ${course.level}`;
 
-  return `${course.name} ${ageRange} ${levelInfo}`;
+  return [course.name, ageRange, levelInfo].filter(Boolean).join(" ");
 }

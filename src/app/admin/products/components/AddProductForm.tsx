@@ -234,30 +234,33 @@ export default function AddProductForm() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="maxCustomers"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max antal köp</FormLabel>
+                {form.watch("unlimitedCustomers") !== true && (
+                  <FormField
+                    control={form.control}
+                    name="maxCustomers"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Max antal köp</FormLabel>
 
-                      <FormControl>
-                        <Input
-                          disabled={form.watch("unlimitedCustomers") === true}
-                          type="number"
-                          min="0"
-                          step="1"
-                          {...field}
-                          value={
-                            field.value === undefined ? "" : String(field.value)
-                          }
-                        />
-                      </FormControl>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            {...field}
+                            value={
+                              field.value === undefined
+                                ? ""
+                                : String(field.value)
+                            }
+                          />
+                        </FormControl>
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}

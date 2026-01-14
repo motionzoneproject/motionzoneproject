@@ -3,35 +3,49 @@
 // fix: gör detta till en "global" komponent (om vi inte ska ändra admin helt med annat filter osv)
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import useDebounce from "@/hooks/useDebounce";
 
 export default function SearchInputProd() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  const [searchInput, setSearchInput] = useState(
+    searchParams.get("q")?.toString() ?? "",
+  );
+  const debouncedSearch = useDebounce(searchInput, 300);
 
-  const params = new URLSearchParams(searchParams);
+  const handleSearch = useCallback(
+    (term: string) => {
+      const params = new URLSearchParams(searchParams);
+      if (term) {
+        params.set("q", term);
+      } else {
+        params.delete("q");
+      }
 
-  // Använd debouncing för att vänta 300ms innan sökningen körs. fix.
-  // Samt kanske ändra så filtrering sker på databasnivå för bättre prestanda.
+      replace(`${pathname}?${params.toString()}`);
+    },
+    [pathname, replace, searchParams],
+  );
 
-  const handleSearch = (term: string) => {
-    if (term) {
-      params.set("q", term);
-    } else {
-      params.delete("q");
-    }
+  useEffect(() => {
+    setSearchInput(searchParams.get("q")?.toString() ?? "");
+  }, [searchParams]);
 
-    replace(`${pathname}?${params.toString()}`);
-  };
+  useEffect(() => {
+    if (debouncedSearch === undefined) return;
+    handleSearch(debouncedSearch);
+  }, [debouncedSearch, handleSearch]);
 
   return (
     <Input
       className="w-[200px]"
       placeholder="Sök..."
-      onChange={(e) => handleSearch(e.target.value)}
-      defaultValue={searchParams.get("q")?.toString()} // Behåll befintligt värde
+      onChange={(e) => setSearchInput(e.target.value)}
+      value={searchInput}
     />
   );
 }

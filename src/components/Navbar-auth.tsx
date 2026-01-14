@@ -13,14 +13,13 @@ export default function NavBarAuth() {
   if (session && user) {
     return (
       <div className="flex items-center gap-3">
-        <Link
-          href="/user"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {user.name}
-        </Link>
+        <Button asChild size="sm" variant="ghost">
+          <Link href="/user">
+            {user.role === "admin" ? user.name : "Min profil"}
+          </Link>
+        </Button>
         {user.role === "admin" && (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="sm" variant="ghost">
             <Link href="/admin">Admin</Link>
           </Button>
         )}
@@ -46,12 +45,17 @@ export default function NavBarAuth() {
   }
 
   return (
-    <Button
-      asChild
-      size="sm"
-      className="bg-brand hover:bg-brand-light text-white"
-    >
-      <Link href="/signin">Logga in</Link>
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button
+        asChild
+        size="sm"
+        className="bg-brand hover:bg-brand-light text-white"
+      >
+        <Link href="/signin">Logga in</Link>
+      </Button>
+      <Button asChild size="sm" variant="outline">
+        <Link href="/signup">Bli medlem</Link>
+      </Button>
+    </div>
   );
 }
