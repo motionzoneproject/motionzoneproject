@@ -29,8 +29,17 @@ export async function getUserBookings(): Promise<{
 
   try {
     const lessonsWithBookings = await prisma.booking.findMany({
-      where: { userId: user.id },
-      include: { lesson: true },
+      where: {
+        OR: [
+          { userId: user.id },
+          { purchaseItem: { purchase: { participant: { userId: user.id } } } },
+        ],
+      },
+      include: {
+        lesson: {
+          include: { course: true },
+        },
+      },
     });
 
     return {
@@ -59,9 +68,13 @@ export async function getUserLessons(): Promise<{
 
   try {
     // 1. Hitta alla courseId som användaren har köpt (där det finns klipp kvar)
+    // Inkludera både där användaren har köpt själv, och där användaren är deltagare på någon annans köp.
     const userPurchases = await prisma.purchaseItem.findMany({
       where: {
-        purchase: { userId: user.id },
+        OR: [
+          { purchase: { userId: user.id } },
+          { purchase: { participant: { userId: user.id } } },
+        ],
         // remainingCount: { gt: 0 }, // fixed: Lektionerna skall synas ändå, så detta får kollas i boka-delen istället.
       },
       select: { courseId: true },
@@ -107,6 +120,10 @@ export type UserPurchaseWithProduct = {
     };
     useTotalCount: boolean;
     remainingCount: number | null;
+    participant?: {
+      id: string;
+      name: string;
+    } | null;
   };
 } & {
   id: string;
@@ -129,7 +146,10 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
   try {
     const purchases = await prisma.purchaseItem.findMany({
       where: {
-        purchase: { userId: session.user.id },
+        OR: [
+          { purchase: { userId: session.user.id } },
+          { purchase: { participant: { userId: session.user.id } } },
+        ],
       },
       include: {
         course: {
@@ -142,6 +162,13 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
             useTotalCount: true,
             totalCount: true,
             remainingCount: true,
+            participantId: true,
+            participant: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             product: {
               select: {
                 id: true,
@@ -159,6 +186,30 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
   } catch (_e) {
     return [];
   }
+}
+
+export async function getUserPendingRegistrations() {
+  const session = await getSessionData();
+  if (!session) return [];
+
+  // Find all order items where the user is a participant but the order is still pending/created
+  return prisma.orderItem.findMany({
+    where: {
+      order: {
+        status: { in: ["PENDING_PAYMENT", "CREATED"] },
+      },
+      OR: [
+        { order: { userId: session.user.id } },
+        { participant: { userId: session.user.id } },
+      ],
+    },
+    include: {
+      product: true,
+      participant: true,
+      order: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function addBooking(

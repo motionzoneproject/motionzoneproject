@@ -4,45 +4,55 @@ export const revalidate = 0;
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { createCheckoutAndRedirect } from "@/lib/actions/checkout";
+import { getMyParticipants } from "@/lib/actions/participants";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { readCart } from "@/lib/cart";
 import prisma from "@/lib/prisma";
 import CartSummary from "./CartSummary";
+import CheckoutForm from "./CheckoutForm";
 
 export default async function Page() {
   const session = await getSessionData();
   const cart = await readCart();
   const hasItems = cart.items.length > 0;
 
-  async function action(formData: FormData) {
-    "use server";
-    const session = await getSessionData();
-    if (!session) throw new Error("Unauthorized");
+  let checkoutData = null;
+
+  if (hasItems && session) {
+    const ids = cart.items.map((i) => i.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, price: true },
+    });
+
+    const byId = new Map(products.map((p) => [p.id, p]));
+
+    const items = cart.items.map((it) => {
+      const p = byId.get(it.productId);
+      return {
+        productId: it.productId,
+        name: p?.name ?? "Okänd",
+        qty: it.qty,
+        price: p ? parseFloat(String(p.price)) : 0,
+      };
+    });
 
     const userDetails = await prisma.userDetails.findUnique({
       where: { userId: session.user.id },
     });
-    const postalcode = userDetails?.postalCode ?? undefined;
-    const note = formData.get("note")?.toString();
-    const currentCart = await readCart();
-    if (!currentCart.items.length) throw new Error("Varukorgen är tom");
-    const ids = currentCart.items.map((i) => i.productId);
-    const products = await prisma.product.findMany({
-      where: { id: { in: ids } },
-      select: { id: true, price: true },
-    });
-    const byId = new Map(
-      products.map((p) => [p.id, parseFloat(String(p.price))]),
-    );
-    const items = currentCart.items.map((it) => ({
-      productId: it.productId,
-      count: it.qty,
-      price: byId.get(it.productId) ?? 0,
-    }));
-    await createCheckoutAndRedirect({ items, postalcode, note });
+
+    const existingParticipants = await getMyParticipants();
+
+    checkoutData = {
+      items,
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      },
+      userDetails,
+      existingParticipants,
+    };
   }
 
   return (
@@ -67,38 +77,8 @@ export default async function Page() {
 
         {/* Checkout Form - Only if has items */}
         {hasItems &&
-          (session ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Slutför köp</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form action={action} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="note">Notering till beställningen</Label>
-                    <Textarea
-                      id="note"
-                      name="note"
-                      rows={3}
-                      placeholder="t.ex. Swish-referens eller speciella önskemål"
-                      className="resize-none"
-                    />
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <Button
-                      type="submit"
-                      className="w-full bg-brand hover:bg-brand-light text-white font-medium"
-                    >
-                      Slutför beställning (Faktura)
-                    </Button>
-                    <p className="mt-4 text-center text-xs text-muted-foreground">
-                      Genom att slutföra köpet godkänner du våra köpvillkor.
-                    </p>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+          (checkoutData ? (
+            <CheckoutForm {...checkoutData} />
           ) : (
             <Card>
               <CardHeader className="text-center">

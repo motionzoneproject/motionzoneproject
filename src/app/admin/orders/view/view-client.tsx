@@ -19,6 +19,12 @@ type OrderItemLite = {
   count: number;
   productId: string;
   product?: { name?: string | null } | null;
+  participant?: {
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    allowPhotoVideo: boolean;
+  } | null;
 };
 
 type StatusEventLite = {
@@ -390,8 +396,35 @@ export default function OrderDetailsClient() {
               const sum = unit * (it.count ?? 0);
               return (
                 <tr key={it.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">
-                    {it.product?.name ?? it.productId}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground">
+                        {it.product?.name ?? it.productId}
+                      </span>
+                      {it.participant ? (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[10px] bg-brand text-white px-1.5 py-0.5 rounded uppercase font-bold">
+                            Deltagare
+                          </span>
+                          <span className="text-xs text-brand font-semibold">
+                            {it.participant.name}
+                          </span>
+                          {it.participant.allowPhotoVideo ? (
+                            <span title="Foto OK" className="text-xs">
+                              📸
+                            </span>
+                          ) : (
+                            <span title="Inga foton" className="text-xs">
+                              🚫
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic mt-0.5">
+                          Kund själv
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {unit.toFixed(2)} SEK

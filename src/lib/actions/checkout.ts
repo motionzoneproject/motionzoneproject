@@ -9,6 +9,7 @@ export type CheckoutItem = {
   productId: string;
   count: number;
   price: number;
+  participantId?: string | null;
 };
 
 export async function createCheckout(params: {

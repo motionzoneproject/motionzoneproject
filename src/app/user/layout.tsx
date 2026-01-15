@@ -15,10 +15,6 @@ export default async function UserLayout({
     redirect("/signin?callbackUrl=/user");
   }
 
-  if (session.user.role === "admin") {
-    redirect("/admin");
-  }
-
   return (
     <main className="flex-1 bg-background py-8">
       <div className="max-w-4xl mx-auto px-4">{children}</div>

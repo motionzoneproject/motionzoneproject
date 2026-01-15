@@ -43,6 +43,9 @@ model User {
 
   details       UserDetails?
 
+  addedParticipants Participant[] @relation("AddedParticipants")
+  asParticipant     Participant[] @relation("UserAsParticipant")
+
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
@@ -390,6 +393,9 @@ model Purchase {
   orderId         String // Vilket orderId speglas
   order           Order     @relation(fields: [orderId], references: [id])
   
+  participantId   String?
+  participant     Participant? @relation(fields: [participantId], references: [id])
+  
   PurchaseItems PurchaseItem[] // Kurserna och deras tillfällen
 
   // useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
@@ -417,6 +423,7 @@ model Purchase {
   @@index([userId])
   @@index([productId])
   @@index([orderId])
+  @@index([participantId])
   @@map("purchase")
 }
 
@@ -475,11 +482,15 @@ model OrderItem {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([orderId])  
   @@index([productId])
+  @@index([participantId])
   @@map("order_item")
 }
 
@@ -574,3 +585,27 @@ model OrderStatusEvent {
 // model Gallery {
 
 // }
+
+model Participant {
+  id              String   @id @default(uuid())
+  name            String
+  email           String?
+  phone           String?
+  allowPhotoVideo Boolean  @default(false)
+  
+  // Optional link to existing user
+  userId          String?
+  user            User?    @relation("UserAsParticipant", fields: [userId], references: [id])
+
+  // Manager of this participant
+  addedByUserId   String
+  addedBy         User     @relation("AddedParticipants", fields: [addedByUserId], references: [id])
+
+  orderItems      OrderItem[]
+  purchases       Purchase[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("participant")
+}
