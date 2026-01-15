@@ -1,3 +1,30 @@
+/*
+Andrat (nya/lyfta komponenter och varför):
+- SearchInput (SearchCourse) ligger i headern för att driva sökning via query
+  i URL i stället för lokal state.
+
+- AddCourseForm får teachers-listan server-side för att kunna välja lärare
+  direkt utan extra klienthämtning.
+
+- CourseItem renderas per rad och kan hämta kursrelaterad data server-side
+  (t.ex. antal produkter/bokningar) utan klient-requests.
+
+- LessonBrowserData visas i dialogen för att ladda lektioner per kurs on demand.
+Hur routen fungerar nu:
+
+- Page är en serverkomponent som tar searchParams, bygger query och hämtar
+  allCourses via getAllCourses samt teachers via prisma innan render.
+
+- Tabellen renderas server-side; varje CourseItem kan göra sina egna server-calls.
+
+Tidigare:
+- Data hämtades i klientkomponent (useEffect/API) efter initial render.
+- Listor byggdes upp klient-side med extra request/state.
+
+Resultat:
+- Snabbare första render, mindre klientlogik och färre onödiga requests.
+*/
+
 import {
   Table,
   TableBody,

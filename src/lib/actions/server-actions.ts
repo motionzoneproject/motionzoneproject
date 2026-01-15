@@ -1,3 +1,10 @@
+/*
+Sammanfattning av ändringar:
+- Utökade server-actions för användarflöden: bokningar, lektioner, köp och pending-registreringar.
+- Bokningslogik säkras med saldo-/typkontroll (klipp vs kurs), kapacitet och dubbletter.
+- Autobokning av kurstillfällen med hänsyn till fulla lektioner och kvarvarande saldo.
+- Avbokning återställer klipp korrekt och hanterar tids-/statuskontroller.
+*/
 "use server";
 
 import { revalidatePath } from "next/cache";
