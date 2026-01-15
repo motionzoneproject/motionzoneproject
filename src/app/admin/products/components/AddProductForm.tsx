@@ -58,12 +58,13 @@ export default function AddProductForm() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    // Reset när dialogen stängs så vi inte bär med oss gamla värden.
     if (!isOpen) form.reset();
   }, [isOpen, form]);
 
   // Ladda upp bild och lägg in produkt.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Vi byter ut imageURL i values oavsett, bara för att göra det lite enkelt för oss.
+    // Om bilden är en blob (preview), ladda upp och ersätt URL:en.
     let finalImageURL = values.imageURL;
 
     if (values.imageURL?.startsWith("blob:")) {
@@ -220,6 +221,7 @@ export default function AddProductForm() {
                           checked={field.value as boolean}
                           onCheckedChange={(checked: boolean) => {
                             field.onChange(checked);
+                            // Håll maxCustomers konsekvent när unlimited togglas.
                             if (checked) {
                               form.setValue("maxCustomers", 0);
                             } else {
@@ -283,6 +285,7 @@ export default function AddProductForm() {
                             const currentClipCount = Number(
                               form.getValues("clipCount") ?? 0,
                             );
+                            // Säkerställ minst 1 klipp när klippkort markeras.
                             if (checked && currentClipCount < 1) {
                               form.setValue("clipCount", 1);
                             }

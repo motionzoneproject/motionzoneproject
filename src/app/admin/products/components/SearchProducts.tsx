@@ -12,11 +12,13 @@ export default function SearchInputProd() {
   const { replace } = useRouter();
   const currentQuery = searchParams.get("q")?.toString() ?? "";
   const [searchInput, setSearchInput] = useState(currentQuery);
+  // Debounce för att undvika navigation på varje tangenttryckning.
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const handleSearch = useCallback(
     (term: string) => {
-      if (term === currentQuery) return; // Aaa smart.
+      // Undvik onödig route-uppdatering om query redan matchar.
+      if (term === currentQuery) return;
       const params = new URLSearchParams(searchParams);
       if (term) {
         params.set("q", term);
@@ -30,6 +32,7 @@ export default function SearchInputProd() {
   );
 
   useEffect(() => {
+    // Synka input om URL:en uppdateras via back/forward eller externa filter.
     setSearchInput(currentQuery);
   }, [currentQuery]);
 

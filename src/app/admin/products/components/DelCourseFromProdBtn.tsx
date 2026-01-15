@@ -25,6 +25,7 @@ import {
 export default function DeleteCourseFromProdBtn({ pc }: Props) {
   const router = useRouter();
 
+  // Bekräfta och uppdatera listan direkt efter borttagning.
   const delItm = async () => {
     try {
       const { success, msg } = await removeCourseInProduct(pc);

@@ -229,7 +229,7 @@ export default function AdminLessonCal({
                           </p>
                         </div>
                         <div className="shrink-0">
-                          <LessonAttendanceForm lesson={lesson} />
+                          <LessonAttendanceForm lesson={lesson} refreshOnOpen />
                         </div>
                       </div>
                       <Accordion type="single" collapsible className="mt-3">

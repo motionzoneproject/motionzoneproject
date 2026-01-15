@@ -28,12 +28,14 @@ interface Props {
   lesson: Lesson;
   initialBookings?: BookingWithPurchaseParticipant[];
   initialUsers?: UserPurchasesForCourse[];
+  refreshOnOpen?: boolean;
 }
 
 export default function LessonAttendanceForm({
   lesson,
   initialBookings = [],
   initialUsers = [],
+  refreshOnOpen = false,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -58,6 +60,11 @@ export default function LessonAttendanceForm({
     setUsersInCourse(usersResult.users ?? []);
     setLoading(false);
   }, [lesson.courseId, lesson.id]);
+
+  useEffect(() => {
+    if (!refreshOnOpen || !isOpen) return;
+    refreshData();
+  }, [isOpen, refreshData, refreshOnOpen]);
 
   const removeUser = useCallback(
     async (userId: string) => {
