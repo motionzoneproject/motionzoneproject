@@ -6,6 +6,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,8 +60,7 @@ type CheckoutFormProps = {
 
 type SlotData = {
   isSelf: boolean;
-  participantId?: string; // used if selecting existing
-  customData?: ParticipantData; // used if creating new
+  participantId?: string; // used if selecting existing/draft
 };
 
 export default function CheckoutForm({
@@ -65,6 +72,21 @@ export default function CheckoutForm({
   const router = useRouter();
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftParticipants, setDraftParticipants] = useState<
+    {
+      id: string;
+      name: string;
+      data: ParticipantData;
+    }[]
+  >([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogSlotKey, setDialogSlotKey] = useState<string | null>(null);
+  const [newParticipant, setNewParticipant] = useState<ParticipantData>({
+    name: "",
+    email: "",
+    phone: "",
+    allowPhotoVideo: false,
+  });
 
   // Expanded items (each qty gets its own slot)
   const flattenedItems = items.flatMap((it) =>
@@ -84,21 +106,6 @@ export default function CheckoutForm({
     ),
   );
 
-  const draftParticipants = Object.entries(slots)
-    .map(([key, slot]) => {
-      if (slot.isSelf || !slot.customData?.name) return null;
-      return {
-        id: `draft-${key}`,
-        name: slot.customData.name,
-        data: slot.customData,
-      };
-    })
-    .filter(Boolean) as {
-    id: string;
-    name: string;
-    data: ParticipantData;
-  }[];
-
   // Filter out the current user from the existing participants dropdown
   // because we have the "Jag själv" checkbox for that.
   const otherParticipants = existingParticipants.filter((p) => {
@@ -107,11 +114,83 @@ export default function CheckoutForm({
     return !isMainUser;
   });
 
+  const getParticipantKey = (data: ParticipantData) => {
+    const norm = (value?: string) => (value ?? "").trim().toLowerCase();
+    return [norm(data.name), norm(data.email), norm(data.phone)].join("|");
+  };
+
   const updateSlot = (key: string, data: Partial<SlotData>) => {
     setSlots((prev) => ({
       ...prev,
       [key]: { ...prev[key], ...data },
     }));
+  };
+
+  const openParticipantDialog = (key: string) => {
+    setDialogSlotKey(key);
+    setNewParticipant({
+      name: "",
+      email: "",
+      phone: "",
+      allowPhotoVideo: false,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleAddParticipant = () => {
+    if (!dialogSlotKey) return;
+
+    if (!newParticipant.name?.trim()) {
+      toast.error("Ange namn för deltagaren.");
+      return;
+    }
+
+    const key = getParticipantKey(newParticipant);
+    const existingMatch = existingParticipants.find(
+      (p) =>
+        getParticipantKey({
+          name: p.name,
+          email: p.email ?? undefined,
+          phone: p.phone ?? undefined,
+          allowPhotoVideo: p.allowPhotoVideo,
+          userId: p.userId ?? undefined,
+        }) === key,
+    );
+    const draftMatch = draftParticipants.find(
+      (p) => getParticipantKey(p.data) === key,
+    );
+
+    if (existingMatch) {
+      updateSlot(dialogSlotKey, {
+        participantId: existingMatch.id,
+        isSelf: false,
+      });
+      toast.info("Deltagaren fanns redan sparad, vi använder den befintliga.");
+      setDialogOpen(false);
+      return;
+    }
+
+    if (draftMatch) {
+      updateSlot(dialogSlotKey, {
+        participantId: draftMatch.id,
+        isSelf: false,
+      });
+      toast.info(
+        "Deltagaren fanns redan i denna beställning, vi använder den.",
+      );
+      setDialogOpen(false);
+      return;
+    }
+
+    const draftId = `draft-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 7)}`;
+    setDraftParticipants((prev) => [
+      ...prev,
+      { id: draftId, name: newParticipant.name.trim(), data: newParticipant },
+    ]);
+    updateSlot(dialogSlotKey, { participantId: draftId, isSelf: false });
+    setDialogOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,6 +200,20 @@ export default function CheckoutForm({
     try {
       const orderItems = [];
       const draftMap = new Map<string, string>();
+      const participantKeyMap = new Map<string, string>();
+
+      const existingParticipantByKey = new Map<string, string>(
+        existingParticipants.map((p) => [
+          getParticipantKey({
+            name: p.name,
+            email: p.email ?? undefined,
+            phone: p.phone ?? undefined,
+            allowPhotoVideo: p.allowPhotoVideo,
+            userId: p.userId ?? undefined,
+          }),
+          p.id,
+        ]),
+      );
 
       for (let idx = 0; idx < flattenedItems.length; idx++) {
         const it = flattenedItems[idx];
@@ -137,7 +230,7 @@ export default function CheckoutForm({
             userId: user.id,
           });
           participantId = p.id;
-        } else if (slot.participantId && slot.participantId !== "new") {
+        } else if (slot.participantId) {
           if (slot.participantId.startsWith("draft-")) {
             const draft = draftParticipants.find(
               (p) => p.id === slot.participantId,
@@ -147,31 +240,22 @@ export default function CheckoutForm({
               setIsSubmitting(false);
               return;
             }
-            const existing = draftMap.get(draft.id);
+            const key = getParticipantKey(draft.data);
+            const existingByKey = participantKeyMap.get(key);
+            const existing =
+              existingByKey ??
+              existingParticipantByKey.get(key) ??
+              draftMap.get(draft.id);
             if (existing) {
               participantId = existing;
             } else {
               const p = await getOrCreateParticipant(draft.data);
               participantId = p.id;
               draftMap.set(draft.id, p.id);
+              participantKeyMap.set(key, p.id);
             }
           } else {
             participantId = slot.participantId;
-          }
-        } else if (slot.customData) {
-          if (!slot.customData.name) {
-            toast.error(`Ange namn för deltagare på ${it.name}`);
-            setIsSubmitting(false);
-            return;
-          }
-          const draftId = `draft-${key}`;
-          const existing = draftMap.get(draftId);
-          if (existing) {
-            participantId = existing;
-          } else {
-            const p = await getOrCreateParticipant(slot.customData);
-            participantId = p.id;
-            draftMap.set(draftId, p.id);
           }
         } else {
           toast.error(`Välj deltagare för ${it.name}`);
@@ -218,9 +302,7 @@ export default function CheckoutForm({
             {flattenedItems.map((it, idx) => {
               const key = `slot-${idx}`;
               const slot = slots[key] || { isSelf: false };
-              const draftOptions = draftParticipants.filter(
-                (p) => p.id !== `draft-${key}`,
-              );
+              const draftOptions = draftParticipants;
 
               return (
                 <div
@@ -240,7 +322,10 @@ export default function CheckoutForm({
                         id={`self-${key}`}
                         checked={slot.isSelf}
                         onCheckedChange={(val) =>
-                          updateSlot(key, { isSelf: !!val })
+                          updateSlot(key, {
+                            isSelf: !!val,
+                            participantId: val ? undefined : slot.participantId,
+                          })
                         }
                       />
                     </div>
@@ -249,129 +334,61 @@ export default function CheckoutForm({
                   {!slot.isSelf && (
                     <div className="space-y-4 pt-2 border-t border-dashed">
                       <div className="space-y-2">
-                        <Label>Välj befintlig eller lägg till ny</Label>
-                        <Select
-                          value={slot.participantId || "new"}
-                          onValueChange={(val) =>
-                            updateSlot(key, { participantId: val })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Välj deltagare" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">+ Ny person</SelectItem>
-                            {draftOptions.length > 0 && (
-                              <SelectGroup>
-                                <SelectLabel>
-                                  Nya i denna beställning
-                                </SelectLabel>
-                                {draftOptions.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    {p.name}
+                        <Label>Välj deltagare</Label>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={slot.participantId}
+                            onValueChange={(val) =>
+                              updateSlot(key, {
+                                participantId: val,
+                                isSelf: false,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Välj deltagare" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {draftOptions.length > 0 && (
+                                <SelectGroup>
+                                  <SelectLabel>
+                                    Nya i denna beställning
+                                  </SelectLabel>
+                                  {draftOptions.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              )}
+                              {otherParticipants.length > 0 && (
+                                <SelectGroup>
+                                  <SelectLabel>Sparade deltagare</SelectLabel>
+                                  {otherParticipants.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              )}
+                              {draftOptions.length === 0 &&
+                                otherParticipants.length === 0 && (
+                                  <SelectItem disabled value="none">
+                                    Inga deltagare ännu
                                   </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            )}
-                            {otherParticipants.length > 0 && (
-                              <SelectGroup>
-                                <SelectLabel>Sparade deltagare</SelectLabel>
-                                {otherParticipants.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    {p.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {(slot.participantId === "new" ||
-                        !slot.participantId) && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Namn*</Label>
-                            <Input
-                              placeholder="Fullständigt namn"
-                              value={slot.customData?.name || ""}
-                              onChange={(e) =>
-                                updateSlot(key, {
-                                  customData: {
-                                    name: e.target.value,
-                                    email: slot.customData?.email || "",
-                                    phone: slot.customData?.phone || "",
-                                    allowPhotoVideo:
-                                      slot.customData?.allowPhotoVideo || false,
-                                  },
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">E-post (valfri)</Label>
-                            <Input
-                              type="email"
-                              placeholder="epost@exempel.se"
-                              value={slot.customData?.email || ""}
-                              onChange={(e) =>
-                                updateSlot(key, {
-                                  customData: {
-                                    name: slot.customData?.name || "",
-                                    email: e.target.value,
-                                    phone: slot.customData?.phone || "",
-                                    allowPhotoVideo:
-                                      slot.customData?.allowPhotoVideo || false,
-                                  },
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Telefon (valfri)</Label>
-                            <Input
-                              placeholder="070-000 00 00"
-                              value={slot.customData?.phone || ""}
-                              onChange={(e) =>
-                                updateSlot(key, {
-                                  customData: {
-                                    name: slot.customData?.name || "",
-                                    email: slot.customData?.email || "",
-                                    phone: e.target.value,
-                                    allowPhotoVideo:
-                                      slot.customData?.allowPhotoVideo || false,
-                                  },
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center gap-3 sm:col-span-2">
-                            <Checkbox
-                              id={`photo-${key}`}
-                              checked={
-                                slot.customData?.allowPhotoVideo || false
-                              }
-                              onCheckedChange={(val) =>
-                                updateSlot(key, {
-                                  customData: {
-                                    name: slot.customData?.name || "",
-                                    email: slot.customData?.email || "",
-                                    phone: slot.customData?.phone || "",
-                                    allowPhotoVideo: !!val,
-                                  },
-                                })
-                              }
-                            />
-                            <Label
-                              htmlFor={`photo-${key}`}
-                              className="text-xs leading-none"
-                            >
-                              Godkänner fotografering/filmning för sociala
-                              medier
-                            </Label>
-                          </div>
+                                )}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openParticipantDialog(key)}
+                          >
+                            Lägg till
+                          </Button>
                         </div>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -405,6 +422,83 @@ export default function CheckoutForm({
           </div>
         </form>
       </CardContent>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lägg till deltagare</DialogTitle>
+            <DialogDescription>
+              Deltagaren sparas i denna beställning och kan väljas för andra
+              produkter.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1 sm:col-span-2">
+              <Label className="text-xs">Namn*</Label>
+              <Input
+                placeholder="Fullständigt namn"
+                value={newParticipant.name || ""}
+                onChange={(e) =>
+                  setNewParticipant((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">E-post (valfri)</Label>
+              <Input
+                type="email"
+                placeholder="epost@exempel.se"
+                value={newParticipant.email || ""}
+                onChange={(e) =>
+                  setNewParticipant((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Telefon (valfri)</Label>
+              <Input
+                placeholder="070-000 00 00"
+                value={newParticipant.phone || ""}
+                onChange={(e) =>
+                  setNewParticipant((prev) => ({
+                    ...prev,
+                    phone: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="flex items-center gap-3 sm:col-span-2">
+              <Checkbox
+                id="dialog-photo"
+                checked={newParticipant.allowPhotoVideo || false}
+                onCheckedChange={(val) =>
+                  setNewParticipant((prev) => ({
+                    ...prev,
+                    allowPhotoVideo: !!val,
+                  }))
+                }
+              />
+              <Label htmlFor="dialog-photo" className="text-xs leading-none">
+                Godkänner fotografering/filmning för sociala medier
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleAddParticipant}
+            >
+              Lägg till
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
