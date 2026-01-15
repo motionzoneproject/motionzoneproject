@@ -1,5 +1,4 @@
 "use server";
-
 import { headers } from "next/headers";
 import type z from "zod";
 import { auth } from "@/lib/auth";
@@ -47,7 +46,7 @@ export async function signUpWithDetails(values: SignUpValues) {
       // så att de kan försöka igen (annars blir de "fast" med ett konto utan detaljer)
       console.error(
         "Failed to create user details, rolling back user:",
-        detailError,
+        detailError
       );
       await prisma.user.delete({ where: { id: result.user.id } });
       throw detailError;

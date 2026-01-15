@@ -66,10 +66,14 @@ export default function SignUpForm() {
       }
 
       toast.success("Konto skapat!", {
-        description: "Välkommen till MotionZone!",
+        description: "Välkommen till MotionZone! Logga in för att fortsätta.",
       });
-      router.push(callbackUrl);
-      router.refresh();
+
+      // Reset form to clear inputs
+      form.reset();
+
+      // Use replace to avoid back-button issues and redirect to signin
+      router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Ett nätverksfel inträffade";
