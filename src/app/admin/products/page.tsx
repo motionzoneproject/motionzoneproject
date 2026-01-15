@@ -33,6 +33,7 @@ export default async function Page({
   const terminParam = params.termin;
   const sortParam = params.sort;
 
+  // Guard: only allow known filter/sort values to reach the query.
   const type =
     typeParam === "COURSE" || typeParam === "PACK" || typeParam === "CLIP"
       ? typeParam
@@ -45,6 +46,7 @@ export default async function Page({
       ? sortParam
       : "name_asc";
 
+  // Fetch products and termin in parallel to keep the page responsive.
   const [allProducts, terminer] = await Promise.all([
     getAllProducts({
       query,
@@ -91,6 +93,7 @@ export default async function Page({
         </Table>
       </div>
 
+      {/* Empty state keeps the table chrome out of the way when nothing matches. */}
       {allProducts.length === 0 && (
         <div className="text-center py-12 border rounded-lg bg-muted/20">
           <p className="text-muted-foreground">Inga produkter hittades.</p>

@@ -85,10 +85,12 @@ export default function EditProductForm({
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    // Reset vid stängning så tidigare data inte "läcker" in nästa gång.
     if (!isOpen) form.reset();
   }, [isOpen, form]);
 
   const hasUnlimitedCustomers = form.watch("unlimitedCustomers") === true;
+  // Säljantal sätter golv för maxCustomers så vi inte kan minska under sålda.
   const minRequiredCustomers = Math.max(1, soldCount);
 
   useEffect(() => {
@@ -100,6 +102,7 @@ export default function EditProductForm({
   }, [form, hasUnlimitedCustomers, minRequiredCustomers]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Validera gränser innan submit för att ge snabb feedback i UI.
     if (values.unlimitedCustomers) {
       values.maxCustomers = 0;
     }
@@ -114,6 +117,7 @@ export default function EditProductForm({
     }
 
     let finalImageUrl = values.imageURL;
+    // Flagga för att bara byta bild i DB om en ny laddats upp.
     let newImg: boolean = false;
 
     if (values.imageURL?.startsWith("blob:")) {

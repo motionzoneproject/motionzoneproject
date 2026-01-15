@@ -22,16 +22,19 @@ export default async function ProductItem({ product }: Props) {
   const isClip = product.type === "CLIP";
   const isPack = product.type === "PACK";
 
+  // Behovsdata för "sålda/max" och för att kunna markera fullbokad produkt.
   const purchasesCount = await prisma.purchase.count({
     where: { productId: product.id },
   });
 
+  // Kopplade kurser visas i accordion + används i "Ändra kurser".
   const prodCourse = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
     include: { course: true },
   });
 
   const typeLabel = isClip ? "Klippkort" : isPack ? "Paket" : "Kurs";
+  // Respektera unlimited-flaggan när vi avgör "fullt".
   const isFull =
     !product.unlimitedCustomers &&
     product.maxCustomer > 0 &&
@@ -74,6 +77,7 @@ export default async function ProductItem({ product }: Props) {
                 <AccordionTrigger className="flex-1">
                   Kurser ({prodCourse.length})
                 </AccordionTrigger>
+                {/* Server-side fetch av kurslista håller UI enkelt här. */}
                 <AddCoursesToProductForm
                   allCourses={await getAllCourses()}
                   productId={product.id}

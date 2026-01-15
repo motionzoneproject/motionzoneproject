@@ -1,6 +1,6 @@
 "use client";
 
-/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
+// Dialog för att koppla kurser till en produkt och styra antal tillfällen.
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
@@ -87,6 +87,7 @@ export default function AddCoursesToProductForm({
   const [isInProd, setIsInProd] = useState<boolean | number>();
 
   useEffect(() => {
+    // Öppna automatiskt efter skapad produkt (triggeras från AddProductForm).
     const targetId = sessionStorage.getItem("openCoursesFor");
     if (targetId && targetId === productId) {
       setIsOpen(true);
@@ -95,6 +96,7 @@ export default function AddCoursesToProductForm({
   }, [productId]);
 
   useEffect(() => {
+    // Stäng eventuell "öppnar kursdialog"-toast när dialogen visas.
     if (!isOpen) return;
     const toastIdRaw = sessionStorage.getItem("openCoursesToastId");
     if (!toastIdRaw) return;
@@ -104,6 +106,7 @@ export default function AddCoursesToProductForm({
   }, [isOpen]);
 
   useEffect(() => {
+    // Prefilla om kursen redan finns kopplad till produkten.
     const checkIsInProd = async () => {
       const inProd = await isCourseInProduct(selCourse, productId);
       setIsInProd(inProd.found);
@@ -234,6 +237,7 @@ export default function AddCoursesToProductForm({
                             checked={field.value as boolean}
                             onCheckedChange={(checked: boolean) => {
                               field.onChange(checked);
+                              // Obegränsat betyder att vi ignorerar lessonsIncluded.
                               form.setValue("lessonsIncluded", 0);
                             }}
                             className="w-6 h-6"
