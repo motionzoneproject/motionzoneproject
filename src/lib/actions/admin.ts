@@ -1,3 +1,10 @@
+/*
+Sammanfattning av ändringar:
+- Samlar/utökar admin-actions för kurser, terminer, schema och lektioner med tydliga admin-guards.
+- CRUD-flöden för kurser/produkter/terminer är utbyggda inkl. kurs‑produkt‑kopplingar.
+- Klipplogik (handleClips) används konsekvent vid bokning/avbokning och admin‑uppdateringar.
+- Förbättrad kapacitets- och dubblettkontroll vid bokningar samt mer komplett data för admin‑vyer.
+*/
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -1114,14 +1121,21 @@ export async function getAllProducts(options?: {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const orderBy =
-    options?.sort === "price_asc"
-      ? { price: "asc" }
-      : options?.sort === "price_desc"
-        ? { price: "desc" }
-        : options?.sort === "name_desc"
-          ? { name: "desc" }
-          : { name: "asc" };
+  let orderBy: Prisma.ProductOrderByWithRelationInput = { name: "asc" };
+  switch (options?.sort) {
+    case "price_asc":
+      orderBy = { price: "asc" };
+      break;
+    case "price_desc":
+      orderBy = { price: "desc" };
+      break;
+    case "name_desc":
+      orderBy = { name: "desc" };
+      break;
+    default:
+      orderBy = { name: "asc" };
+      break;
+  }
 
   const products = await prisma.product.findMany({
     where: {

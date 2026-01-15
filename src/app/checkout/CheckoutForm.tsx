@@ -199,9 +199,12 @@ export default function CheckoutForm({
 
     try {
       const orderItems = [];
+      // Håller koll på skapade deltagare i denna order (draft-id -> participant-id).
       const draftMap = new Map<string, string>();
+      // Dedupe per deltagare (namn+email+telefon) så vi återanvänder samma person. (så inte fler av samma skapas)
       const participantKeyMap = new Map<string, string>();
 
+      // Förifyllt uppslag mot redan sparade deltagare.
       const existingParticipantByKey = new Map<string, string>(
         existingParticipants.map((p) => [
           getParticipantKey({
@@ -232,6 +235,7 @@ export default function CheckoutForm({
           participantId = p.id;
         } else if (slot.participantId) {
           if (slot.participantId.startsWith("draft-")) {
+            // Deltagare skapad i denna beställning (i dialogen), återanvänd om redan skapad.
             const draft = draftParticipants.find(
               (p) => p.id === slot.participantId,
             );
@@ -249,6 +253,7 @@ export default function CheckoutForm({
             if (existing) {
               participantId = existing;
             } else {
+              // Skapa en riktig participant och memoize för resten av ordern.
               const p = await getOrCreateParticipant(draft.data);
               participantId = p.id;
               draftMap.set(draft.id, p.id);

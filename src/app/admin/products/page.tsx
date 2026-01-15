@@ -1,3 +1,23 @@
+/*
+
+Ändrat (nyakomponenter och varför):
+- SearchInputProd driver sökning via query i URL i stället för states.
+- ProductFilters bygger filter for typ/termin/sort och speglar query-parametrar.
+- AddProductForm ligger i headern for snabbt skapande utan att lämna listan.
+- ProductItem renderas per rad och hanterar produktens actions.
+
+Hur routen fungerar nu:
+- Page ar en serverkomponent som validerar admin-roll och tar searchParams.
+- Filter/sort saneras innan query; getAllProducts och getTermin hamtas parallellt.
+- Tabellen renderas server-side utifran filtren, med tomt-lage vid inga matchar.
+Tidigare:
+- Data hamtades i klientkomponent (useEffect/API) efter initial render.
+- Filter/sort hanterades klient-side med extra state.
+
+Resultat:
+- Snabbare första render, mindre klientlogik och färre onodiga requests.
+
+*/
 import { redirect } from "next/navigation";
 import {
   Table,
