@@ -1,13 +1,16 @@
+import { Button } from "@/components/ui/button";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Course } from "@/generated/prisma/client";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { TableCell, TableRow } from "@/components/ui/table";
+import type { Course, User } from "@/generated/prisma/client";
 import { countOrderItemsAndProductsCourse } from "@/lib/actions/admin";
-import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import CreateCourseProductForm from "./components/CreateCourseProductForm";
 import DeleteCourseBtn from "./components/DelCourseBtn";
@@ -16,63 +19,70 @@ import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
   course: Course;
+  teachers: User[];
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra
 //           kursdetaljer. Hantera data kring tillfällen dvs redigera närvaro,
 //           ställa in -och skicka meddelande, se antal bokningar / platser.
 
-export default async function CourseItem({ course }: Props) {
-  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+export default async function CourseItem({ course, teachers }: Props) {
   const courseName = getCourseName(course);
 
   const counts = await countOrderItemsAndProductsCourse(course.id);
 
   return (
-    <div className="p-2 ">
-      <Card>
-        <CardHeader>
-          <div className="w-full lg:flex md:justify-between md:items-start">
-            <CardTitle>
-              <div>{courseName}</div>
-            </CardTitle>
-
-            <div className="p-2 flex gap-2">
-              <EditCourseForm teachers={teachers} course={course} />
-              <DeleteCourseBtn courseId={course.id} />
-            </div>
+    <>
+      <TableRow className="border-t hover:bg-muted/30">
+        <TableCell className="p-3">
+          <div className="font-semibold">{courseName}</div>
+          <div className="text-xs text-muted-foreground">
+            Max / lektion:{" "}
+            {course.maxBookings > 0 ? course.maxBookings : "Obegränsat"}
           </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="p-2 space-y-2 bg-muted/30 border border-border rounded">
-            <div>
-              <span className="font-bold">Antal köp med tillgång:</span>{" "}
-              {counts.purchaseItemCount ?? 0}
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <span className="font-bold">Produkter:</span>{" "}
-                {counts.countProd ?? 0} st
-              </div>
-              <CreateCourseProductForm
-                courseId={course.id}
-                courseName={courseName}
-              />
-            </div>
+        </TableCell>
+        <TableCell className="p-3">{counts.purchaseItemCount ?? 0}</TableCell>
+        <TableCell className="p-3">
+          <div className="flex items-center gap-2">
+            <span>{counts.countProd ?? 0} st</span>
+            <CreateCourseProductForm
+              courseId={course.id}
+              courseName={courseName}
+            />
           </div>
-
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Lektioner</AccordionTrigger>
-              <AccordionContent>
-                <LessonBrowserData courseId={course.id} />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
-    </div>
+        </TableCell>
+        <TableCell className="p-3">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="secondary" size="sm">
+                Lektioner
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="overflow-y-auto max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>Lektioner – {courseName}</DialogTitle>
+              </DialogHeader>
+              <LessonBrowserData courseId={course.id} />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Klar
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </TableCell>
+        <TableCell className="p-3 text-right">
+          <div className="flex items-center justify-end gap-1">
+            <EditCourseForm teachers={teachers} course={course} />
+            <DeleteCourseBtn courseId={course.id} />
+          </div>
+        </TableCell>
+      </TableRow>
+      <TableRow aria-hidden="true">
+        <TableCell colSpan={5} className="h-2 p-0" />
+      </TableRow>
+    </>
   );
 }

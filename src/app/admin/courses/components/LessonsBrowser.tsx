@@ -88,7 +88,7 @@ export default function LessonsBrowser({
           }
 
           return (
-            <div className="w-full max-h-[80vh] overflow-auto rounded border bg-background divide-y">
+            <div className="w-full max-h-[50vh] overflow-auto rounded border bg-background divide-y">
               {filteredLessons.map((l) => (
                 <LessonItem
                   key={l.id}
