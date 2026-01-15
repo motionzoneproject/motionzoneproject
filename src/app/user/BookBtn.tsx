@@ -143,7 +143,7 @@ export default function AddTerminForm({
                   name="purchaseId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Välj kurs:</FormLabel>
+                      <FormLabel>Välj produkt:</FormLabel>
 
                       <FormControl>
                         <Select
@@ -156,18 +156,30 @@ export default function AddTerminForm({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Välj kurs" />
+                              <SelectValue placeholder="Välj produkt" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectLabel>Välj kurs</SelectLabel>
-                              {purschaseItems.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.purchase.product.name} ({c.remainingCount}{" "}
-                                  )
-                                </SelectItem>
-                              ))}
+                              <SelectLabel>Välj produkt</SelectLabel>
+                              {purschaseItems.map((c) => {
+                                const participantName =
+                                  c.purchase.participant?.name;
+                                const remainingText = c.unlimited
+                                  ? "∞"
+                                  : c.purchase.type === "CLIP"
+                                    ? (c.purchase.remainingCount ?? 0)
+                                    : c.remainingCount;
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.purchase.product.name}
+                                    {participantName
+                                      ? ` (deltagare: ${participantName})`
+                                      : ""}
+                                    {` (${remainingText})`}
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectGroup>
                           </SelectContent>
                         </Select>

@@ -34,8 +34,9 @@ export default function AutoBookBtn({
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant="ghost"
       size="sm"
+      className="text-foreground"
       onClick={handleClick}
       disabled={disabled || isLoading}
     >

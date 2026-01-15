@@ -27,6 +27,7 @@ import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import AutoBookBtn from "./AutoBookBtn";
 import BookingCal from "./BookingCal";
+import CancelBookingBtn from "./CancelBookingBtn";
 import OrderHistory from "./OrderHistory";
 
 export default async function Page() {
@@ -50,13 +51,24 @@ export default async function Page() {
       if (!acc[purchaseId]) {
         acc[purchaseId] = {
           productName: item.purchase.product.name,
+          participantName: item.purchase.participant?.name,
           items: [],
         };
+      }
+      if (!acc[purchaseId].participantName && item.purchase.participant?.name) {
+        acc[purchaseId].participantName = item.purchase.participant.name;
       }
       acc[purchaseId].items.push(item);
       return acc;
     },
-    {} as Record<string, { productName: string; items: typeof purschaseItems }>,
+    {} as Record<
+      string,
+      {
+        productName: string;
+        participantName?: string;
+        items: typeof purschaseItems;
+      }
+    >,
   );
 
   return (
@@ -124,7 +136,7 @@ export default async function Page() {
 
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Dina köpta paket & produkter
+            Dina köpta produkter och bokningar
           </h3>
 
           <Accordion type="single" collapsible className="space-y-2">
@@ -132,15 +144,19 @@ export default async function Page() {
               <AccordionItem
                 key={purchaseId}
                 value={purchaseId}
-                className="border rounded-lg px-4"
+                className="border rounded-lg px-4 last:border-b"
               >
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex flex-1 items-center justify-between text-left pr-4">
                     <div>
-                      <span className="text-xs text-brand">
-                        Produkt / Paket
-                      </span>
-                      <p className="font-medium">{group.productName}</p>
+                      <span className="text-xs text-brand">Produkt</span>
+                      <p className="font-medium">
+                        {group.productName}
+                        {group.participantName &&
+                          group.participantName !== user?.name && (
+                            <span> (deltagare: {group.participantName})</span>
+                          )}
+                      </p>
                     </div>
                     <Badge variant="outline">
                       {group.items.length}{" "}
@@ -162,36 +178,45 @@ export default async function Page() {
                         >
                           <div className="space-y-1">
                             <p className="font-medium text-sm">{courseName}</p>
-                            {pi.purchase.participant &&
-                              pi.purchase.participant.name !== user?.name && (
-                                <p className="text-[10px] text-brand font-medium">
-                                  Deltagare: {pi.purchase.participant.name}
-                                </p>
-                              )}
-                            <p className="text-muted-foreground text-xs">
-                              Dina bokningar:
-                            </p>
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-muted-foreground text-xs">
+                                Dina bokningar:
+                              </p>
+                              <AutoBookBtn
+                                purchaseItemId={pi.id}
+                                disabled={
+                                  !pi.unlimited && pi.remainingCount <= 0
+                                }
+                              />
+                            </div>
                             {bookings.filter((b) => b.purchaseItemId === pi.id)
                               .length > 0 ? (
-                              <ul className="space-y-1 mt-1">
+                              <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                 {bookings
                                   .filter((b) => b.purchaseItemId === pi.id)
                                   .map((b) => (
                                     <li
                                       key={b.id}
-                                      className="text-xs bg-background p-2 rounded"
+                                      className="text-sm bg-background px-4 py-2 rounded border flex items-center justify-between gap-3"
                                     >
-                                      {new Date(
-                                        b.lesson.startTime,
-                                      ).toLocaleDateString("sv-SE", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                      {b.lesson.cancelled && (
-                                        <span className="text-destructive ml-1">
-                                          (inställd)
+                                      <span>
+                                        {new Date(
+                                          b.lesson.startTime,
+                                        ).toLocaleDateString("sv-SE", {
+                                          day: "numeric",
+                                          month: "short",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                        {b.lesson.cancelled && (
+                                          <span className="text-destructive ml-1">
+                                            (inställd)
+                                          </span>
+                                        )}
+                                      </span>
+                                      {!b.lesson.cancelled && (
+                                        <span className="ml-3">
+                                          <CancelBookingBtn bookingId={b.id} />
                                         </span>
                                       )}
                                     </li>
@@ -212,23 +237,11 @@ export default async function Page() {
                             >
                               {pi.unlimited ? "∞" : pi.remainingCount}
                             </span>
-                            {!pi.unlimited && (
-                              <span className="text-xs text-muted-foreground">
-                                {" "}
-                                / {pi.lessonsIncluded}
-                              </span>
-                            )}
                             <p className="text-xs text-muted-foreground">
-                              Lektioner
+                              {pi.unlimited
+                                ? "Obegränsat"
+                                : `Kvar / totalt: ${pi.remainingCount} / ${pi.lessonsIncluded}`}
                             </p>
-                            <div className="mt-2">
-                              <AutoBookBtn
-                                purchaseItemId={pi.id}
-                                disabled={
-                                  !pi.unlimited && pi.remainingCount <= 0
-                                }
-                              />
-                            </div>
                           </div>
                         </div>
                       );
