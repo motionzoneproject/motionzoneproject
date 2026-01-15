@@ -409,7 +409,8 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
         cancelled: false,
         startTime: { gte: new Date() },
       },
-      select: { id: true, maxBookings: true },
+      select: { id: true, maxBookings: true, startTime: true },
+      orderBy: { startTime: "asc" },
     });
 
     if (lessons.length === 0) {
@@ -479,24 +480,28 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
       return { success: false, msg: "Alla kommande lektioner är fullbokade." };
     }
 
+    let skippedNoCredits = 0;
+    let lessonsToAutoBook = lessonsWithSpace;
     if (!purchaseItem.unlimited) {
       const remaining =
         purchaseItem.purchase.type === "CLIP"
           ? (purchaseItem.purchase.remainingCount ?? 0)
           : purchaseItem.remainingCount;
 
+      if (remaining <= 0) {
+        return { success: false, msg: "Inga bokningar kvar att autoboka." };
+      }
+
       if (remaining < lessonsWithSpace.length) {
-        return {
-          success: false,
-          msg: "Inte tillräckligt många bokningar kvar för att autoboka.",
-        };
+        skippedNoCredits = lessonsWithSpace.length - remaining;
+        lessonsToAutoBook = lessonsWithSpace.slice(0, remaining);
       }
     }
 
     let bookedCount = 0;
 
     await prisma.$transaction(async (tx) => {
-      for (const lesson of lessonsWithSpace) {
+      for (const lesson of lessonsToAutoBook) {
         if (lesson.maxBookings > 0) {
           const currentCount = await tx.booking.count({
             where: { lessonId: lesson.id, cancelled: false },
@@ -528,6 +533,8 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
     const skippedAlreadyBooked = existingSet.size;
     const msgParts = [`Bokade ${bookedCount} lektioner.`];
     if (skippedFull > 0) msgParts.push(`${skippedFull} fullbokade.`);
+    if (skippedNoCredits > 0)
+      msgParts.push(`${skippedNoCredits} saknade saldo.`);
     if (skippedAlreadyBooked > 0)
       msgParts.push(`${skippedAlreadyBooked} redan bokade.`);
 

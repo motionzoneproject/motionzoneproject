@@ -45,8 +45,11 @@ export default async function Page() {
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
 
+  // Grupperar köp per purchaseId så varje accordion visar produktnamn,
+  // ev. deltagare och alla tillhörande items/bokningar.
   const groupedPurchases = purschaseItems.reduce(
     (acc, item) => {
+      // Initiera grupp vid första träffen.
       const purchaseId = item.purchaseId;
       if (!acc[purchaseId]) {
         acc[purchaseId] = {
@@ -55,9 +58,11 @@ export default async function Page() {
           items: [],
         };
       }
+      // Spara deltagarnamn när vi hittar ett för köpet.
       if (!acc[purchaseId].participantName && item.purchase.participant?.name) {
         acc[purchaseId].participantName = item.purchase.participant.name;
       }
+      // Lägg till item i gruppen.
       acc[purchaseId].items.push(item);
       return acc;
     },

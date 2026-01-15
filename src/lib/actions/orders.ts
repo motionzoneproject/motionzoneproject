@@ -163,24 +163,24 @@ export async function createPurchaseFromOrder(orderId: string) {
         ),
       );
 
-      // Autoboka om det är 1 kurs. Om det går såklart sett till inställt eller antl klipp.
-      const shouldAutoBook =
-        orderItem.product.type === "COURSE" &&
-        orderItem.product.courses.length === 1;
+      // Autoboka för kurs och paket (ej klippkort).
+      const shouldAutoBook = orderItem.product.type !== "CLIP";
 
       if (shouldAutoBook) {
-        const purchaseItem = purchaseItems[0];
-        const lessons = await tx.lesson.findMany({
-          where: {
-            courseId: purchaseItem.courseId,
-            cancelled: false,
-            startTime: { gte: now },
-          },
-          select: { id: true, maxBookings: true },
-        });
+        for (const purchaseItem of purchaseItems) {
+          const lessons = await tx.lesson.findMany({
+            where: {
+              courseId: purchaseItem.courseId,
+              cancelled: false,
+              startTime: { gte: now },
+            },
+            select: { id: true, maxBookings: true },
+            orderBy: { startTime: "asc" },
+          });
 
-        const lessonIds = lessons.map((lesson) => lesson.id);
-        if (lessonIds.length > 0) {
+          const lessonIds = lessons.map((lesson) => lesson.id);
+          if (lessonIds.length === 0) continue;
+
           const existingBookings = await tx.booking.findMany({
             where: {
               userId: purchase.userId,
@@ -197,18 +197,20 @@ export async function createPurchaseFromOrder(orderId: string) {
             (lesson) => !existingSet.has(lesson.id),
           );
 
-          const remainingByType =
-            purchase.type === "CLIP"
-              ? (purchase.remainingCount ?? 0)
-              : purchaseItem.remainingCount;
+          let lessonsToAutoBook = lessonsToBook;
+          if (!purchaseItem.unlimited) {
+            const remainingByType =
+              purchase.type === "CLIP"
+                ? (purchase.remainingCount ?? 0)
+                : purchaseItem.remainingCount;
 
-          if (
-            !purchaseItem.unlimited &&
-            remainingByType < lessonsToBook.length
-          ) {
-            throw new Error(
-              "Not enough remaining lessons to auto-book this course.",
-            );
+            if (remainingByType <= 0) {
+              continue;
+            }
+
+            if (remainingByType < lessonsToBook.length) {
+              lessonsToAutoBook = lessonsToBook.slice(0, remainingByType);
+            }
           }
 
           const bookingCounts = await tx.booking.groupBy({
@@ -221,7 +223,7 @@ export async function createPurchaseFromOrder(orderId: string) {
             bookingCounts.map((b) => [b.lessonId, b._count._all]),
           );
 
-          for (const lesson of lessonsToBook) {
+          for (const lesson of lessonsToAutoBook) {
             const currentCount = bookingCountMap.get(lesson.id) ?? 0;
             if (lesson.maxBookings > 0 && currentCount >= lesson.maxBookings) {
               throw new Error("Lektionen är fullbokad.");
