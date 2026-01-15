@@ -545,7 +545,7 @@ export async function autoBookCourseLessons(purchaseItemId: string): Promise<{
 }
 
 export async function delBooking(
-  lessonId: string,
+  bookingId: string,
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -554,15 +554,21 @@ export async function delBooking(
   if (!user) return { success: false, msg: "Ingen giltig session." };
 
   try {
-    // 1. Hämta lektionsstatus och tid
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { cancelled: true, startTime: true },
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        lesson: { select: { cancelled: true, startTime: true } },
+        purchaseItem: { include: { purchase: true } },
+      },
     });
 
-    if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
+    if (!booking) return { success: false, msg: "Bokningen hittades inte." };
 
-    if (lesson.cancelled) {
+    if (booking.userId !== user.id) {
+      return { success: false, msg: "Obehörig åtkomst till bokningen." };
+    }
+
+    if (booking.lesson.cancelled) {
       return {
         success: false,
         msg: "Lektionen är redan inställd och klipp bör redan ha återbetalats.",
@@ -570,7 +576,7 @@ export async function delBooking(
     }
 
     // Valfritt: Hindra avbokning om lektionen redan har börjat
-    if (new Date() > lesson.startTime) {
+    if (new Date() > booking.lesson.startTime) {
       return {
         success: false,
         msg: "Kan inte avboka en lektion som redan har startat.",
@@ -578,26 +584,9 @@ export async function delBooking(
     }
 
     await prisma.$transaction(async (tx) => {
-      // 2. Hitta bokningen inkl. köp-info
-      const booking = await tx.booking.findFirst({
-        where: {
-          userId: user.id,
-          lessonId: lessonId,
-        },
-        include: {
-          purchaseItem: {
-            include: { purchase: true },
-          },
-        },
-      });
-
-      if (!booking) {
-        throw new Error("Ingen bokning hittades.");
-      }
-
-      // 3. Ta bort bokningen
+      // Ta bort bokningen
       await tx.booking.delete({
-        where: { id: booking.id },
+        where: { id: bookingId },
       });
 
       // Ge tillbaka klippet på rätt nivå

@@ -5,13 +5,13 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type BookingWithLesson,
-  delBooking,
-  type LessonWithCourse,
-  type UserPurchaseWithProduct,
+import type {
+  BookingWithLesson,
+  LessonWithCourse,
+  UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import BookBtn from "./BookBtn";
+import CancelBookingBtn from "./CancelBookingBtn";
 
 interface Props {
   lessons: LessonWithCourse[]; // Alla lektioner i alla kurser som kunden har tillgång till.
@@ -117,13 +117,28 @@ export default function BookingCal({
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
                 // Okej så här kollar vi om den redan är bokad genom att söka efter lessonId i bookings:
-                const booking = bookings.find((b) => b.lessonId === lesson.id);
-                const isAlreadyBooked = Boolean(booking);
+                const lessonBookings = bookings.filter(
+                  (b) => b.lessonId === lesson.id && !b.cancelled,
+                );
+                const bookedPurchaseItemIds = new Set(
+                  lessonBookings.map((b) => b.purchaseItemId),
+                );
+                const coursePurchaseItems = purschaseItems.filter(
+                  (itm) => itm.courseId === lesson.courseId,
+                );
+                const bookablePurchaseItems = coursePurchaseItems.filter(
+                  (itm) => {
+                    if (bookedPurchaseItemIds.has(itm.id)) return false;
+                    if (itm.unlimited) return true;
+                    if (itm.purchase.type === "CLIP") {
+                      return (itm.purchase.remainingCount ?? 0) > 0;
+                    }
+                    return itm.remainingCount > 0;
+                  },
+                );
                 const isFull =
                   lesson.maxBookings > 0 &&
                   lesson.bookings.length >= lesson.maxBookings;
-                const participantName =
-                  booking?.purchaseItem.purchase.participant?.name;
 
                 return (
                   <div
@@ -146,24 +161,36 @@ export default function BookingCal({
                         )}
                         <br />
                         {lesson.message}
-                        {participantName && (
-                          <>
-                            <br />
-                            Deltagare: {participantName}
-                          </>
-                        )}
                       </p>
+                      {lessonBookings.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {lessonBookings.map((b) => {
+                            const name =
+                              b.purchaseItem.purchase.participant?.name ?? "Du";
+                            return (
+                              <div
+                                key={b.id}
+                                className="flex items-center justify-between gap-3 rounded border bg-background px-3 py-2 text-sm"
+                              >
+                                <span>Bokad: {name}</span>
+                                <CancelBookingBtn bookingId={b.id} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                     {lesson.cancelled ? (
                       "Inställd."
-                    ) : isAlreadyBooked ? (
-                      <div>
-                        <Button
-                          variant={"destructive"}
-                          onClick={async () => await delBooking(lesson.id)}
-                        >
-                          Avboka
-                        </Button>
+                    ) : bookablePurchaseItems.length > 0 && !isFull ? (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-end">
+                          <BookBtn
+                            courseId={lesson.courseId}
+                            lessonId={lesson.id}
+                            purschaseItems={bookablePurchaseItems}
+                          />
+                        </div>
                       </div>
                     ) : isFull ? (
                       <div>
@@ -173,13 +200,9 @@ export default function BookingCal({
                       </div>
                     ) : (
                       <div>
-                        <BookBtn
-                          courseId={lesson.courseId}
-                          lessonId={lesson.id}
-                          purschaseItems={purschaseItems.filter(
-                            (itm) => itm.courseId === lesson.courseId,
-                          )}
-                        />
+                        <Button variant="secondary" disabled>
+                          Inga tillfällen kvar
+                        </Button>
                       </div>
                     )}
                   </div>
