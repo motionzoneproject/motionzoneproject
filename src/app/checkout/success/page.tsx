@@ -3,10 +3,10 @@ import { getOrderById } from "@/lib/orders";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const orderId =
-    typeof searchParams.orderId === "string" ? searchParams.orderId : undefined;
+  const { orderId: rawOrderId } = await searchParams;
+  const orderId = typeof rawOrderId === "string" ? rawOrderId : undefined;
 
   const order = orderId ? await getOrderById(orderId) : null;
 

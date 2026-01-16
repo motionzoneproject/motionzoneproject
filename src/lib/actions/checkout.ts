@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { clearCart } from "@/lib/cart";
-import { createOrder } from "@/lib/orders";
+import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
+import { createOrder, getOrderById } from "@/lib/orders";
 import { getSessionData } from "./sessiondata";
 
 export type CheckoutItem = {
@@ -31,6 +32,22 @@ export async function createCheckout(params: {
     postalcode,
     note,
   });
+
+  // Try to send confirmation email
+  try {
+    const fullOrder = await getOrderById(order.id);
+    if (fullOrder?.user.email) {
+      const html = await generateOrderConfirmationHtml(fullOrder);
+      await sendMail(
+        fullOrder.user.email,
+        `Orderbekräftelse - Order #${order.id}`,
+        html,
+      );
+    }
+  } catch (emailError) {
+    // We don't want to fail the checkout if the email fails, but we should log it
+    console.error("Failed to send confirmation email:", emailError);
+  }
 
   // Clear cart after order
   await clearCart();
