@@ -41,6 +41,8 @@ export async function sendMail(to: string, subject: string, html: string) {
 export async function generateOrderConfirmationHtml(order: {
   id: string;
   totalPrice: number;
+  status: string;
+  createdAt: Date | string;
   user: { name: string; email: string };
   orderItems: {
     product: { name: string };
