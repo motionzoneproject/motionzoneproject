@@ -102,8 +102,15 @@ export default async function Page({
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Ordrar</h1>
+    <div className="p-4 md:p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+          Ordrar
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+          Granska inkomna ordrar, godkänn betalning och följ status.
+        </p>
+      </div>
       <OrdersView
         orders={orders}
         defaultStatus={status}

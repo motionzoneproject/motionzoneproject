@@ -27,7 +27,7 @@ export default function ProductFilters({ terminer }: Props) {
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  // URL:en är källan till sanningen för filter/sortering.
+  // Läs in vad som redan är satt:
   const currentType = searchParams.get("type") ?? "all";
   const currentTermin = searchParams.get("termin") ?? "all";
   const currentSort = searchParams.get("sort") ?? "name_asc";
@@ -35,11 +35,11 @@ export default function ProductFilters({ terminer }: Props) {
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams);
-      // "all" => ta bort parametern för rena, delbara URL:er.
-      const nextValue = value === "all" ? "" : value;
-      const prevValue = params.get(key) ?? "";
-      if (prevValue === nextValue) return;
+      const nextValue = value === "all" ? "" : value; // All är ju inget filter, därmed "".
+      const prevValue = params.get(key) ?? ""; // Läs in förra värdet för att jämföra.
+      if (prevValue === nextValue) return; // Ingen ändring!
 
+      // nextValue och prevValue kan ju vara tomma (om all), så antingen set eller delete.
       if (nextValue) {
         params.set(key, nextValue);
       } else {

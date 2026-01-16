@@ -153,16 +153,28 @@ export const adminCreateCourseProductSchema = z
     },
   );
 
-export const AdminProductCourseItemSchema = z.object({
-  productId: z.string().min(1),
-  isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
-  courseId: z.string().min(1, "Kurs-ID måste anges."),
-  unlimited: z.coerce.boolean().optional(),
-  lessonsIncluded: z.coerce
-    .number()
-    .int()
-    .nonnegative("Antalet tillfällen får inte vara negativt."),
-});
+export const AdminProductCourseItemSchema = z
+  .object({
+    productId: z.string().min(1),
+    isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
+    courseId: z.string().min(1, "Kurs-ID måste anges."),
+    unlimited: z.coerce.boolean().optional(),
+    lessonsIncluded: z.coerce
+      .number()
+      .int()
+      .nonnegative("Antalet tillfällen får inte vara negativt."),
+  })
+  .refine(
+    (data) =>
+      data.unlimited === true ||
+      data.isClipcard === true ||
+      data.lessonsIncluded >= 1,
+    {
+      message:
+        "Antal tillfällen måste vara minst 1 om inte obegränsat eller klippkort.",
+      path: ["lessonsIncluded"],
+    },
+  );
 
 export const AdminAddUserInLessonSchema = z.object({
   userId: z.string().min(1),

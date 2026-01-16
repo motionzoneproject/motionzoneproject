@@ -72,8 +72,15 @@ export default async function StudentsPage(props: {
 
   return (
     <div className="p-4 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Deltagarlista & Elever</h1>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Deltagarlista & Elever
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+            Sök deltagare, se köp per termin och uppdatera kontaktuppgifter.
+          </p>
+        </div>
 
         <form className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Input

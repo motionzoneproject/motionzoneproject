@@ -338,7 +338,6 @@ model ProductOnCourse {
   product  Product @relation(fields: [productId], references: [id])
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten?
-  type ProductType @default(COURSE) // Tror det är bra att ha den här med.
   unlimited Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
 
   @@id([courseId, productId])

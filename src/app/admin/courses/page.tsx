@@ -53,9 +53,12 @@ export default async function Page({
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kurser</h1>
-          <p className="text-muted-foreground">
-            Hantera kursdetaljer, produkter och lektioner.
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Kurser
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+            Skapa och uppdatera kurser, koppla produkter och hantera
+            lektionstillfällen.
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -74,7 +74,7 @@ export default function AddCoursesToProductForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       productId: productId,
-      lessonsIncluded: 0,
+      lessonsIncluded: isClip ? 0 : 1,
       unlimited: false,
       courseId: "",
     },
@@ -107,27 +107,48 @@ export default function AddCoursesToProductForm({
 
   useEffect(() => {
     // Prefilla om kursen redan finns kopplad till produkten.
+
     const checkIsInProd = async () => {
       const inProd = await isCourseInProduct(selCourse, productId);
+
       setIsInProd(inProd.found);
 
       if (inProd.found) {
-        form.setValue("lessonsIncluded", inProd.lessonsIncluded);
+        form.setValue(
+          "lessonsIncluded",
+          inProd.unlimited
+            ? 0
+            : isClip
+              ? 0
+              : Math.max(1, inProd.lessonsIncluded ?? 0),
+        );
         form.setValue("unlimited", inProd.unlimited);
       } else {
-        form.setValue("lessonsIncluded", 0);
+        form.setValue("lessonsIncluded", isClip ? 0 : 1);
         form.setValue("unlimited", false);
       }
     };
     checkIsInProd();
-  }, [selCourse, productId, form.setValue]);
+  }, [selCourse, productId, form.setValue, isClip]);
 
   useEffect(() => {
     if (!isOpen) form.reset();
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addCourseToProduct(values);
+    //Kollar här ifall det är unlimited först, isåfall sätt antal tillfällen till 0, sen annars om det är ett klippkort, sätt det då också till 0, och annars minst 1 (ologisk att ha kurser i produkter utan minst 1 tillfälle att kunna boka.)
+    const sanitizedValues = {
+      ...values,
+      isClipcard: isClip,
+      lessonsIncluded:
+        values.unlimited === true
+          ? 0
+          : isClip
+            ? 0
+            : Math.max(1, values.lessonsIncluded ?? 0),
+    };
+
+    const res = await addCourseToProduct(sanitizedValues);
     if (res.success) {
       toast.success(res.msg);
       //   setIsOpen(false);
@@ -261,13 +282,14 @@ export default function AddCoursesToProductForm({
                         <FormControl>
                           <Input
                             type="number"
-                            min="0"
+                            min={form.watch("isClipcard") === true ? 0 : 1}
                             step="1"
                             {...field}
                             value={
-                              field.value === undefined
-                                ? ""
-                                : String(field.value)
+                              field.value === undefined ||
+                              form.watch("isClipcard") === true
+                                ? 0
+                                : Number(field.value)
                             }
                           />
                         </FormControl>
@@ -276,6 +298,14 @@ export default function AddCoursesToProductForm({
                       </FormItem>
                     )}
                   />
+                )}
+                {isClip && (
+                  <FormItem>
+                    <FormLabel>Antal tillfällen:</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      (Klippkort)
+                    </div>
+                  </FormItem>
                 )}
 
                 <Button type="submit" variant={"secondary"} className="w-full">

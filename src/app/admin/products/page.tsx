@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllProducts, getTermin, isAdminRole } from "@/lib/actions/admin";
+import { getAllProducts, getTerminer, isAdminRole } from "@/lib/actions/admin";
 import AddProductForm from "./components/AddProductForm";
 import ProductFilters from "./components/ProductFilters";
 import ProductItem from "./components/ProductItem";
@@ -74,16 +74,19 @@ export default async function Page({
       terminId: terminParam || undefined,
       sort,
     }),
-    getTermin(),
+    getTerminer(),
   ]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Produkter</h1>
-          <p className="text-muted-foreground">
-            Hantera dina produkter och paket.
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Produkter
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+            Skapa, uppdatera och ta bort produkter samt koppla kurser, terminer
+            och priser.
           </p>
         </div>
         <div className="flex items-center gap-3">

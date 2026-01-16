@@ -39,9 +39,12 @@ export default async function Page() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Admin - Översikt</h1>
-        <p className="text-muted-foreground">
-          Här ser du alla lektioner och kan hantera närvaro samt meddelanden.
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+          Admin - Översikt
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+          Överblick av alla lektioner med snabb åtkomst till närvaro och
+          meddelanden.
         </p>
       </div>
 

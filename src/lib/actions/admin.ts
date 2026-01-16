@@ -42,7 +42,7 @@ export async function isAdminRole(): Promise<boolean> {
 }
 
 // Inser att det är svengelska. Men men.
-export async function getTermin(): Promise<Termin[]> {
+export async function getTerminer(): Promise<Termin[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
@@ -58,11 +58,19 @@ export type SchemaItemWithCourse = SchemaItem & {
   Lessons: Lesson[];
 };
 
-// Tyo för att lista alla Lektioner inkl alla bokningar.
+// Typ för att lista alla Lektioner inkl alla bokningar.
 export type LessonWithBookings = Lesson & { bookings: Booking[] };
 
+// Lektion med kursdata för admin-översikt/kalender.
+// Used by: src/app/admin/page.tsx -> AdminLessonCal
 export type AdminLessonWithCourse = Lesson & { course: Course };
 
+// Bokning inkl deltagare (från köp) som används i admin närvaro-listor.
+// Used by:
+// - src/app/admin/courses/components/LessonAttendanceForm.tsx
+// - src/app/admin/courses/components/LessonBrowserData.tsx
+// - src/app/admin/courses/components/LessonItem.tsx
+// - src/app/admin/courses/components/LessonsBrowser.tsx
 export type BookingWithPurchaseParticipant = Prisma.BookingGetPayload<{
   include: {
     purchaseItem: {
@@ -77,10 +85,12 @@ export type BookingWithPurchaseParticipant = Prisma.BookingGetPayload<{
   };
 }>;
 
+// Denna används i admin/page för att fylla kalendern med lektioner. Inkludera course för att kunna visa vilken kurs det är, och sedan vidare kunna hantera närvaro och visa info.
 export async function getAdminLessons(): Promise<AdminLessonWithCourse[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
+  // Hämtar alla lektioner med kursdata för admin-översikten.
   const lessons = await prisma.lesson.findMany({
     include: { course: true },
     orderBy: { startTime: "asc" },
@@ -110,6 +120,7 @@ export async function getSchemaItems(
   return schemaItems;
 }
 
+// Hämtar statistik i admin/termin för varje termin:
 export async function getTerminStats(terminId: string): Promise<{
   courseCount: number;
   productCount: number;
@@ -131,6 +142,7 @@ export async function getTerminStats(terminId: string): Promise<{
     return { courseCount: 0, productCount: 0, soldProductCount: 0 };
   }
 
+  // lärde mig nåt nytt här ;)
   const [productCount, soldProductCount] = await Promise.all([
     prisma.product.count({
       where: {
@@ -167,6 +179,8 @@ export async function getAllCourses(q: string = ""): Promise<Course[]> {
   return courses;
 }
 
+// Den används i LessonAttendanceForm.tsx för att hämta bokningar när man öppnar/uppdaterar närvaro...
+// Hämtar bokningar i en viss lektion, och visar vilken purchase och purcaseItem som använts, samt vem som är bokad (user eller particpant)
 export async function getBookingsFromLesson(
   lessonId: string,
 ): Promise<BookingWithPurchaseParticipant[]> {
@@ -257,6 +271,7 @@ export async function checkTerminDateChange(
   return { count: affectedBookings };
 }
 
+// så denna funktion är om man ändrar en temrin, vilket blix rätt komplext eftersom bokningar och lektioner rredan skapats och nu måste tas bort ev.
 export async function editTermin(
   id: string,
   formData: z.infer<typeof adminAddTerminSchema>,
@@ -309,11 +324,10 @@ export async function editTermin(
 
         // Återställ klipp/lektioner till kontot för de som drabbas
         for (const booking of affectedBookings) {
-          if (booking.purchaseItemId) {
-            await tx.purchaseItem.update({
-              where: { id: booking.purchaseItemId },
-              data: { remainingCount: { increment: 1 } },
-            });
+          if (!booking.purchaseItemId) continue;
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
           }
         }
 
@@ -345,7 +359,7 @@ export async function editTermin(
       for (const item of schemaItems) {
         const targetDay = WEEKDAY_MAP[item.weekday];
 
-        // Här används de nya datumen eller kursens egna specialdatum
+        // Här används de nya datumen eller kursens egna specialdatum.
         const actualStart = item.customStartDate || newStartDate;
         const actualEnd = item.customEndDate || newEndDate;
 
@@ -411,7 +425,6 @@ export async function editTermin(
     };
   }
 }
-// fix: klippkort
 
 /**
  * Lägger till en kurs i en termins schema och genererar automatiskt alla lektionstillfällen.
@@ -453,6 +466,8 @@ export async function addCoursetoSchema(
     if (!termin) throw new Error("No termin.");
     // fix: lägg in så den kopplar terminen till kursen också?
 
+    // Den funktionen jämför två datum bara på kalenderdag i UTC (år/månad/dag), och ignorerar tid på dygnet.
+    // Så om två datum ligger på samma UTC‑dag (oavsett klockslag) returnerar den true; annars false.
     const isSameDateUtc = (a: Date, b: Date) =>
       a.getUTCFullYear() === b.getUTCFullYear() &&
       a.getUTCMonth() === b.getUTCMonth() &&
@@ -552,6 +567,7 @@ export async function editCourseInSchema(
     const termin = await prisma.termin.findUnique({ where: { id: terminId } });
     if (!termin) throw new Error("No termin.");
 
+    // Jämför dagar oavsett tid (returner true om det är samma dagar)
     const isSameDateUtc = (a: Date, b: Date) =>
       a.getUTCFullYear() === b.getUTCFullYear() &&
       a.getUTCMonth() === b.getUTCMonth() &&
@@ -612,6 +628,7 @@ export async function editCourseInSchema(
     }
 
     revalidatePath("/admin/termin");
+    revalidatePath("/admin/courses");
 
     return {
       success: true,
@@ -769,6 +786,26 @@ export async function delCourse(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Kolla först så det är okej att ta bort kursen! Om kunder har köpt tillgång till den blir det lite konstigt, och om något behöver ändras i kursen så kan de ju ändra istället..
+    // Ev fix: ha med isActive, både i kurs och kanske produkt också, istället för att ta bort kurser och produkter som inte längre är aktiva så kan man inaktivera de? För om du tar bort en kurs, försvinner de ju från gamla purchases också
+    const activePurchaseItem = await prisma.purchaseItem.findFirst({
+      where: {
+        courseId: id,
+        OR: [
+          { unlimited: true },
+          { remainingCount: { gt: 0 }, purchase: { type: { not: "CLIP" } } },
+          { purchase: { type: "CLIP", remainingCount: { gt: 0 } } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (activePurchaseItem) {
+      return {
+        success: false,
+        msg: "Kursen kan inte raderas eftersom aktiva köp fortfarande har saldo.",
+      };
+    }
+
     // Hitta aktiva bokningar för denna kurs (för att återställa =))
     const bookings = await prisma.booking.findMany({
       where: {
@@ -938,14 +975,17 @@ async function createLessons(
   try {
     // Hämtar all data vi behöver.
 
-    // Behöver vi validatera någonting här? ev. fix.
-
+    // För säkerhets skull validerar vi här ocskå, även om funktionerna som anropar denna redan validerar också. Men blir säkrare:
     const schemaItm = await prisma.schemaItem.findUnique({
       where: { id: schemaItemId },
       include: { termin: true, course: true },
     });
 
     if (!schemaItm) throw new Error("schemaItm kunde inte hittas.");
+    if (!schemaItm.termin) throw new Error("Termin saknas på schemaItem.");
+    if (!schemaItm.course) throw new Error("Kurs saknas på schemaItem.");
+    if (!schemaItm.course.teacherId)
+      throw new Error("TeacherId saknas på kursen.");
 
     const WEEKDAY_MAP: Record<Weekday, number> = {
       MONDAY: 1,
@@ -965,6 +1005,11 @@ async function createLessons(
     const endDate = schemaItm.customEndDate
       ? schemaItm.customEndDate
       : schemaItm.termin.endDate;
+
+    if (startDate > endDate) {
+      throw new Error("Startdatum kan inte vara efter slutdatum.");
+    }
+
     const teacherId = schemaItm.course.teacherId;
 
     const lessonsToCreate = []; // Dessa lessions ska skapas.
@@ -974,6 +1019,14 @@ async function createLessons(
     const startMinutes = schemaItm.timeStart.getMinutes();
     const endHours = schemaItm.timeEnd.getHours();
     const endMinutes = schemaItm.timeEnd.getMinutes();
+
+    // Säkerställ att sluttid är efter starttid (på tidnivå).
+    if (
+      endHours < startHours ||
+      (endHours === startHours && endMinutes <= startMinutes)
+    ) {
+      throw new Error("Sluttid måste infalla efter starttid.");
+    }
 
     /// Så nu loopar vi igenom alla targetdays inom den perioden:
 
@@ -1107,7 +1160,7 @@ export async function editLessonItem(
 }
 
 /**
- * Hämtar samtliga produkter från databasen sorterade i alfabetisk ordning efter namn.
+ * Hämtar samtliga produkter från databasen enligt det filtret som skickas med.
  * * @returns En Promise som löser ut till en array av samtliga produkter.
  * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
  * @auth Admin
@@ -1174,13 +1227,18 @@ export type ProdCourse = {
   lessonsIncluded: number;
 };
 
-// Så denna funktion körs om man skapar en produkt eller ändrar en produkt eller lägger in en kurs i en produkt, ändrar en kurs i en produkt eller tar bort en kurs ur en produkt.
-// Den kollar om det är ett klippkort, eller om den bara innehåller 1 kurs eller flera kurser, och avgör därefter produkttypen och ställer in det i produkten.
+// Så denna funktion körs om man skapar en produkt eller ändrar en produkt eller lägger in en kurs i en produkt, ändrar en
+//  kurs i en produkt eller tar bort en kurs ur en produkt.
+// Den kollar om det är ett klippkort, eller om den bara innehåller
+// 1 kurs eller flera kurser, och avgör därefter produkttypen och ställer in det i produkten.
 async function updateProductType(
   productId: string,
   options?: { isClip?: boolean; tx?: PrismaTx },
 ): Promise<"COURSE" | "PACK" | "CLIP"> {
-  const client = options?.tx ?? prisma; //
+  const client = options?.tx ?? prisma;
+  // utanför transaktion (t.ex. editProduct/addNewProduct) → då finns ingen tx, så den ska falla tillbaka till prisma
+  // inom transaktion (t.ex. addCourseToProduct/removeCourseInProduct) → då skickas tx för att hålla allt atomiskt.
+
   const product = await client.product.findUnique({
     where: { id: productId },
     select: {
@@ -1207,11 +1265,6 @@ async function updateProductType(
       data: { type: nextType },
     });
   }
-
-  await client.productOnCourse.updateMany({
-    where: { productId: product.id },
-    data: { type: nextType },
-  });
 
   return nextType;
 }
@@ -1313,7 +1366,6 @@ export async function createCourseProduct(
           courseId: course.id,
           unlimited: validated.unlimitedLessons ?? false,
           lessonsIncluded,
-          type: "COURSE",
         },
       });
 
@@ -1464,20 +1516,31 @@ export async function addCourseToProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
+    // Kolla om det redan finns en koppling:
     const isInProd = await isCourseInProduct(
       formData.courseId,
       formData.productId,
     );
 
     if (isInProd.found) {
+      // Koppling finns.
+
       await prisma.$transaction(async (tx) => {
+        // Hämta produkten
         const product = await tx.product.findUnique({
           where: { id: validated.productId },
-          select: { type: true },
+          select: { type: true }, // Ta med typ så vi kan avgöra hur vi lägger in kopplingen gällande tillfällen.
         });
+
         if (!product) throw new Error("Product not found.");
+
+        // Samma logik här, lika bra att kolla backend också :)
         const lessonsIncluded =
-          product.type === "CLIP" ? 0 : validated.lessonsIncluded;
+          product.type === "CLIP"
+            ? 0
+            : validated.unlimited === true
+              ? 0
+              : Math.max(1, validated.lessonsIncluded);
 
         await tx.productOnCourse.update({
           where: {
@@ -1501,18 +1564,23 @@ export async function addCourseToProduct(
       };
     } else {
       await prisma.$transaction(async (tx) => {
+        // Uppdatera produkttypen baserat på reglerna (se updateProductType)
         const productType = await updateProductType(validated.productId, {
           tx,
         });
 
+        // Skapa kopplingen och hantera lessons included (minst 1 om det inte är klippkort eller unlimited då ska det vara 0.)
         await tx.productOnCourse.create({
           data: {
             productId: validated.productId,
             courseId: validated.courseId,
             unlimited: validated.unlimited,
             lessonsIncluded:
-              productType === "CLIP" ? 0 : validated.lessonsIncluded,
-            type: productType,
+              productType === "CLIP"
+                ? 0
+                : validated.unlimited === true
+                  ? 0
+                  : Math.max(1, validated.lessonsIncluded),
           },
         });
       });
@@ -1650,9 +1718,7 @@ export async function countOrderItemsAndProductsCourse(
  * - purchases: Lista över genomförda köp med koppling till den köpta produkten.
  * - PurchaseItems: Specifika rader i varje köp som håller reda på:
  * - remainingCount: Hur många klipp/lektioner som finns kvar.
- * - lessonsIncluded: Det totala antalet lektioner som ingick vid köptillfället.
- * - course: Namnet på den specifika kursen som köpet avser.
- * * @usage Används främst i admin-vyn för att se en elevs saldo eller i användarens profil för att visa "X av Y lektioner kvar".
+ * * @usage Används främst i admin-vyn för att välja korrekt produkt vid admin-bokning.
  */
 export type UserPurchasesForCourse = Prisma.UserGetPayload<{
   select: {
@@ -1670,8 +1736,6 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
             id: true;
             remainingCount: true;
             unlimited: true;
-            lessonsIncluded: true; // Bra att ha för "X av Y" logik
-            course: { select: { name: true } }; // Hämtar namnet direkt
           };
         };
       };
@@ -1690,6 +1754,9 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
  * 1. Hittar användare som har MINST ett köp där `remainingCount > 0` för den valda kursen.
  * 2. Inuti sökresultatet (select) filtreras även inköpslistan så att endast de specifika
  * rader som faktiskt gäller den aktuella kursen och har saldo kvar visas.
+ * * @usedBy
+ * - src/app/admin/courses/components/LessonAttendanceForm.tsx
+ * - src/app/admin/courses/components/LessonBrowserData.tsx
  * @auth Admin
  */
 export async function getUsersWithPurchasedProductsWithCourseInIt(
@@ -1702,21 +1769,25 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
   try {
+    // Hämtar användare och dess purchases och purchaseitems som innehåller kursen, samt till vilken deltagare det gäller.
+    // Och vi hämtar endast de användare som har minst ett köp med produkter som inte är slut.
+    // Detta för att admin skall kunna välja vilken (giltig) produkt som skall användas i en bokning de skapar åt en kund.
     const usersWithData = await prisma.user.findMany({
       where: {
         purchases: {
           some: {
+            // Hämta kunder som har purchaseItems som innehåller (bland annat) kursens id.
             PurchaseItems: {
               some: {
                 courseId,
                 OR: [
-                  { unlimited: true },
+                  { unlimited: true }, // Och har obegränsade tillfällen...
                   {
-                    purchase: { type: "CLIP", remainingCount: { gt: 0 } },
+                    purchase: { type: "CLIP", remainingCount: { gt: 0 } }, // Eller om de har klippkort med klipp kvar.
                   },
                   {
-                    remainingCount: { gt: 0 },
-                    purchase: { type: { not: "CLIP" } },
+                    remainingCount: { gt: 0 }, // Eller alla med klipp kvar
+                    purchase: { type: { not: "CLIP" } }, // men som inte är klippkort
                   },
                 ],
               },
@@ -1725,14 +1796,17 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
         },
       },
       select: {
+        // Här väljer vi det vi behöver.
         id: true,
         name: true,
 
         purchases: {
+          // Inte alla purchases utan endast de som kan användas för bokningen.
           where: {
             PurchaseItems: {
               some: {
                 courseId,
+                // Samma regler för produkttyp / klipp kvar:
                 OR: [
                   { unlimited: true },
                   {
@@ -1747,6 +1821,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
             },
           },
           select: {
+            // Och det här behöver vi för att hantera / visa rätt produkter och data:
             id: true,
             product: {
               select: { id: true, name: true },
@@ -1754,9 +1829,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
             participant: { select: { id: true, name: true } },
             type: true,
             remainingCount: true,
+
             PurchaseItems: {
               where: {
-                courseId,
+                courseId, // bara purchaseitems för denna kurs, och med samma regler för typ / klipp kvar:
                 OR: [
                   { unlimited: true },
                   {
@@ -1769,13 +1845,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
                 ],
               },
               select: {
+                // Detta är det vi behöver för purchsaseItems:
                 id: true,
                 remainingCount: true,
                 unlimited: true,
-                lessonsIncluded: true, // Lagt till för att matcha typen
-                course: {
-                  select: { name: true }, // Lagt till för att matcha typen
-                },
               },
             },
           },
@@ -1818,6 +1891,7 @@ export async function addUserInLesson(
   try {
     const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
 
+    // Hämta purchasen.
     const purchase = await prisma.purchaseItem.findUnique({
       where: { id: validated.purchaseId },
       include: { purchase: true },
@@ -1826,6 +1900,7 @@ export async function addUserInLesson(
     if (!purchase)
       return { success: false, msg: "Could not find the purchase" };
 
+    // Kolla så vi kan använda purchasen (borde aldrig kunnat anropats då om den använde funktionen ovan, men lika bra att kolla här också.)
     if (!purchase.unlimited) {
       const remaining =
         purchase.purchase.type === "CLIP"
@@ -1836,6 +1911,7 @@ export async function addUserInLesson(
       }
     }
 
+    // Hämta prticipant info.
     const participantId = purchase.purchase.participantId;
     const duplicateClauses = participantId
       ? [{ purchaseItem: { purchase: { participantId } } }]
@@ -1845,10 +1921,14 @@ export async function addUserInLesson(
             purchaseItem: { purchase: { participantId: null } },
           },
         ];
+
+    // Kolla om bokningen redan finns:
+    // Om köpet har participantId → den letar efter bokningar med samma participant via purchaseItem.purchase.participantId.
+    // Annars (ingen participant) → den matchar på userId + participantId: null.
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
-        OR: duplicateClauses,
+        OR: duplicateClauses, //
       },
     });
 
@@ -1859,7 +1939,8 @@ export async function addUserInLesson(
       };
     }
 
-    // KOLLA STATUS OCH KAPACITET PÅ LEKTIONEN
+    // KOLLA STATUS OCH KAPACITET PÅ LEKTIONEN:
+    // Hämta lektionen :)
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
       select: { cancelled: true, maxBookings: true },
@@ -1876,6 +1957,7 @@ export async function addUserInLesson(
       };
     }
 
+    // Kolla så den inte är fullbokad eller cancelled:
     if (lesson?.maxBookings && lesson.maxBookings > 0) {
       const currentBookings = await prisma.booking.count({
         where: { lessonId: validated.lessonId, cancelled: false },
@@ -1886,12 +1968,14 @@ export async function addUserInLesson(
       }
     }
 
+    // All good, skapa bokningen :)
     await prisma.$transaction(async (tx) => {
       const txLesson = await tx.lesson.findUnique({
         where: { id: validated.lessonId },
         select: { cancelled: true, maxBookings: true },
       });
 
+      // kolla igen (race conditions är visserliggen väldigt osannolikt här)
       if (!txLesson) {
         throw new Error("Lektionen hittades inte.");
       }
@@ -1918,6 +2002,7 @@ export async function addUserInLesson(
         },
       });
 
+      // Vår nya funktion clipResult fixar klippen :)
       const clipResult = await handleClips(tx, validated.purchaseId, -1);
 
       if (!clipResult.success) {
@@ -1925,7 +2010,8 @@ export async function addUserInLesson(
       }
     });
 
-    revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin"); // Admin-översikten använder samma närvaro-flöde.
 
     return { success: true, msg: "Eleven blev tillagd i lektionen." };
   } catch (e) {
@@ -2008,6 +2094,7 @@ export async function removeUserFromLesson(
   }
 }
 
+// Behöver den här typen för att fortsätta en tx:
 export type PrismaTx = Prisma.TransactionClient;
 
 // // Okej, så nu den magiska funktionen handleClips då :)
