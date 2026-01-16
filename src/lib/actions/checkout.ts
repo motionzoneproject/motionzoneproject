@@ -41,7 +41,7 @@ export async function createCheckout(params: {
       await sendMail(
         fullOrder.user.email,
         `Orderbekräftelse - Order #${order.id}`,
-        html,
+        html
       );
     }
   } catch (emailError) {
