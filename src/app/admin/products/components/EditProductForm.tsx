@@ -69,7 +69,6 @@ export default function EditProductForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: clipcard,
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       imageURL: imageURL,
       description: description,
       name: name,
@@ -95,6 +94,7 @@ export default function EditProductForm({
 
   useEffect(() => {
     if (hasUnlimitedCustomers) return;
+
     const currentMax = Number(form.getValues("maxCustomers") ?? 0);
     if (currentMax < minRequiredCustomers) {
       form.setValue("maxCustomers", minRequiredCustomers);
