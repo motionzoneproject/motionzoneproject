@@ -62,10 +62,10 @@ export async function generateOrderConfirmationHtml(order: {
       }</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.price.toLocaleString(
         "sv-SE",
-        { style: "currency", currency: "SEK" }
+        { style: "currency", currency: "SEK" },
       )}</td>
     </tr>
-  `
+  `,
     )
     .join("");
 
@@ -78,7 +78,7 @@ export async function generateOrderConfirmationHtml(order: {
       <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
         <p><strong>Ordernummer:</strong> ${order.id}</p>
         <p><strong>Datum:</strong> ${new Date(
-          order.createdAt
+          order.createdAt,
         ).toLocaleDateString("sv-SE")}</p>
         <p><strong>Status:</strong> ${order.status}</p>
       </div>
@@ -99,7 +99,7 @@ export async function generateOrderConfirmationHtml(order: {
             <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold;">Totalt:</td>
             <td style="padding: 10px; text-align: right; font-weight: bold; color: #ed212d;">${order.totalPrice.toLocaleString(
               "sv-SE",
-              { style: "currency", currency: "SEK" }
+              { style: "currency", currency: "SEK" },
             )}</td>
           </tr>
         </tfoot>
