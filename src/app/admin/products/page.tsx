@@ -15,7 +15,9 @@ Tidigare:
 - Filter/sort hanterades klient-side med extra state.
 
 Resultat:
-- Snabbare första render, mindre klientlogik och färre onodiga requests.
+- Snabbare, mindre klientlogik och färre onodiga requests.
+
+Jag har också gjort om denna sida så istället för kort så är det en tabell, ser betydligt bättre ut och mer överskådligt för admin.
 
 */
 import { redirect } from "next/navigation";

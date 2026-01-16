@@ -234,7 +234,22 @@ export default function AdminLessonCal({
                       </div>
                       <Accordion type="single" collapsible className="mt-3">
                         <AccordionItem value={`lesson-${lesson.id}`}>
-                          <AccordionTrigger>Hantera</AccordionTrigger>
+                          <AccordionTrigger>
+                            {lesson.course.name}{" "}
+                            {startTime.toLocaleDateString("sv-SE", {
+                              day: "2-digit",
+                              month: "short",
+                            })}{" "}
+                            {startTime.toLocaleTimeString("sv-SE", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                            {" - "}
+                            {endTime.toLocaleTimeString("sv-SE", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </AccordionTrigger>
                           <AccordionContent>
                             <LessonItemForm lesson={lesson} />
                           </AccordionContent>
