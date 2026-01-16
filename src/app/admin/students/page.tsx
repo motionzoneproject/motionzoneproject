@@ -47,18 +47,32 @@ export default async function StudentsPage(props: {
       },
       purchases: {
         include: {
-          product: {
-            include: { termin: true },
-          },
+          product: true,
           PurchaseItems: {
             include: {
-              course: true,
+              course: {
+                include: {
+                  schemaItems: {
+                    include: { termin: true }, // Hämtar terminer via schemaItems.
+                  },
+                },
+              },
             },
           },
         },
         where: terminId
-          ? {
-              product: { terminId },
+          ? // Här måste vi istället hämta alla terminer som kursen finns i. (den kan finnas i flera.).
+            // terminId är borta i modellen product i prisma-schemat.
+            {
+              PurchaseItems: {
+                some: {
+                  course: {
+                    schemaItems: {
+                      some: { terminId },
+                    },
+                  },
+                },
+              },
             }
           : undefined,
       },
@@ -176,9 +190,30 @@ export default async function StudentsPage(props: {
                                   {item.course.name}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
-                                  <span>
-                                    {pur.product.termin?.name || "Ingen termin"}
-                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {
+                                      /* Här hämtas istället alla terminen som kursen finns i. */
+                                      Array.from(
+                                        new Set(
+                                          item.course.schemaItems
+                                            .map((s) => s.termin?.name)
+                                            .filter(Boolean),
+                                        ),
+                                      ).map((name) => (
+                                        <span
+                                          key={name}
+                                          className="rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] text-foreground"
+                                        >
+                                          {name}
+                                        </span>
+                                      ))
+                                    }
+                                    {item.course.schemaItems.length === 0 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Ingen termin
+                                      </span>
+                                    )}
+                                  </div>
                                   <span
                                     className={
                                       item.remainingCount > 0

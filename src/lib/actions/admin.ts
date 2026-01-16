@@ -1199,7 +1199,9 @@ export async function getAllProducts(options?: {
       courses: options?.terminId
         ? {
             some: {
-              course: { terms: { some: { terminId: options.terminId } } },
+              course: {
+                schemaItems: { some: { terminId: options.terminId } },
+              },
             },
           }
         : undefined,
