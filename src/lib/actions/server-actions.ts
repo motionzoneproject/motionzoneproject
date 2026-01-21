@@ -11,11 +11,8 @@ import type {
 } from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
-import {
-  calcRemainingCount,
-  handleClips,
-  hasRemainingCount,
-} from "./purchase-actions";
+import { handleClips } from "./purchase-actions";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{

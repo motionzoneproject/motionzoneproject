@@ -24,11 +24,8 @@ import {
 } from "@/validations/adminforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
-import {
-  calcRemainingCount,
-  handleClips,
-  hasRemainingCount,
-} from "./purchase-actions";
+import { handleClips } from "./purchase-actions";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 // Lika bra att exportera denna tänker jag.
