@@ -1,10 +1,5 @@
 "use server";
 
-// big fix! Måste uppdatera ALLA funktioner som har med produkter, bokningar, purschases att göra, för att få till klippkort, så det dras rätt, samt hur det kollas (har lagt in TYPE för det som skall anävndas istället för useTotalCount i purchase-nivå).
-// Har förslag sparade från AI hur det borde se ut, men det var också innan TYPE lades in i schemat.Blir det första jag fixar, nu funkar det för bara kurser.
-
-// Ska gå igenom varje funktion här och skriva steg-för-steg så vi har bättre koll på varje funktion. Har testat de funktioner vi behöver ha fungerande nu till första lanseringen och de fungerar. Inaktiverar klippkort tills vidare i admin.
-
 import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import type z from "zod";
@@ -218,7 +213,7 @@ export async function editTermin(
         },
       });
 
-      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning). fix: klippkortslogik!
+      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning).
       const affectedBookings = await tx.booking.findMany({
         where: {
           lesson: {
@@ -253,7 +248,7 @@ export async function editTermin(
       });
 
       // 4. Städa bort lektioner som nu ligger utanför intervallet
-      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan). fix: klippkort!
+      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan).
       await tx.lesson.deleteMany({
         where: {
           terminId: id,
@@ -1063,7 +1058,6 @@ export async function removeProduct(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // fix:
     const remProd = await prisma.product.delete({
       where: { id },
     });
@@ -1091,6 +1085,8 @@ export async function addCourseToProduct(
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
+
+  // unlimited kommer när vi gör product-issuen.
 
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
@@ -1142,14 +1138,13 @@ export async function addCourseToProduct(
 
       return {
         success: true,
-        msg: `Kursen lades in i produkten.`, // fix
+        msg: `Kursen lades in i produkten.`,
       };
     }
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort, kanske kolla om produkten är ett klippkort isfåall ska väl lessonsIncluded vara 0 (?)
 
 /**
  * Tar bort kopplingen mellan en specifik kurs och en produkt.
@@ -1216,7 +1211,6 @@ export async function isCourseInProduct(
     return { found: false };
   }
 }
-// fix: logik om klippkort? Kolla hur den används.
 
 /**
  * Räknar hur många gånger en specifik produkt har köpts (sålda orderrader).
@@ -1453,7 +1447,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
 /**
  * Registrerar en elev på en specifik lektion och drar av ett klipp från deras saldo.
  * * Operationen körs som en atomär transaktion för att säkerställa dataintegritet.
- * * @param formData - Validerad data innehållande `userId`, `lessonId` och det specifika `purchaseId` som ska belastas.
+ * * @param formData - Validerad data innehållande `userId`, `lessonId` och det specifika `purchaseItemId` som ska belastas.
  * @returns Ett objekt med success-status och ett förklarande meddelande.
  * * @process
  * 1. Validerar att köpet existerar och har klipp kvar (`remainingCount > 0`).
@@ -1470,20 +1464,25 @@ export async function addUserInLesson(
   try {
     const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
 
-    const purchase = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseId },
+    const purchaseItem = await prisma.purchaseItem.findUnique({
+      where: { id: validated.purchaseItemId },
+      include: { purchase: true },
     });
 
-    if (!purchase)
+    // lite extra koll.
+    if (!purchaseItem)
       return { success: false, msg: "Could not find the purchase" };
+    if (purchaseItem.purchase.userId !== validated.userId) {
+      return { success: false, msg: "Purchase does not belong to user." };
+    }
 
     // Vi kör med helperfunktionerna, så vi räknar rätt även med unlimited.
     const remaining = calcRemainingCount({
-      unlimited: purchase.unlimited,
-      remainingCount: purchase.remainingCount,
+      unlimited: purchaseItem.unlimited,
+      remainingCount: purchaseItem.remainingCount,
       purchase: {
-        type: purchase.type,
-        remainingCount: purchase.remainingCount ?? null,
+        type: purchaseItem.purchase.type,
+        remainingCount: purchaseItem.purchase.remainingCount ?? null,
       },
     });
 
@@ -1524,13 +1523,13 @@ export async function addUserInLesson(
         data: {
           lessonId: validated.lessonId,
           userId: validated.userId,
-          purchaseItemId: purchase.id,
+          purchaseItemId: purchaseItem.id,
         },
       });
 
       // Använder handleClips nu istälelt :)
 
-      const clipResult = await handleClips(tx, validated.purchaseId, -1);
+      const clipResult = await handleClips(tx, validated.purchaseItemId, -1);
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Clip update failed.");
       }

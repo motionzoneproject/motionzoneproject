@@ -230,7 +230,7 @@ export async function addBooking(
 
     // 1. Hämta PurchaseItem inkl. huvud-Purchase för att se saldotyp och ägare
     const pItem = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseId },
+      where: { id: validated.purchaseItemId },
       include: { purchase: true },
     });
 

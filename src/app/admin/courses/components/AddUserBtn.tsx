@@ -56,7 +56,7 @@ export default function AddUserBtn({
     defaultValues: {
       lessonId: lessonId,
       userId: "", // Vi väljer den första om finns.
-      purchaseId: "",
+      purchaseItemId: "",
     },
   });
 
@@ -97,7 +97,7 @@ export default function AddUserBtn({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          form.setValue("purchaseId", ""); // Nollställ produkt när användare byts
+                          form.setValue("purchaseItemId", ""); // Nollställ produkt när användare byts
                         }}
                         value={field.value}
                       >
@@ -121,7 +121,7 @@ export default function AddUserBtn({
 
                 <FormField
                   control={form.control}
-                  name="purchaseId"
+                  name="purchaseItemId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Produkt att boka ifrån:</FormLabel>

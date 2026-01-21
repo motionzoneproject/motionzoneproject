@@ -65,7 +65,7 @@ export default function AddTerminForm({
     defaultValues: {
       courseId: courseId,
       lessonId: lessonId,
-      purchaseId: "",
+      purchaseItemId: "",
     },
   });
 
@@ -140,7 +140,7 @@ export default function AddTerminForm({
 
                 <FormField
                   control={form.control}
-                  name="purchaseId"
+                  name="purchaseItemId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Välj kurs:</FormLabel>
