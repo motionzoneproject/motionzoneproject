@@ -29,6 +29,7 @@ import {
 } from "@/validations/adminforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
+import { handleClips } from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
 
 // Lika bra att exportera denna tänker jag.
@@ -227,12 +228,15 @@ export async function editTermin(
         select: { id: true, purchaseItemId: true },
       });
 
-      // Ge tillbaka klipp till alla drabbade elever. (fix klippkortslogik)
       for (const booking of affectedBookings) {
-        await tx.purchaseItem.update({
-          where: { id: booking.purchaseItemId },
-          data: { remainingCount: { increment: 1 } },
-        });
+        if (!booking.purchaseItemId) continue;
+
+        // Ge tillbaka klipp via handleClips:
+        const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+
+        if (!clipResult.success) {
+          throw new Error(clipResult.msg || "Clip update failed.");
+        }
       }
 
       // 3. Hämta alla schemaItems för att synka lektioner
@@ -329,7 +333,6 @@ export async function editTermin(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
-// fix: klippkort
 
 /**
  * Lägger till en kurs i en termins schema och genererar automatiskt alla lektionstillfällen.
@@ -437,10 +440,13 @@ export async function delSchemaItem(
     const result = await prisma.$transaction(async (tx) => {
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          if (!booking.purchaseItemId) continue;
+
+          // Sköts via handleClips:
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -464,7 +470,6 @@ export async function delSchemaItem(
     };
   }
 }
-// fix: klippkort!
 
 /**
  * Raderar en hel termin från systemet. Bokningar betalas tillbaka.
@@ -496,10 +501,14 @@ export async function delTermin(
       // Återställ alla klipp
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          if (!booking.purchaseItemId) continue;
+
+          // Via handleClips :)
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -526,7 +535,6 @@ export async function delTermin(
     };
   }
 }
-// fix: klippkort.
 
 /**
  * Raderar en kurs permanent från systemet.
@@ -564,10 +572,13 @@ export async function delCourse(
       // Återställ klipp för de bokningar som kommer raderas via cascade
       if (bookings.length > 0) {
         for (const booking of bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          if (!booking.purchaseItemId) continue;
+
+          // Via handleclips:
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -595,7 +606,6 @@ export async function delCourse(
     };
   }
 }
-// fix: klippkort!
 
 /**
  * Skapar en ny kurs i systemet och kopplar den till en lärare.
@@ -856,19 +866,21 @@ export async function editLessonItem(
       // 2. Kolla om vi ställer in lektionen NU (från false till true)
       if (!currentLesson.cancelled && validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { increment: 1 } },
-          });
+          // Via rätt nu:
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
       // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
       else if (currentLesson.cancelled && !validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          await tx.purchaseItem.update({
-            where: { id: booking.purchaseItemId },
-            data: { remainingCount: { decrement: 1 } },
-          });
+          // Via rätt nu:
+          const clipResult = await handleClips(tx, booking.purchaseItemId, -1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
         }
       }
 
@@ -898,9 +910,6 @@ export async function editLessonItem(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
-// fix: klippkort
-// fix: Resultat: Prismas decrement på ett heltal kan (beroende på databasinställning) resultera i ett negativt saldo om du inte har en check.
-// Lösning: För admin-verktyg brukar man ofta tillåta detta (admin har sista ordet), men det är bra att veta att det kan ske.
 
 /**
  * Hämtar samtliga produkter från databasen sorterade i alfabetisk ordning efter namn.
@@ -956,7 +965,7 @@ export async function addNewProduct(
         price: validated.price,
         maxCustomer: validated.maxCustomers,
         useTotalCount: validated.clipcard,
-        totalCount: validated.clipCount,
+        totalCount: validated.clipCount, // type finns inte med här. fix.
       },
     });
     return {
@@ -1463,17 +1472,11 @@ export async function addUserInLesson(
         },
       });
 
-      const updatedItem = await tx.purchaseItem.update({
-        where: {
-          id: validated.purchaseId,
-          remainingCount: { gt: 0 }, // Uppdatera ENDAST om det finns klipp kvar
-        },
-        data: {
-          remainingCount: { decrement: 1 },
-        },
-      });
-
-      console.log("Nytt saldo i databasen:", updatedItem.remainingCount);
+      // Använder handleClips nu istälelt :)
+      const clipResult = await handleClips(tx, validated.purchaseId, -1);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
+      }
     });
 
     revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
@@ -1484,7 +1487,6 @@ export async function addUserInLesson(
     return { success: false };
   }
 }
-// Klippkort fix!
 
 /**
  * Tar bort en elevs bokning från en specifik lektion och återför ett klipp till saldot.
@@ -1540,11 +1542,12 @@ export async function removeUserFromLesson(
         where: { id: booking.id },
       });
 
-      // 3. Ge tillbaka klippet på rätt köp
-      await tx.purchaseItem.update({
-        where: { id: booking.purchaseItemId },
-        data: { remainingCount: { increment: 1 } },
-      });
+      // 3. Ge tillbaka klippet på rätt köp.
+      // använder handleClips :)
+      const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
+      }
     });
 
     revalidatePath("/admin/courses");
@@ -1554,4 +1557,3 @@ export async function removeUserFromLesson(
     return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
-// Klippkort fix!
