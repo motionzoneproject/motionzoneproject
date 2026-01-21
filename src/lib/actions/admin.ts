@@ -945,7 +945,7 @@ export type ProdCourse = {
 /**
  * Skapar en ny produkt i systemet baserat på validerad formulärdata.
  * * @param formData - Validerad data från `adminAddProductSchema`. Innehåller namn,
- * beskrivning, pris, kundbegränsning samt (fix) gammal logik för klippkort (useTotalCount/totalCount), detta kommer ändras.
+ * beskrivning, pris, kundbegränsning samt klippkortsinformation.
  * @returns Ett objekt med success-status och ett bekräftande meddelande med produktens namn.
  * @auth Admin
  */
@@ -957,17 +957,19 @@ export async function addNewProduct(
 
   try {
     const validated = await adminAddProductSchema.parseAsync(formData);
-    // fix för klippkort precis som allt annat - med ny logik kring TYPE.
+
     const newProd = await prisma.product.create({
       data: {
         name: validated.name,
         description: validated.description,
         price: validated.price,
         maxCustomer: validated.maxCustomers,
-        useTotalCount: validated.clipcard,
-        totalCount: validated.clipCount, // type finns inte med här. fix.
+        totalCount: validated.clipCount,
       },
     });
+
+    // Uppdatera typen:
+    await updateProductType(newProd.id, { isClip: validated.clipcard });
     return {
       success: true,
       msg: `Produkten ${newProd.name} skapades.`, // fix
@@ -976,7 +978,6 @@ export async function addNewProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort
 
 /**
  * Uppdaterar informationen för en befintlig produkt och validerar försäljningskapacitet.
@@ -984,7 +985,7 @@ export async function addNewProduct(
  * @param formData - Validerad data från `adminAddProductSchema`. Innehåller:
  * - `name` & `description`: Produktens rubrik och information.
  * - `price`: Det nya priset för framtida köp.
- * - `clipcard`: Boolean (`useTotalCount`) som avgör om produkten fungerar som ett klippkort.
+ * - `clipcard`: Boolean som avgör om produkten fungerar som ett klippkort.
  * - `maxCustomers`: Det totala taket för hur många kunder som kan köpa produkten.
  * - `clipCount`: Antalet tillgängliga bokningar per köp (om klippkort).
  * * @description
@@ -1022,11 +1023,14 @@ export async function editProduct(
         name: validated.name,
         description: validated.description,
         price: validated.price,
-        useTotalCount: validated.clipcard, // fix: har lagt till type i db istället.
         maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,
       },
     });
+
+    // Uppdatera typen.
+    await updateProductType(id, { isClip: validated.clipcard });
+
     return {
       success: true,
       msg: `Produkten ${newProd.name} ändrades.`, // fix
@@ -1035,7 +1039,6 @@ export async function editProduct(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
-// fix: klippkort (lägg till type istället).
 
 /**
  * Raderar en produkt permanent från systemet.
@@ -1096,16 +1099,22 @@ export async function addCourseToProduct(
     );
 
     if (isInProd.found) {
-      await prisma.productOnCourse.update({
-        where: {
-          courseId_productId: {
-            courseId: validated.courseId,
-            productId: validated.productId,
+      await prisma.$transaction(async (tx) => {
+        const productType = await updateProductType(validated.productId, {
+          tx,
+        });
+        await tx.productOnCourse.update({
+          where: {
+            courseId_productId: {
+              courseId: validated.courseId,
+              productId: validated.productId,
+            },
           },
-        },
-        data: {
-          lessonsIncluded: validated.lessonsIncluded,
-        },
+          data: {
+            lessonsIncluded:
+              productType === "CLIP" ? 0 : validated.lessonsIncluded,
+          },
+        });
       });
 
       return {
@@ -1113,12 +1122,18 @@ export async function addCourseToProduct(
         msg: `Kursen ändrades i produkten.`, // fix
       };
     } else {
-      await prisma.productOnCourse.create({
-        data: {
-          productId: validated.productId,
-          courseId: validated.courseId,
-          lessonsIncluded: validated.lessonsIncluded,
-        },
+      await prisma.$transaction(async (tx) => {
+        const productType = await updateProductType(validated.productId, {
+          tx,
+        });
+        await tx.productOnCourse.create({
+          data: {
+            productId: validated.productId,
+            courseId: validated.courseId,
+            lessonsIncluded:
+              productType === "CLIP" ? 0 : validated.lessonsIncluded,
+          },
+        });
       });
 
       return {
@@ -1149,13 +1164,16 @@ export async function removeCourseInProduct(
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
-    await prisma.productOnCourse.delete({
-      where: {
-        courseId_productId: {
-          productId: validated.productId,
-          courseId: validated.courseId,
+    await prisma.$transaction(async (tx) => {
+      await tx.productOnCourse.delete({
+        where: {
+          courseId_productId: {
+            productId: validated.productId,
+            courseId: validated.courseId,
+          },
         },
-      },
+      });
+      await updateProductType(validated.productId, { tx });
     });
     return {
       success: true,

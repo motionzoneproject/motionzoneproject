@@ -315,7 +315,7 @@ model Product {
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
   type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  useTotalCount Boolean @default(false)// (kommande fix med type istället) Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
+  useTotalCount Boolean @default(false) // TODO: Ta bort useTotalCount när type-logiken är fullt migrerad.
   totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
   price Float @default(0) // Money
@@ -410,7 +410,7 @@ model Purchase {
 
 
   type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  useTotalCount   Boolean   @default(false)  // klippkort eller ej (försvinner i kommande fix).
+  useTotalCount   Boolean   @default(false) // TODO: Ta bort useTotalCount när type-logiken är fullt migrerad.
   totalCount      Int?      // Ursprungliga antalet (för klippkort)
   remainingCount  Int?      // Aktuellt saldo för klippkortet
 

@@ -56,14 +56,14 @@ type CourseFormOutput = z.output<typeof formSchema>;
 
 interface Props {
   productId: string;
-  useTotalCount: boolean;
+  isClip: boolean;
   productCourses: ProdCourse[];
   allCourses: Course[];
 }
 
 export default function AddCoursesToProductForm({
   productId,
-  useTotalCount,
+  isClip,
   productCourses,
   allCourses,
 }: Props) {
@@ -130,7 +130,7 @@ export default function AddCoursesToProductForm({
           <DialogDescription>
             Lägg in de kurser som skall kunna bokas med produkten, samt hur
             många bokningar som kan göras.
-            {useTotalCount && (
+            {isClip && (
               <span>
                 <Info />
                 Denna produkt är ett klippkort, så inga separata
@@ -206,7 +206,7 @@ export default function AddCoursesToProductForm({
                   control={form.control}
                   name="lessonsIncluded"
                   render={({ field }) => (
-                    <FormItem className={useTotalCount ? "hidden" : ""}>
+                    <FormItem className={isClip ? "hidden" : ""}>
                       <FormLabel>Antal tillfällen:</FormLabel>
 
                       <FormControl>
@@ -214,7 +214,7 @@ export default function AddCoursesToProductForm({
                           type="number"
                           min="0"
                           step="1"
-                          disabled={useTotalCount}
+                          disabled={isClip}
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)
@@ -245,7 +245,7 @@ export default function AddCoursesToProductForm({
               >
                 <div>
                   {getCourseName(pc.course)}
-                  {!useTotalCount && (
+                  {!isClip && (
                     <span>Antal tillfällen: {pc.lessonsIncluded}</span>
                   )}
                 </div>
