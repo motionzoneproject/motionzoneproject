@@ -29,7 +29,11 @@ import {
 } from "@/validations/adminforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
-import { handleClips } from "./purchase-actions";
+import {
+  calcRemainingCount,
+  handleClips,
+  hasRemainingCount,
+} from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
 
 // Lika bra att exportera denna tänker jag.
@@ -1325,10 +1329,13 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
     purchases: {
       select: {
         id: true;
+        type: true;
+        remainingCount: true;
         product: { select: { id: true; name: true } };
         PurchaseItems: {
           select: {
             id: true;
+            type: true;
             remainingCount: true;
             unlimited: true; // fix senare.
             lessonsIncluded: true; // Bra att ha för "X av Y" logik
@@ -1339,7 +1346,6 @@ export type UserPurchasesForCourse = Prisma.UserGetPayload<{
     };
   };
 }>;
-// ev. fix för klippkort? Ska kolla hur funktionen används.
 
 /**
  * Hämtar en lista över användare som har giltiga köp (kvarvarande klipp/lektioner) för en specifik kurs.
@@ -1362,19 +1368,37 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
 }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
+
   try {
-    // fix: för klippkort!
+    // För att korta ner queryn lite:
+    const saldoFilter: Prisma.PurchaseItemWhereInput[] = [
+      { unlimited: true },
+      {
+        purchase: {
+          type: { equals: "CLIP" as const },
+          remainingCount: { gt: 0 },
+        },
+      },
+      {
+        remainingCount: { gt: 0 },
+        purchase: { type: { not: "CLIP" as const } },
+      },
+    ];
 
     const usersWithData = await prisma.user.findMany({
+      // Okej så hämta alla ANVÄNDARE som har purchases med purchaseItems som innehåller courseId, och där purchase antingen är av typ CLIP och har klipp kvar, eller COURSE / PACK och där purchaseItem har klipp kvar, eller umlimited är true.
       where: {
         purchases: {
           some: {
             PurchaseItems: {
-              some: { courseId: courseId, remainingCount: { gt: 0 } },
+              some: {
+                courseId,
+                OR: saldoFilter,
+              },
             },
           },
         },
-      },
+      }, // Inkludera och välj ut id, namn (på användaren), och ta med purchases som har purchaseItems som har kursid, eller matchar saldo-filtret.
       select: {
         id: true,
         name: true,
@@ -1382,16 +1406,24 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
         purchases: {
           where: {
             PurchaseItems: {
-              some: { courseId, remainingCount: { gt: 0 } },
+              some: {
+                courseId,
+                OR: saldoFilter,
+              },
             },
-          },
+          }, // Välj ut ifrån purchases id, produktens id och namn, samt ta med purchaseItems som har kursId och uppfyller saldofilter.
           select: {
             id: true,
+            type: true,
+            remainingCount: true,
             product: {
               select: { id: true, name: true },
             },
             PurchaseItems: {
-              where: { courseId, remainingCount: { gt: 0 } },
+              where: {
+                courseId,
+                OR: saldoFilter,
+              }, // Ta med i varje purchaseItem: id, hur många klipp kvar, samt kursens namn.
               select: {
                 id: true,
                 remainingCount: true,
@@ -1407,10 +1439,6 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
       },
     });
 
-    if (!usersWithData) {
-      return { success: false, msg: "Användaren hittades inte." };
-    }
-
     return {
       success: true,
       msg: "Hämtade användare och giltiga köp.",
@@ -1421,7 +1449,6 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
     return { success: false };
   }
 }
-// fix: klippkort, samt kolla hur det används.
 
 /**
  * Registrerar en elev på en specifik lektion och drar av ett klipp från deras saldo.
@@ -1450,8 +1477,19 @@ export async function addUserInLesson(
     if (!purchase)
       return { success: false, msg: "Could not find the purchase" };
 
-    if (purchase.remainingCount === 0)
+    // Vi kör med helperfunktionerna, så vi räknar rätt även med unlimited.
+    const remaining = calcRemainingCount({
+      unlimited: purchase.unlimited,
+      remainingCount: purchase.remainingCount,
+      purchase: {
+        type: purchase.type,
+        remainingCount: purchase.remainingCount ?? null,
+      },
+    });
+
+    if (!hasRemainingCount(remaining)) {
       return { success: false, msg: "No remaining count." };
+    }
 
     const existingBooking = await prisma.booking.findFirst({
       where: {
@@ -1491,6 +1529,7 @@ export async function addUserInLesson(
       });
 
       // Använder handleClips nu istälelt :)
+
       const clipResult = await handleClips(tx, validated.purchaseId, -1);
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Clip update failed.");
