@@ -1557,3 +1557,42 @@ export async function removeUserFromLesson(
     return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
+
+export type PrismaTx = Prisma.TransactionClient;
+
+// Uppdaterar product.type baserat på om det är klippkort eller hur många kurser som är kopplade.
+export async function updateProductType(
+  productId: string,
+  options?: { isClip?: boolean; tx?: PrismaTx },
+): Promise<"COURSE" | "PACK" | "CLIP"> {
+  const client = options?.tx ?? prisma;
+
+  const product = await client.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      type: true,
+      courses: { select: { courseId: true } },
+    },
+  });
+
+  if (!product) {
+    throw new Error("Product not found.");
+  }
+
+  const isClip = options?.isClip ?? product.type === "CLIP";
+  const nextType = isClip
+    ? "CLIP"
+    : product.courses.length > 1
+      ? "PACK"
+      : "COURSE";
+
+  if (product.type !== nextType) {
+    await client.product.update({
+      where: { id: product.id },
+      data: { type: nextType },
+    });
+  }
+
+  return nextType;
+}
