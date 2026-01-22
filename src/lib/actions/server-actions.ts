@@ -242,12 +242,8 @@ export async function addBooking(
 
     // 2. Kontrollera saldo baserat på typ (Klippkort vs Kursbundet)
     const remaining = calcRemainingCount({
-      unlimited: pItem.unlimited,
-      remainingCount: pItem.remainingCount,
-      purchase: {
-        type: purchase.type,
-        remainingCount: purchase.remainingCount,
-      },
+      purchase,
+      purchaseItem: pItem,
     });
 
     if (!hasRemainingCount(remaining)) {

@@ -1475,12 +1475,8 @@ export async function addUserInLesson(
 
     // Vi kör med helperfunktionerna, så vi räknar rätt även med unlimited.
     const remaining = calcRemainingCount({
-      unlimited: purchaseItem.unlimited,
-      remainingCount: purchaseItem.remainingCount,
-      purchase: {
-        type: purchaseItem.purchase.type,
-        remainingCount: purchaseItem.purchase.remainingCount ?? null,
-      },
+      purchase: purchaseItem.purchase,
+      purchaseItem,
     });
 
     if (!hasRemainingCount(remaining)) {

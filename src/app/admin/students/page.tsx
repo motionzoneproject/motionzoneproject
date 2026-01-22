@@ -166,12 +166,8 @@ export default async function StudentsPage(props: {
                           {activePurchases.flatMap((pur) =>
                             pur.PurchaseItems.map((item) => {
                               const remaining = calcRemainingCount({
-                                unlimited: item.unlimited,
-                                remainingCount: item.remainingCount,
-                                purchase: {
-                                  type: pur.type,
-                                  remainingCount: pur.remainingCount,
-                                },
+                                purchase: pur,
+                                purchaseItem: item,
                               });
 
                               return (

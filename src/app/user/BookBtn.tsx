@@ -165,12 +165,8 @@ export default function AddTerminForm({
                               <SelectLabel>Välj kurs</SelectLabel>
                               {purschaseItems.map((c) => {
                                 const remaining = calcRemainingCount({
-                                  unlimited: c.unlimited,
-                                  remainingCount: c.remainingCount,
-                                  purchase: {
-                                    type: c.purchase.type,
-                                    remainingCount: c.purchase.remainingCount,
-                                  },
+                                  purchase: c.purchase,
+                                  purchaseItem: c,
                                 });
 
                                 return (

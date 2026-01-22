@@ -149,12 +149,8 @@ export default function AddUserBtn({
                             {selectedUser?.purchases.flatMap((pu) =>
                               pu.PurchaseItems.map((item) => {
                                 const remaining = calcRemainingCount({
-                                  unlimited: item.unlimited,
-                                  remainingCount: item.remainingCount,
-                                  purchase: {
-                                    type: pu.type,
-                                    remainingCount: pu.remainingCount,
-                                  },
+                                  purchase: pu,
+                                  purchaseItem: item,
                                 });
 
                                 return (

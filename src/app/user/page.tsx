@@ -154,12 +154,8 @@ export default async function Page() {
                     {group.items.map((pi) => {
                       const courseName = pi.course.name;
                       const remaining = calcRemainingCount({
-                        unlimited: pi.unlimited,
-                        remainingCount: pi.remainingCount,
-                        purchase: {
-                          type: pi.purchase.type,
-                          remainingCount: pi.purchase.remainingCount,
-                        },
+                        purchase: pi.purchase,
+                        purchaseItem: pi,
                       });
                       const isLow =
                         Number.isFinite(remaining) && remaining <= 1;
