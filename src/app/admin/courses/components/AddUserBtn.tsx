@@ -34,6 +34,7 @@ import {
   addUserInLesson,
   type UserPurchasesForCourse,
 } from "@/lib/actions/admin";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import { AdminAddUserInLessonSchema } from "@/validations/adminforms";
 
 interface Props {
@@ -145,16 +146,26 @@ export default function AddUserBtn({
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Tillgängliga produkter</SelectLabel>
-                            {selectedUser?.purchases.map((pu) => (
-                              /* VIKTIGT: Vi skickar ID för PurchaseItem[0], inte för Purchase */
-                              <SelectItem
-                                key={pu.PurchaseItems[0].id}
-                                value={pu.PurchaseItems[0].id}
-                              >
-                                {pu.product.name} (
-                                {pu.PurchaseItems[0].remainingCount} kvar)
-                              </SelectItem>
-                            ))}
+                            {selectedUser?.purchases.flatMap((pu) =>
+                              pu.PurchaseItems.map((item) => {
+                                const remaining = calcRemainingCount({
+                                  unlimited: item.unlimited,
+                                  remainingCount: item.remainingCount,
+                                  purchase: {
+                                    type: pu.type,
+                                    remainingCount: pu.remainingCount,
+                                  },
+                                });
+
+                                return (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {pu.product.name} - {item.course.name} (
+                                    {remaining === Infinity ? "∞" : remaining}{" "}
+                                    kvar)
+                                  </SelectItem>
+                                );
+                              }),
+                            )}
                           </SelectGroup>
                         </SelectContent>
                       </Select>

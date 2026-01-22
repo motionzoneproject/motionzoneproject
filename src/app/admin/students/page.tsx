@@ -5,6 +5,7 @@ import EditParticipantForm from "@/components/EditParticipantForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { isAdminRole } from "@/lib/actions/admin";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -163,30 +164,43 @@ export default async function StudentsPage(props: {
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                           {activePurchases.flatMap((pur) =>
-                            pur.PurchaseItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="p-2 rounded border bg-card text-sm"
-                              >
-                                <div className="font-semibold truncate">
-                                  {item.course.name}
+                            pur.PurchaseItems.map((item) => {
+                              const remaining = calcRemainingCount({
+                                unlimited: item.unlimited,
+                                remainingCount: item.remainingCount,
+                                purchase: {
+                                  type: pur.type,
+                                  remainingCount: pur.remainingCount,
+                                },
+                              });
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="p-2 rounded border bg-card text-sm"
+                                >
+                                  <div className="font-semibold truncate">
+                                    {item.course.name}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
+                                    <span>
+                                      {pur.product.termin?.name ||
+                                        "Ingen termin"}
+                                    </span>
+                                    <span
+                                      className={
+                                        remaining === Infinity || remaining > 0
+                                          ? "text-brand"
+                                          : "text-destructive"
+                                      }
+                                    >
+                                      {remaining === Infinity ? "∞" : remaining}{" "}
+                                      lektioner kvar
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
-                                  <span>
-                                    {pur.product.termin?.name || "Ingen termin"}
-                                  </span>
-                                  <span
-                                    className={
-                                      item.remainingCount > 0
-                                        ? "text-brand"
-                                        : "text-destructive"
-                                    }
-                                  >
-                                    {item.remainingCount} lektioner kvar
-                                  </span>
-                                </div>
-                              </div>
-                            )),
+                              );
+                            }),
                           )}
                         </div>
                       )}

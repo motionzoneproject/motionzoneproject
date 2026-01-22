@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import {
   addBooking,
   type UserPurchaseWithProduct,
@@ -162,12 +163,23 @@ export default function AddTerminForm({
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Välj kurs</SelectLabel>
-                              {purschaseItems.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.purchase.product.name} ({c.remainingCount}{" "}
-                                  )
-                                </SelectItem>
-                              ))}
+                              {purschaseItems.map((c) => {
+                                const remaining = calcRemainingCount({
+                                  unlimited: c.unlimited,
+                                  remainingCount: c.remainingCount,
+                                  purchase: {
+                                    type: c.purchase.type,
+                                    remainingCount: c.purchase.remainingCount,
+                                  },
+                                });
+
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.purchase.product.name} (
+                                    {remaining === Infinity ? "∞" : remaining})
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
