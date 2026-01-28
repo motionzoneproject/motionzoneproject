@@ -966,13 +966,9 @@ export async function addCourseToProduct(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
-  // unlimited kommer när vi gör product-issuen.
-
   try {
     const validated = await AdminProductCourseItemSchema.parseAsync(formData);
 
-    // fix: använd upsert?
-    // Kolla om den redan är inlagd (för att enkelt kunna ändra istället för att skapa.)
     const isInProd = await isCourseInProduct(
       formData.courseId,
       formData.productId,
@@ -999,7 +995,7 @@ export async function addCourseToProduct(
 
       return {
         success: true,
-        msg: `Kursen ändrades i produkten.`, // fix
+        msg: `Kursen ändrades i produkten.`,
       };
     } else {
       await prisma.$transaction(async (tx) => {
