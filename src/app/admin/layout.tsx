@@ -1,4 +1,5 @@
-import AdminPanel from "@/components/AdminPanel";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function RootLayout({
   children,
@@ -6,9 +7,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div>
-      <AdminPanel />
-      {children}
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <div>
+        <SidebarTrigger />
+        {children}
+      </div>
+    </SidebarProvider>
   );
 }
