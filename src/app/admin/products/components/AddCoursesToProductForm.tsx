@@ -40,11 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course } from "@/generated/prisma/client";
-import {
-  addCourseToProduct,
-  isCourseInProduct,
-  type ProdCourse,
-} from "@/lib/actions/admin";
+import { addCourseToProduct, type ProdCourse } from "@/lib/actions/admin";
 import { getCourseName } from "@/lib/tools";
 import { AdminProductCourseItemSchema } from "@/validations/adminforms";
 import DeleteCourseFromProdBtn from "./DelCourseFromProdBtn";
@@ -81,29 +77,18 @@ export default function AddCoursesToProductForm({
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selCourse, setSelCourse] = useState<string>("");
-  const [isInProd, setIsInProd] = useState<boolean | number>();
+  const [isInProd, setIsInProd] = useState<boolean>(false);
 
   useEffect(() => {
-    const checkIsInProd = async () => {
-      const inProd = await isCourseInProduct(selCourse, productId);
-      setIsInProd(inProd.found);
-      if (inProd.found) {
-        form.setValue("lessonsIncluded", inProd.lessonsIncluded);
-      } else {
-        form.setValue("lessonsIncluded", 0);
-      }
-    };
-    checkIsInProd();
-  }, [selCourse, productId, form.setValue]);
+    if (!selCourse) return;
+    const match = productCourses.find((pc) => pc.courseId === selCourse); // Hitta kopplingen.
+    setIsInProd(Boolean(match));
+    form.setValue("lessonsIncluded", match?.lessonsIncluded ?? 0);
+  }, [selCourse, productCourses, form.setValue]);
 
   useEffect(() => {
     if (!isOpen) form.reset();
   }, [isOpen, form]);
-
-  //   const isPC = async (courseId: string): Promise<boolean> => {
-  //     const isIt = await isCourseInProduct(courseId, productId);
-  //     return isIt;
-  //   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await addCourseToProduct(values);

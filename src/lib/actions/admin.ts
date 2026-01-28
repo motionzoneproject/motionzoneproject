@@ -1,7 +1,5 @@
 "use server";
 
-// Is this better?
-
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
@@ -29,6 +27,7 @@ import { getSessionData } from "./sessiondata";
 /**
  * Check if session user is admin.
  * @returns true/false
+ * @auth Admin
  */
 export async function isAdminRole(): Promise<boolean> {
   const sessiondata = await getSessionData();
@@ -39,6 +38,7 @@ export async function isAdminRole(): Promise<boolean> {
 /**
  * Get a list of all "terminer" in db.
  * @returns Promise of Terminer as a list of Termin[].
+ * @auth Admin
  */
 export async function getTerminer(): Promise<Termin[]> {
   const isAdmin = await isAdminRole();
@@ -60,6 +60,7 @@ export type SchemaItemWithCourse = SchemaItem & { course: Course };
  * Gets schemaItems (with course) for a specific termin
  * @param terminId The id of the termin.
  * @returns schemaItems (with course) for a specific termin as an array of type SchemaItemWithCourse
+ * @auth Admin
  */
 export async function getSchemaItems(
   terminId: string,
@@ -79,6 +80,7 @@ export async function getSchemaItems(
  * Listing courses, with filter for course name. (Notice that its not searching for the combined name only the db field name)
  * @param q term for course name.
  * @returns the found courses as Course[]
+ * @auth Admin
  */
 export async function getAllCourses(q: string = ""): Promise<Course[]> {
   const isAdmin = await isAdminRole();
@@ -92,11 +94,10 @@ export async function getAllCourses(q: string = ""): Promise<Course[]> {
 }
 
 /**
- * Creates a new termin.
- * Konverterar datumsträngar till Date-objekt innan de sparas i databasen.
- * * @param formData - Data som validerats mot `adminAddTerminSchema` (innehåller namn, start- och slutdatum).
- * @returns Ett objekt med `success: boolean` och ett meddelande (`msg`).
- * Returnerar ett felmeddelande om behörighet saknas eller om valideringen misslyckas.
+ * Creates a new "termin".
+ * * @param formData - formdata for creating the new termin.
+ * @returns An object with success (booleam) and a msg.
+ * Returns an error msg if not admin or validation fails.
  * @auth Admin
  */
 export async function addNewTermin(
@@ -126,12 +127,8 @@ export async function addNewTermin(
 }
 
 /**
- * Kontrollerar om en ändring av terminens datum kommer att påverka befintliga bokningar.
- * Räknar hur många bokningar som hamnar utanför det nya tidsintervallet och därmed riskerar att bli ogiltiga.
- * * @param terminId - ID:t för terminen som ska kontrolleras.
- * @param newStart - Det föreslagna nya startdatumet för terminen.
- * @param newEnd - Det föreslagna nya slutdatumet för terminen.
- * @returns Ett objekt med `count` som anger antalet påverkade bokningar. Returnerar 0 om användaren inte är admin.
+ * Checks if any lessons are affected if Start/End date changes.
+ * @returns Count of affected lessons.
  * @auth Admin
  */
 export async function checkTerminDateChange(
@@ -155,17 +152,8 @@ export async function checkTerminDateChange(
 }
 
 /**
- * Uppdaterar en befintlig termin och synkroniserar alla tillhörande lektioner och bokningar.
- * * Funktionen körs som en Prisma-transaktion och utför följande steg:
- * 1. Uppdaterar terminens namn och datumintervall.
- * 2. Identifierar bokningar som hamnar utanför det nya intervallet och återställer
- * nyttjade lektionstillfällen (remainingCount) till elevernas köp.
- * 3. Raderar lektioner som hamnar utanför det nya intervallet (med tillhörande bokningar).
- * 4. Genererar automatiskt nya lektioner för eventuella nya datum som tillkommit i intervallet,
- * baserat på terminens befintliga SchemaItems (veckomallar).
- * * @param id - Det unika ID:t för terminen som ska redigeras.
- * @param formData - Validerad data från formuläret (namn, startdatum, slutdatum).
- * @returns Ett objekt med success-status och ett beskrivande meddelande till användaren.
+ Updates a "termin".
+ * @returns An object with success (boolean) and a msg.
  * @auth Admin
  */
 export async function editTermin(
@@ -312,17 +300,7 @@ export async function editTermin(
 }
 
 /**
- * Lägger till en kurs i en termins schema och genererar automatiskt alla lektionstillfällen.
- * * Funktionen utför följande steg:
- * 1. Validerar indata och kontrollerar att kursen existerar.
- * 2. Skapar ett `SchemaItem` som fungerar som en veckomall för kursen.
- * 3. Anropar `createLessons` för att generera faktiska `Lesson`-poster för varje aktuell
- * veckodag mellan terminens start- och slutdatum.
- * 4. Om inga lektioner kan skapas (t.ex. om terminen är för kort) rullas skapandet
- * av schemaposten tillbaka för att undvika inkonsistent data.
- * * @param terminId - ID för den termin där kursen ska läggas till.
- * @param formData - Validerad data innehållande kurs-ID, plats, veckodag samt start- och sluttid.
- * @returns Ett objekt med framgångsstatus och ett beskrivande meddelande om hur många lektioner som skapades.
+  Creating schemaitems and lessons when adding a course to a termin week schema.
  * @auth Admin
  */
 export async function addCoursetoSchema(
@@ -343,8 +321,6 @@ export async function addCoursetoSchema(
     });
 
     if (!getCourse) throw new Error("Course was not found.");
-
-    // fix: lägg in så den kopplar terminen till kursen också?
 
     const newSchemaItem = await prisma.schemaItem.create({
       data: {
@@ -386,12 +362,8 @@ export async function addCoursetoSchema(
 }
 
 /**
- * Tar bort ett SchemaItem från en termin.
- * * @important På grund av databasens konfiguration (Cascade Delete) kommer detta även
- * att radera samtliga lektionstillfällen (Lessons) och tillhörande bokningar.
- * Klipp ges tillbaka till kunderna.
- * * @param id - Det unika ID:t för den schemapost som ska raderas.
- * @returns Ett objekt med success-status och ett meddelande som bekräftar vilken kurs som togs bort.
+ * Removes schemaItems and lessons (and bookings) when deleting a course from a termin week schema and restoring clips to customers.
+ * @returns Success (boolean) and a message.
  * @auth Admin
  */
 export async function delSchemaItem(
@@ -449,12 +421,8 @@ export async function delSchemaItem(
 }
 
 /**
- * Raderar en hel termin från systemet. Bokningar betalas tillbaka.
- * * @important Denna operation triggar en kaskad-radering (Cascade Delete). Detta innebär
- * att alla SchemaItems, lektioner och bokningar.
- * som är kopplade till denna termin kommer att raderas permanent från databasen.
- * * @param id - Det unika ID:t för terminen som ska raderas.
- * @returns Ett objekt med success-status och ett meddelande som bekräftar att terminen tagits bort.
+ * Removes an entire termin.
+ * @returns Success (boolean) and a message.
  * @auth Admin
  */
 export async function delTermin(
@@ -514,18 +482,9 @@ export async function delTermin(
 }
 
 /**
- * Raderar en kurs permanent från systemet.
+ * Removes a course, all schemaItems, lessons and bookings and restores clips.
  * * @important
- * Denna operation triggar en kaskad-radering (Cascade Delete) på SchemaItems, Lessons
- * och Bookings kopplade till kursen. För att skydda användarnas saldo återförs klipp
- * för alla aktiva bokningar innan raderingen genomförs.
- * * @note
- * Tack vare 'onDelete: Restrict' i databasschemat kommer denna funktion att misslyckas
- * (kasta ett fel) om det finns PurchaseItems (aktiva kundinnehav) kopplade till kursen.
- * Detta är ett skydd för att inte radera kurser som kunder har betalat för.
- * * @param id - Det unika ID:t (UUID) för kursen som ska raderas.
- * @returns Ett objekt med success-status och ett meddelande. Vid misslyckande pga
- * befintliga kundköp returneras ett förklarande felmeddelande.
+ * @returns Success (boolean) and a message.
  * * @auth Admin
  */
 export async function delCourse(
@@ -585,19 +544,8 @@ export async function delCourse(
 }
 
 /**
- * Skapar en ny kurs i systemet och kopplar den till en lärare.
- * * @important
- * Funktionen validerar att `teacherId` tillhör en existerande användare med rollen 'admin'.
- * Detta säkerställer att endast behörig personal kan agera som kursledare och visas i schemat.
- * * @param formData - Validerad data enligt `adminAddCourseSchema`. Innehåller grunddata som:
- * - `name`: Kursens namn.
- * - `teacherid`: ID för läraren/admin som ska hålla kursen.
- * - `maxbookings`: Antal platser per lektionstillfälle.
- * - `maxCustomers`: Totalt antal unika kunder som kan köpa in sig på kursen.
- * - `description`: Kursbeskrivning och detaljer.
- * - `minAge`/`maxAge`/`level`: Kriterier för deltagande.
+ * Creates a new course
  * * @returns Ett objekt med success-status och ett bekräftande meddelande med kursens namn.
- * @throws Kastar ett fel om läraren inte hittas eller saknar admin-rättigheter.
  * @auth Admin
  */
 export async function addNewCourse(
@@ -641,12 +589,8 @@ export async function addNewCourse(
 }
 
 /**
- * Uppdaterar informationen för en befintlig kurs.
- * Kontrollerar att den angivna läraren existerar och har rätt behörighet innan uppdatering sker.
- * * @param id - Det unika ID:t för kursen som ska redigeras.
- * @param formData - Validerad data från `adminAddCourseSchema` innehållande kursnamn, beskrivning, lärare och restriktioner (ålder, nivå etc.).
- * @returns Ett objekt med success-status och ett meddelande som bekräftar ändringen.
- * @throws Kastar ett fel om läraren inte hittas eller inte har rollen "admin".
+ * Updates the information on a existing course.
+ * @returns Success (boolean) and a message.
  * @auth Admin
  */
 export async function editCourse(
@@ -707,14 +651,8 @@ export async function editCourse(
 // *
 
 /**
- * Genererar fysiska lektionstillfällen baserat på SchemaItem.
- * * Funktionen itererar genom varje dag mellan terminens start- och slutdatum,
- * identifierar alla datum som matchar den angivna veckodagen och skapar
- * lektionsobjekt med korrekta tidsstämplar.
- * * @param schemaItemId - ID:t för den schemamall som ska användas som underlag.
- * @returns Ett objekt med success-status och ett meddelande som anger hur många lektioner som skapats.
- * @throws Fel om SchemaItem eller dess tillhörande termin/kurs saknas.
- * @internal Denna funktion anropas främst av `addCoursetoSchema` och bör användas med försiktighet utanför transaktioner.
+ * Creating lessons bases on a schemaItem.
+ * @returns Success (boolean) and a message.
  */
 async function createLessons(
   schemaItemId: string,
@@ -814,14 +752,8 @@ async function createLessons(
 }
 
 /**
- * Uppdaterar status för ett specifikt lektionstillfälle och synkroniserar elevernas klippsaldo.
- * * Funktionen körs som en transaktion och hanterar följande logik:
- * 1. Om lektionen ställs in (`cancelled` blir true): Alla elever som bokat lektionen får tillbaka ett klipp (+1 i `remainingCount`).
- * 2. Om en inställd lektion återaktiveras (`cancelled` blir false): Ett klipp dras av från de bokade eleverna igen (-1 i `remainingCount`).
- * 3. Uppdaterar lektionens meddelande och inställningsstatus.
- * 4. Synkroniserar status på alla befintliga bokningar kopplade till lektionen.
- * * @param formData - Validerad data från `adminLessonFormSchema` innehållande lektions-ID, status och meddelande.
- * @returns Ett objekt med success-status och ett bekräftande meddelande.
+ * Edit a lessonItem and handle clips.
+ * @returns Success (boolean) and a message.
  * @auth Admin
  */
 export async function editLessonItem(
@@ -891,9 +823,7 @@ export async function editLessonItem(
 }
 
 /**
- * Hämtar samtliga produkter från databasen sorterade i alfabetisk ordning efter namn.
- * * @returns En Promise som löser ut till en array av samtliga produkter.
- * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
+ * Gets all products in db.
  * @auth Admin
  */
 export async function getAllProducts(): Promise<Product[]> {
@@ -906,12 +836,8 @@ export async function getAllProducts(): Promise<Product[]> {
 }
 
 /**
- * Representerar kopplingen mellan en produkt och en kurs (ProductOnCourse).
- * Innehåller både den råa relationsdatan och det fullständiga kurs-objektet.
- * * @property course - Det fullständiga Course-objektet med all kursinformation.
- * @property courseId - Det unika ID:t för den kopplade kursen.
- * @property productId - Det unika ID:t för produkten som kursen tillhör.
- * @property lessonsIncluded - Antalet lektionstillfällen som ingår för denna kurs i den specifika produkten.
+ * Represents the relation of prodOnCourse.
+ * Also contains the full course.
  */
 export type ProdCourse = {
   course: Course;
@@ -922,10 +848,8 @@ export type ProdCourse = {
 };
 
 /**
- * Skapar en ny produkt i systemet baserat på validerad formulärdata.
- * * @param formData - Validerad data från `adminAddProductSchema`. Innehåller namn,
- * beskrivning, pris, kundbegränsning samt klippkortsinformation.
- * @returns Ett objekt med success-status och ett bekräftande meddelande med produktens namn.
+ * Creates a new product.
+ * @returns success (boolean) and a msg.
  * @auth Admin
  */
 export async function addNewProduct(
@@ -959,20 +883,8 @@ export async function addNewProduct(
 }
 
 /**
- * Uppdaterar informationen för en befintlig produkt och validerar försäljningskapacitet.
- * * @param id - Det unika ID:t för produkten som ska redigeras.
- * @param formData - Validerad data från `adminAddProductSchema`. Innehåller:
- * - `name` & `description`: Produktens rubrik och information.
- * - `price`: Det nya priset för framtida köp.
- * - `clipcard`: Boolean som avgör om produkten fungerar som ett klippkort.
- * - `maxCustomers`: Det totala taket för hur många kunder som kan köpa produkten.
- * - `clipCount`: Antalet tillgängliga bokningar per köp (om klippkort).
- * * @description
- * Funktionen genomför en säkerhetskontroll av `maxCustomers`. Om administratören
- * försöker sänka taket till ett värde som är lägre än antalet redan genomförda köp
- * (`salesCount`), stoppas uppdateringen för att undvika logiska fel i systemets
- * kapacitetsberäkning.
- * * @returns Ett objekt med success-status och ett meddelande som bekräftar ändringen.
+ * Edits a product.
+ * @returns success (boolean) and a msg.
  * @auth Admin
  */
 export async function editProduct(
@@ -1020,15 +932,8 @@ export async function editProduct(
 }
 
 /**
- * Raderar en produkt permanent från systemet.
- * * @param id - Det unika ID:t för produkten som ska raderas.
- * * @description
- * Funktionen försöker radera produkten från databasen. Tack vare databasens
- * referensintegritet (onDelete: Restrict) kommer raderingen att nekas om det
- * finns befintliga köp (Purchases) eller orderrader (OrderItems) kopplade till
- * produkten. Detta förhindrar att historisk försäljnings- och bokföringsdata går förlorad.
- * * @returns Ett objekt med success-status och ett meddelande. Om produkten är
- * kopplad till befintliga köp returneras ett felmeddelande istället för att radera.
+ * Removes a new product.
+ * @returns success (boolean) and a msg.
  * @auth Admin
  */
 export async function removeProduct(
@@ -1051,13 +956,8 @@ export async function removeProduct(
 }
 
 /**
- * Kopplar en kurs till en produkt eller uppdaterar en befintlig koppling.
- * Bestämmer hur många lektioner av den specifika kursen som ska ingå i produkten.
- * * @param formData - Validerad data innehållande `courseId`, `productId` och `lessonsIncluded`.
- * @returns Ett objekt med success-status och ett bekräftande meddelande om kursen lades till eller uppdaterades.
- * * @description
- * Om kursen redan finns i produkten uppdateras antalet inkluderade lektioner.
- * Om den inte finns skapas en ny post i `productOnCourse`-tabellen.
+ * Adds a course into a product.
+ * @returns success (boolean) and a msg.
  * @auth Admin
  */
 export async function addCourseToProduct(
@@ -1078,7 +978,7 @@ export async function addCourseToProduct(
       formData.productId,
     );
 
-    if (isInProd.found) {
+    if (isInProd) {
       await prisma.$transaction(async (tx) => {
         const productType = await updateProductType(validated.productId, {
           tx,
@@ -1127,11 +1027,8 @@ export async function addCourseToProduct(
 }
 
 /**
- * Tar bort kopplingen mellan en specifik kurs och en produkt.
- * Själva kursen och produkten lämnas orörda, men kursen kommer inte längre
- * att ingå i framtida köp av produkten.
- * * @param formData - Validerad data innehållande `courseId` och `productId`.
- * @returns Ett objekt med success-status och ett bekräftande meddelande.
+ * Removes a course from a product.
+ * @returns success (boolean) and a msg.
  * @auth Admin
  */
 export async function removeCourseInProduct(
@@ -1164,123 +1061,27 @@ export async function removeCourseInProduct(
 }
 
 /**
- * Kontrollerar om en specifik kurs redan är kopplad till en viss produkt.
- * Hämtar även metadata för hur många lessons man får boka om kopplingen existerar.
- * * @param courseId - ID för kursen som ska kontrolleras.
- * @param productId - ID för produkten som ska kontrolleras.
- * @returns Ett objekt med `found: boolean`. Om kopplingen finns inkluderas även `lessonsIncluded`.
- * @internal Används främst som kontrollsteg i `addCourseToProduct`.
+ * Checks if a course is in a product.
+ * @returns found (boolean) and a count of how many lessonsIncluded.
  * @auth Admin
  */
 export async function isCourseInProduct(
   courseId: string,
   productId: string,
-): Promise<{ found: boolean; lessonsIncluded?: number }> {
+): Promise<boolean> {
   const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
+  if (!isAdmin) return false;
 
   try {
     const found = await prisma.productOnCourse.findUnique({
       where: { courseId_productId: { courseId, productId } },
     });
 
-    if (found) return { found: true, lessonsIncluded: found.lessonsIncluded };
-    return { found: false };
+    if (found) return true;
+    return false;
   } catch (e) {
     console.error(e);
-    return { found: false };
-  }
-}
-
-/**
- * Räknar hur många gånger en specifik produkt har köpts (sålda orderrader).
- * Används ofta som kontrollsteg för att se om en produkt har en köphistorik
- * innan den raderas eller ändras.
- * * @param productId - ID:t för produkten som ska kontrolleras.
- * @returns Ett objekt med `found: boolean` (om sökningen lyckades) och `count` (antalet sålda enheter).
- * Returnerar `found: false` om användaren saknar behörighet eller om ett databasfel uppstår.
- * @auth Admin
- */
-export async function countOrderItems(
-  productId: string,
-): Promise<{ found: boolean; count?: number }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
-  try {
-    // ev. fix: Kolla orderstatus osv?
-
-    const count = await prisma.orderItem.count({
-      where: { productId: productId },
-    });
-    // Vi returnerar success: true även om count är 0
-    return { found: true, count };
-  } catch (e) {
-    console.error(e);
-    return { found: false, count: 0 };
-  }
-}
-// ev fix, den används nu som "platser kvar".
-
-/**
- * Analyserar användningen av en specifik kurs i relation till produkter och försäljning.
- * Beräknar både hur många produkter som innehåller kursen och hur många ordrar som lagts på dessa produkter.
- * * @param courseId - ID för kursen som ska analyseras.
- * @returns Ett objekt som innehåller:
- * - `found`: Om sökningen lyckades.
- * - `count`: Totalt antal sålda orderrader (OrderItems) för produkter där denna kurs ingår.
- * - `countProd`: Antal unika produkter som inkluderar denna kurs i sitt utbud.
- * * @description Denna funktion är avgörande för att bedöma konsekvenserna av att radera eller ändra en kurs,
- * då den visar om kursen är bunden till befintliga kundavtal och paket.
- * @auth Admin
- */
-export async function countOrderItemsAndProductsCourse(
-  courseId: string,
-): Promise<{ found: boolean; count?: number; countProd?: number }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
-  try {
-    const count = await prisma.orderItem.count({
-      where: { product: { courses: { some: { courseId } } } },
-    });
-
-    const countProd = await prisma.product.count({
-      where: { courses: { some: { courseId } } },
-    });
-    // Vi returnerar success: true även om count är 0
-    return { found: true, count, countProd };
-  } catch (e) {
-    console.error(e);
-    return { found: false };
-  }
-}
-// ev. fix (utredning pågår)
-// Varför den inte räknar "platser kvar":
-// Om du vill veta hur många som just nu har tillgång till en kurs för att jämföra med maxCustomer (platser kvar), ska du titta på PurchaseItem.
-// Ett OrderItem är bara ett kvitto på ett köp.
-// Ett PurchaseItem är det faktiska "medlemskapet" som ger eleven rätt att boka.
-
-/**
- * Hämtar information om en specifik lärare (användare) baserat på dess unika ID.
- * * @param userId - ID för den användare/lärare som ska hämtas.
- * @returns Ett objekt med:
- * - `found`: Boolean som indikerar om sökningen lyckades.
- * - `teacher`: Det fullständiga användarobjektet om det hittades, annars undefined.
- * * @description Funktionen används främst för att verifiera lärarens existens och hämta detaljer
- * vid tilldelning av lärare till kurser eller redigering av profiler.
- * @auth Admin
- */
-export async function getTeacher(userId: string) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { found: false };
-  try {
-    const teacher = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    return { found: true, teacher: teacher };
-  } catch (e) {
-    console.error(e);
-    return { found: false };
+    return false;
   }
 }
 
