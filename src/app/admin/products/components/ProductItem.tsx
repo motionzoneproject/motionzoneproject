@@ -6,11 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/generated/prisma/client";
-import {
-  countOrderItems,
-  getAllCourses,
-  type ProdCourse,
-} from "@/lib/actions/admin";
+import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
@@ -87,9 +83,7 @@ export default async function ProductItem({ product }: Props) {
               kr
             </div>
             <div>
-              <span className="font-bold">Platser:</span>{" "}
-              {(await countOrderItems(product.id)).count ?? 0} /{" "}
-              {product.maxCustomer > 0 ? product.maxCustomer : "Obegränsat"}
+              <span className="font-bold">(Statistik kommer)</span>
             </div>
           </div>
 
