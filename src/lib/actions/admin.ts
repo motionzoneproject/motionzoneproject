@@ -1,9 +1,10 @@
 "use server";
 
+// Is this better?
+
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
-  Booking,
   Course,
   Prisma,
   Product,
@@ -12,7 +13,6 @@ import type {
   Weekday,
 } from "@/generated/prisma/client";
 import {
-  AdminAddUserInLessonSchema,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -24,7 +24,6 @@ import prisma from "../prisma";
 
 import { formToDbDate } from "../time-convert";
 import { handleClips } from "./purchase-actions";
-import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 /**
@@ -93,27 +92,7 @@ export async function getAllCourses(q: string = ""): Promise<Course[]> {
 }
 
 /**
- * Find all bookings in a specific lesson.
- * @param lessonId The id of the lesson.
- * @returns All the bookings as booking[].
- */
-export async function getBookingsFromLesson(
-  lessonId: string,
-): Promise<Booking[]> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return [];
-
-  try {
-    const b = await prisma.booking.findMany({ where: { lessonId: lessonId } });
-    return b;
-  } catch (e) {
-    console.error(JSON.stringify(e));
-    return [];
-  }
-}
-
-/**
- * Skapar en ny termin i systemet baserat på validerad formulärdata.
+ * Creates a new termin.
  * Konverterar datumsträngar till Date-objekt innan de sparas i databasen.
  * * @param formData - Data som validerats mot `adminAddTerminSchema` (innehåller namn, start- och slutdatum).
  * @returns Ett objekt med `success: boolean` och ett meddelande (`msg`).
@@ -127,6 +106,7 @@ export async function addNewTermin(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Validate terminSchema.
     const validated = await adminAddTerminSchema.parseAsync(formData);
 
     const newSchemaItem = await prisma.termin.create({
@@ -1301,312 +1281,6 @@ export async function getTeacher(userId: string) {
   } catch (e) {
     console.error(e);
     return { found: false };
-  }
-}
-
-/**
- * Representerar en användare och dennes samlade köphistorik relaterat till kurser.
- * Använder Prismas `GetPayload` för att definiera en exakt struktur för djup-nästlad data.
- * * @structure
- * - id & name: Grundläggande användarinformation.
- * - purchases: Lista över genomförda köp med koppling till den köpta produkten.
- * - PurchaseItems: Specifika rader i varje köp som håller reda på:
- * - remainingCount: Hur många klipp/lektioner som finns kvar.
- * - lessonsIncluded: Det totala antalet lektioner som ingick vid köptillfället.
- * - course: Namnet på den specifika kursen som köpet avser.
- * * @usage Används främst i admin-vyn för att se en elevs saldo eller i användarens profil för att visa "X av Y lektioner kvar".
- */
-export type UserPurchasesForCourse = Prisma.UserGetPayload<{
-  select: {
-    id: true;
-    name: true;
-    purchases: {
-      select: {
-        id: true;
-        type: true;
-        remainingCount: true;
-        product: { select: { id: true; name: true } };
-        PurchaseItems: {
-          select: {
-            id: true;
-            type: true;
-            remainingCount: true;
-            unlimited: true; // fix senare.
-            lessonsIncluded: true; // Bra att ha för "X av Y" logik
-            course: { select: { name: true } }; // Hämtar namnet direkt
-          };
-        };
-      };
-    };
-  };
-}>;
-
-/**
- * Hämtar en lista över användare som har giltiga köp (kvarvarande klipp/lektioner) för en specifik kurs.
- * * @param courseId - ID:t för den kurs man vill hitta behöriga deltagare för.
- * @returns Ett objekt med success-status och en array av användare (`UserPurchasesForCourse[]`),
- * där varje användare endast har sina relevanta och aktiva köp inkluderade.
- * * @description
- * Funktionen filtrerar på två nivåer:
- * 1. Hittar användare som har MINST ett köp där `remainingCount > 0` för den valda kursen.
- * 2. Inuti sökresultatet (select) filtreras även inköpslistan så att endast de specifika
- * rader som faktiskt gäller den aktuella kursen och har saldo kvar visas.
- * @auth Admin
- */
-export async function getUsersWithPurchasedProductsWithCourseInIt(
-  courseId: string,
-): Promise<{
-  success: boolean;
-  msg?: string;
-  users?: UserPurchasesForCourse[];
-}> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // För att korta ner queryn lite:
-    const saldoFilter: Prisma.PurchaseItemWhereInput[] = [
-      { unlimited: true },
-      {
-        purchase: {
-          type: { equals: "CLIP" as const },
-          remainingCount: { gt: 0 },
-        },
-      },
-      {
-        remainingCount: { gt: 0 },
-        purchase: { type: { not: "CLIP" as const } },
-      },
-    ];
-
-    const usersWithData = await prisma.user.findMany({
-      // Okej så hämta alla ANVÄNDARE som har purchases med purchaseItems som innehåller courseId, och där purchase antingen är av typ CLIP och har klipp kvar, eller COURSE / PACK och där purchaseItem har klipp kvar, eller umlimited är true.
-      where: {
-        purchases: {
-          some: {
-            PurchaseItems: {
-              some: {
-                courseId,
-                OR: saldoFilter,
-              },
-            },
-          },
-        },
-      }, // Inkludera och välj ut id, namn (på användaren), och ta med purchases som har purchaseItems som har kursid, eller matchar saldo-filtret.
-      select: {
-        id: true,
-        name: true,
-
-        purchases: {
-          where: {
-            PurchaseItems: {
-              some: {
-                courseId,
-                OR: saldoFilter,
-              },
-            },
-          }, // Välj ut ifrån purchases id, produktens id och namn, samt ta med purchaseItems som har kursId och uppfyller saldofilter.
-          select: {
-            id: true,
-            type: true,
-            remainingCount: true,
-            product: {
-              select: { id: true, name: true },
-            },
-            PurchaseItems: {
-              where: {
-                courseId,
-                OR: saldoFilter,
-              }, // Ta med i varje purchaseItem: id, hur många klipp kvar, samt kursens namn.
-              select: {
-                id: true,
-                remainingCount: true,
-                unlimited: true,
-                lessonsIncluded: true, // Lagt till för att matcha typen
-                course: {
-                  select: { name: true }, // Lagt till för att matcha typen
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      msg: "Hämtade användare och giltiga köp.",
-      users: usersWithData,
-    };
-  } catch (e) {
-    console.error(e);
-    return { success: false };
-  }
-}
-
-/**
- * Registrerar en elev på en specifik lektion och drar av ett klipp från deras saldo.
- * * Operationen körs som en atomär transaktion för att säkerställa dataintegritet.
- * * @param formData - Validerad data innehållande `userId`, `lessonId` och det specifika `purchaseItemId` som ska belastas.
- * @returns Ett objekt med success-status och ett förklarande meddelande.
- * * @process
- * 1. Validerar att köpet existerar och har klipp kvar (`remainingCount > 0`).
- * 2. Kontrollerar att eleven inte redan är bokad på samma lektion (förhindrar dubbelbokning).
- * 3. Verifierar att lektionen inte är inställd.
- * 4. Skapar en bokningspost och dekrementerar elevens saldo simultant.
- * @auth Admin
- */
-export async function addUserInLesson(
-  formData: z.output<typeof AdminAddUserInLessonSchema>,
-): Promise<{ success: boolean; msg?: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-  try {
-    const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
-
-    const purchaseItem = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseItemId },
-      include: { purchase: true },
-    });
-
-    // lite extra koll.
-    if (!purchaseItem)
-      return { success: false, msg: "Could not find the purchase" };
-    if (purchaseItem.purchase.userId !== validated.userId) {
-      return { success: false, msg: "Purchase does not belong to user." };
-    }
-
-    // Vi kör med helperfunktionerna, så vi räknar rätt även med unlimited.
-    const remaining = calcRemainingCount({
-      purchase: purchaseItem.purchase,
-      purchaseItem,
-    });
-
-    if (!hasRemainingCount(remaining)) {
-      return { success: false, msg: "No remaining count." };
-    }
-
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        lessonId: validated.lessonId,
-        userId: validated.userId,
-        //purchaseItemId: purchase.id, // Tog bort för förhindrar därmed att en elev kan boka in sig 2ggr oavsett vilken produkt han väljer.
-      },
-    });
-
-    if (existingBooking) {
-      return {
-        success: false,
-        msg: "Eleven är redan registrerad på denna lektion.",
-      };
-    }
-
-    // KOLLA STATUS PÅ LEKTIONEN
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: validated.lessonId },
-      select: { cancelled: true },
-    });
-
-    if (lesson?.cancelled) {
-      return {
-        success: false,
-        msg: "Kan inte lägga till elever i en inställd lektion.",
-      };
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.booking.create({
-        data: {
-          lessonId: validated.lessonId,
-          userId: validated.userId,
-          purchaseItemId: purchaseItem.id,
-        },
-      });
-
-      // Använder handleClips nu istälelt :)
-
-      const clipResult = await handleClips(tx, validated.purchaseItemId, -1);
-      if (!clipResult.success) {
-        throw new Error(clipResult.msg || "Clip update failed.");
-      }
-    });
-
-    revalidatePath("/admin/courses"); // Sökvägen där komponenten bor
-
-    return { success: true, msg: "Eleven blev tillagd i lektionen." };
-  } catch (e) {
-    console.error(e);
-    return { success: false };
-  }
-}
-
-/**
- * Tar bort en elevs bokning från en specifik lektion och återför ett klipp till saldot.
- * * Operationen körs som en transaktion för att garantera att saldot alltid matchar antalet bokningar.
- * * @param userId - ID för den användare vars bokning ska tas bort.
- * @param lessonId - ID för lektionen som bokningen avser.
- * @returns Ett objekt med success-status och ett meddelande.
- * * @process
- * 1. Kontrollerar om lektionen är inställd (om den är inställd har saldot redan återställts via `editLessonItem`).
- * 2. Hittar den specifika bokningen för att identifiera vilket `purchaseItemId` som användes.
- * 3. Raderar bokningen och inkrementerar `remainingCount` på det tillhörande köpet.
- * @auth Admin
- */
-export async function removeUserFromLesson(
-  userId: string,
-  lessonId: string,
-): Promise<{ success: boolean; msg?: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // KOLLA STATUS PÅ LEKTIONEN
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { cancelled: true },
-    });
-
-    if (lesson?.cancelled) {
-      return {
-        success: false,
-        msg: "Kan inte ta bort elev i en inställd lektion. Eleven har redan fått tillbaka sin bokning.",
-      };
-    }
-
-    await prisma.$transaction(async (tx) => {
-      // 1. Hitta bokningen baserat på användare och lektion
-      const booking = await tx.booking.findFirst({
-        where: {
-          userId: userId,
-          lessonId: lessonId,
-        },
-        select: { id: true, purchaseItemId: true },
-      });
-
-      if (!booking) {
-        throw new Error(
-          "Ingen bokning hittades för denna användare på denna lektion.",
-        );
-      }
-
-      // 2. Ta bort bokningen med dess unika ID
-      await tx.booking.delete({
-        where: { id: booking.id },
-      });
-
-      // 3. Ge tillbaka klippet på rätt köp.
-      // använder handleClips :)
-      const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-      if (!clipResult.success) {
-        throw new Error(clipResult.msg || "Clip update failed.");
-      }
-    });
-
-    revalidatePath("/admin/courses");
-    return { success: true, msg: "Närvaro borttagen och klipp återställt." };
-  } catch (e) {
-    console.error("Fel vid borttagning av närvaro:", e);
-    return { success: false, msg: "Kunde inte ta bort närvaro." };
   }
 }
 

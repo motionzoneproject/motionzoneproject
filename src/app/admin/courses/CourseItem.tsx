@@ -1,16 +1,9 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Course } from "@/generated/prisma/client";
 import { countOrderItemsAndProductsCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
-import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
@@ -56,15 +49,6 @@ export default async function CourseItem({ course }: Props) {
               {counts.countProd ?? 0} st
             </div>
           </div>
-
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Lektioner</AccordionTrigger>
-              <AccordionContent>
-                <LessonBrowserData courseId={course.id} />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
         </CardContent>
       </Card>
     </div>
