@@ -1,12 +1,10 @@
 "use server";
 
-import type { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
   Booking,
   Course,
-  Lesson,
   Prisma,
   Product,
   SchemaItem,
@@ -23,20 +21,27 @@ import {
   adminLessonFormSchema,
 } from "@/validations/adminforms";
 import prisma from "../prisma";
+
 import { formToDbDate } from "../time-convert";
 import { handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
-// Lika bra att exportera denna tänker jag.
+/**
+ * Check if session user is admin.
+ * @returns true/false
+ */
 export async function isAdminRole(): Promise<boolean> {
   const sessiondata = await getSessionData();
 
   return sessiondata?.user.role === "admin";
 }
 
-// Inser att det är svengelska. Men men.
-export async function getTermin(): Promise<Termin[]> {
+/**
+ * Get a list of all "terminer" in db.
+ * @returns Promise of Terminer as a list of Termin[].
+ */
+export async function getTerminer(): Promise<Termin[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
@@ -46,21 +51,16 @@ export async function getTermin(): Promise<Termin[]> {
   return terminer;
 }
 
-// Behövs i admin - Termin för att läsa in alla SChemaItems, inkluderar course för att få kursdatan också. Kursnamnet byggs ihop baserat på flera uppgifter i Course (namn + ålder - nivå, se GetCourseName i tools), därför skickar vi just nu med all data.
+/**
+ * Needed in admin/termin to list all schemaitems, including course for building coursename (see GetCourseName in app/tools).
+ *
+ */
 export type SchemaItemWithCourse = SchemaItem & { course: Course };
 
-// Tyo för att lista alla Lektioner inkl alla bokningar.
-export type LessonWithBookings = Lesson & { bookings: Booking[] };
-
-// fix: Varför skicka med lärare här? Används inte. (se admin / courses). Inte dumt i sig, men då borde vi använda det.
-export type CourseWithTeacher = Course & { teacher: User };
-
 /**
- * Hämtar alla schemaposter för en specifik termin.
- * Kräver admin-behörighet.
- * * @param terminId - Det unika ID:t för terminen som ska hämtas.
- * @returns En lista med SchemaItems inklusive tillhörande kursdata,
- * eller en tom lista om användaren inte är admin.
+ * Gets schemaItems (with course) for a specific termin
+ * @param terminId The id of the termin.
+ * @returns schemaItems (with course) for a specific termin as an array of type SchemaItemWithCourse
  */
 export async function getSchemaItems(
   terminId: string,
@@ -77,25 +77,26 @@ export async function getSchemaItems(
 }
 
 /**
- * Hämtar samtliga kurser i systemet sorterade alfabetiskt efter namn.
- * Inkluderar läraren som en User för varje kurs.
- * * @returns En Promise som löser ut till en array av CourseWithTeacher.
- * Returnerar en tom array om den anropande användaren saknar administratörsbehörighet.
+ * Listing courses, with filter for course name. (Notice that its not searching for the combined name only the db field name)
+ * @param q term for course name.
+ * @returns the found courses as Course[]
  */
-export async function getAllCourses(
-  q: string = "",
-): Promise<CourseWithTeacher[]> {
+export async function getAllCourses(q: string = ""): Promise<Course[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const courses = await prisma.course.findMany({
     where: { name: { contains: q, mode: "insensitive" } },
-    include: { teacher: true },
     orderBy: { name: "asc" },
   });
   return courses;
 }
 
+/**
+ * Find all bookings in a specific lesson.
+ * @param lessonId The id of the lesson.
+ * @returns All the bookings as booking[].
+ */
 export async function getBookingsFromLesson(
   lessonId: string,
 ): Promise<Booking[]> {
@@ -722,6 +723,8 @@ export async function editCourse(
     return { success: false, msg: JSON.stringify(e) };
   }
 }
+
+// *
 
 /**
  * Genererar fysiska lektionstillfällen baserat på SchemaItem.

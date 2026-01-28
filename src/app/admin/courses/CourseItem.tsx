@@ -5,10 +5,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type CourseWithTeacher,
-  countOrderItemsAndProductsCourse,
-} from "@/lib/actions/admin";
+import type { Course } from "@/generated/prisma/client";
+import { countOrderItemsAndProductsCourse } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
@@ -16,7 +14,7 @@ import LessonBrowserData from "./components/LessonBrowserData";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
-  course: CourseWithTeacher; // fix: varför har jag lärare med här?
+  course: Course; // fix: varför har jag lärare med här?
 }
 
 // Saker vi vill göra med en kurs! - Lägga till / ta bort kurs - Ändra

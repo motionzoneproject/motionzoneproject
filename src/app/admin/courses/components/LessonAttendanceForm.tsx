@@ -3,6 +3,8 @@
 // Här har jag nog nästlan in mig i en "use client"-lösning, som förmodligen går att lösa utan. Har försökt använda best practice i övrigt, men kommer inte snabbt på hur jag kan ändra allt för att undvika detta eftersom filtrering på termin osv sker på komponentnivå för varje lektion. Det här kan jag klura ut sen, om detta är tillräckligt säkert för första lanseringen. Inser att det skulle gå att ev manupilera hur många bokningar en kund har, men isf som admin, och använder transaction samt descrement i server-actions.
 // Provar göra PR på detta, för att gå vidare till viktigare funktionalitet.
 
+// Tror jag kommer ta bort den här helt, och istället ha en flik "närvaro" där man som admin kan gå in via kalendern, samt filtrera på lärare (ja som jag gjorde i profiles-branchen).
+
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
