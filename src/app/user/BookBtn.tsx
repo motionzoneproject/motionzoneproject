@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import {
   addBooking,
   type UserPurchaseWithProduct,
@@ -65,7 +66,7 @@ export default function AddTerminForm({
     defaultValues: {
       courseId: courseId,
       lessonId: lessonId,
-      purchaseId: "",
+      purchaseItemId: "",
     },
   });
 
@@ -140,7 +141,7 @@ export default function AddTerminForm({
 
                 <FormField
                   control={form.control}
-                  name="purchaseId"
+                  name="purchaseItemId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Välj kurs:</FormLabel>
@@ -162,12 +163,19 @@ export default function AddTerminForm({
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Välj kurs</SelectLabel>
-                              {purschaseItems.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.purchase.product.name} ({c.remainingCount}{" "}
-                                  )
-                                </SelectItem>
-                              ))}
+                              {purschaseItems.map((c) => {
+                                const remaining = calcRemainingCount({
+                                  purchase: c.purchase,
+                                  purchaseItem: c,
+                                });
+
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.purchase.product.name} (
+                                    {remaining === Infinity ? "∞" : remaining})
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectGroup>
                           </SelectContent>
                         </Select>

@@ -34,6 +34,7 @@ import {
   addUserInLesson,
   type UserPurchasesForCourse,
 } from "@/lib/actions/admin";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import { AdminAddUserInLessonSchema } from "@/validations/adminforms";
 
 interface Props {
@@ -56,7 +57,7 @@ export default function AddUserBtn({
     defaultValues: {
       lessonId: lessonId,
       userId: "", // Vi väljer den första om finns.
-      purchaseId: "",
+      purchaseItemId: "",
     },
   });
 
@@ -97,7 +98,7 @@ export default function AddUserBtn({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          form.setValue("purchaseId", ""); // Nollställ produkt när användare byts
+                          form.setValue("purchaseItemId", ""); // Nollställ produkt när användare byts
                         }}
                         value={field.value}
                       >
@@ -121,7 +122,7 @@ export default function AddUserBtn({
 
                 <FormField
                   control={form.control}
-                  name="purchaseId"
+                  name="purchaseItemId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Produkt att boka ifrån:</FormLabel>
@@ -145,16 +146,22 @@ export default function AddUserBtn({
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Tillgängliga produkter</SelectLabel>
-                            {selectedUser?.purchases.map((pu) => (
-                              /* VIKTIGT: Vi skickar ID för PurchaseItem[0], inte för Purchase */
-                              <SelectItem
-                                key={pu.PurchaseItems[0].id}
-                                value={pu.PurchaseItems[0].id}
-                              >
-                                {pu.product.name} (
-                                {pu.PurchaseItems[0].remainingCount} kvar)
-                              </SelectItem>
-                            ))}
+                            {selectedUser?.purchases.flatMap((pu) =>
+                              pu.PurchaseItems.map((item) => {
+                                const remaining = calcRemainingCount({
+                                  purchase: pu,
+                                  purchaseItem: item,
+                                });
+
+                                return (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {pu.product.name} - {item.course.name} (
+                                    {remaining === Infinity ? "∞" : remaining}{" "}
+                                    kvar)
+                                  </SelectItem>
+                                );
+                              }),
+                            )}
                           </SelectGroup>
                         </SelectContent>
                       </Select>

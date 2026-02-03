@@ -1,4 +1,5 @@
-import { type CourseWithTeacher, getAllCourses } from "@/lib/actions/admin";
+import type { Course } from "@/generated/prisma/client";
+import { getAllCourses } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import CourseItem from "./CourseItem";
 import SearchInput from "./components/SearchCourse";
@@ -12,7 +13,8 @@ export default async function Page({
   const params = await searchParams;
   const query = params.q || "";
 
-  const allCourses: CourseWithTeacher[] = await getAllCourses(query); // fix: debounce.
+  const allCourses: Course[] = await getAllCourses(query); // fix: debounce.
+
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
 
   return (

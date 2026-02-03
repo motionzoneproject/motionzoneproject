@@ -40,11 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course } from "@/generated/prisma/client";
-import {
-  addCourseToProduct,
-  isCourseInProduct,
-  type ProdCourse,
-} from "@/lib/actions/admin";
+import { addCourseToProduct, type ProdCourse } from "@/lib/actions/admin";
 import { getCourseName } from "@/lib/tools";
 import { AdminProductCourseItemSchema } from "@/validations/adminforms";
 import DeleteCourseFromProdBtn from "./DelCourseFromProdBtn";
@@ -56,14 +52,14 @@ type CourseFormOutput = z.output<typeof formSchema>;
 
 interface Props {
   productId: string;
-  useTotalCount: boolean;
+  isClip: boolean;
   productCourses: ProdCourse[];
   allCourses: Course[];
 }
 
 export default function AddCoursesToProductForm({
   productId,
-  useTotalCount,
+  isClip,
   productCourses,
   allCourses,
 }: Props) {
@@ -81,29 +77,18 @@ export default function AddCoursesToProductForm({
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selCourse, setSelCourse] = useState<string>("");
-  const [isInProd, setIsInProd] = useState<boolean | number>();
+  const [isInProd, setIsInProd] = useState<boolean>(false);
 
   useEffect(() => {
-    const checkIsInProd = async () => {
-      const inProd = await isCourseInProduct(selCourse, productId);
-      setIsInProd(inProd.found);
-      if (inProd.found) {
-        form.setValue("lessonsIncluded", inProd.lessonsIncluded);
-      } else {
-        form.setValue("lessonsIncluded", 0);
-      }
-    };
-    checkIsInProd();
-  }, [selCourse, productId, form.setValue]);
+    if (!selCourse) return;
+    const match = productCourses.find((pc) => pc.courseId === selCourse); // Hitta kopplingen.
+    setIsInProd(Boolean(match));
+    form.setValue("lessonsIncluded", match?.lessonsIncluded ?? 0);
+  }, [selCourse, productCourses, form.setValue]);
 
   useEffect(() => {
     if (!isOpen) form.reset();
   }, [isOpen, form]);
-
-  //   const isPC = async (courseId: string): Promise<boolean> => {
-  //     const isIt = await isCourseInProduct(courseId, productId);
-  //     return isIt;
-  //   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await addCourseToProduct(values);
@@ -130,7 +115,7 @@ export default function AddCoursesToProductForm({
           <DialogDescription>
             Lägg in de kurser som skall kunna bokas med produkten, samt hur
             många bokningar som kan göras.
-            {useTotalCount && (
+            {isClip && (
               <span>
                 <Info />
                 Denna produkt är ett klippkort, så inga separata
@@ -206,7 +191,7 @@ export default function AddCoursesToProductForm({
                   control={form.control}
                   name="lessonsIncluded"
                   render={({ field }) => (
-                    <FormItem className={useTotalCount ? "hidden" : ""}>
+                    <FormItem className={isClip ? "hidden" : ""}>
                       <FormLabel>Antal tillfällen:</FormLabel>
 
                       <FormControl>
@@ -214,7 +199,7 @@ export default function AddCoursesToProductForm({
                           type="number"
                           min="0"
                           step="1"
-                          disabled={useTotalCount}
+                          disabled={isClip}
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)
@@ -245,7 +230,7 @@ export default function AddCoursesToProductForm({
               >
                 <div>
                   {getCourseName(pc.course)}
-                  {!useTotalCount && (
+                  {!isClip && (
                     <span>Antal tillfällen: {pc.lessonsIncluded}</span>
                   )}
                 </div>

@@ -136,7 +136,12 @@ export async function createPurchaseFromOrder(orderId: string) {
           orderId: order.id,
           productId: orderItem.productId,
           participantId: orderItem.participantId,
-          // (Fler fält för klippkort kan behövas här om de finns i orderItem)
+          type: orderItem.product.type,
+          totalCount: orderItem.product.totalCount ?? null,
+          remainingCount:
+            orderItem.product.type === "CLIP"
+              ? (orderItem.product.totalCount ?? 0)
+              : null,
         },
       });
 
@@ -147,8 +152,11 @@ export async function createPurchaseFromOrder(orderId: string) {
             purchaseId: purchase.id,
             courseId: pc.courseId,
             orderItemId: orderItem.id,
-            lessonsIncluded: pc.lessonsIncluded,
-            remainingCount: pc.lessonsIncluded,
+            type: orderItem.product.type,
+            lessonsIncluded:
+              orderItem.product.type === "CLIP" ? 0 : pc.lessonsIncluded,
+            remainingCount:
+              orderItem.product.type === "CLIP" ? 0 : pc.lessonsIncluded,
             unlimited: pc.unlimited ?? false,
           },
         }),

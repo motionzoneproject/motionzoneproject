@@ -306,7 +306,7 @@ model Product {
   name String
   description String
 
-  courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om useTotalCount sätts count till 0.
+  courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
 
   terminId String? // fix: Detta hämtas i nulöäget istället från vart kurserna i produkten faktiskt har lagts in i veckoschemat (se GetProductTermin i server-action). Kanske gör en koppling hit senare.
   termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull) // fix: se ovan.
@@ -314,8 +314,8 @@ model Product {
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
 
-  type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  useTotalCount Boolean @default(false)// (kommande fix med type istället) Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
+  type ProductType @default(COURSE) 
+  // useTotalCount Boolean @default(false) // Tagit bort useTotalCount nu när type-logiken är fullt migrerad.
   totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
   price Float @default(0) // Money
@@ -344,7 +344,7 @@ model ProductOnCourse {
   product  Product @relation(fields: [productId], references: [id])
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (fix: 0 om klippkort gammal logik)
-  type ProductType @default(COURSE) // Tror det är bra att ha den här med.
+  // type ProductType @default(COURSE) // Används inte.
   unlimited Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
 
   @@id([courseId, productId])
@@ -410,7 +410,7 @@ model Purchase {
 
 
   type ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  useTotalCount   Boolean   @default(false)  // klippkort eller ej (försvinner i kommande fix).
+  // useTotalCount   Boolean   @default(false) // Tagit bort useTotalCount nu när type-logiken är migrerad.
   totalCount      Int?      // Ursprungliga antalet (för klippkort)
   remainingCount  Int?      // Aktuellt saldo för klippkortet
 

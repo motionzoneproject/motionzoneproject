@@ -1,5 +1,5 @@
 import type { Termin } from "@/generated/prisma/client";
-import { getTermin } from "@/lib/actions/admin";
+import { getTerminer } from "@/lib/actions/admin";
 import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";
@@ -15,7 +15,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ hide?: string }>;
 }) {
-  const terminer = await getTermin();
+  const terminer = await getTerminer();
 
   const params = await searchParams;
   const hide = params.hide || "";

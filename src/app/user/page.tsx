@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { getUserOrders } from "@/lib/actions/orders";
 import { getMyParticipants } from "@/lib/actions/participants";
+import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import {
   getUserBookings,
   getUserLessons,
@@ -152,7 +153,16 @@ export default async function Page() {
                   <div className="space-y-3">
                     {group.items.map((pi) => {
                       const courseName = pi.course.name;
-                      const isLow = !pi.unlimited && pi.remainingCount <= 1;
+                      const remaining = calcRemainingCount({
+                        purchase: pi.purchase,
+                        purchaseItem: pi,
+                      });
+                      const isLow =
+                        Number.isFinite(remaining) && remaining <= 1;
+                      const totalForDisplay =
+                        pi.purchase.type === "CLIP"
+                          ? pi.purchase.totalCount
+                          : pi.lessonsIncluded;
 
                       return (
                         <div
@@ -209,14 +219,15 @@ export default async function Page() {
                                 isLow ? "text-destructive" : ""
                               }`}
                             >
-                              {pi.unlimited ? "∞" : pi.remainingCount}
+                              {remaining === Infinity ? "∞" : remaining}
                             </span>
-                            {!pi.unlimited && (
-                              <span className="text-xs text-muted-foreground">
-                                {" "}
-                                / {pi.lessonsIncluded}
-                              </span>
-                            )}
+                            {remaining !== Infinity &&
+                              totalForDisplay != null && (
+                                <span className="text-xs text-muted-foreground">
+                                  {" "}
+                                  / {totalForDisplay}
+                                </span>
+                              )}
                             <p className="text-xs text-muted-foreground">
                               Lektioner
                             </p>
