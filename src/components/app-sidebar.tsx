@@ -76,8 +76,8 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
-  const isAdmin = isAdminRole();
+export async function AppSidebar() {
+  const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
 
   return (
