@@ -11,6 +11,7 @@ import type {
   Weekday,
 } from "@/generated/prisma/client";
 import {
+  AdminAddUserInLessonSchema,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -1118,4 +1119,237 @@ export async function updateProductType(
   }
 
   return nextType;
+}
+
+/**
+ * Type for users with their purchases for a specific course.
+ * Used in admin booking management.
+ */
+export type UserPurchasesForCourse = {
+  id: string;
+  name: string;
+  purchases: {
+    id: string;
+    type: "COURSE" | "PACK" | "CLIP";
+    remainingCount: number | null;
+    product: {
+      id: string;
+      name: string;
+    };
+    PurchaseItems: {
+      id: string;
+      courseId: string;
+      remainingCount: number;
+      unlimited: boolean;
+      course: {
+        id: string;
+        name: string;
+      };
+    }[];
+  }[];
+};
+
+/**
+ * Gets all users that have purchased products containing a specific course.
+ * @param courseId The course to filter by.
+ * @returns Array of users with their purchases for that course.
+ * @auth Admin
+ */
+export async function getUsersWithPurchasedProductsWithCourseInIt(
+  courseId: string,
+): Promise<{ users: UserPurchasesForCourse[] }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { users: [] };
+
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        purchases: {
+          some: {
+            PurchaseItems: {
+              some: {
+                courseId: courseId,
+              },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        purchases: {
+          where: {
+            PurchaseItems: {
+              some: {
+                courseId: courseId,
+              },
+            },
+          },
+          select: {
+            id: true,
+            type: true,
+            remainingCount: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            PurchaseItems: {
+              where: {
+                courseId: courseId,
+              },
+              select: {
+                id: true,
+                courseId: true,
+                remainingCount: true,
+                unlimited: true,
+                course: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return { users };
+  } catch (e) {
+    console.error("Error fetching users with purchases:", e);
+    return { users: [] };
+  }
+}
+
+/**
+ * Admin function to add a user to a lesson (create a booking).
+ * @param formData Contains userId, purchaseItemId, and lessonId.
+ * @returns Success status and message.
+ * @auth Admin
+ */
+export async function addUserInLesson(
+  formData: z.output<typeof AdminAddUserInLessonSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+
+  try {
+    const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
+
+    // 1. Hämta PurchaseItem inkl. huvud-Purchase för att se saldotyp och ägare
+    const pItem = await prisma.purchaseItem.findUnique({
+      where: { id: validated.purchaseItemId },
+      include: { purchase: true },
+    });
+
+    if (!pItem) return { success: false, msg: "Kunde inte hitta köpet." };
+
+    // 2. Kontrollera om användaren redan är bokad på lektionen
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        lessonId: validated.lessonId,
+        userId: validated.userId,
+      },
+    });
+
+    if (existingBooking) {
+      return {
+        success: false,
+        msg: "Användaren är redan bokad på denna lektion.",
+      };
+    }
+
+    // 3. Kolla status på lektionen
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: validated.lessonId },
+      select: { cancelled: true },
+    });
+
+    if (!lesson || lesson.cancelled) {
+      return {
+        success: false,
+        msg: "Lektionen är inställd eller hittades inte.",
+      };
+    }
+
+    // 4. Utför bokning och saldo-dragning i en transaktion
+    await prisma.$transaction(async (tx) => {
+      // Skapa bokningen
+      await tx.booking.create({
+        data: {
+          lessonId: validated.lessonId,
+          userId: validated.userId,
+          purchaseItemId: pItem.id,
+        },
+      });
+
+      // Dra av saldo via handleClips
+      const clipResult = await handleClips(tx, pItem.id, -1);
+
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Kunde inte uppdatera saldo.");
+      }
+    });
+
+    revalidatePath("/admin/courses");
+
+    return { success: true, msg: "Användaren är nu inbokad på lektionen!" };
+  } catch (e) {
+    console.error("Fel vid admin-bokning:", e);
+    return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };
+  }
+}
+
+/**
+ * Admin function to remove a user from a lesson and restore their clips.
+ * @param userId The user to remove.
+ * @param lessonId The lesson to remove them from.
+ * @returns Success status and message.
+ * @auth Admin
+ */
+export async function removeUserFromLesson(
+  userId: string,
+  lessonId: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+
+  try {
+    // 1. Hitta bokningen
+    const booking = await prisma.booking.findFirst({
+      where: {
+        userId: userId,
+        lessonId: lessonId,
+      },
+    });
+
+    if (!booking) {
+      return { success: false, msg: "Bokningen hittades inte." };
+    }
+
+    // 2. Ta bort bokningen och återställ saldo i en transaktion
+    await prisma.$transaction(async (tx) => {
+      // Återställ saldo
+      const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Kunde inte återställa saldo.");
+      }
+
+      // Ta bort bokningen
+      await tx.booking.delete({
+        where: { id: booking.id },
+      });
+    });
+
+    revalidatePath("/admin/courses");
+
+    return { success: true, msg: "Bokningen har tagits bort." };
+  } catch (e) {
+    console.error("Fel vid borttagning av bokning:", e);
+    return { success: false, msg: "Ett tekniskt fel uppstod." };
+  }
 }
