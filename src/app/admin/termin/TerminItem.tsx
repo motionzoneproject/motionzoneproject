@@ -51,7 +51,6 @@ export default async function TerminItem({ termin }: Props) {
             </CardTitle>
 
             <div className="p-2 flex gap-2">
-              {/* fix: card-action istället? */}
               <AddCourseToSchemaForm
                 weekdays={Object.keys(Weekday)}
                 allCourses={allCourses}

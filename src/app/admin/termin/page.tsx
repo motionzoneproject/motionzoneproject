@@ -4,6 +4,16 @@ import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";
 
+// 1. Gå igenom formuläret för att lägga till en termin, dvs jämför med profilsidor.
+
+// 2. Gå igenom formuläret för att lägga till en kurs i en termin, dvs jämför.
+
+// 3. Lägg till ett ändra-kurs i termin formulär.
+
+// 4. Lägg till snyggare detaljer i schemat.
+
+// 5. Lägg till statistik
+
 function isterminOld(termin: Termin): boolean {
   const today = new Date();
 
@@ -41,7 +51,7 @@ export default async function Page({
         {terminer
           .filter((t) => hide !== "yes" || !isterminOld(t))
           .map((t) => (
-            <TerminItem termin={t} key={t.id}></TerminItem>
+            <TerminItem termin={t} key={t.id} />
           ))}
       </div>
     </div>
