@@ -1,6 +1,22 @@
-import type { Course } from "@/generated/prisma/client";
+type CourseLike = {
+  name: string;
+  minAge: number | null;
+  maxAge: number | null;
+  adult: boolean;
+  level: string | null;
+};
 
-export function getCourseName(course: Course) {
+const WEEKDAYS = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+
+export function getCourseName(course: CourseLike) {
   const ageRange =
     course.minAge && course.minAge > 0
       ? `${course.minAge}${
@@ -14,4 +30,8 @@ export function getCourseName(course: Course) {
   const levelInfo = course.level && ` - ${course.level}`;
 
   return `${course.name} ${ageRange} ${levelInfo}`;
+}
+
+export function getWeekdays() {
+  return [...WEEKDAYS];
 }

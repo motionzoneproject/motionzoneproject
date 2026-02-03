@@ -1,8 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -44,8 +45,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, Termin } from "@/generated/prisma/client";
+import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
+import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 import { veckodagar } from "../SchemaDay";
@@ -57,28 +59,44 @@ interface Props {
   termin: Termin;
   allCourses: Course[];
   weekdays: string[];
+  schemaItem: SchemaItem;
 }
 
-export default function AddCourseToSchemaForm({
+export default function EditCourseToSchemaForm({
   termin,
   allCourses,
   weekdays,
+  schemaItem,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      courseId: "",
-      place: "",
-      customEndDate: termin.endDate.toISOString().split("T")[0],
-      customStartDate: termin.startDate.toISOString().split("T")[0],
-      day: "MONDAY",
-      timeStart: "01:00",
-      timeEnd: "02:00",
+      courseId: schemaItem.courseId,
+      place: schemaItem.place ?? "",
+      customEndDate:
+        schemaItem.customEndDate?.toISOString().split("T")[0] ??
+        termin.endDate.toISOString().split("T")[0],
+      customStartDate:
+        schemaItem.customStartDate?.toISOString().split("T")[0] ??
+        termin.startDate.toISOString().split("T")[0],
+      day: schemaItem.weekday,
+      timeStart: dbToFormTime(schemaItem.timeStart),
+      timeEnd: dbToFormTime(schemaItem.timeEnd),
     },
   });
 
-  const terminStartValue = termin.startDate.toLocaleDateString("sv-SE");
-  const terminEndValue = termin.endDate.toLocaleDateString("sv-SE");
+  const terminStartValue = termin.startDate.toISOString().split("T")[0];
+  const terminEndValue = termin.endDate.toISOString().split("T")[0];
+
+  const sameDayUtc = useCallback(
+    (a?: Date | null, b?: Date | null) =>
+      !!a &&
+      !!b &&
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate(),
+    [],
+  );
 
   const formatDateToInput = (date: unknown) => {
     if (!date) {
@@ -100,8 +118,14 @@ export default function AddCourseToSchemaForm({
   };
 
   const [isOpen, setIsOpen] = useState(false);
-  const [useTerminStart, setUseTerminStart] = useState(true);
-  const [useTerminEnd, setUseTerminEnd] = useState(true);
+  const [useTerminStart, setUseTerminStart] = useState(
+    !schemaItem.customStartDate ||
+      sameDayUtc(schemaItem.customStartDate, termin.startDate),
+  );
+  const [useTerminEnd, setUseTerminEnd] = useState(
+    !schemaItem.customEndDate ||
+      sameDayUtc(schemaItem.customEndDate, termin.endDate),
+  );
   const customStartBackupRef = useRef<string>("");
   const customEndBackupRef = useRef<string>("");
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
@@ -110,18 +134,35 @@ export default function AddCourseToSchemaForm({
     if (!isOpen) {
       form.reset();
 
-      setUseTerminStart(true);
-      setUseTerminEnd(true);
+      setUseTerminStart(
+        !schemaItem.customStartDate ||
+          sameDayUtc(schemaItem.customStartDate, termin.startDate),
+      );
+      setUseTerminEnd(
+        !schemaItem.customEndDate ||
+          sameDayUtc(schemaItem.customEndDate, termin.endDate),
+      );
+
       customStartBackupRef.current = "";
       customEndBackupRef.current = "";
     }
-  }, [isOpen, form]);
+  }, [
+    isOpen,
+    form,
+    sameDayUtc,
+    schemaItem.customEndDate,
+    schemaItem.customStartDate,
+    termin.endDate,
+    termin.startDate,
+  ]);
 
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
-    const res = await addCoursetoSchema(termin.id, values);
+    console.log(`Values sent:\n${values}`);
 
+    const res = await addCoursetoSchema(termin.id, values);
+    console.log(`res:\n${JSON.stringify(res)}`);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -134,11 +175,8 @@ export default function AddCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button
-          variant={"default"}
-          className="bg-green-500 cursor-pointer mb-3"
-        >
-          Lägg till kurs
+        <Button variant={"default"} className="cursor-pointer mb-3">
+          <Edit />
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">
@@ -154,7 +192,7 @@ export default function AddCourseToSchemaForm({
 
         <Card>
           <CardHeader>
-            <CardTitle>Nytt kurstillfälle i {termin.name}.</CardTitle>
+            <CardTitle>Ändra kurstillfälle i {termin.name}.</CardTitle>
             <CardDescription></CardDescription>
           </CardHeader>
           <CardContent>
