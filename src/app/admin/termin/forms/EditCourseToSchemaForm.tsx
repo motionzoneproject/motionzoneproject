@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Edit } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
-import { addCoursetoSchema } from "@/lib/actions/admin";
+import { editCourseInSchema } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
@@ -132,7 +132,19 @@ export default function EditCourseToSchemaForm({
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset();
+      form.reset({
+        courseId: schemaItem.courseId,
+        place: schemaItem.place ?? "",
+        customEndDate:
+          schemaItem.customEndDate?.toISOString().split("T")[0] ??
+          termin.endDate.toISOString().split("T")[0],
+        customStartDate:
+          schemaItem.customStartDate?.toISOString().split("T")[0] ??
+          termin.startDate.toISOString().split("T")[0],
+        day: schemaItem.weekday,
+        timeStart: dbToFormTime(schemaItem.timeStart),
+        timeEnd: dbToFormTime(schemaItem.timeEnd),
+      });
 
       setUseTerminStart(
         !schemaItem.customStartDate ||
@@ -154,6 +166,11 @@ export default function EditCourseToSchemaForm({
     schemaItem.customStartDate,
     termin.endDate,
     termin.startDate,
+    schemaItem.courseId,
+    schemaItem.place,
+    schemaItem.timeEnd,
+    schemaItem.timeStart,
+    schemaItem.weekday,
   ]);
 
   const router = useRouter();
@@ -161,7 +178,7 @@ export default function EditCourseToSchemaForm({
   async function onSubmit(values: FormValues) {
     console.log(`Values sent:\n${values}`);
 
-    const res = await addCoursetoSchema(termin.id, values);
+    const res = await editCourseInSchema(termin.id, schemaItem.id, values);
     console.log(`res:\n${JSON.stringify(res)}`);
     if (res.success) {
       toast.success(res.msg);
@@ -175,8 +192,9 @@ export default function EditCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer mb-3">
-          <Edit />
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 mb-3">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Redigera kurstillfälle</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">
@@ -434,8 +452,13 @@ export default function EditCourseToSchemaForm({
                 />
 
                 {isBusy && <Loader />}
-                <Button type="submit" className="w-full" disabled={isBusy}>
-                  Lägg till!
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={isBusy}
+                >
+                  Ändra
                 </Button>
               </form>
             </Form>

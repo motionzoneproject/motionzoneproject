@@ -134,10 +134,7 @@ export default function AddCourseToSchemaForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button
-          variant={"default"}
-          className="bg-green-500 cursor-pointer mb-3"
-        >
+        <Button variant="secondary" className="cursor-pointer mb-3">
           Lägg till kurs
         </Button>
       </DialogTrigger>
@@ -396,7 +393,12 @@ export default function AddCourseToSchemaForm({
                 />
 
                 {isBusy && <Loader />}
-                <Button type="submit" className="w-full" disabled={isBusy}>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={isBusy}
+                >
                   Lägg till!
                 </Button>
               </form>

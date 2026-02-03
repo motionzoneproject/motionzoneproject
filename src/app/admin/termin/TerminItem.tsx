@@ -1,10 +1,4 @@
 import { Calendar } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Termin, Weekday } from "@/generated/prisma/client";
 import {
@@ -51,11 +45,6 @@ export default async function TerminItem({ termin }: Props) {
             </CardTitle>
 
             <div className="p-2 flex gap-2">
-              <AddCourseToSchemaForm
-                weekdays={Object.keys(Weekday)}
-                allCourses={allCourses}
-                termin={termin}
-              />
               <EditTerminForm termin={termin} />
               <DeleteTerminBtn terminId={termin.id} />
             </div>
@@ -90,14 +79,18 @@ export default async function TerminItem({ termin }: Props) {
           </div>
 
           <br />
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Veckoschema</AccordionTrigger>
-              <AccordionContent>
-                <Schema schemaItems={schemaItems} termin={termin} />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          <Schema
+            actions={
+              <AddCourseToSchemaForm
+                weekdays={Object.keys(Weekday)}
+                allCourses={allCourses}
+                termin={termin}
+              />
+            }
+            allCourses={allCourses}
+            termin={termin}
+            schemaItems={schemaItems}
+          />
         </CardContent>
       </Card>
     </div>
