@@ -3,7 +3,7 @@ import Image from "next/image";
 const danceStyles = [
   { name: "Hip Hop", image: "/hiphop.jpg" },
   { name: "Salsa", image: "/salsa.jpg" },
-  { name: "heel", image: "/heel.jpg" },
+  { name: "Heel", image: "/heel.jpg" },
   { name: "Jazz", image: "/jazz.jpg" },
   { name: "Bachata", image: "/bachata.jpg" },
   { name: "Latinrhythms", image: "/latinrhythms19+.jpg" },

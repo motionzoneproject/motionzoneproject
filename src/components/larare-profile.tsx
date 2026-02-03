@@ -1,22 +1,3 @@
-const teachers = [
-  {
-    name: "Sophie Bretoneche",
-    specialty:
-      "dansare, koreograf, regissör och pedagog med internationell utbildning och bred erfarenhet inom scenkonst",
-    description:
-      "Hon är utbildad vid New World School of the Arts i Miami och har sedan dess dansat, undervisat och skapat i bland annat Spanien, Peru, New York och Los Angeles.Med en bakgrund i flera olika dansstilar brinner Sophie för att skapa inkluderande och kreativa rum där alla får chans att utvecklas, oavsett nivå. Utöver sitt arbete som danslärare och regissör skriver hon egna teaterpjäser och syr kostymer till Motion Zone Växjös föreställningar. Hennes passion för helheten – från scen till söm – gör varje produktion unik och full av hjärta. Med värme, professionalitet och engagemang inspirerar Sophie sina elever att våga, växa och uttrycka sig genom scenkonst.",
-
-    image: "/sophie.jpg",
-  },
-  {
-    name: "Cesar Hugo",
-    specialty: "Balett & Modern dans",
-    description:
-      "Cesar kombinerar teknik och konstnärligt uttryck för att hjälpa varje elev att utvecklas i sin egen takt.",
-    image: "/cesar.jpg",
-  },
-];
-
 import Image from "next/image";
 import {
   Dialog,
@@ -26,6 +7,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+const teachers = [
+  {
+    name: "Sophie Bretoneche",
+    specialty:
+      "dansare, koreograf, regissör och pedagog med internationell utbildning och bred erfarenhet inom scenkonst",
+    description:
+      "Hon är utbildad vid New World School of the Arts i Miami och har sedan dess dansat, undervisat och skapat i bland annat Spanien, Peru, New York och Los Angeles.Med en bakgrund i flera olika dansstilar brinner Sophie för att skapa inkluderande och kreativa rum där alla får chans att utvecklas, oavsett nivå. Utöver sitt arbete som danslärare och regissör skriver hon egna teaterpjäser och syr kostymer till Motion Zone Växjös föreställningar. Hennes passion för helheten – från scen till söm – gör varje produktion unik och full av hjärta. Med värme, professionalitet och engagemang inspirerar Sophie sina elever att våga, växa och uttrycka sig genom scenkonst.",
+    image: "/moh.JPG", // Placeholder - byt till rätt bild när den finns
+  },
+  {
+    name: "Cesar Hugo",
+    specialty: "Balett & Modern dans",
+    description:
+      "Cesar kombinerar teknik och konstnärligt uttryck för att hjälpa varje elev att utvecklas i sin egen takt.",
+    image: "/moh.JPG", // Placeholder - byt till rätt bild när den finns
+  },
+];
 
 const LarareProfile = () => {
   return (
@@ -61,22 +60,6 @@ const LarareProfile = () => {
                 </DialogHeader>
               </DialogContent>
             </Dialog>
-            // <Card key={teacher.name} className="bg-card border-border">
-            //   <CardContent className="p-6 flex gap-4 items-start">
-            //     <div className="w-14 h-14 rounded-full bg-brand/20 shrink-0 flex items-center justify-center">
-            //       <span className="text-xl font-bold text-brand">
-            //         {teacher.name.charAt(0)}
-            //       </span>
-            //     </div>
-            //     <div>
-            //       <h3 className="font-bold text-foreground">{teacher.name}</h3>
-            //       <p className="text-brand text-sm mb-2">{teacher.specialty}</p>
-            //       <p className="text-muted-foreground text-sm">
-            //         {teacher.description}
-            //       </p>
-            //     </div>
-            //   </CardContent>
-            // </Card>
           ))}
         </div>
       </div>
