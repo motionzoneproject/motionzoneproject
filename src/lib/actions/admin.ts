@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
   Course,
+  Lesson,
   Prisma,
   Product,
   SchemaItem,
@@ -55,7 +56,10 @@ export async function getTerminer(): Promise<Termin[]> {
  * Needed in admin/termin to list all schemaitems, including course for building coursename (see GetCourseName in app/tools).
  *
  */
-export type SchemaItemWithCourse = SchemaItem & { course: Course };
+export type SchemaItemWithCourse = SchemaItem & {
+  course: Course;
+  Lessons: Lesson[];
+};
 
 /**
  * Gets schemaItems (with course) for a specific termin
@@ -71,7 +75,7 @@ export async function getSchemaItems(
 
   const schemaItems = await prisma.schemaItem.findMany({
     where: { terminId },
-    include: { course: true },
+    include: { course: true, Lessons: true },
   });
 
   return schemaItems;
@@ -362,16 +366,32 @@ export async function addCoursetoSchema(
         ? new Date(validated.customEndDate)
         : null;
 
+      const dateOnlyUtc = (d: Date) =>
+        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      const isSameDateUtc = (a: Date, b: Date) =>
+        dateOnlyUtc(a) === dateOnlyUtc(b);
+
+      const finalCustomStartDate =
+        customStartDate && isSameDateUtc(customStartDate, termin.startDate)
+          ? null
+          : customStartDate;
+      const finalCustomEndDate =
+        customEndDate && isSameDateUtc(customEndDate, termin.endDate)
+          ? null
+          : customEndDate;
+
       if (
-        customStartDate &&
-        (customStartDate < termin.startDate || customStartDate > termin.endDate)
+        finalCustomStartDate &&
+        (dateOnlyUtc(finalCustomStartDate) < dateOnlyUtc(termin.startDate) ||
+          dateOnlyUtc(finalCustomStartDate) > dateOnlyUtc(termin.endDate))
       ) {
         throw new Error("Startdatum måste ligga inom terminens datum.");
       }
 
       if (
-        customEndDate &&
-        (customEndDate < termin.startDate || customEndDate > termin.endDate)
+        finalCustomEndDate &&
+        (dateOnlyUtc(finalCustomEndDate) < dateOnlyUtc(termin.startDate) ||
+          dateOnlyUtc(finalCustomEndDate) > dateOnlyUtc(termin.endDate))
       ) {
         throw new Error("Slutdatum måste ligga inom terminens datum.");
       }
@@ -384,8 +404,8 @@ export async function addCoursetoSchema(
           maxBookings: getCourse?.maxBookings,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
-          customStartDate,
-          customEndDate,
+          customStartDate: finalCustomStartDate,
+          customEndDate: finalCustomEndDate,
           weekday: validated.day as Weekday,
         },
         include: { course: true, termin: true },
@@ -405,6 +425,113 @@ export async function addCoursetoSchema(
     return {
       success: true,
       msg: `Kursen ${result.newSchemaItem.course.name} lades till i terminen ${result.newSchemaItem.termin.name}. ${result.lessonsMsg}`,
+    };
+  } catch (e) {
+    console.error(e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return { success: false, msg };
+  }
+}
+
+/**
+  Edit schemaitems and lessons when editing a course in a termin week schema.
+ * @auth Admin
+ */
+export async function editCourseInSchema(
+  terminId: string,
+  schemaItemId: string,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+
+    const getCourse = await prisma.course.findUnique({
+      where: { id: validated.courseId },
+    });
+
+    if (!getCourse) throw new Error("Course was not found.");
+
+    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
+    if (!termin) throw new Error("No termin.");
+
+    const inputStartDate = validated.customStartDate
+      ? new Date(validated.customStartDate)
+      : null;
+    const inputEndDate = validated.customEndDate
+      ? new Date(validated.customEndDate)
+      : null;
+
+    const dateOnlyUtc = (d: Date) =>
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    const isSameDateUtc = (a: Date, b: Date) =>
+      dateOnlyUtc(a) === dateOnlyUtc(b);
+
+    const finalStartDate =
+      inputStartDate && isSameDateUtc(inputStartDate, termin.startDate)
+        ? null
+        : inputStartDate;
+    const finalEndDate =
+      inputEndDate && isSameDateUtc(inputEndDate, termin.endDate)
+        ? null
+        : inputEndDate;
+
+    if (
+      finalStartDate &&
+      (dateOnlyUtc(finalStartDate) < dateOnlyUtc(termin.startDate) ||
+        dateOnlyUtc(finalStartDate) > dateOnlyUtc(termin.endDate))
+    ) {
+      throw new Error("Startdatum måste ligga inom terminens datum.");
+    }
+
+    if (
+      finalEndDate &&
+      (dateOnlyUtc(finalEndDate) < dateOnlyUtc(termin.startDate) ||
+        dateOnlyUtc(finalEndDate) > dateOnlyUtc(termin.endDate))
+    ) {
+      throw new Error("Slutdatum måste ligga inom terminens datum.");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedSchemaItem = await tx.schemaItem.update({
+        where: { id: schemaItemId },
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
+      });
+
+      await tx.lesson.deleteMany({
+        where: { schemaItemId: updatedSchemaItem.id },
+      });
+
+      return updatedSchemaItem;
+    });
+
+    const lessons = await createLessons(schemaItemId);
+
+    if (!lessons.success) {
+      throw new Error(
+        "Kunde inte generera nya lektioner. Kontrollera dina datum.",
+      );
+    }
+
+    revalidatePath("/admin/termin");
+    revalidatePath("/admin/courses");
+
+    return {
+      success: true,
+      msg: `Kursen ${result.course.name} har uppdaterats i ${result.termin.name}. ${lessons.msg}`,
     };
   } catch (e) {
     console.error(e);
