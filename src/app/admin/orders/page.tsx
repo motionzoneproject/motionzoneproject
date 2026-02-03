@@ -69,13 +69,14 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
 export default async function Page({
   searchParams,
 }: {
-  searchParams?: { status?: string };
+  searchParams?: Promise<{ status?: string }>;
 }) {
   noStore();
   const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
 
-  const raw = (searchParams?.status || "PENDING").toUpperCase();
+  const params = await searchParams;
+  const raw = (params?.status || "PENDING").toUpperCase();
   const status: StatusFilter = ["ALL", "PENDING", "APPROVED", "PAID"].includes(
     raw,
   )
