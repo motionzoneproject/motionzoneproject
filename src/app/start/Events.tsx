@@ -69,13 +69,15 @@ export default function Events({ events }: EventsProps) {
                   {currentEvent.headline}
                 </h3>
                 {/** bild **/}
-                <Image
-                  src="/STRETCHING FOR DANSARE.jpg"
-                  alt="Event Bild"
-                  width={400}
-                  height={200}
-                  className="rounded-md"
-                />
+                {currentEvent.imageURL && (
+                  <Image
+                    src={currentEvent.imageURL}
+                    alt="Event Bild"
+                    width={400}
+                    height={200}
+                    className="rounded-md"
+                  />
+                )}
                 <p className="text-muted-foreground text-sm">
                   {currentEvent.description}
                 </p>
