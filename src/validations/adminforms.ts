@@ -15,6 +15,15 @@ export const adminAddCourseToSchemaSchema = z
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
+    customStartDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ange datum i formatet ÅÅÅÅ-MM-DD.")
+      .optional(),
+    customEndDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ange datum i formatet ÅÅÅÅ-MM-DD.")
+      .optional(),
+
     day: z.enum(Object.values(Weekday) as [string, ...string[]]),
   })
   .refine(
@@ -25,6 +34,16 @@ export const adminAddCourseToSchemaSchema = z
     {
       message: "Sluttiden måste infalla efter starttiden.",
       path: ["timeEnd"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.customEndDate || !data.customStartDate) return true;
+      return new Date(data.customEndDate) >= new Date(data.customStartDate);
+    },
+    {
+      message: "Slutdatumet måste vara samma eller senare än start datumet.",
+      path: ["customEndDate"],
     },
   );
 
