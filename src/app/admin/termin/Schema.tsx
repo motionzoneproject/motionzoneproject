@@ -22,7 +22,7 @@ export default function Schema({
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {schemaItems.length}st tillfällen.
+            {schemaItems.length}st kurstillfällen i veckan.
           </p>
         </div>
         <div className="gap-2">

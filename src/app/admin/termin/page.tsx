@@ -48,7 +48,7 @@ export default async function Page({
           <TableHeader>
             <TableRow className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
               <TableHead className="p-3 text-left">Namn</TableHead>
-              <TableHead className="p-3 text-right">Handlingar</TableHead>
+              <TableHead className="p-3 text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

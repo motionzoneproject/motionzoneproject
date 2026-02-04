@@ -174,7 +174,11 @@ export async function editTermin(
     const newEndDate = new Date(validated.endDate);
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Uppdatera själva terminen
+      // 1. Hämta nuvarande termin (för att avgöra "följ termin")
+      const currentTermin = await tx.termin.findUnique({ where: { id } });
+      if (!currentTermin) throw new Error("No termin.");
+
+      // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
         data: {
@@ -193,33 +197,55 @@ export async function editTermin(
         },
       });
 
-      // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
-      for (const item of schemaItems) {
-        if (
-          item.customStartDate &&
-          (item.customStartDate < newStartDate ||
-            item.customStartDate > newEndDate)
-        ) {
-          throw new Error(
-            "Startdatum för en kurs ligger utanför terminens nya datum.",
-          );
-        }
+      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
 
-        if (
-          item.customEndDate &&
-          (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
-        ) {
-          throw new Error(
-            "Slutdatum för en kurs ligger utanför terminens nya datum.",
-          );
-        }
-      }
+      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
+      // for (const item of schemaItems) {
+      //   if (
+      //     item.customStartDate &&
+      //     (item.customStartDate < newStartDate ||
+      //       item.customStartDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+
+      //   if (
+      //     item.customEndDate &&
+      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+      // }
+
+      const sameDayUtc = (a: Date, b: Date) =>
+        a.getUTCFullYear() === b.getUTCFullYear() &&
+        a.getUTCMonth() === b.getUTCMonth() &&
+        a.getUTCDate() === b.getUTCDate();
 
       // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
       for (const item of schemaItems) {
-        const validStart = item.customStartDate ?? newStartDate; //
-        const validEnd = item.customEndDate ?? newEndDate;
+        // Kollar om schemaItem följer terminens datum:
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
 
+        // Beroende på det så ska vi bygga nya lektioner (eller ta bort). Om custom så kommer det bli orört
+        // (eftersom vi hämtar less than validStart och greater than validEnd)...
+        const validStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const validEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
+
+        // Hämta de boknignar som ev berörs:
         const affectedBookings = await tx.booking.findMany({
           where: {
             lesson: {
@@ -234,7 +260,7 @@ export async function editTermin(
         });
 
         for (const booking of affectedBookings) {
-          if (!booking.purchaseItemId) continue;
+          if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
 
           const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
           if (!clipResult.success) {
@@ -242,7 +268,7 @@ export async function editTermin(
           }
         }
 
-        // Städa bort lektioner utanför intervallet för denna kurs
+        // Städa bort lektioner utanför intervallet:
         await tx.lesson.deleteMany({
           where: {
             schemaItemId: item.id,
@@ -254,7 +280,7 @@ export async function editTermin(
         });
       }
 
-      // 5. Skapa nya lektioner för de datum som tillkommit
+      // 5. Skapa nya lektioner för de datum som ev tillkommit ()
       const WEEKDAY_MAP: Record<string, number> = {
         MONDAY: 1,
         TUESDAY: 2,
@@ -269,8 +295,19 @@ export async function editTermin(
 
       for (const item of schemaItems) {
         const targetDay = WEEKDAY_MAP[item.weekday];
-        const actualStart = item.customStartDate ?? newStartDate;
-        const actualEnd = item.customEndDate ?? newEndDate;
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
+
+        const actualStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const actualEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
         const currentDate = new Date(actualStart.getTime());
 
         const startHours = item.timeStart.getHours();
@@ -359,42 +396,12 @@ export async function addCoursetoSchema(
       const termin = await tx.termin.findUnique({ where: { id: terminId } });
       if (!termin) throw new Error("No termin.");
 
-      const customStartDate = validated.customStartDate
+      const finalStartDate = validated.customStartDate
         ? new Date(validated.customStartDate)
-        : null;
-      const customEndDate = validated.customEndDate
+        : termin.startDate;
+      const finalEndDate = validated.customEndDate
         ? new Date(validated.customEndDate)
-        : null;
-
-      const dateOnlyUtc = (d: Date) =>
-        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-      const isSameDateUtc = (a: Date, b: Date) =>
-        dateOnlyUtc(a) === dateOnlyUtc(b);
-
-      const finalCustomStartDate =
-        customStartDate && isSameDateUtc(customStartDate, termin.startDate)
-          ? null
-          : customStartDate;
-      const finalCustomEndDate =
-        customEndDate && isSameDateUtc(customEndDate, termin.endDate)
-          ? null
-          : customEndDate;
-
-      if (
-        finalCustomStartDate &&
-        (dateOnlyUtc(finalCustomStartDate) < dateOnlyUtc(termin.startDate) ||
-          dateOnlyUtc(finalCustomStartDate) > dateOnlyUtc(termin.endDate))
-      ) {
-        throw new Error("Startdatum måste ligga inom terminens datum.");
-      }
-
-      if (
-        finalCustomEndDate &&
-        (dateOnlyUtc(finalCustomEndDate) < dateOnlyUtc(termin.startDate) ||
-          dateOnlyUtc(finalCustomEndDate) > dateOnlyUtc(termin.endDate))
-      ) {
-        throw new Error("Slutdatum måste ligga inom terminens datum.");
-      }
+        : termin.endDate;
 
       const newSchemaItem = await tx.schemaItem.create({
         data: {
@@ -404,8 +411,8 @@ export async function addCoursetoSchema(
           maxBookings: getCourse?.maxBookings,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
-          customStartDate: finalCustomStartDate,
-          customEndDate: finalCustomEndDate,
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
           weekday: validated.day as Weekday,
         },
         include: { course: true, termin: true },
@@ -457,42 +464,12 @@ export async function editCourseInSchema(
     const termin = await prisma.termin.findUnique({ where: { id: terminId } });
     if (!termin) throw new Error("No termin.");
 
-    const inputStartDate = validated.customStartDate
+    const finalStartDate = validated.customStartDate
       ? new Date(validated.customStartDate)
-      : null;
-    const inputEndDate = validated.customEndDate
+      : termin.startDate;
+    const finalEndDate = validated.customEndDate
       ? new Date(validated.customEndDate)
-      : null;
-
-    const dateOnlyUtc = (d: Date) =>
-      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    const isSameDateUtc = (a: Date, b: Date) =>
-      dateOnlyUtc(a) === dateOnlyUtc(b);
-
-    const finalStartDate =
-      inputStartDate && isSameDateUtc(inputStartDate, termin.startDate)
-        ? null
-        : inputStartDate;
-    const finalEndDate =
-      inputEndDate && isSameDateUtc(inputEndDate, termin.endDate)
-        ? null
-        : inputEndDate;
-
-    if (
-      finalStartDate &&
-      (dateOnlyUtc(finalStartDate) < dateOnlyUtc(termin.startDate) ||
-        dateOnlyUtc(finalStartDate) > dateOnlyUtc(termin.endDate))
-    ) {
-      throw new Error("Startdatum måste ligga inom terminens datum.");
-    }
-
-    if (
-      finalEndDate &&
-      (dateOnlyUtc(finalEndDate) < dateOnlyUtc(termin.startDate) ||
-        dateOnlyUtc(finalEndDate) > dateOnlyUtc(termin.endDate))
-    ) {
-      throw new Error("Slutdatum måste ligga inom terminens datum.");
-    }
+      : termin.endDate;
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedSchemaItem = await tx.schemaItem.update({

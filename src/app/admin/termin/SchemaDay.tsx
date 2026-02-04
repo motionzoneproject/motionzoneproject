@@ -1,9 +1,10 @@
-import { AlertTriangle, Calendar, Clock, Layers } from "lucide-react";
+import { Calendar, Clock, ListChecks } from "lucide-react";
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import type { Course, Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
 import type { SchemaItemWithCourse } from "@/lib/actions/admin";
@@ -53,12 +54,7 @@ export default function SchemaDay({
             <AccordionContent key={itm.id}>
               <div className="bg-muted/30 border-border text-foreground border p-3 rounded-lg flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />{" "}
-                      {dbToFormTime(itm.timeStart)} -{" "}
-                      {dbToFormTime(itm.timeEnd)}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
                       <Calendar className="h-3 w-3" />{" "}
                       {itm.customStartDate
@@ -70,19 +66,10 @@ export default function SchemaDay({
                         : termin.endDate.toLocaleDateString()}
                     </span>
                     <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
-                      <Layers className="h-3 w-3" />
-                      {itm.Lessons.length} lektioner
+                      <Clock className="h-3 w-3" />{" "}
+                      {dbToFormTime(itm.timeStart)} -{" "}
+                      {dbToFormTime(itm.timeEnd)}
                     </span>
-                    {itm.Lessons.some((lesson) => lesson.cancelled) && (
-                      <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1 text-red-500 border-red-500/40">
-                        <AlertTriangle className="h-3 w-3" />
-                        {
-                          itm.Lessons.filter((lesson) => lesson.cancelled)
-                            .length
-                        }{" "}
-                        st inställda
-                      </span>
-                    )}
                   </div>
                   <div className="text-base font-semibold">
                     {getCourseName(itm.course)}
@@ -90,6 +77,14 @@ export default function SchemaDay({
                   <div className="text-sm text-muted-foreground">
                     Plats: {itm.place || "Ej angiven"}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 p-0 cursor-pointer"
+                  >
+                    <ListChecks />
+                    Lektioner ({itm.Lessons.length}st)
+                  </Button>
                 </div>
                 <div className="flex items-center gap-2 md:flex-col md:items-end">
                   <EditCourseToSchemaForm

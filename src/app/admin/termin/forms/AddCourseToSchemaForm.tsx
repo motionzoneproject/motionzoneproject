@@ -72,8 +72,8 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
     },
   });
 
-  const terminStartValue = termin.startDate.toLocaleDateString("sv-SE");
-  const terminEndValue = termin.endDate.toLocaleDateString("sv-SE");
+  const terminStartValue = termin.startDate.toISOString().split("T")[0];
+  const terminEndValue = termin.endDate.toISOString().split("T")[0];
 
   const formatDateToInput = (date: unknown) => {
     if (!date) {
@@ -99,6 +99,7 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
   const [useTerminEnd, setUseTerminEnd] = useState(true);
   const customStartBackupRef = useRef<string>("");
   const customEndBackupRef = useRef<string>("");
+
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   const weekdays = getWeekdays();
