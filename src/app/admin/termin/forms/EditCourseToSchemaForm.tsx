@@ -48,9 +48,8 @@ import {
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { editCourseInSchema } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
-import { getCourseName } from "@/lib/tools";
+import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
-import { veckodagar } from "../SchemaDay";
 
 const formSchema = adminAddCourseToSchemaSchema;
 type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
@@ -65,7 +64,6 @@ interface Props {
 export default function EditCourseToSchemaForm({
   termin,
   allCourses,
-  weekdays,
   schemaItem,
 }: Props) {
   const form = useForm<FormValues>({
@@ -189,10 +187,12 @@ export default function EditCourseToSchemaForm({
     }
   }
 
+  const weekdays = getWeekdays();
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 mb-3">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <Pencil className="h-4 w-4" />
           <span className="sr-only">Redigera kurstillfälle</span>
         </Button>
@@ -274,9 +274,9 @@ export default function EditCourseToSchemaForm({
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Välj dag</SelectLabel>
-                            {weekdays.map((c, i) => (
+                            {weekdays.map((c) => (
                               <SelectItem key={c} value={c}>
-                                {veckodagar[i]}
+                                {getVeckodag(c)}
                               </SelectItem>
                             ))}
                           </SelectGroup>

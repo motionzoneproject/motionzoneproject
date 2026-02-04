@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -46,9 +47,8 @@ import {
 } from "@/components/ui/select";
 import type { Course, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
-import { getCourseName } from "@/lib/tools";
+import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
-import { veckodagar } from "../SchemaDay";
 
 const formSchema = adminAddCourseToSchemaSchema;
 type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
@@ -56,14 +56,9 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
-  weekdays: string[];
 }
 
-export default function AddCourseToSchemaForm({
-  termin,
-  allCourses,
-  weekdays,
-}: Props) {
+export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -106,6 +101,8 @@ export default function AddCourseToSchemaForm({
   const customEndBackupRef = useRef<string>("");
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
+  const weekdays = getWeekdays();
+
   useEffect(() => {
     if (!isOpen) {
       form.reset();
@@ -135,16 +132,15 @@ export default function AddCourseToSchemaForm({
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant="secondary" className="cursor-pointer mb-3">
-          Lägg till kurs
+          <PlusIcon /> Lägg till
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Lägg till kurstillfälle i veckoschemat</DialogTitle>
+          <DialogTitle>Lägg till kurstillfälle</DialogTitle>
           <DialogDescription>
             Ange vilken veckodag samt mellan vilka tider du vill lägga in
-            tillfället. Tillfället blir då{" "}
-            <span className="bold">bokningsbart</span> av kunder som köpt
+            tillfället. Tillfället blir då bokningsbart av kunder som köpt
             tillgång till kursen.
           </DialogDescription>
         </DialogHeader>
@@ -215,9 +211,9 @@ export default function AddCourseToSchemaForm({
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Välj dag</SelectLabel>
-                            {weekdays.map((c, i) => (
+                            {weekdays.map((c) => (
                               <SelectItem key={c} value={c}>
-                                {veckodagar[i]}
+                                {getVeckodag(c)}
                               </SelectItem>
                             ))}
                           </SelectGroup>

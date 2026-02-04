@@ -1,3 +1,5 @@
+import type { Weekday } from "@/generated/prisma/client";
+
 type CourseLike = {
   name: string;
   minAge: number | null;
@@ -35,3 +37,24 @@ export function getCourseName(course: CourseLike) {
 export function getWeekdays() {
   return [...WEEKDAYS];
 }
+
+export const getVeckodag = (day: Weekday) => {
+  switch (day) {
+    case "MONDAY":
+      return "Måndag";
+    case "TUESDAY":
+      return "Tisdag";
+    case "WEDNESDAY":
+      return "Onsdag";
+    case "THURSDAY":
+      return "Torsdag";
+    case "FRIDAY":
+      return "Fredag";
+    case "SATURDAY":
+      return "Lördag";
+    case "SUNDAY":
+      return "Söndag";
+    default:
+      return day; // Returnerar originalsträngen om ingen matchning hittas
+  }
+};

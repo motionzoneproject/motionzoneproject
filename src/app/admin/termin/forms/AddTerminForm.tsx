@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -96,7 +97,7 @@ export default function AddTerminForm() {
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant="secondary" className="cursor-pointer">
-          Ny termin
+          <PlusIcon /> Ny termin
         </Button>
       </DialogTrigger>
 

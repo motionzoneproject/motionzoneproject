@@ -24,7 +24,7 @@ import {
   getProductSchema,
   getProductTermin,
 } from "@/lib/actions/server-actions";
-import { getVeckodag } from "../admin/termin/SchemaDay";
+import { getVeckodag } from "@/lib/tools";
 
 export default async function Page() {
   const products = await getAllProducts();
