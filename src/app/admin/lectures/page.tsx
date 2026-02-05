@@ -8,6 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getAllCourses } from "@/lib/actions/admin";
+import prisma from "@/lib/prisma";
+import { LecturesFilter } from "./components/LecturesFilter";
 
 interface Props {
   searchParams: Promise<{
@@ -22,31 +25,27 @@ interface Props {
 }
 
 export default async function LecturePage({ searchParams }: Props) {
-  const { teacher, from, to, termin, course, schemaitem, status } =
-    await searchParams;
+  const sp = searchParams;
+  console.log(JSON.stringify(sp));
+  // const { teacher, from, to, termin, course, schemaitem, status } =
+  //   await searchParams;
+
+  const courses = await getAllCourses();
+  const schemaItems = await prisma.schemaItem.findMany();
+  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+  const terminer = await prisma.termin.findMany();
 
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Lektioner</h1>
-      <br />
-      FIlter
-      <br />
-      <br />
-      teacher: {teacher}
-      <br />
-      from: {from}
-      <br />
-      to: {to}
-      <br />
-      termin: {termin}
-      <br />
-      course: {course}
-      <br />
-      schemaitem: {schemaitem}
-      <br />
-      status: {status}
-      <br />
-      <br />
+
+      <LecturesFilter
+        courses={courses}
+        schemaItems={schemaItems}
+        teachers={teachers}
+        terminer={terminer}
+      />
+
       <div>
         <Button>Skapa lektioner</Button>
         <Button>Ställ in lektioner</Button>
