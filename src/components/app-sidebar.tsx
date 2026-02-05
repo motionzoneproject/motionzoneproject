@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   CalendarDays,
   GraduationCap,
   Home,
@@ -28,6 +29,11 @@ const items = [
     title: "Översikt",
     url: "/admin",
     icon: Home,
+  },
+  {
+    title: "Lektioner",
+    url: "/admin/lectures",
+    icon: BookOpen,
   },
   {
     title: "Startsida",
