@@ -1,4 +1,5 @@
 import { Calendar, Clock, ListChecks } from "lucide-react";
+import Link from "next/link";
 import {
   AccordionContent,
   AccordionItem,
@@ -77,14 +78,18 @@ export default function SchemaDay({
                   <div className="text-sm text-muted-foreground">
                     Plats: {itm.place || "Ej angiven"}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 p-0 cursor-pointer"
+                  <Link
+                    href={`/admin/lectures?schemaitem=${itm.id}&termin=${itm.terminId}&course=${itm.courseId}`}
                   >
-                    <ListChecks />
-                    Lektioner ({itm.Lessons.length}st)
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 p-0 cursor-pointer"
+                    >
+                      <ListChecks />
+                      Lektioner ({itm.Lessons.length}st)
+                    </Button>
+                  </Link>
                 </div>
                 <div className="flex items-center gap-2 md:flex-col md:items-end">
                   <EditCourseToSchemaForm
