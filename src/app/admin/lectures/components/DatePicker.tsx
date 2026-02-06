@@ -41,12 +41,32 @@ const endOfDay = (value: Date) => {
 export function DatePickerWithRange({ filterSetter, from, to }: Props) {
   const fromDate = parseDateParam(from);
   const toDate = parseDateParam(to);
-  const [all, setAll] = React.useState<boolean>(false);
+
+  const [all, setAll] = React.useState<boolean>(!!(fromDate || toDate));
 
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: fromDate ?? startOfDay(new Date()),
     to: toDate ?? endOfDay(addDays(new Date(), 7)),
   });
+
+  React.useEffect(() => {
+    setAll(!!(fromDate || toDate));
+  }, [fromDate, toDate]);
+
+  React.useEffect(() => {
+    if (!fromDate && !toDate) {
+      setDate({
+        from: startOfDay(new Date()),
+        to: endOfDay(addDays(new Date(), 7)),
+      });
+      return;
+    }
+
+    setDate({
+      from: fromDate ? startOfDay(fromDate) : undefined,
+      to: toDate ? endOfDay(toDate) : undefined,
+    });
+  }, [fromDate, toDate]);
 
   const updateFilters = (next?: DateRange) => {
     const nextFrom = next?.from ? format(next.from, "yyyy-MM-dd") : "";

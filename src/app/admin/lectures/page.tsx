@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-
 import {
   Table,
   TableBody,
@@ -76,7 +74,11 @@ export default async function LecturePage({ searchParams }: Props) {
       ? {
           startTime: {
             ...(sp.from
-              ? { gte: sp.hideold ? todayStart : new Date(sp.from) }
+              ? {
+                  gte: sp.hideold
+                    ? todayStart
+                    : new Date(`${sp.from}T00:00:00`),
+                }
               : {}),
             ...(sp.to ? { lte: new Date(`${sp.to}T23:59:59.999`) } : {}),
           },
@@ -102,11 +104,6 @@ export default async function LecturePage({ searchParams }: Props) {
         terminer={terminer}
       />
 
-      <div>
-        <Button>Skapa lektioner</Button>
-        <Button>Ställ in lektioner</Button>
-        <Button>Meddelande</Button>
-      </div>
       <div className="mt-2">
         <Table>
           <TableHeader>

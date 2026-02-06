@@ -31,6 +31,13 @@ export async function AppSidebar() {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
 
+  const formatDate = (date: Date) => date.toISOString().split("T")[0];
+  const today = new Date();
+  const in7 = new Date();
+  in7.setDate(in7.getDate() + 7);
+  const from = formatDate(today);
+  const to = formatDate(in7);
+
   // Menu items.
   const items = [
     {
@@ -40,7 +47,7 @@ export async function AppSidebar() {
     },
     {
       title: "Lektioner",
-      url: `/admin/lectures?teacher=${user?.id}`,
+      url: `/admin/lectures?teacher=${user?.id}&from=${from}&to=${to}`,
       icon: BookOpen,
     },
     {
