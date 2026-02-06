@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Lesson } from "@/generated/prisma/client";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
+import { EditLessonBtn } from "./EditLesson";
 
 export async function LessonItem({ lesson }: { lesson: Lesson }) {
   const courseName = await getFullCourseNameFromId(lesson.courseId);
@@ -22,10 +22,13 @@ export async function LessonItem({ lesson }: { lesson: Lesson }) {
         })}
       </TableCell>
       <TableCell>{courseName}</TableCell>
-      <TableCell>?</TableCell>
+      <TableCell>
+        {lesson.message}
+        {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
+      </TableCell>
+      <TableCell>0/{lesson.maxBookings}</TableCell>
       <TableCell className="text-right">
-        <Button>Hantera</Button>
-        <Button>Närvaro</Button>
+        <EditLessonBtn lesson={lesson} />
       </TableCell>
     </TableRow>
   );

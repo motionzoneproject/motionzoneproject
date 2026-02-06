@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -102,7 +103,7 @@ export function LecturesFilter({
   return (
     <div className="w-full p-2 border-2 rounded">
       <div className="font-bold text-xl">Filter</div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <div className="p-1">
           <Label className="p-1 mb-1">Lärare</Label>
           <Select
@@ -133,7 +134,9 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-
+        <div className="">
+          <ArrowRight />
+        </div>
         <div className="p-1">
           <Label className="p-1 mb-1">Termin</Label>
           <Select
@@ -164,7 +167,9 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-
+        <div className="">
+          <ArrowRight />
+        </div>
         <div className="p-1">
           <Label className="p-1 mb-1">Kurs</Label>
           <Select
@@ -195,7 +200,9 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-
+        <div className="">
+          <ArrowRight />
+        </div>
         <div className="p-1">
           <Label className="p-1 mb-1">Kurstillfälle:</Label>
           <Select
