@@ -22,69 +22,73 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { isAdminRole } from "@/lib/actions/admin";
-
-// Menu items.
-const items = [
-  {
-    title: "Översikt",
-    url: "/admin",
-    icon: Home,
-  },
-  {
-    title: "Lektioner",
-    url: "/admin/lectures",
-    icon: BookOpen,
-  },
-  {
-    title: "Startsida",
-    url: "/admin/start",
-    icon: Home,
-  },
-  {
-    title: "Om oss",
-    url: "/admin/omoss",
-    icon: Sparkles,
-  },
-  {
-    title: "Kurser",
-    url: "/admin/courses",
-    icon: GraduationCap,
-  },
-  {
-    title: "Produkter",
-    url: "/admin/products",
-    icon: Package,
-  },
-  {
-    title: "Ordrar",
-    url: "/admin/orders",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Event",
-    url: "/admin/events",
-    icon: CalendarDays,
-  },
-  {
-    title: "Galleri",
-    url: "/admin/gallery",
-    icon: ImageIcon,
-  },
-  {
-    title: "Elever",
-    url: "/admin/students",
-    icon: Users,
-  },
-  {
-    title: "Terminer / Scheman",
-    url: "/admin/termin",
-    icon: CalendarDays,
-  },
-];
+import { getSessionData } from "@/lib/actions/sessiondata";
 
 export async function AppSidebar() {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
+
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+
+  // Menu items.
+  const items = [
+    {
+      title: "Översikt",
+      url: "/admin",
+      icon: Home,
+    },
+    {
+      title: "Lektioner",
+      url: `/admin/lectures?teacher=${user?.id}`,
+      icon: BookOpen,
+    },
+    {
+      title: "Startsida",
+      url: "/admin/start",
+      icon: Home,
+    },
+    {
+      title: "Om oss",
+      url: "/admin/omoss",
+      icon: Sparkles,
+    },
+    {
+      title: "Kurser",
+      url: "/admin/courses",
+      icon: GraduationCap,
+    },
+    {
+      title: "Produkter",
+      url: "/admin/products",
+      icon: Package,
+    },
+    {
+      title: "Ordrar",
+      url: "/admin/orders",
+      icon: ShoppingCart,
+    },
+    {
+      title: "Event",
+      url: "/admin/events",
+      icon: CalendarDays,
+    },
+    {
+      title: "Galleri",
+      url: "/admin/gallery",
+      icon: ImageIcon,
+    },
+    {
+      title: "Elever",
+      url: "/admin/students",
+      icon: Users,
+    },
+    {
+      title: "Terminer / Scheman",
+      url: "/admin/termin",
+      icon: CalendarDays,
+    },
+  ];
 
   return (
     <Sidebar>

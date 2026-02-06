@@ -30,7 +30,7 @@ export default async function LecturePage({ searchParams }: Props) {
 
   const getTerminer = async (): Promise<Termin[]> => {
     const where = sp.teacher
-      ? { courses: { some: { course: { teacherId: sp.teacher } } } }
+      ? { schemaItems: { some: { course: { teacherId: sp.teacher } } } }
       : undefined;
 
     return await prisma.termin.findMany({ where });

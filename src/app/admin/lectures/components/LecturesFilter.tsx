@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,7 +20,6 @@ import type {
   Termin,
   User,
 } from "@/generated/prisma/client";
-import { useSession } from "@/lib/session-provider";
 import { getCourseName } from "@/lib/tools";
 import { getVeckodag } from "../../termin/SchemaDay";
 import { DatePickerWithRange } from "./DatePicker";
@@ -41,25 +40,64 @@ export function LecturesFilter({
 }: Props) {
   const searchParams = useSearchParams();
 
-  const { user } = useSession();
-
   const pathname = usePathname();
   const { replace } = useRouter();
 
   const params = new URLSearchParams(searchParams);
 
+  const validParam = useCallback(
+    (param: string, value?: string | null): string => {
+      if (param === "teacher")
+        return teachers.find((t) => t.id === value)?.id ?? "all";
+      if (param === "termin")
+        return terminer.find((t) => t.id === value)?.id ?? "all";
+      if (param === "course")
+        return courses.find((t) => t.id === value)?.id ?? "all";
+      if (param === "schemaitem")
+        return schemaItems.find((t) => t.id === value)?.id ?? "all";
+      return "all";
+    },
+    [courses.find, schemaItems.find, teachers.find, terminer.find],
+  );
+
   const setFilter = useCallback(
     (name: string, term: string) => {
-      if (term) {
-        params.set(name, term);
-      } else {
+      if (!term || term === "all") {
         params.delete(name);
+      } else {
+        params.set(name, term);
       }
 
       replace(`${pathname}?${params.toString()}`);
     },
     [params, pathname, replace],
   );
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+
+    const sanitize = (key: "teacher" | "termin" | "course" | "schemaitem") => {
+      const value = next.get(key);
+      if (!value) return;
+      if (validParam(key, value) === "all") {
+        next.delete(key);
+      }
+    };
+
+    sanitize("teacher");
+    sanitize("termin");
+    sanitize("course");
+    sanitize("schemaitem");
+
+    const hideold = next.get("hideold");
+    if (hideold && hideold !== "true") {
+      next.delete("hideold");
+    }
+
+    if (next.toString() !== searchParams.toString()) {
+      replace(`${pathname}?${next.toString()}`);
+    }
+  }, [searchParams, pathname, replace, validParam]);
 
   return (
     <div className="w-full p-2 border-2 rounded">
@@ -68,9 +106,13 @@ export function LecturesFilter({
         <div className="p-1">
           <Label className="p-1 mb-1">Lärare</Label>
           <Select
-            defaultValue={params.get("teacher") ?? user?.id}
-            onValueChange={
-              (value) => setFilter("teacher", value === "all" ? "" : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+            value={
+              params.get("teacher")
+                ? validParam("teacher", params.get("teacher"))
+                : "all"
+            }
+            onValueChange={(value) =>
+              setFilter("teacher", value === "all" ? "" : value)
             }
           >
             <SelectTrigger className="w-full">
@@ -95,9 +137,13 @@ export function LecturesFilter({
         <div className="p-1">
           <Label className="p-1 mb-1">Termin</Label>
           <Select
-            defaultValue={params.get("termin") ?? ""}
-            onValueChange={
-              (value) => setFilter("termin", value === "all" ? "" : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+            value={
+              params.get("termin")
+                ? validParam("termin", params.get("termin"))
+                : "all"
+            }
+            onValueChange={(value) =>
+              setFilter("termin", value === "all" ? "" : value)
             }
           >
             <SelectTrigger className="w-full">
@@ -122,9 +168,13 @@ export function LecturesFilter({
         <div className="p-1">
           <Label className="p-1 mb-1">Kurs</Label>
           <Select
-            defaultValue={params.get("course") ?? ""}
-            onValueChange={
-              (value) => setFilter("course", value === "all" ? "" : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+            value={
+              params.get("course")
+                ? validParam("course", params.get("course"))
+                : "all"
+            }
+            onValueChange={(value) =>
+              setFilter("course", value === "all" ? "" : value)
             }
           >
             <SelectTrigger className="w-full">
@@ -149,9 +199,13 @@ export function LecturesFilter({
         <div className="p-1">
           <Label className="p-1 mb-1">Kurstillfälle:</Label>
           <Select
-            defaultValue={params.get("schemaitem") ?? ""}
-            onValueChange={
-              (value) => setFilter("schemaitem", value === "all" ? "" : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+            value={
+              params.get("schemaitem")
+                ? validParam("schemaitem", params.get("schemaitem"))
+                : "all"
+            }
+            onValueChange={(value) =>
+              setFilter("schemaitem", value === "all" ? "" : value)
             }
           >
             <SelectTrigger className="w-full">

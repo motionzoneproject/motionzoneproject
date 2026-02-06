@@ -26,14 +26,26 @@ const parseDateParam = (value?: string | null) => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
+const startOfDay = (value: Date) => {
+  const next = new Date(value);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
+const endOfDay = (value: Date) => {
+  const next = new Date(value);
+  next.setHours(23, 59, 59, 999);
+  return next;
+};
+
 export function DatePickerWithRange({ filterSetter, from, to }: Props) {
   const fromDate = parseDateParam(from);
   const toDate = parseDateParam(to);
   const [all, setAll] = React.useState<boolean>(false);
 
   const [date, setDate] = React.useState<DateRange | undefined>({
-    from: fromDate ?? new Date(new Date().getFullYear(), 0, 20),
-    to: toDate ?? addDays(new Date(new Date().getFullYear(), 0, 20), 20),
+    from: fromDate ?? startOfDay(new Date()),
+    to: toDate ?? endOfDay(addDays(new Date(), 7)),
   });
 
   const updateFilters = (next?: DateRange) => {
