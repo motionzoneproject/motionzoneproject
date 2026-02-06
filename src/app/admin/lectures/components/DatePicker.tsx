@@ -55,9 +55,9 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
   };
 
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1 items-center">
       <Checkbox
-        className="w-9 h-9"
+        className="w-8 h-8"
         checked={all}
         onCheckedChange={(checked) => {
           setAll(checked === true);

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,6 +10,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -18,6 +20,7 @@ import type {
   Termin,
   User,
 } from "@/generated/prisma/client";
+import { useSession } from "@/lib/session-provider";
 import { getCourseName } from "@/lib/tools";
 import { getVeckodag } from "../../termin/SchemaDay";
 import { DatePickerWithRange } from "./DatePicker";
@@ -37,6 +40,8 @@ export function LecturesFilter({
   terminer,
 }: Props) {
   const searchParams = useSearchParams();
+
+  const { user } = useSession();
 
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -63,7 +68,7 @@ export function LecturesFilter({
         <div className="p-1">
           <Label className="p-1 mb-1">Lärare</Label>
           <Select
-            defaultValue={params.get("teacher") ?? ""}
+            defaultValue={params.get("teacher") ?? user?.id}
             onValueChange={
               (value) => setFilter("teacher", value === "all" ? "" : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
             }
@@ -76,6 +81,7 @@ export function LecturesFilter({
               <SelectGroup>
                 <SelectLabel>Välj lärare</SelectLabel>
                 <SelectItem value={"all"}>Alla</SelectItem>
+                <SelectSeparator></SelectSeparator>
                 {teachers.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
@@ -102,6 +108,7 @@ export function LecturesFilter({
               <SelectGroup>
                 <SelectLabel>Välj termin</SelectLabel>
                 <SelectItem value={"all"}>Alla</SelectItem>
+                <SelectSeparator></SelectSeparator>
                 {terminer.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
@@ -128,6 +135,7 @@ export function LecturesFilter({
               <SelectGroup>
                 <SelectLabel>Välj kurs</SelectLabel>
                 <SelectItem value={"all"}>Alla</SelectItem>
+                <SelectSeparator></SelectSeparator>
                 {courses.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {getCourseName(t)}
@@ -154,6 +162,7 @@ export function LecturesFilter({
               <SelectGroup>
                 <SelectLabel>Välj kurstillfälle</SelectLabel>
                 <SelectItem value={"all"}>Alla</SelectItem>
+                <SelectSeparator></SelectSeparator>
                 {schemaItems.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {getVeckodag(t.weekday)} kl{" "}
@@ -179,6 +188,17 @@ export function LecturesFilter({
             filterSetter={setFilter}
             from={params.get("from")}
             to={params.get("to")}
+          />
+        </div>
+
+        <div className="p-1">
+          <Label className="p-1 mb-1">Dölj gamla</Label>
+          <Checkbox
+            className="w-8 h-8"
+            checked={params.get("hideold") === "true"}
+            onCheckedChange={(checked) => {
+              setFilter("hideold", checked === true ? "true" : "");
+            }}
           />
         </div>
       </div>

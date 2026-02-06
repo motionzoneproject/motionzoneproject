@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllCourses } from "@/lib/actions/admin";
+import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { LecturesFilter } from "./components/LecturesFilter";
+import { LessonItem } from "./components/LessonItem";
 
 interface Props {
   searchParams: Promise<{
@@ -21,19 +21,75 @@ interface Props {
     course?: string;
     schemaitem?: string;
     status?: string;
+    hideold?: string;
   }>;
 }
 
 export default async function LecturePage({ searchParams }: Props) {
-  const sp = searchParams;
-  console.log(JSON.stringify(sp));
-  // const { teacher, from, to, termin, course, schemaitem, status } =
-  //   await searchParams;
+  const sp = await searchParams;
 
-  const courses = await getAllCourses();
-  const schemaItems = await prisma.schemaItem.findMany();
+  const getTerminer = async (): Promise<Termin[]> => {
+    const where = sp.teacher
+      ? { courses: { some: { course: { teacherId: sp.teacher } } } }
+      : undefined;
+
+    return await prisma.termin.findMany({ where });
+  };
+
+  const getCourses = async (): Promise<Course[]> => {
+    const where = {
+      ...(sp.teacher ? { teacherId: sp.teacher } : {}),
+      ...(sp.termin ? { schemaItems: { some: { terminId: sp.termin } } } : {}),
+    };
+
+    return await prisma.course.findMany({ where });
+  };
+
+  const getSchemaItems = async (): Promise<SchemaItem[]> => {
+    const where = {
+      ...(sp.course ? { courseId: sp.course } : {}),
+      ...(sp.termin ? { terminId: sp.termin } : {}),
+      ...(sp.teacher ? { course: { teacherId: sp.teacher } } : {}),
+    };
+
+    return await prisma.schemaItem.findMany({ where });
+  };
+
   const teachers = await prisma.user.findMany({ where: { role: "admin" } });
-  const terminer = await prisma.termin.findMany();
+
+  const terminer = await getTerminer();
+
+  const courses = await getCourses();
+
+  const schemaItems = await getSchemaItems();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const where = {
+    ...(sp.teacher ? { teacherId: sp.teacher } : {}),
+    ...(sp.termin ? { terminId: sp.termin } : {}),
+    ...(sp.course ? { courseId: sp.course } : {}),
+    ...(sp.schemaitem ? { schemaItemId: sp.schemaitem } : {}),
+    ...(sp.status ? { cancelled: sp.status === "cancelled" } : {}),
+    ...(sp.from || sp.to
+      ? {
+          startTime: {
+            ...(sp.from
+              ? { gte: sp.hideold ? todayStart : new Date(sp.from) }
+              : {}),
+            ...(sp.to ? { lte: new Date(`${sp.to}T23:59:59.999`) } : {}),
+          },
+        }
+      : sp.hideold
+        ? { startTime: { gte: todayStart } }
+        : {}),
+  };
+
+  const lessons = await prisma.lesson.findMany({
+    where,
+    orderBy: { startTime: "asc" },
+  });
 
   return (
     <div className="p-4 space-y-4">
@@ -62,18 +118,9 @@ export default async function LecturePage({ searchParams }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow>
-              <TableCell className="font-medium">
-                2022-10-10 <br />
-                14.00 - 15.00
-              </TableCell>
-              <TableCell>Hip hop 18+</TableCell>
-              <TableCell></TableCell>
-              <TableCell className="text-right">
-                <Button>Hantera</Button>
-                <Button>Närvaro</Button>
-              </TableCell>
-            </TableRow>
+            {lessons.map((l) => (
+              <LessonItem lesson={l} key={l.id} />
+            ))}
           </TableBody>
         </Table>
       </div>
