@@ -2,7 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,7 +44,10 @@ export function LecturesFilter({
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  const params = new URLSearchParams(searchParams);
+  const params = useMemo(
+    () => new URLSearchParams(searchParams),
+    [searchParams],
+  );
 
   const validParam = useCallback(
     (param: string, value?: string | null): string => {
@@ -58,20 +61,25 @@ export function LecturesFilter({
         return schemaItems.find((t) => t.id === value)?.id ?? "all";
       return "all";
     },
-    [courses.find, schemaItems.find, teachers.find, terminer.find],
+    [courses, schemaItems, teachers, terminer],
   );
 
   const setFilter = useCallback(
     (name: string, term: string) => {
+      const next = new URLSearchParams(searchParams);
       if (!term || term === "all") {
-        params.delete(name);
+        next.delete(name);
       } else {
-        params.set(name, term);
+        next.set(name, term);
       }
 
-      replace(`${pathname}?${params.toString()}`);
+      const nextQuery = next.toString();
+      const currentQuery = searchParams.toString();
+      if (nextQuery !== currentQuery) {
+        replace(`${pathname}?${nextQuery}`);
+      }
     },
-    [params, pathname, replace],
+    [searchParams, pathname, replace],
   );
 
   useEffect(() => {

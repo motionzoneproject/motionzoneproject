@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
   Course,
+  Participant,
   Prisma,
   Product,
   SchemaItem,
@@ -1132,6 +1133,7 @@ export type UserPurchasesForCourse = {
     id: string;
     type: "COURSE" | "PACK" | "CLIP";
     remainingCount: number | null;
+    participant: Participant | null;
     product: {
       id: string;
       name: string;
@@ -1157,9 +1159,9 @@ export type UserPurchasesForCourse = {
  */
 export async function getUsersWithPurchasedProductsWithCourseInIt(
   courseId: string,
-): Promise<{ users: UserPurchasesForCourse[] }> {
+): Promise<UserPurchasesForCourse[]> {
   const isAdmin = await isAdminRole();
-  if (!isAdmin) return { users: [] };
+  if (!isAdmin) return [];
 
   try {
     const users = await prisma.user.findMany({
@@ -1187,8 +1189,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
           },
           select: {
             id: true,
+            participant: true,
             type: true,
             remainingCount: true,
+            participantId: true,
             product: {
               select: {
                 id: true,
@@ -1217,10 +1221,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
       },
     });
 
-    return { users };
+    return users;
   } catch (e) {
     console.error("Error fetching users with purchases:", e);
-    return { users: [] };
+    return [];
   }
 }
 

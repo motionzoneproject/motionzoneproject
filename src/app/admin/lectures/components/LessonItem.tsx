@@ -1,6 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Lesson } from "@/generated/prisma/client";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
+import { AttendeDialog } from "./attendence/AttendenceDialog";
 import { EditLessonBtn } from "./EditLesson";
 
 export async function LessonItem({ lesson }: { lesson: Lesson }) {
@@ -26,7 +27,9 @@ export async function LessonItem({ lesson }: { lesson: Lesson }) {
         {lesson.message}
         {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
       </TableCell>
-      <TableCell>0/{lesson.maxBookings}</TableCell>
+      <TableCell>
+        0/{lesson.maxBookings} <AttendeDialog lesson={lesson} />
+      </TableCell>
       <TableCell className="text-right">
         <EditLessonBtn lesson={lesson} />
       </TableCell>

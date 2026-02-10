@@ -117,7 +117,6 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
               selected={date}
               onSelect={(range) => {
                 setDate(range);
-                updateFilters(range);
               }}
               numberOfMonths={2}
             />
