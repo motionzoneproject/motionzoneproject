@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import type { Lesson } from "@/generated/prisma/client";
 import {
+  type BookingWithUserAndParticipant,
+  getBookings,
   getUsersWithPurchasedProductsWithCourseInIt,
   type UserPurchasesForCourse,
 } from "@/lib/actions/admin";
@@ -25,6 +27,10 @@ export async function AttendeDialog({ lesson }: Props) {
 
   const studentsAndPurchases: UserPurchasesForCourse[] =
     await getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId);
+
+  const bookings: BookingWithUserAndParticipant[] = await getBookings(
+    lesson.id,
+  );
 
   return (
     <Dialog>
@@ -54,6 +60,7 @@ export async function AttendeDialog({ lesson }: Props) {
         </DialogHeader>
         <AttendenceForm
           lessonId={lesson.id}
+          bookings={bookings}
           studentsAndPurchases={studentsAndPurchases}
         />
       </DialogContent>

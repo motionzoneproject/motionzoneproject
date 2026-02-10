@@ -3,15 +3,18 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Booking,
   Course,
   Participant,
   Prisma,
   Product,
   SchemaItem,
   Termin,
+  User,
   Weekday,
 } from "@/generated/prisma/client";
 import {
+  AdminAddStudentToLessonForm,
   AdminAddUserInLessonSchema,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
@@ -1228,13 +1231,122 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
   }
 }
 
+export type BookingWithUserAndParticipant = Booking & {
+  user: User;
+  purchaseItem: { purchase: { participant: Participant | null } };
+};
+
+export async function getBookings(
+  lessonId: string,
+): Promise<BookingWithUserAndParticipant[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { lessonId },
+      include: {
+        user: true,
+        purchaseItem: {
+          select: { purchase: { select: { participant: true } } },
+        },
+      },
+    });
+
+    if (bookings) return bookings;
+
+    return [];
+  } catch (e) {
+    console.error("Fel vid bokning:", e);
+    return [];
+  }
+}
+
+export async function addUserInLesson(
+  formData: z.output<typeof AdminAddStudentToLessonForm>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+
+  try {
+    const validated = await AdminAddStudentToLessonForm.parseAsync(formData);
+
+    // 1. Kontrollera om användaren redan är bokad på lektionen
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        lessonId: validated.lessonId,
+        userId: validated.userId,
+      },
+    });
+
+    if (existingBooking) {
+      return {
+        success: false,
+        msg: "Användaren är redan bokad på denna lektion.",
+      };
+    }
+
+    // 2. Kolla status på lektionen
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: validated.lessonId },
+      select: { cancelled: true },
+    });
+
+    if (!lesson || lesson.cancelled) {
+      return {
+        success: false,
+        msg: "Lektionen är inställd eller hittades inte.",
+      };
+    }
+
+    // 3. Minimal check att purchaseItem tillhör rätt user (via purchase)
+    const purchaseItem = await prisma.purchaseItem.findFirst({
+      where: {
+        id: validated.purchaseItemId,
+        purchase: {
+          userId: validated.userId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!purchaseItem) {
+      return { success: false, msg: "Ogiltigt köp för vald elev." };
+    }
+
+    // 4. Utför bokning och saldo-dragning i en transaktion
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.create({
+        data: {
+          lessonId: validated.lessonId,
+          userId: validated.userId,
+          purchaseItemId: validated.purchaseItemId,
+        },
+      });
+
+      const clipResult = await handleClips(tx, validated.purchaseItemId, -1);
+
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Kunde inte uppdatera saldo.");
+      }
+    });
+
+    revalidatePath("/admin/lectures");
+
+    return { success: true, msg: "Användaren är nu inbokad på lektionen!" };
+  } catch (e) {
+    console.error("Fel vid admin-bokning:", e);
+    return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };
+  }
+}
+
 /**
  * Admin function to add a user to a lesson (create a booking).
  * @param formData Contains userId, purchaseItemId, and lessonId.
  * @returns Success status and message.
  * @auth Admin
  */
-export async function addUserInLesson(
+export async function addUserInLessonOldWay(
   formData: z.output<typeof AdminAddUserInLessonSchema>,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();

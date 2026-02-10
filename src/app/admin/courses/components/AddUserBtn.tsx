@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  addUserInLesson,
+  addUserInLessonOldWay,
   type UserPurchasesForCourse,
 } from "@/lib/actions/admin";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
@@ -64,7 +64,7 @@ export default function AddUserBtn({
   const router = useRouter();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addUserInLesson(values); // This function we can use later maybe? fix.
+    const res = await addUserInLessonOldWay(values); // This function we can use later maybe? fix.
 
     if (res.success) {
       toast.success(res.msg);
