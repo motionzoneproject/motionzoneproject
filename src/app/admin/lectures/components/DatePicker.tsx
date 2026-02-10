@@ -42,58 +42,49 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
   const fromDate = parseDateParam(from);
   const toDate = parseDateParam(to);
 
-  const [all, setAll] = React.useState<boolean>(!!(fromDate || toDate));
+  const [useDateFilter, setUseDateFilter] = React.useState<boolean>(
+    !!(fromDate && toDate),
+  );
 
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: fromDate ?? startOfDay(new Date()),
     to: toDate ?? endOfDay(addDays(new Date(), 7)),
   });
 
-  React.useEffect(() => {
-    setAll(!!(fromDate || toDate));
-  }, [fromDate, toDate]);
+  const fs = React.useCallback(
+    (a: string, b: string) => {
+      filterSetter(a, b);
+    },
+    [filterSetter],
+  );
+
+  const updateFilters = React.useCallback(
+    (range?: DateRange) => {
+      const rangeFrom = range?.from ? format(range.from, "yyyy-MM-dd") : "";
+      const rangeTo = range?.to ? format(range.to, "yyyy-MM-dd") : "";
+
+      if (!useDateFilter) {
+        fs("from", "");
+        fs("to", "");
+      } else {
+        fs("from", rangeFrom);
+        fs("to", rangeTo);
+      }
+    },
+    [useDateFilter, fs],
+  );
 
   React.useEffect(() => {
-    if (!fromDate && !toDate) {
-      setDate({
-        from: startOfDay(new Date()),
-        to: endOfDay(addDays(new Date(), 7)),
-      });
-      return;
-    }
-
-    setDate({
-      from: fromDate ? startOfDay(fromDate) : undefined,
-      to: toDate ? endOfDay(toDate) : undefined,
-    });
-  }, [fromDate, toDate]);
-
-  const updateFilters = (next?: DateRange) => {
-    const nextFrom = next?.from ? format(next.from, "yyyy-MM-dd") : "";
-    const nextTo = next?.to ? format(next.to, "yyyy-MM-dd") : "";
-
-    if (all) {
-      filterSetter("from", "");
-      filterSetter("to", "");
-      return;
-    }
-
-    if ((from ?? "") !== nextFrom) {
-      filterSetter("from", nextFrom);
-    }
-    if ((to ?? "") !== nextTo) {
-      filterSetter("to", nextTo);
-    }
-  };
+    updateFilters(date);
+  }, [date, updateFilters]);
 
   return (
     <div className="flex gap-1 items-center">
       <Checkbox
         className="w-8 h-8"
-        checked={all}
+        checked={useDateFilter}
         onCheckedChange={(checked) => {
-          setAll(checked === true);
-          updateFilters(date);
+          setUseDateFilter(checked === true);
         }}
       />
       <Field className="mx-auto w-60">
@@ -124,9 +115,9 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
               mode="range"
               defaultMonth={date?.from}
               selected={date}
-              onSelect={(next) => {
-                setDate(next);
-                updateFilters(next);
+              onSelect={(range) => {
+                setDate(range);
+                updateFilters(range);
               }}
               numberOfMonths={2}
             />
