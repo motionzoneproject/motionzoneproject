@@ -22,8 +22,10 @@ export async function LessonItem({ lesson }: { lesson: Lesson }) {
           minute: "2-digit",
         })}
       </TableCell>
-      <TableCell>{courseName}</TableCell>
-      <TableCell>
+      <TableCell className="max-w-[260px] whitespace-normal">
+        {courseName}
+      </TableCell>
+      <TableCell className="max-w-[260px] whitespace-normal">
         {lesson.message}
         {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
       </TableCell>

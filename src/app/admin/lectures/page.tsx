@@ -110,7 +110,7 @@ export default async function LecturePage({ searchParams }: Props) {
       <Paginate />
 
       <div className="mt-2">
-        <Table>
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">Datum - tid</TableHead>

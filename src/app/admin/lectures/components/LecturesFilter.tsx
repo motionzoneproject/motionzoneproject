@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,11 +108,11 @@ export function LecturesFilter({
   }, [searchParams, pathname, replace, validParam]);
 
   return (
-    <div className="w-full p-2 border-2 rounded">
-      <div className="font-bold text-xl">Filter</div>
-      <div className="flex gap-2 items-center">
-        <div className="p-1">
-          <Label className="p-1 mb-1">Lärare</Label>
+    <div className="w-full rounded border-2 p-3">
+      <div className="text-xl font-bold">Filter</div>
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="space-y-1">
+          <Label className="text-sm">Lärare</Label>
           <Select
             value={
               params.get("teacher")
@@ -142,11 +141,8 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-        <div className="">
-          <ArrowRight />
-        </div>
-        <div className="p-1">
-          <Label className="p-1 mb-1">Termin</Label>
+        <div className="space-y-1">
+          <Label className="text-sm">Termin</Label>
           <Select
             value={
               params.get("termin")
@@ -175,11 +171,8 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-        <div className="">
-          <ArrowRight />
-        </div>
-        <div className="p-1">
-          <Label className="p-1 mb-1">Kurs</Label>
+        <div className="space-y-1">
+          <Label className="text-sm">Kurs</Label>
           <Select
             value={
               params.get("course")
@@ -208,11 +201,8 @@ export function LecturesFilter({
             </SelectContent>
           </Select>
         </div>
-        <div className="">
-          <ArrowRight />
-        </div>
-        <div className="p-1">
-          <Label className="p-1 mb-1">Kurstillfälle:</Label>
+        <div className="space-y-1">
+          <Label className="text-sm">Kurstillfälle</Label>
           <Select
             value={
               params.get("schemaitem")
@@ -251,8 +241,8 @@ export function LecturesFilter({
           </Select>
         </div>
 
-        <div className="p-1">
-          <Label className="p-1 mb-1">Datum mellan:</Label>
+        <div className="space-y-1">
+          <Label className="text-sm">Datum mellan</Label>
           <DatePickerWithRange
             filterSetter={setFilter}
             from={params.get("from")}
@@ -260,15 +250,17 @@ export function LecturesFilter({
           />
         </div>
 
-        <div className="p-1">
-          <Label className="p-1 mb-1">Dölj gamla</Label>
-          <Checkbox
-            className="w-8 h-8"
-            checked={params.get("hideold") === "true"}
-            onCheckedChange={(checked) => {
-              setFilter("hideold", checked === true ? "true" : "");
-            }}
-          />
+        <div className="space-y-1">
+          <Label className="text-sm">Dölj gamla</Label>
+          <div className="flex h-9 items-center">
+            <Checkbox
+              className="h-6 w-6"
+              checked={params.get("hideold") === "true"}
+              onCheckedChange={(checked) => {
+                setFilter("hideold", checked === true ? "true" : "");
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
