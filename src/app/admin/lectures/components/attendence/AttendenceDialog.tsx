@@ -11,7 +11,6 @@ import {
 import type { Lesson } from "@/generated/prisma/client";
 import {
   type BookingWithUserAndParticipant,
-  getAsStudents,
   getBookings,
   getUsersWithPurchasedProductsWithCourseInIt,
   type StudentWithPurchaseItemsWithCourse,
@@ -26,12 +25,8 @@ interface Props {
 export async function AttendeDialog({ lesson }: Props) {
   const courseName = await getFullCourseNameFromId(lesson.courseId);
 
-  const userswithP = await getUsersWithPurchasedProductsWithCourseInIt(
-    lesson.courseId,
-  );
-
   const studentsAndPurchases: StudentWithPurchaseItemsWithCourse[] =
-    await getAsStudents(userswithP);
+    await getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId);
 
   const bookings: BookingWithUserAndParticipant[] = await getBookings(
     lesson.id,

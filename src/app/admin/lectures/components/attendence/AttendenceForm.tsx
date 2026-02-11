@@ -36,8 +36,13 @@ import {
   type BookingWithUserAndParticipant,
   type StudentWithPurchaseItemsWithCourse,
 } from "@/lib/actions/admin";
-import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
+import {
+  calcRemainingCount,
+  showRemaining,
+  showTypeInSwedish,
+} from "@/lib/actions/purchase-helpers";
 import { AdminAddStudentToLessonForm } from "@/validations/adminforms";
+import { AttendeceItem } from "./AttendenceItem";
 
 interface Props {
   lessonId: string;
@@ -76,9 +81,7 @@ export function AttendenceForm({
   );
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    alert(JSON.stringify(values));
     const res = await addUserInLesson(values); // This function we can use later maybe? fix.
-    alert(JSON.stringify(res));
     if (res.success) {
       toast.success(res.msg);
       router.refresh();
@@ -101,8 +104,6 @@ export function AttendenceForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-2 p-2 rounded-xl"
               >
-                E: {JSON.stringify(form.formState.errors)}
-                V: {JSON.stringify(form.getValues())}
                 <FormField
                   control={form.control}
                   name="participantId"
@@ -119,7 +120,7 @@ export function AttendenceForm({
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Välj en elev i kursen" />
                           </SelectTrigger>
                         </FormControl>
@@ -180,10 +181,9 @@ export function AttendenceForm({
                                     key={p.purchaseItem.id}
                                     value={p.purchaseItem.id}
                                   >
-                                    {p.purchase.product.name} ({p.purchase.type}
-                                    ) -{" "}
-                                    {remaining === Infinity ? "∞" : remaining}{" "}
-                                    kvar
+                                    {p.purchase.product.name} (
+                                    {showTypeInSwedish(p.purchase.type)}) -{" "}
+                                    {showRemaining(remaining)} kvar
                                   </SelectItem>
                                 );
                               })}
@@ -207,6 +207,20 @@ export function AttendenceForm({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="userId"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormLabel>UserId</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <Button type="submit" className="w-full">
                   Lägg till i lektionen
                 </Button>
@@ -217,9 +231,14 @@ export function AttendenceForm({
       </Accordion>
 
       {bookings.map((b) => (
-        <div key={b.id}>
-          {b.purchaseItem.purchase.participant?.name ?? b.user.name}
-        </div>
+        <AttendeceItem
+          booking={b}
+          participant={b.purchaseItem.purchase.participant}
+          key={b.id}
+          purchaseItem={b.purchaseItem}
+          user={b.user}
+          product={b.purchaseItem.purchase.product}
+        />
       ))}
     </div>
   );
