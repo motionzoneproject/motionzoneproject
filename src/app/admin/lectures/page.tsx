@@ -9,6 +9,7 @@ import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { LecturesFilter } from "./components/LecturesFilter";
 import { LessonItem } from "./components/LessonItem";
+import { Paginate } from "./components/Paginate";
 
 interface Props {
   searchParams: Promise<{
@@ -20,6 +21,7 @@ interface Props {
     schemaitem?: string;
     status?: string;
     hideold?: string;
+    take: string;
   }>;
 }
 
@@ -91,6 +93,7 @@ export default async function LecturePage({ searchParams }: Props) {
   const lessons = await prisma.lesson.findMany({
     where,
     orderBy: { startTime: "asc" },
+    take: 25,
   });
 
   return (
@@ -103,6 +106,8 @@ export default async function LecturePage({ searchParams }: Props) {
         teachers={teachers}
         terminer={terminer}
       />
+
+      <Paginate />
 
       <div className="mt-2">
         <Table>
@@ -121,6 +126,11 @@ export default async function LecturePage({ searchParams }: Props) {
             ))}
           </TableBody>
         </Table>
+        {lessons.length === 25 && (
+          <span className="italic p-2 bg-amber-200 text-black">
+            (visar max 25 lektioner, använd filtret för att hitta fler.)
+          </span>
+        )}
       </div>
     </div>
   );
