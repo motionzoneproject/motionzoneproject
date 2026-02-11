@@ -100,8 +100,8 @@ export const AdminProductCourseItemSchema = z.object({
 
 export const AdminAddStudentToLessonForm = z.object({
   lessonId: z.string().min(1),
-  participant: z.string().min(1).optional(),
   userId: z.string().min(1),
+  participantId: z.string().min(1),
   purchaseItemId: z.string().min(1),
 });
 
