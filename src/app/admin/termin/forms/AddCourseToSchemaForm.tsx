@@ -102,7 +102,7 @@ export default function AddCourseToSchemaForm({
           Lägg till kurs
         </Button>
       </DialogTrigger>
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Lägg till kurstillfälle i veckoschemat</DialogTitle>
           <DialogDescription>

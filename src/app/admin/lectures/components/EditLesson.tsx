@@ -72,7 +72,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Hantera lektion</DialogTitle>
           <DialogDescription></DialogDescription>

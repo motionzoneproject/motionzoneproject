@@ -39,7 +39,7 @@ export async function AttendeDialog({ lesson }: Props) {
           <EditIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Hantera närvaro</DialogTitle>
           <DialogDescription>

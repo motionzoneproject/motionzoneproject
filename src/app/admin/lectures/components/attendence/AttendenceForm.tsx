@@ -81,7 +81,7 @@ export function AttendenceForm({
   );
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addUserInLesson(values); // This function we can use later maybe? fix.
+    const res = await addUserInLesson(values);
     if (res.success) {
       toast.success(res.msg);
       router.refresh();

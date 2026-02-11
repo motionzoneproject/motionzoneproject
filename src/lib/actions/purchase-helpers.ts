@@ -23,8 +23,8 @@ export function isLowRemainingCount(remaining: number): boolean {
 
 export function showTypeInSwedish(type: ProductType) {
   if (type === "CLIP") return "Klippkort";
-  if (type === "COURSE") return "Klippkort";
-  if (type === "PACK") return "Klippkort";
+  if (type === "COURSE") return "Kurs";
+  if (type === "PACK") return "Paket";
 }
 
 export function showRemaining(nr: number) {

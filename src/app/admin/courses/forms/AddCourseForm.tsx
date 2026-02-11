@@ -110,7 +110,7 @@ export default function AddCourseForm({ teachers }: Props) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Skapa en ny kurs</DialogTitle>
           <div className="w-full flex items-end bg-amber-200 text-black p-2 rounded">
