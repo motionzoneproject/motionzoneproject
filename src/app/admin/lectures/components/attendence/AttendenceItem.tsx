@@ -48,6 +48,7 @@ export function AttendeceItem({
       </ItemContent>
       <ItemActions>
         <Button
+          disabled={booking.cancelled}
           type="button"
           variant={"destructive"}
           onClick={() =>
