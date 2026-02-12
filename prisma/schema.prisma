@@ -202,8 +202,10 @@ model SchemaItem {
 
     weekday Weekday
 
-    timeStart DateTime // är DateTime rätt här?
-    timeEnd DateTime // -||- ?
+    timeStart DateTime 
+    timeEnd DateTime
+    customStartDate DateTime?
+    customEndDate DateTime?
 
     terminId String
     termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
@@ -324,6 +326,8 @@ model Product {
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
 
   maxCustomer Int @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
+
+  imageURL String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt
