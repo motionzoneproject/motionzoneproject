@@ -4,11 +4,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,9 +34,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { editProduct } from "@/lib/actions/admin";
-import { adminAddProductSchema } from "@/validations/adminforms";
+import { uploadImageFromBlob } from "@/lib/uploads";
+import { adminProductSchema } from "@/validations/adminforms";
 
-const formSchema = adminAddProductSchema;
+const formSchema = adminProductSchema;
 
 type CourseFormInput = z.input<typeof formSchema>;
 type CourseFormOutput = z.output<typeof formSchema>;
@@ -42,32 +45,38 @@ type CourseFormOutput = z.output<typeof formSchema>;
 interface Props {
   productId: string;
   clipcard: boolean;
+  unlimitedCustomers: boolean;
   description: string;
   name: string;
   price: number;
   clipCount: number;
   maxCustomers: number;
+  imageURL: string;
 }
 
 export default function EditProductForm({
   productId,
   clipCount,
   clipcard,
+  unlimitedCustomers,
   description,
   name,
   price,
+  imageURL,
   maxCustomers,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: clipcard,
+      unlimitedCustomers: unlimitedCustomers,
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: description,
       name: name,
       price: price,
       clipCount: clipCount,
       maxCustomers: maxCustomers,
+      imageURL: imageURL,
     },
   });
 
@@ -75,12 +84,56 @@ export default function EditProductForm({
 
   const [isOpen, setIsOpen] = useState(false);
 
+  // Reset för att gammal data annars visas.
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
+    if (!isOpen) return;
+
+    form.reset({
+      clipcard,
+      unlimitedCustomers,
+      description,
+      name,
+      price,
+      clipCount,
+      maxCustomers,
+      imageURL,
+    });
+  }, [
+    isOpen,
+    form,
+    clipcard,
+    unlimitedCustomers,
+    description,
+    name,
+    price,
+    clipCount,
+    maxCustomers,
+    imageURL,
+  ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await editProduct(productId, values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error("Uppladdning misslyckades.");
+        return;
+      }
+    }
+
+    const payload = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageURL,
+      maxCustomers: values.unlimitedCustomers ? 0 : values.maxCustomers,
+    });
+
+    const res = await editProduct(productId, payload);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -93,8 +146,9 @@ export default function EditProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
-          Ändra produkt
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Ändra produkt</span>
         </Button>
       </DialogTrigger>
 
@@ -145,6 +199,22 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
@@ -169,19 +239,46 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
+                  name="unlimitedCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat antal kunder</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+                      <FormLabel>Max antal kunder:</FormLabel>
 
                       <FormControl>
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
+                          disabled={form.watch("unlimitedCustomers") === true}
                           {...field}
                           value={
-                            field.value === undefined ? "" : String(field.value)
+                            form.watch("unlimitedCustomers") === true
+                              ? ""
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
                           }
                         />
                       </FormControl>
@@ -217,8 +314,12 @@ export default function EditProductForm({
                   control={form.control}
                   name="clipCount"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Antal bokningar (klippkort):</FormLabel>
+                    <FormItem
+                      className={
+                        form.watch("clipcard") === false ? "hidden" : ""
+                      }
+                    >
+                      <FormLabel>Antal tillfällen (totalt):</FormLabel>
 
                       <FormControl>
                         <Input

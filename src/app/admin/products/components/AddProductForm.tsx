@@ -1,14 +1,14 @@
 "use client";
 
-/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,9 +32,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewProduct } from "@/lib/actions/admin";
-import { adminAddProductSchema } from "@/validations/adminforms";
+import { uploadImageFromBlob } from "@/lib/uploads";
+import { adminProductSchema } from "@/validations/adminforms";
 
-const formSchema = adminAddProductSchema;
+const formSchema = adminProductSchema;
 
 type CourseFormInput = z.input<typeof formSchema>;
 type CourseFormOutput = z.output<typeof formSchema>;
@@ -44,12 +45,13 @@ export default function AddProductForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: false,
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: "",
+      imageURL: "",
       name: "",
       price: 0,
       clipCount: 0,
-      maxCustomers: 0,
+      unlimitedCustomers: true,
+      maxCustomers: 1,
     },
   });
 
@@ -62,7 +64,28 @@ export default function AddProductForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewProduct(values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error(`Uppladdning misslyckades.`);
+        return;
+      }
+    }
+
+    const payload = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageURL,
+      maxCustomers: values.unlimitedCustomers ? 0 : values.maxCustomers,
+    });
+
+    const res = await addNewProduct(payload);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -76,6 +99,7 @@ export default function AddProductForm() {
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="bg-green-500 cursor-pointer">
+          <Plus className="mr-1 h-4 w-4" />
           Ny produkt
         </Button>
       </DialogTrigger>
@@ -84,7 +108,7 @@ export default function AddProductForm() {
         <DialogHeader>
           <DialogTitle>Skapa en ny produkt</DialogTitle>
           <DialogDescription>
-            Kurser läggs in efter att produkten har skapats.
+            Kurser läggs in i produkten efter att produkten har skapats.
           </DialogDescription>
         </DialogHeader>
 
@@ -127,6 +151,22 @@ export default function AddProductForm() {
 
                 <FormField
                   control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
@@ -151,19 +191,46 @@ export default function AddProductForm() {
 
                 <FormField
                   control={form.control}
+                  name="unlimitedCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat antal kunder</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+                      <FormLabel>Max antal kunder:</FormLabel>
 
                       <FormControl>
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
+                          disabled={form.watch("unlimitedCustomers") === true}
                           {...field}
                           value={
-                            field.value === undefined ? "" : String(field.value)
+                            form.watch("unlimitedCustomers") === true
+                              ? ""
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
                           }
                         />
                       </FormControl>
@@ -200,10 +267,12 @@ export default function AddProductForm() {
                   control={form.control}
                   name="clipCount"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Antal bokningar (för klippkort, 0 = obegränsat)
-                      </FormLabel>
+                    <FormItem
+                      className={
+                        form.watch("clipcard") === false ? "hidden" : ""
+                      }
+                    >
+                      <FormLabel>Antal tillfällen (totalt)</FormLabel>
 
                       <FormControl>
                         <Input

@@ -305,6 +305,9 @@ model Product {
   purchases Purchase[] // För att: Håll koll på kundernas köpta produkt.
 
   maxCustomer Int @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
+  unlimitedCustomers Boolean @default(false) // Obegränsat antal köp.
+
+  imageURL String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt

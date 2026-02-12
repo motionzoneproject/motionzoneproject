@@ -4,7 +4,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { Info } from "lucide-react";
+import { BookPlus, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -53,22 +54,26 @@ type CourseFormOutput = z.output<typeof formSchema>;
 interface Props {
   productId: string;
   isClip: boolean;
+  clipCount: number;
   productCourses: ProdCourse[];
   allCourses: Course[];
+  count: number;
 }
 
 export default function AddCoursesToProductForm({
   productId,
   isClip,
+  clipCount,
   productCourses,
   allCourses,
+  count,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       productId: productId,
       lessonsIncluded: 0,
+      unlimited: false,
       courseId: "",
     },
   });
@@ -84,6 +89,7 @@ export default function AddCoursesToProductForm({
     const match = productCourses.find((pc) => pc.courseId === selCourse); // Hitta kopplingen.
     setIsInProd(Boolean(match));
     form.setValue("lessonsIncluded", match?.lessonsIncluded ?? 0);
+    form.setValue("unlimited", match?.unlimited ?? false);
   }, [selCourse, productCourses, form.setValue]);
 
   useEffect(() => {
@@ -91,7 +97,11 @@ export default function AddCoursesToProductForm({
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addCourseToProduct(values);
+    const payload = {
+      ...values,
+      lessonsIncluded: values.unlimited ? 0 : values.lessonsIncluded,
+    };
+    const res = await addCourseToProduct(payload);
     if (res.success) {
       toast.success(res.msg);
       //   setIsOpen(false);
@@ -104,8 +114,9 @@ export default function AddCoursesToProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
-          Hantera kurser i produkten
+        <Button variant="ghost" size="sm" className="p-1">
+          <BookPlus className="h-4 w-4" />
+          <span>Redigera {count}st</span>
         </Button>
       </DialogTrigger>
 
@@ -199,10 +210,41 @@ export default function AddCoursesToProductForm({
                           type="number"
                           min="0"
                           step="1"
-                          disabled={isClip}
+                          disabled={isClip || form.watch("unlimited") === true}
                           {...field}
                           value={
-                            field.value === undefined ? "" : String(field.value)
+                            form.watch("unlimited") === true
+                              ? "0"
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {isClip && (
+                  <div className="text-sm text-muted-foreground">
+                    Antal tillfällen: {clipCount} (klippkort)
+                  </div>
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="unlimited"
+                  render={({ field }) => (
+                    <FormItem className={isClip ? "hidden" : ""}>
+                      <FormLabel>Obegränsat antal tillfällen</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
                           }
                         />
                       </FormControl>
@@ -231,7 +273,13 @@ export default function AddCoursesToProductForm({
                 <div>
                   {getCourseName(pc.course)}
                   {!isClip && (
-                    <span>Antal tillfällen: {pc.lessonsIncluded}</span>
+                    <span>
+                      Antal tillfällen:{" "}
+                      {pc.unlimited ? "Obegränsat" : pc.lessonsIncluded}
+                    </span>
+                  )}
+                  {isClip && (
+                    <span> Antal tillfällen: {clipCount} (klippkort)</span>
                   )}
                 </div>
                 <div>
