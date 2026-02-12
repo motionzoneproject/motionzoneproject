@@ -24,11 +24,6 @@ export default async function ProductItem({ product }: Props) {
         ? "Paket"
         : "Kurs";
 
-  const totalLessons =
-    product.type === "CLIP"
-      ? (product.totalCount ?? 0)
-      : prodCourse.reduce((a, b) => a + b.lessonsIncluded, 0);
-
   return (
     <TableRow>
       <TableCell className="font-medium">{product.name}</TableCell>
@@ -44,7 +39,6 @@ export default async function ProductItem({ product }: Props) {
           productCourses={prodCourse}
         />
       </TableCell>
-      <TableCell>{totalLessons}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <EditProductForm
