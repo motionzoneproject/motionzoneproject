@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { delCourse } from "@/lib/actions/admin";
@@ -46,7 +47,8 @@ export default function DeleteCourseBtn({ courseId }: Props) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant={"destructive"} className="cursor-pointer">
-          Ta bort
+          <Trash2 />
+          <span className="sr-only">Ta bort kurs</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="max-h-[90dvh] overflow-auto">

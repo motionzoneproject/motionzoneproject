@@ -62,7 +62,7 @@ export async function AppSidebar() {
     },
     {
       title: "Kurser",
-      url: "/admin/courses",
+      url: `/admin/courses?teacher=${user?.id}`,
       icon: GraduationCap,
     },
     {
