@@ -3,20 +3,29 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Booking,
   Course,
+  Lesson,
+  Participant,
   Prisma,
   Product,
+  ProductType,
+  Purchase,
+  PurchaseItem,
   SchemaItem,
   Termin,
+  User,
   Weekday,
 } from "@/generated/prisma/client";
 import {
-  AdminAddUserInLessonSchema,
+  AdminAddStudentToLessonForm,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
   adminAddProductSchema,
   adminAddTerminSchema,
+  adminEditEventSchema,
+  adminEventSchema,
   adminLessonFormSchema,
 } from "@/validations/adminforms";
 import prisma from "../prisma";
@@ -55,7 +64,10 @@ export async function getTerminer(): Promise<Termin[]> {
  * Needed in admin/termin to list all schemaitems, including course for building coursename (see GetCourseName in app/tools).
  *
  */
-export type SchemaItemWithCourse = SchemaItem & { course: Course };
+export type SchemaItemWithCourse = SchemaItem & {
+  course: Course;
+  Lessons: Lesson[];
+};
 
 /**
  * Gets schemaItems (with course) for a specific termin
@@ -71,7 +83,7 @@ export async function getSchemaItems(
 
   const schemaItems = await prisma.schemaItem.findMany({
     where: { terminId },
-    include: { course: true },
+    include: { course: true, Lessons: true },
   });
 
   return schemaItems;
@@ -92,6 +104,63 @@ export async function getAllCourses(q: string = ""): Promise<Course[]> {
     orderBy: { name: "asc" },
   });
   return courses;
+}
+
+export async function editNewEvent(
+  formData: z.infer<typeof adminEditEventSchema>,
+) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  const validated = await adminEditEventSchema.parseAsync(formData);
+
+  try {
+    const editedEvent = await prisma.event.update({
+      where: { id: validated.id },
+      data: {
+        headline: validated.headline,
+        description: validated.description,
+        imageURL: validated.imageURL ?? "",
+        link: validated.link ?? "",
+        startDate: new Date(validated.startDate),
+        endDate: validated.endDate ? new Date(validated.endDate) : null,
+      },
+    });
+    revalidatePath("/admin/events");
+    return {
+      success: true,
+      msg: `Event ${editedEvent.headline} uppdaterades.`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
+}
+
+export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    // Validate terminSchema.
+    const validated = await adminEventSchema.parseAsync(formData);
+
+    const newEvent = await prisma.event.create({
+      data: {
+        headline: validated.headline,
+        description: validated.description,
+        imageURL: validated.imageURL ?? "",
+        link: validated.link ?? "",
+        startDate: new Date(validated.startDate),
+        endDate: validated.endDate ? new Date(validated.endDate) : null,
+      },
+    });
+    return {
+      success: true,
+      msg: `Event ${newEvent.headline} skapades.`,
+    };
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
 }
 
 /**
@@ -170,7 +239,11 @@ export async function editTermin(
     const newEndDate = new Date(validated.endDate);
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Uppdatera själva terminen
+      // 1. Hämta nuvarande termin (för att avgöra "följ termin")
+      const currentTermin = await tx.termin.findUnique({ where: { id } });
+      if (!currentTermin) throw new Error("No termin.");
+
+      // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
         data: {
@@ -180,32 +253,7 @@ export async function editTermin(
         },
       });
 
-      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning).
-      const affectedBookings = await tx.booking.findMany({
-        where: {
-          lesson: {
-            terminId: id,
-            OR: [
-              { startTime: { lt: newStartDate } },
-              { startTime: { gt: newEndDate } },
-            ],
-          },
-        },
-        select: { id: true, purchaseItemId: true },
-      });
-
-      for (const booking of affectedBookings) {
-        if (!booking.purchaseItemId) continue;
-
-        // Ge tillbaka klipp via handleClips:
-        const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-
-        if (!clipResult.success) {
-          throw new Error(clipResult.msg || "Clip update failed.");
-        }
-      }
-
-      // 3. Hämta alla schemaItems för att synka lektioner
+      // 2. Hämta alla schemaItems för att synka lektioner
       const schemaItems = await tx.schemaItem.findMany({
         where: { terminId: id },
         include: {
@@ -214,19 +262,90 @@ export async function editTermin(
         },
       });
 
-      // 4. Städa bort lektioner som nu ligger utanför intervallet
-      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan).
-      await tx.lesson.deleteMany({
-        where: {
-          terminId: id,
-          OR: [
-            { startTime: { lt: newStartDate } },
-            { startTime: { gt: newEndDate } },
-          ],
-        },
-      });
+      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
 
-      // 5. Skapa nya lektioner för de datum som tillkommit
+      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
+      // for (const item of schemaItems) {
+      //   if (
+      //     item.customStartDate &&
+      //     (item.customStartDate < newStartDate ||
+      //       item.customStartDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+
+      //   if (
+      //     item.customEndDate &&
+      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+      // }
+
+      const sameDayUtc = (a: Date, b: Date) =>
+        a.getUTCFullYear() === b.getUTCFullYear() &&
+        a.getUTCMonth() === b.getUTCMonth() &&
+        a.getUTCDate() === b.getUTCDate();
+
+      // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
+      for (const item of schemaItems) {
+        // Kollar om schemaItem följer terminens datum:
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
+
+        // Beroende på det så ska vi bygga nya lektioner (eller ta bort). Om custom så kommer det bli orört
+        // (eftersom vi hämtar less than validStart och greater than validEnd)...
+        const validStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const validEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
+
+        // Hämta de boknignar som ev berörs:
+        const affectedBookings = await tx.booking.findMany({
+          where: {
+            lesson: {
+              schemaItemId: item.id,
+              OR: [
+                { startTime: { lt: validStart } },
+                { startTime: { gt: validEnd } },
+              ],
+            },
+          },
+          select: { id: true, purchaseItemId: true },
+        });
+
+        for (const booking of affectedBookings) {
+          if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
+
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
+        }
+
+        // Städa bort lektioner utanför intervallet:
+        await tx.lesson.deleteMany({
+          where: {
+            schemaItemId: item.id,
+            OR: [
+              { startTime: { lt: validStart } },
+              { startTime: { gt: validEnd } },
+            ],
+          },
+        });
+      }
+
+      // 5. Skapa nya lektioner för de datum som ev tillkommit ()
       const WEEKDAY_MAP: Record<string, number> = {
         MONDAY: 1,
         TUESDAY: 2,
@@ -241,14 +360,27 @@ export async function editTermin(
 
       for (const item of schemaItems) {
         const targetDay = WEEKDAY_MAP[item.weekday];
-        const currentDate = new Date(newStartDate.getTime());
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
+
+        const actualStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const actualEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
+        const currentDate = new Date(actualStart.getTime());
 
         const startHours = item.timeStart.getHours();
         const startMinutes = item.timeStart.getMinutes();
         const endHours = item.timeEnd.getHours();
         const endMinutes = item.timeEnd.getMinutes();
 
-        while (currentDate <= newEndDate) {
+        while (currentDate <= actualEnd) {
           currentDate.setHours(0, 0, 0, 0);
 
           if (currentDate.getDay() === targetDay) {
@@ -296,7 +428,9 @@ export async function editTermin(
     };
   } catch (e) {
     console.error("Fel vid editTermin:", e);
-    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
+    const msg =
+      e instanceof Error ? e.message : "Ett fel uppstod vid uppdatering.";
+    return { success: false, msg };
   }
 }
 
@@ -323,42 +457,128 @@ export async function addCoursetoSchema(
 
     if (!getCourse) throw new Error("Course was not found.");
 
-    const newSchemaItem = await prisma.schemaItem.create({
-      data: {
-        terminId,
-        place: validated.place,
-        courseId: validated.courseId,
-        maxBookings: getCourse?.maxBookings,
-        timeStart: formToDbDate(validated.timeStart),
-        timeEnd: formToDbDate(validated.timeEnd),
-        weekday: validated.day as Weekday,
-      },
-      include: { course: true, termin: true },
-    });
+    const result = await prisma.$transaction(async (tx) => {
+      const termin = await tx.termin.findUnique({ where: { id: terminId } });
+      if (!termin) throw new Error("No termin.");
 
-    // SKapa lessons!
-    const lessons = await createLessons(newSchemaItem.id);
+      const finalStartDate = validated.customStartDate
+        ? new Date(validated.customStartDate)
+        : termin.startDate;
+      const finalEndDate = validated.customEndDate
+        ? new Date(validated.customEndDate)
+        : termin.endDate;
 
-    if (!lessons.success) {
-      const del = await prisma.schemaItem.delete({
-        where: { id: newSchemaItem.id },
+      const newSchemaItem = await tx.schemaItem.create({
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
       });
-      if (!del)
-        throw new Error(
-          "SchemaItem was created, but could not create lessons, and could not delete the schemaItem. Empty schemaItem can be in the db.",
-        );
 
-      throw new Error(
-        "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
-      );
-    }
+      const lessons = await createLessons(newSchemaItem.id, tx);
+
+      if (!lessons.success) {
+        throw new Error(
+          "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
+        );
+      }
+
+      return { newSchemaItem, lessonsMsg: lessons.msg };
+    });
 
     return {
       success: true,
-      msg: `Kursen ${newSchemaItem.course.name} lades till i terminen ${newSchemaItem.termin.name}. ${lessons.msg}`,
+      msg: `Kursen ${result.newSchemaItem.course.name} lades till i terminen ${result.newSchemaItem.termin.name}. ${result.lessonsMsg}`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return { success: false, msg };
+  }
+}
+
+/**
+  Edit schemaitems and lessons when editing a course in a termin week schema.
+ * @auth Admin
+ */
+export async function editCourseInSchema(
+  terminId: string,
+  schemaItemId: string,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+
+    const getCourse = await prisma.course.findUnique({
+      where: { id: validated.courseId },
+    });
+
+    if (!getCourse) throw new Error("Course was not found.");
+
+    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
+    if (!termin) throw new Error("No termin.");
+
+    const finalStartDate = validated.customStartDate
+      ? new Date(validated.customStartDate)
+      : termin.startDate;
+    const finalEndDate = validated.customEndDate
+      ? new Date(validated.customEndDate)
+      : termin.endDate;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedSchemaItem = await tx.schemaItem.update({
+        where: { id: schemaItemId },
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
+      });
+
+      await tx.lesson.deleteMany({
+        where: { schemaItemId: updatedSchemaItem.id },
+      });
+
+      return updatedSchemaItem;
+    });
+
+    const lessons = await createLessons(schemaItemId);
+
+    if (!lessons.success) {
+      throw new Error(
+        "Kunde inte generera nya lektioner. Kontrollera dina datum.",
+      );
+    }
+
+    revalidatePath("/admin/termin");
+    revalidatePath("/admin/courses");
+
+    return {
+      success: true,
+      msg: `Kursen ${result.course.name} har uppdaterats i ${result.termin.name}. ${lessons.msg}`,
+    };
+  } catch (e) {
+    console.error(e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return { success: false, msg };
   }
 }
 
@@ -417,6 +637,29 @@ export async function delSchemaItem(
     return {
       success: false,
       msg: "Ett fel uppstod vid radering av schemaposten.",
+    };
+  }
+}
+
+export async function delEvent(
+  eventId: string,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const del = await prisma.event.delete({
+      where: { id: eventId },
+    });
+    return {
+      success: true,
+      msg: `${del.headline} togs bort.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      success: false,
+      msg: "Ett fel uppstod vid radering av eventet.",
     };
   }
 }
@@ -570,8 +813,6 @@ export async function addNewCourse(
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
-        maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -613,30 +854,15 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
-    // Kolla hur många som redan har kursen via ett köp
-    const currentSubscribers = await prisma.purchaseItem.count({
-      where: { courseId: id },
-    });
-
-    // Om admin försöker sänka taket under antalet nuvarande kunder
-    if (validated.maxCustomers < currentSubscribers) {
-      return {
-        success: false,
-        msg: `Kan inte sänka max antal kunder till ${validated.maxCustomers}. Det finns redan ${currentSubscribers} kunder som äger kursen.`,
-      };
-    }
-
     const newCourseItem = await prisma.course.update({
       data: {
         name: validated.name,
-        maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
         adult: validated.adult,
         description: validated.description,
-        teacherId: validated.teacherid, // Om en lärare går in nu och ändrar en kurs, blir han lärare. fix.
+        teacherId: validated.teacherid,
       },
       where: { id: id },
     });
@@ -657,6 +883,7 @@ export async function editCourse(
  */
 async function createLessons(
   schemaItemId: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -666,7 +893,9 @@ async function createLessons(
 
     // Behöver vi validatera någonting här? ev. fix.
 
-    const schemaItm = await prisma.schemaItem.findUnique({
+    const db = tx ?? prisma;
+
+    const schemaItm = await db.schemaItem.findUnique({
       where: { id: schemaItemId },
       include: { termin: true, course: true },
     });
@@ -685,8 +914,8 @@ async function createLessons(
 
     const targetDay = WEEKDAY_MAP[schemaItm?.weekday]; // Få targetday som rätt nummer.
 
-    const startDate = schemaItm.termin.startDate;
-    const endDate = schemaItm.termin.endDate;
+    const startDate = schemaItm.customStartDate ?? schemaItm.termin.startDate;
+    const endDate = schemaItm.customEndDate ?? schemaItm.termin.endDate;
     const teacherId = schemaItm.course.teacherId;
 
     const lessonsToCreate = []; // Dessa lessions ska skapas.
@@ -735,19 +964,17 @@ async function createLessons(
       };
     }
 
-    // 1. Definiera de operationer som ska ingå i transaktionen
-    const creationOperation = prisma.lesson.createMany({
+    const result = await db.lesson.createMany({
       data: lessonsToCreate,
       skipDuplicates: true,
     });
-
-    const [result] = await prisma.$transaction([creationOperation]);
 
     return {
       success: true,
       msg: `Successfully created ${result.count} lessons.`,
     };
   } catch (e) {
+    console.error(e);
     return { success: false, msg: JSON.stringify(e) };
   }
 }
@@ -1121,6 +1348,30 @@ export async function updateProductType(
   return nextType;
 }
 
+/* ********************************** admin bokning från attendenceform ***************************************** */
+/** Okej, har försökt förenkla typen så det blir lättare att jobba med i ui */
+
+export type StudentWithPurchaseItemsWithCourse = {
+  studentId: string;
+  customer: { id: string; name: string }; // För att kunna ange userId i UI.
+  participant: Participant | null; // För att visa deltagaren
+  displayName: string; // Hur namnet skall visas i select för deltagare dvs Deltagarnamn (köpare).
+  purchaseItems: {
+    purchaseItem: {
+      id: string;
+      remainingCount: number | null;
+      unlimited: boolean;
+    };
+    purchase: {
+      id: string;
+      type: ProductType;
+      participant: Participant | null;
+      remainingCount: number | null;
+      product: { id: string; name: string };
+    };
+  }[];
+};
+
 /**
  * Type for users with their purchases for a specific course.
  * Used in admin booking management.
@@ -1132,6 +1383,7 @@ export type UserPurchasesForCourse = {
     id: string;
     type: "COURSE" | "PACK" | "CLIP";
     remainingCount: number | null;
+    participant: Participant | null;
     product: {
       id: string;
       name: string;
@@ -1149,6 +1401,7 @@ export type UserPurchasesForCourse = {
   }[];
 };
 
+// Om detta funkar så ändrar jag själva funktionen ja.
 /**
  * Gets all users that have purchased products containing a specific course.
  * @param courseId The course to filter by.
@@ -1157,9 +1410,9 @@ export type UserPurchasesForCourse = {
  */
 export async function getUsersWithPurchasedProductsWithCourseInIt(
   courseId: string,
-): Promise<{ users: UserPurchasesForCourse[] }> {
+): Promise<StudentWithPurchaseItemsWithCourse[]> {
   const isAdmin = await isAdminRole();
-  if (!isAdmin) return { users: [] };
+  if (!isAdmin) return [];
 
   try {
     const users = await prisma.user.findMany({
@@ -1187,8 +1440,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
           },
           select: {
             id: true,
+            participant: true,
             type: true,
             remainingCount: true,
+            participantId: true,
             product: {
               select: {
                 id: true,
@@ -1217,41 +1472,129 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
       },
     });
 
-    return { users };
+    const students = new Map<string, StudentWithPurchaseItemsWithCourse>();
+
+    for (const user of users) {
+      for (const purchase of user.purchases) {
+        const ownerName = user.name;
+        const part = purchase.participant?.name ?? ownerName;
+        const isOwner = part === ownerName;
+        const studentId = purchase.participant?.id ?? user.id;
+        const displayName = isOwner
+          ? ownerName
+          : `${part} (kund: ${ownerName})`;
+
+        const nextPurchaseItems = purchase.PurchaseItems.map(
+          (purchaseItem) => ({
+            purchaseItem: {
+              id: purchaseItem.id,
+              remainingCount: purchaseItem.remainingCount,
+              unlimited: purchaseItem.unlimited,
+            },
+            purchase: {
+              id: purchase.id,
+              type: purchase.type,
+              participant: purchase.participant,
+              remainingCount: purchase.remainingCount,
+              product: purchase.product,
+            },
+          }),
+        );
+
+        const existing = students.get(studentId);
+        if (!existing) {
+          students.set(studentId, {
+            studentId,
+            customer: { id: user.id, name: user.name },
+            participant: purchase.participant,
+            displayName,
+            purchaseItems: nextPurchaseItems,
+          });
+          continue;
+        }
+
+        const existingIds = new Set(
+          existing.purchaseItems.map((item) => item.purchaseItem.id),
+        );
+        for (const item of nextPurchaseItems) {
+          if (!existingIds.has(item.purchaseItem.id)) {
+            existing.purchaseItems.push(item);
+          }
+        }
+      }
+    }
+
+    return [...students.values()];
   } catch (e) {
     console.error("Error fetching users with purchases:", e);
-    return { users: [] };
+    return [];
   }
 }
 
-/**
- * Admin function to add a user to a lesson (create a booking).
- * @param formData Contains userId, purchaseItemId, and lessonId.
- * @returns Success status and message.
- * @auth Admin
- */
+/* ********************************** //admin bokning från attendeform ***************************************** */
+
+export type BookingWithUserAndParticipant = Booking & {
+  user: User;
+  purchaseItem: {
+    purchase: { participant: Participant | null; product: Product } & Purchase;
+  } & PurchaseItem;
+};
+
+export async function getBookings(
+  lessonId: string,
+): Promise<BookingWithUserAndParticipant[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { lessonId },
+      include: {
+        user: true,
+        purchaseItem: {
+          include: {
+            purchase: { include: { participant: true, product: true } },
+          },
+        },
+      },
+    });
+
+    if (bookings) return bookings;
+
+    return [];
+  } catch (e) {
+    console.error("Fel vid bokning:", e);
+    return [];
+  }
+}
+
 export async function addUserInLesson(
-  formData: z.output<typeof AdminAddUserInLessonSchema>,
+  formData: z.output<typeof AdminAddStudentToLessonForm>,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
 
   try {
-    const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
+    const validated = await AdminAddStudentToLessonForm.parseAsync(formData);
 
-    // 1. Hämta PurchaseItem inkl. huvud-Purchase för att se saldotyp och ägare
-    const pItem = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseItemId },
-      include: { purchase: true },
-    });
-
-    if (!pItem) return { success: false, msg: "Kunde inte hitta köpet." };
-
-    // 2. Kontrollera om användaren redan är bokad på lektionen
+    // 1. Kontrollera om deltagaren redan är bokad på lektionen (genom att kolla om purchaseItems använts)
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
-        userId: validated.userId,
+        OR: [
+          // Om participant:
+          {
+            purchaseItem: {
+              purchase: { participantId: validated.participantId },
+            },
+          },
+
+          // Om owner:
+          {
+            userId: validated.userId,
+            purchaseItem: { purchase: { participantId: null } },
+          },
+        ],
       },
     });
 
@@ -1262,7 +1605,7 @@ export async function addUserInLesson(
       };
     }
 
-    // 3. Kolla status på lektionen
+    // 2. Kolla status på lektionen
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
       select: { cancelled: true },
@@ -1275,26 +1618,24 @@ export async function addUserInLesson(
       };
     }
 
-    // 4. Utför bokning och saldo-dragning i en transaktion
+    // 3. Utför bokning och saldo-dragning i en transaktion
     await prisma.$transaction(async (tx) => {
-      // Skapa bokningen
       await tx.booking.create({
         data: {
           lessonId: validated.lessonId,
           userId: validated.userId,
-          purchaseItemId: pItem.id,
+          purchaseItemId: validated.purchaseItemId,
         },
       });
 
-      // Dra av saldo via handleClips
-      const clipResult = await handleClips(tx, pItem.id, -1);
+      const clipResult = await handleClips(tx, validated.purchaseItemId, -1);
 
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Kunde inte uppdatera saldo.");
       }
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return { success: true, msg: "Användaren är nu inbokad på lektionen!" };
   } catch (e) {
@@ -1305,13 +1646,13 @@ export async function addUserInLesson(
 
 /**
  * Admin function to remove a user from a lesson and restore their clips.
- * @param userId The user to remove.
- * @param lessonId The lesson to remove them from.
+ * @param purchaseItemId The purchaseItem to remove.
+ * @param lessonId The lesson to remove from.
  * @returns Success status and message.
  * @auth Admin
  */
 export async function removeUserFromLesson(
-  userId: string,
+  purchaseItemId: string,
   lessonId: string,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
@@ -1321,7 +1662,7 @@ export async function removeUserFromLesson(
     // 1. Hitta bokningen
     const booking = await prisma.booking.findFirst({
       where: {
-        userId: userId,
+        purchaseItem: { id: purchaseItemId },
         lessonId: lessonId,
       },
     });
@@ -1345,7 +1686,7 @@ export async function removeUserFromLesson(
       });
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return { success: true, msg: "Bokningen har tagits bort." };
   } catch (e) {

@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -89,15 +91,17 @@ export default function AddTerminForm() {
     return "";
   };
 
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
-          Ny termin
+        <Button variant="secondary" className="cursor-pointer">
+          <PlusIcon /> Ny termin
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Skapa en ny termin</DialogTitle>
           <DialogDescription>
@@ -168,9 +172,15 @@ export default function AddTerminForm() {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={isBusy}
+                >
                   Skapa
                 </Button>
+                {isBusy && <Loader />}
               </form>
             </Form>
           </CardContent>
