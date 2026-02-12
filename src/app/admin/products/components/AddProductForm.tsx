@@ -104,7 +104,7 @@ export default function AddProductForm() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Skapa en ny produkt</DialogTitle>
           <DialogDescription>

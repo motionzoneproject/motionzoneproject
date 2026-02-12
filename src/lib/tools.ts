@@ -1,6 +1,24 @@
-import type { Course } from "@/generated/prisma/client";
+import type { Weekday } from "@/generated/prisma/client";
 
-export function getCourseName(course: Course) {
+type CourseLike = {
+  name: string;
+  minAge: number | null;
+  maxAge: number | null;
+  adult: boolean;
+  level: string | null;
+};
+
+const WEEKDAYS = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+
+export function getCourseName(course: CourseLike) {
   const ageRange =
     course.minAge && course.minAge > 0
       ? `${course.minAge}${
@@ -15,3 +33,28 @@ export function getCourseName(course: Course) {
 
   return `${course.name} ${ageRange} ${levelInfo}`;
 }
+
+export function getWeekdays() {
+  return [...WEEKDAYS];
+}
+
+export const getVeckodag = (day: Weekday) => {
+  switch (day) {
+    case "MONDAY":
+      return "Måndag";
+    case "TUESDAY":
+      return "Tisdag";
+    case "WEDNESDAY":
+      return "Onsdag";
+    case "THURSDAY":
+      return "Torsdag";
+    case "FRIDAY":
+      return "Fredag";
+    case "SATURDAY":
+      return "Lördag";
+    case "SUNDAY":
+      return "Söndag";
+    default:
+      return day; // Returnerar originalsträngen om ingen matchning hittas
+  }
+};

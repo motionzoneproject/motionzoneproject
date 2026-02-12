@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  MapPin,
-} from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,6 +68,16 @@ export default function Events({ events }: EventsProps) {
                 <h3 className="text-xl font-bold text-foreground">
                   {currentEvent.headline}
                 </h3>
+                {/** bild **/}
+                {currentEvent.imageURL && (
+                  <Image
+                    src={currentEvent.imageURL}
+                    alt="Event Bild"
+                    width={400}
+                    height={200}
+                    className="rounded-md"
+                  />
+                )}
                 <p className="text-muted-foreground text-sm">
                   {currentEvent.description}
                 </p>
@@ -88,14 +94,13 @@ export default function Events({ events }: EventsProps) {
                       minute: "2-digit",
                     })}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-foreground">
-                    <MapPin className="w-4 h-4 text-brand" />
-                    {currentEvent.link}
-                  </div>
                 </div>
 
-                <Button className="w-full mt-4 bg-brand hover:bg-brand-light text-white">
-                  Köp Biljett
+                <Button
+                  asChild
+                  className="w-full mt-4 bg-brand hover:bg-brand-light text-white"
+                >
+                  <Link href={currentEvent.link}>Köp Biljett</Link>
                 </Button>
               </CardContent>
             </Card>

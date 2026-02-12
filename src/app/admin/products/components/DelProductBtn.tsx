@@ -57,7 +57,7 @@ export default function DeleteProductBtn({ productId }: Props) {
           <span className="sr-only">Ta bort produkt</span>
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+      <AlertDialogContent className="max-h-[90dvh] overflow-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Är du säker?</AlertDialogTitle>
           <AlertDialogDescription>Kan ej ångras.</AlertDialogDescription>
