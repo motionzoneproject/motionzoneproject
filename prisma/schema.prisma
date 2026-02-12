@@ -235,9 +235,8 @@ model Course {
 
   products ProductOnCourse[]
 
-  maxBookings Int @default(0) // Per tillfälle (standardvärdet, det går att ändra i veckorschemat eller per tillfälle med).
-
-  maxCustomer Int @default(0) // Detta sätter ett tak även ifall kursen säljs i flera produkter, så alla produkter inaktiveras om det blir fyllt..
+  maxBookings Int @default(0) // fix: jag använder inte denna för att prioritera att vi får något fungerande, men kan vara önskvärt så låter det vara kvar // T.E
+  maxCustomer Int @default(0) // fix: -||-
 
   lessons Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
   schemaItems SchemaItem[] // Veckoschemat.
@@ -255,7 +254,7 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna?
+  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna? fix: ta bort
 
   level String? 
 
@@ -270,7 +269,7 @@ model Course {
 }
 
 
-// Denna tabell kopplar alltså kurs till termin, du kan ha samma kurs på flera terminer.
+// Används ej:
 model CourseOnTermin {
     courseId String
     course   Course @relation(fields: [courseId], references: [id])
@@ -310,6 +309,7 @@ model Product {
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
 
+ // Ta bort:
   terminId String? // fix: Detta hämtas i nulöäget istället från vart kurserna i produkten faktiskt har lagts in i veckoschemat (se GetProductTermin i server-action). Kanske gör en koppling hit senare.
   termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull) // fix: se ovan.
 
