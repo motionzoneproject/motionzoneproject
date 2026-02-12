@@ -1,3 +1,10 @@
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import CourseItem from "./CourseItem";
@@ -32,23 +39,43 @@ export default async function Page({
     where,
     orderBy: { name: "asc" },
   });
+  const teacherMap = new Map(teachers.map((t) => [t.id, t.name]));
 
   return (
-    <div>
-      <div>
-        <div>
-          <span className="font-bold text-2xl">Kurser</span>
-          <AddCourseForm teachers={teachers} />
-        </div>
-        <div>
-          <CourseFilter teachers={teachers} terminer={terminer} />
-        </div>
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Kurser</span>
+        <AddCourseForm teachers={teachers} />
       </div>
+      <CourseFilter teachers={teachers} terminer={terminer} />
 
-      <div className="w-full lg:grid lg:grid-cols-2 gap-2 p-2">
-        {allCourses.map((c) => (
-          <CourseItem course={c} key={c.id}></CourseItem>
-        ))}
+      <div className="mt-2">
+        <Table className="min-w-[760px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kurs</TableHead>
+              <TableHead>Lärare</TableHead>
+              <TableHead>Sålda produkter</TableHead>
+              <TableHead>Lektioner</TableHead>
+              <TableHead className="text-right">Åtgärder</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allCourses.map((c) => (
+              <CourseItem
+                course={c}
+                key={c.id}
+                teachers={teachers}
+                teacherName={teacherMap.get(c.teacherId)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+        {allCourses.length === 0 && (
+          <div className="text-sm text-muted-foreground p-2 italic">
+            Inga kurser hittades för valt filter.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -36,6 +36,7 @@ I EditCourseForm står dialogtiteln fortfarande Skapa en ny kurs (bör vara typ 
 */
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { EditIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -131,11 +132,12 @@ export default function EditCourseForm({ course, teachers }: Props) {
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="cursor-pointer">
-          Ändra kursen
+          <EditIcon />
+          <span className="sr-only">Ändra kurs</span>
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ändra en kurs</DialogTitle>
         </DialogHeader>
