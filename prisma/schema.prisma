@@ -202,8 +202,10 @@ model SchemaItem {
 
     weekday Weekday
 
-    timeStart DateTime // är DateTime rätt här?
-    timeEnd DateTime // -||- ?
+    timeStart DateTime 
+    timeEnd DateTime
+    customStartDate DateTime?
+    customEndDate DateTime?
 
     terminId String
     termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
