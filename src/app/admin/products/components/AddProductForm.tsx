@@ -1,7 +1,5 @@
 "use client";
 
-/// JAG HÅLLER PÅ MED DETTA FORMULÄR SNART KLAR. fix.
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
@@ -9,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewProduct } from "@/lib/actions/admin";
+import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminAddProductSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddProductSchema;
@@ -44,8 +44,8 @@ export default function AddProductForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: false,
-      // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: "",
+      imageURL: "",
       name: "",
       price: 0,
       clipCount: 0,
@@ -62,7 +62,27 @@ export default function AddProductForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewProduct(values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error(`Uppladdning misslyckades.`);
+        return;
+      }
+    }
+
+    const payload = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageURL,
+    });
+
+    const res = await addNewProduct(payload);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -84,7 +104,7 @@ export default function AddProductForm() {
         <DialogHeader>
           <DialogTitle>Skapa en ny produkt</DialogTitle>
           <DialogDescription>
-            Kurser läggs in efter att produkten har skapats.
+            Kurser läggs in i produkten efter att produkten har skapats.
           </DialogDescription>
         </DialogHeader>
 
@@ -118,6 +138,22 @@ export default function AddProductForm() {
 
                       <FormControl>
                         <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
                       </FormControl>
 
                       <FormMessage />

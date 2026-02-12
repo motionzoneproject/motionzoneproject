@@ -869,14 +869,17 @@ export async function addNewProduct(
         price: validated.price,
         maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,
+        imageURL: validated.imageURL,
       },
     });
 
     // Uppdatera typen:
-    await updateProductType(newProd.id, { isClip: validated.clipcard });
+    const type = await updateProductType(newProd.id, {
+      isClip: validated.clipcard,
+    });
     return {
       success: true,
-      msg: `Produkten ${newProd.name} skapades.`, // fix
+      msg: `Produkten ${newProd.name} av typen ${type} skapades.`, // fix
     };
   } catch (e) {
     return { success: false, msg: JSON.stringify(e) };
@@ -917,6 +920,7 @@ export async function editProduct(
         price: validated.price,
         maxCustomer: validated.maxCustomers,
         totalCount: validated.clipCount,
+        imageURL: validated.imageURL,
       },
     });
 

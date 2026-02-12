@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { editProduct } from "@/lib/actions/admin";
+import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminAddProductSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddProductSchema;
@@ -47,6 +49,7 @@ interface Props {
   price: number;
   clipCount: number;
   maxCustomers: number;
+  imageURL: string;
 }
 
 export default function EditProductForm({
@@ -56,6 +59,7 @@ export default function EditProductForm({
   description,
   name,
   price,
+  imageURL,
   maxCustomers,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
@@ -68,6 +72,7 @@ export default function EditProductForm({
       price: price,
       clipCount: clipCount,
       maxCustomers: maxCustomers,
+      imageURL: imageURL,
     },
   });
 
@@ -75,12 +80,53 @@ export default function EditProductForm({
 
   const [isOpen, setIsOpen] = useState(false);
 
+  // Reset för att gammal data annars visas.
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
+    if (!isOpen) return;
+
+    form.reset({
+      clipcard,
+      description,
+      name,
+      price,
+      clipCount,
+      maxCustomers,
+      imageURL,
+    });
+  }, [
+    isOpen,
+    form,
+    clipcard,
+    description,
+    name,
+    price,
+    clipCount,
+    maxCustomers,
+    imageURL,
+  ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await editProduct(productId, values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error("Uppladdning misslyckades.");
+        return;
+      }
+    }
+
+    const payload = await formSchema.parseAsync({
+      ...values,
+      imageURL: finalImageURL,
+    });
+
+    const res = await editProduct(productId, payload);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -136,6 +182,22 @@ export default function EditProductForm({
 
                       <FormControl>
                         <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="imageURL"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bild</FormLabel>
+
+                      <FormControl>
+                        <ImageInput {...field} />
                       </FormControl>
 
                       <FormMessage />
