@@ -18,6 +18,7 @@ export default async function StudentsPage(props: {
   const resolvedParams = (await props.searchParams) as {
     q?: string;
     termin?: string;
+    course?: string;
   };
   noStore();
   const isAdmin = await isAdminRole();
@@ -30,9 +31,12 @@ export default async function StudentsPage(props: {
     typeof resolvedParams?.termin === "string"
       ? resolvedParams.termin
       : undefined;
+  const courseId =
+    typeof resolvedParams?.course === "string"
+      ? resolvedParams.course
+      : undefined;
 
-  // Fetch participants linked to purchases
-  // We want to see who is active in which classes
+  // Fetch participants and filter purchases by course and term via schemaItems
   const participants = await prisma.participant.findMany({
     where: {
       OR: query
@@ -48,27 +52,30 @@ export default async function StudentsPage(props: {
       },
       purchases: {
         include: {
-          product: {
-            include: { termin: true },
-          },
+          product: true,
           PurchaseItems: {
             include: {
-              course: true,
+              course: {
+                include: {
+                  schemaItems: true,
+                },
+              },
             },
           },
         },
-        where: terminId
-          ? {
-              product: { terminId },
-            }
-          : undefined,
       },
     },
     orderBy: { name: "asc" },
   });
 
+  // Get all terms for filter dropdown
   const terminer = await prisma.termin.findMany({
     orderBy: { startDate: "desc" },
+  });
+  // Get all courses for filter dropdown
+  const courses = await prisma.course.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
   });
 
   return (
@@ -96,6 +103,19 @@ export default async function StudentsPage(props: {
               </option>
             ))}
           </select>
+          <select
+            name="course"
+            aria-label="Välj kurs"
+            defaultValue={courseId}
+            className="h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="">Alla kurser</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
             className="bg-brand text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-light transition-colors"
@@ -106,17 +126,32 @@ export default async function StudentsPage(props: {
       </div>
 
       <div className="grid gap-4">
-        {participants.filter((p) => !terminId || p.purchases.length > 0)
-          .length === 0 ? (
+        {participants.filter((p) => {
+          // Filter purchases by selected term and course via schemaItems
+          const filteredPurchases = p.purchases.filter((pur) =>
+            pur.PurchaseItems.some((item) => {
+              const matchesTerm = !terminId || item.course.schemaItems.some((si) => si.terminId === terminId);
+              const matchesCourse = !courseId || item.course.id === courseId;
+              return matchesTerm && matchesCourse;
+            })
+          );
+          return filteredPurchases.length > 0;
+        }).length === 0 ? (
           <p className="text-muted-foreground italic">
             Inga deltagare hittades.
           </p>
         ) : (
           participants.map((p) => {
-            const activePurchases = p.purchases.filter(
-              (pur) => pur.PurchaseItems.length > 0,
+            // Filter purchases by selected term and course via schemaItems
+            const activePurchases = p.purchases.filter((pur) =>
+              pur.PurchaseItems.some((item) => {
+                const matchesTerm = !terminId || item.course.schemaItems.some((si) => si.terminId === terminId);
+                const matchesCourse = !courseId || item.course.id === courseId;
+                return matchesTerm && matchesCourse;
+              })
             );
-            if (terminId && activePurchases.length === 0) return null;
+            // Only show participant if they have active purchases for the selected filters
+            if (activePurchases.length === 0) return null;
 
             return (
               <Card
@@ -180,8 +215,10 @@ export default async function StudentsPage(props: {
                                   </div>
                                   <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
                                     <span>
-                                      {pur.product.termin?.name ||
-                                        "Ingen termin"}
+                                      {/* Show selected term name if filter is active, else show all terms for this course */}
+                                      {terminId
+                                        ? (terminer.find((t) => t.id === terminId)?.name || "Vald termin")
+                                        : Array.from(new Set(item.course.schemaItems.map((si) => terminer.find((t) => t.id === si.terminId)?.name).filter(Boolean))).join(", ") || "Ingen termin"}
                                     </span>
                                     <span
                                       className={

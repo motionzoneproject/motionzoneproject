@@ -174,11 +174,10 @@ model Termin {
 
   schemaItems SchemaItem[] // Implicit relation - SchemaItem pekar på Termin
 
-  products Product[] // Vilka produkter är kopplade till terminen. På omvägar här kan man se vilka kunder som köpt produkter kopplade till terminen, även deras kurser.
+  // ...existing code...
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
 
-  // Denna verkar hittils iaf inte vara nödvändig: fix
-  courses CourseOnTermin[] // Så detta läggs till så fort man lägger in kursen i veckoschemat i en termin. Så håll koll på om man tar bort också. 
+  // ...existing code...
 
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt
@@ -253,7 +252,7 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  terms CourseOnTermin[] // Vilka terminer kursen är inlagd på! Behövs denna?
+  // ...existing code...
 
   level String? 
 
@@ -269,17 +268,7 @@ model Course {
 
 
 // Denna tabell kopplar alltså kurs till termin, du kan ha samma kurs på flera terminer.
-model CourseOnTermin {
-    courseId String
-    course   Course @relation(fields: [courseId], references: [id])
-    terminId String
-    termin   Termin @relation(fields: [terminId], references: [id])
-
-    // isActive Boolean @default(true)
-
-    @@id([courseId, terminId])
-    @@map("course_on_termin")
-}
+// ...existing code...
 
 
 // Så här finns informationen om vilken/vilka kurser man kan boka med produkten, och i vilken termin (om specificerat). 
@@ -307,9 +296,7 @@ model Product {
   description String
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
-
-  terminId String? // fix: Detta hämtas i nulöäget istället från vart kurserna i produkten faktiskt har lagts in i veckoschemat (se GetProductTermin i server-action). Kanske gör en koppling hit senare.
-  termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull) // fix: se ovan.
+  // ...existing code...
 
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
@@ -329,7 +316,7 @@ model Product {
   updatedAt DateTime @updatedAt
 
 
-  @@index([terminId])
+  // ...existing code...
   @@map("product")
 }
 
