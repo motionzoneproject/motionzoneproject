@@ -1,6 +1,7 @@
 import {
   BookOpen,
   CalendarDays,
+  Crown,
   GraduationCap,
   Home,
   Image as ImageIcon,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { isAdminRole } from "@/lib/actions/admin";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { Button } from "./ui/button";
 
 export async function AppSidebar() {
   const isAdmin = await isAdminRole();
@@ -99,9 +101,14 @@ export async function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="mt-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Admin panel</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            <Button variant="ghost">
+              <Crown className="text-brand" />
+              Admin panel
+            </Button>
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
