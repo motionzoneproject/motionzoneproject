@@ -15,9 +15,9 @@ import {
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
-  adminAddProductSchema,
   adminAddTerminSchema,
   adminLessonFormSchema,
+  adminProductSchema,
 } from "@/validations/adminforms";
 import prisma from "../prisma";
 
@@ -846,6 +846,7 @@ export type ProdCourse = {
   courseId: string;
   productId: string;
   lessonsIncluded: number;
+  unlimited: boolean;
 };
 
 /**
@@ -854,20 +855,22 @@ export type ProdCourse = {
  * @auth Admin
  */
 export async function addNewProduct(
-  formData: z.output<typeof adminAddProductSchema>,
+  formData: z.output<typeof adminProductSchema>,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    const validated = await adminAddProductSchema.parseAsync(formData);
+    const validated = await adminProductSchema.parseAsync(formData);
+    const unlimitedCustomers = validated.unlimitedCustomers === true;
 
     const newProd = await prisma.product.create({
       data: {
         name: validated.name,
         description: validated.description,
         price: validated.price,
-        maxCustomer: validated.maxCustomers,
+        maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
+        unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
       },
@@ -893,19 +896,21 @@ export async function addNewProduct(
  */
 export async function editProduct(
   id: string,
-  formData: z.output<typeof adminAddProductSchema>,
+  formData: z.output<typeof adminProductSchema>,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    const validated = await adminAddProductSchema.parseAsync(formData);
+    const validated = await adminProductSchema.parseAsync(formData);
+    const unlimitedCustomers = validated.unlimitedCustomers === true;
+    const maxCustomers = unlimitedCustomers ? 0 : validated.maxCustomers;
 
     // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
     const salesCount = await prisma.purchase.count({
       where: { productId: id },
     });
-    if (validated.maxCustomers < salesCount) {
+    if (!unlimitedCustomers && maxCustomers < salesCount) {
       return {
         success: false,
         msg: "Kan inte sänka maxantalet under redan sålt antal.",
@@ -918,7 +923,8 @@ export async function editProduct(
         name: validated.name,
         description: validated.description,
         price: validated.price,
-        maxCustomer: validated.maxCustomers,
+        maxCustomer: maxCustomers,
+        unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
       },
@@ -993,7 +999,10 @@ export async function addCourseToProduct(
           },
           data: {
             lessonsIncluded:
-              productType === "CLIP" ? 0 : validated.lessonsIncluded,
+              productType === "CLIP" || validated.unlimited
+                ? 0
+                : validated.lessonsIncluded,
+            unlimited: validated.unlimited ?? false,
           },
         });
       });
@@ -1012,7 +1021,10 @@ export async function addCourseToProduct(
             productId: validated.productId,
             courseId: validated.courseId,
             lessonsIncluded:
-              productType === "CLIP" ? 0 : validated.lessonsIncluded,
+              productType === "CLIP" || validated.unlimited
+                ? 0
+                : validated.lessonsIncluded,
+            unlimited: validated.unlimited ?? false,
           },
         });
       });

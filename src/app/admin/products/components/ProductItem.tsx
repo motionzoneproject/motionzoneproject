@@ -41,10 +41,12 @@ export default async function ProductItem({ product }: Props) {
                 allCourses={await getAllCourses()}
                 productId={product.id}
                 isClip={product.type === "CLIP"}
+                clipCount={product.totalCount ?? 0}
                 productCourses={prodCourse}
               ></AddCoursesToProductForm>
               <EditProductForm
                 imageURL={product.imageURL ?? ""}
+                unlimitedCustomers={product.unlimitedCustomers ?? false}
                 maxCustomers={product.maxCustomer}
                 productId={product.id}
                 clipCount={product.totalCount ?? 0}

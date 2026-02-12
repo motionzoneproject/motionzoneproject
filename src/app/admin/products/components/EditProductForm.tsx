@@ -34,9 +34,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { editProduct } from "@/lib/actions/admin";
 import { uploadImageFromBlob } from "@/lib/uploads";
-import { adminAddProductSchema } from "@/validations/adminforms";
+import { adminProductSchema } from "@/validations/adminforms";
 
-const formSchema = adminAddProductSchema;
+const formSchema = adminProductSchema;
 
 type CourseFormInput = z.input<typeof formSchema>;
 type CourseFormOutput = z.output<typeof formSchema>;
@@ -44,6 +44,7 @@ type CourseFormOutput = z.output<typeof formSchema>;
 interface Props {
   productId: string;
   clipcard: boolean;
+  unlimitedCustomers: boolean;
   description: string;
   name: string;
   price: number;
@@ -56,6 +57,7 @@ export default function EditProductForm({
   productId,
   clipCount,
   clipcard,
+  unlimitedCustomers,
   description,
   name,
   price,
@@ -66,6 +68,7 @@ export default function EditProductForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: clipcard,
+      unlimitedCustomers: unlimitedCustomers,
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: description,
       name: name,
@@ -86,6 +89,7 @@ export default function EditProductForm({
 
     form.reset({
       clipcard,
+      unlimitedCustomers,
       description,
       name,
       price,
@@ -97,6 +101,7 @@ export default function EditProductForm({
     isOpen,
     form,
     clipcard,
+    unlimitedCustomers,
     description,
     name,
     price,
@@ -124,6 +129,7 @@ export default function EditProductForm({
     const payload = await formSchema.parseAsync({
       ...values,
       imageURL: finalImageURL,
+      maxCustomers: values.unlimitedCustomers ? 0 : values.maxCustomers,
     });
 
     const res = await editProduct(productId, payload);
@@ -231,19 +237,46 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
+                  name="unlimitedCustomers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Obegränsat antal kunder</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max platser (0 = obegränsat):</FormLabel>
+                      <FormLabel>Max antal kunder:</FormLabel>
 
                       <FormControl>
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
+                          disabled={form.watch("unlimitedCustomers") === true}
                           {...field}
                           value={
-                            field.value === undefined ? "" : String(field.value)
+                            form.watch("unlimitedCustomers") === true
+                              ? ""
+                              : field.value === undefined
+                                ? ""
+                                : String(field.value)
                           }
                         />
                       </FormControl>
@@ -279,8 +312,12 @@ export default function EditProductForm({
                   control={form.control}
                   name="clipCount"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Antal bokningar (klippkort):</FormLabel>
+                    <FormItem
+                      className={
+                        form.watch("clipcard") === false ? "hidden" : ""
+                      }
+                    >
+                      <FormLabel>Antal tillfällen (totalt):</FormLabel>
 
                       <FormControl>
                         <Input

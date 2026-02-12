@@ -72,27 +72,39 @@ export const adminLessonFormSchema = z.object({
   cancelled: z.coerce.boolean().optional(),
 });
 
-export const adminAddProductSchema = z.object({
-  name: z.string().min(1),
-  description: z.string(),
-  imageURL: z.string().optional(),
-  maxCustomers: z.coerce.number().int().nonnegative(), // Kanske skulle vara logiskt att ha detta på kurser i produkten också?
-  price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
-  clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade de tinte.
-  clipCount: z.coerce
-    .number()
-    .int()
-    .nonnegative("Antalet tillfällen får inte vara negativt."),
-  // courses: z
-  // .array(AdminProductCourseItemSchema)
-  // .min(1, "Du måste koppla produkten till minst en kurs."),
-  // Bytt metod, men sparr detta ifall vi vill ha ett och samma formulär sen istället. Prioriterar att få det funka nu.
-});
+export const adminProductSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string(),
+    imageURL: z.string().optional(),
+    unlimitedCustomers: z.coerce.boolean().optional(),
+    maxCustomers: z.coerce.number().int().nonnegative(),
+    price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+    clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade det inte.
+    clipCount: z.coerce.number().int().nonnegative(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.clipcard && data.clipCount < 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Antal tillfällen måste vara minst 1 för klippkort.",
+        path: ["clipCount"],
+      });
+    }
+    if (!data.unlimitedCustomers && data.maxCustomers < 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Max kunder måste vara minst 1 om obegränsat inte är valt.",
+        path: ["maxCustomers"],
+      });
+    }
+  });
 
 export const AdminProductCourseItemSchema = z.object({
   productId: z.string().min(1),
   isClipcard: z.coerce.boolean().optional(), // Denna logik kanske kan göras i koden, vi får se.
   courseId: z.string().min(1, "Kurs-ID måste anges."),
+  unlimited: z.coerce.boolean().optional(),
   lessonsIncluded: z.coerce
     .number()
     .int()
