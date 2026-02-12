@@ -3,16 +3,22 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Booking,
   Course,
   Lesson,
+  Participant,
   Prisma,
   Product,
+  ProductType,
+  Purchase,
+  PurchaseItem,
   SchemaItem,
   Termin,
+  User,
   Weekday,
 } from "@/generated/prisma/client";
 import {
-  AdminAddUserInLessonSchema,
+  AdminAddStudentToLessonForm,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -1260,6 +1266,30 @@ export async function updateProductType(
   return nextType;
 }
 
+/* ********************************** admin bokning från attendenceform ***************************************** */
+/** Okej, har försökt förenkla typen så det blir lättare att jobba med i ui */
+
+export type StudentWithPurchaseItemsWithCourse = {
+  studentId: string;
+  customer: { id: string; name: string }; // För att kunna ange userId i UI.
+  participant: Participant | null; // För att visa deltagaren
+  displayName: string; // Hur namnet skall visas i select för deltagare dvs Deltagarnamn (köpare).
+  purchaseItems: {
+    purchaseItem: {
+      id: string;
+      remainingCount: number | null;
+      unlimited: boolean;
+    };
+    purchase: {
+      id: string;
+      type: ProductType;
+      participant: Participant | null;
+      remainingCount: number | null;
+      product: { id: string; name: string };
+    };
+  }[];
+};
+
 /**
  * Type for users with their purchases for a specific course.
  * Used in admin booking management.
@@ -1271,6 +1301,7 @@ export type UserPurchasesForCourse = {
     id: string;
     type: "COURSE" | "PACK" | "CLIP";
     remainingCount: number | null;
+    participant: Participant | null;
     product: {
       id: string;
       name: string;
@@ -1288,6 +1319,7 @@ export type UserPurchasesForCourse = {
   }[];
 };
 
+// Om detta funkar så ändrar jag själva funktionen ja.
 /**
  * Gets all users that have purchased products containing a specific course.
  * @param courseId The course to filter by.
@@ -1296,9 +1328,9 @@ export type UserPurchasesForCourse = {
  */
 export async function getUsersWithPurchasedProductsWithCourseInIt(
   courseId: string,
-): Promise<{ users: UserPurchasesForCourse[] }> {
+): Promise<StudentWithPurchaseItemsWithCourse[]> {
   const isAdmin = await isAdminRole();
-  if (!isAdmin) return { users: [] };
+  if (!isAdmin) return [];
 
   try {
     const users = await prisma.user.findMany({
@@ -1326,8 +1358,10 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
           },
           select: {
             id: true,
+            participant: true,
             type: true,
             remainingCount: true,
+            participantId: true,
             product: {
               select: {
                 id: true,
@@ -1356,41 +1390,129 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
       },
     });
 
-    return { users };
+    const students = new Map<string, StudentWithPurchaseItemsWithCourse>();
+
+    for (const user of users) {
+      for (const purchase of user.purchases) {
+        const ownerName = user.name;
+        const part = purchase.participant?.name ?? ownerName;
+        const isOwner = part === ownerName;
+        const studentId = purchase.participant?.id ?? user.id;
+        const displayName = isOwner
+          ? ownerName
+          : `${part} (kund: ${ownerName})`;
+
+        const nextPurchaseItems = purchase.PurchaseItems.map(
+          (purchaseItem) => ({
+            purchaseItem: {
+              id: purchaseItem.id,
+              remainingCount: purchaseItem.remainingCount,
+              unlimited: purchaseItem.unlimited,
+            },
+            purchase: {
+              id: purchase.id,
+              type: purchase.type,
+              participant: purchase.participant,
+              remainingCount: purchase.remainingCount,
+              product: purchase.product,
+            },
+          }),
+        );
+
+        const existing = students.get(studentId);
+        if (!existing) {
+          students.set(studentId, {
+            studentId,
+            customer: { id: user.id, name: user.name },
+            participant: purchase.participant,
+            displayName,
+            purchaseItems: nextPurchaseItems,
+          });
+          continue;
+        }
+
+        const existingIds = new Set(
+          existing.purchaseItems.map((item) => item.purchaseItem.id),
+        );
+        for (const item of nextPurchaseItems) {
+          if (!existingIds.has(item.purchaseItem.id)) {
+            existing.purchaseItems.push(item);
+          }
+        }
+      }
+    }
+
+    return [...students.values()];
   } catch (e) {
     console.error("Error fetching users with purchases:", e);
-    return { users: [] };
+    return [];
   }
 }
 
-/**
- * Admin function to add a user to a lesson (create a booking).
- * @param formData Contains userId, purchaseItemId, and lessonId.
- * @returns Success status and message.
- * @auth Admin
- */
+/* ********************************** //admin bokning från attendeform ***************************************** */
+
+export type BookingWithUserAndParticipant = Booking & {
+  user: User;
+  purchaseItem: {
+    purchase: { participant: Participant | null; product: Product } & Purchase;
+  } & PurchaseItem;
+};
+
+export async function getBookings(
+  lessonId: string,
+): Promise<BookingWithUserAndParticipant[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { lessonId },
+      include: {
+        user: true,
+        purchaseItem: {
+          include: {
+            purchase: { include: { participant: true, product: true } },
+          },
+        },
+      },
+    });
+
+    if (bookings) return bookings;
+
+    return [];
+  } catch (e) {
+    console.error("Fel vid bokning:", e);
+    return [];
+  }
+}
+
 export async function addUserInLesson(
-  formData: z.output<typeof AdminAddUserInLessonSchema>,
+  formData: z.output<typeof AdminAddStudentToLessonForm>,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
 
   try {
-    const validated = await AdminAddUserInLessonSchema.parseAsync(formData);
+    const validated = await AdminAddStudentToLessonForm.parseAsync(formData);
 
-    // 1. Hämta PurchaseItem inkl. huvud-Purchase för att se saldotyp och ägare
-    const pItem = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseItemId },
-      include: { purchase: true },
-    });
-
-    if (!pItem) return { success: false, msg: "Kunde inte hitta köpet." };
-
-    // 2. Kontrollera om användaren redan är bokad på lektionen
+    // 1. Kontrollera om deltagaren redan är bokad på lektionen (genom att kolla om purchaseItems använts)
     const existingBooking = await prisma.booking.findFirst({
       where: {
         lessonId: validated.lessonId,
-        userId: validated.userId,
+        OR: [
+          // Om participant:
+          {
+            purchaseItem: {
+              purchase: { participantId: validated.participantId },
+            },
+          },
+
+          // Om owner:
+          {
+            userId: validated.userId,
+            purchaseItem: { purchase: { participantId: null } },
+          },
+        ],
       },
     });
 
@@ -1401,7 +1523,7 @@ export async function addUserInLesson(
       };
     }
 
-    // 3. Kolla status på lektionen
+    // 2. Kolla status på lektionen
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
       select: { cancelled: true },
@@ -1414,26 +1536,24 @@ export async function addUserInLesson(
       };
     }
 
-    // 4. Utför bokning och saldo-dragning i en transaktion
+    // 3. Utför bokning och saldo-dragning i en transaktion
     await prisma.$transaction(async (tx) => {
-      // Skapa bokningen
       await tx.booking.create({
         data: {
           lessonId: validated.lessonId,
           userId: validated.userId,
-          purchaseItemId: pItem.id,
+          purchaseItemId: validated.purchaseItemId,
         },
       });
 
-      // Dra av saldo via handleClips
-      const clipResult = await handleClips(tx, pItem.id, -1);
+      const clipResult = await handleClips(tx, validated.purchaseItemId, -1);
 
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Kunde inte uppdatera saldo.");
       }
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return { success: true, msg: "Användaren är nu inbokad på lektionen!" };
   } catch (e) {
@@ -1444,13 +1564,13 @@ export async function addUserInLesson(
 
 /**
  * Admin function to remove a user from a lesson and restore their clips.
- * @param userId The user to remove.
- * @param lessonId The lesson to remove them from.
+ * @param purchaseItemId The purchaseItem to remove.
+ * @param lessonId The lesson to remove from.
  * @returns Success status and message.
  * @auth Admin
  */
 export async function removeUserFromLesson(
-  userId: string,
+  purchaseItemId: string,
   lessonId: string,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
@@ -1460,7 +1580,7 @@ export async function removeUserFromLesson(
     // 1. Hitta bokningen
     const booking = await prisma.booking.findFirst({
       where: {
-        userId: userId,
+        purchaseItem: { id: purchaseItemId },
         lessonId: lessonId,
       },
     });
@@ -1484,7 +1604,7 @@ export async function removeUserFromLesson(
       });
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return { success: true, msg: "Bokningen har tagits bort." };
   } catch (e) {

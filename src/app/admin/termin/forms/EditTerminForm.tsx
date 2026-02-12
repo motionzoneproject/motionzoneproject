@@ -117,7 +117,7 @@ export default function EditTerminForm({ termin }: Props) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ändra terminen</DialogTitle>
           <DialogDescription>

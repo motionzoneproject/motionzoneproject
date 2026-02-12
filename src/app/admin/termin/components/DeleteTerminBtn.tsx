@@ -55,7 +55,7 @@ export default function DeleteTerminBtn({ terminId }: Props) {
           <span className="sr-only">Ta bort termin</span>
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[90dvh] overflow-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Är du säker?</AlertDialogTitle>
           <AlertDialogDescription>Kan ej ångras.</AlertDialogDescription>
