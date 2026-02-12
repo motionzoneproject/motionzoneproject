@@ -130,10 +130,12 @@ export default async function StudentsPage(props: {
           // Filter purchases by selected term and course via schemaItems
           const filteredPurchases = p.purchases.filter((pur) =>
             pur.PurchaseItems.some((item) => {
-              const matchesTerm = !terminId || item.course.schemaItems.some((si) => si.terminId === terminId);
+              const matchesTerm =
+                !terminId ||
+                item.course.schemaItems.some((si) => si.terminId === terminId);
               const matchesCourse = !courseId || item.course.id === courseId;
               return matchesTerm && matchesCourse;
-            })
+            }),
           );
           return filteredPurchases.length > 0;
         }).length === 0 ? (
@@ -145,10 +147,14 @@ export default async function StudentsPage(props: {
             // Filter purchases by selected term and course via schemaItems
             const activePurchases = p.purchases.filter((pur) =>
               pur.PurchaseItems.some((item) => {
-                const matchesTerm = !terminId || item.course.schemaItems.some((si) => si.terminId === terminId);
+                const matchesTerm =
+                  !terminId ||
+                  item.course.schemaItems.some(
+                    (si) => si.terminId === terminId,
+                  );
                 const matchesCourse = !courseId || item.course.id === courseId;
                 return matchesTerm && matchesCourse;
-              })
+              }),
             );
             // Only show participant if they have active purchases for the selected filters
             if (activePurchases.length === 0) return null;
@@ -204,7 +210,16 @@ export default async function StudentsPage(props: {
                                 purchase: pur,
                                 purchaseItem: item,
                               });
-
+                              // Find relevant term(s) for this course
+                              const courseTerms = item.course.schemaItems
+                                .map(
+                                  (si) =>
+                                    terminer.find((t) => t.id === si.terminId)
+                                      ?.name,
+                                )
+                                .filter(Boolean);
+                              // Product info
+                              const productName = pur.product?.name;
                               return (
                                 <div
                                   key={item.id}
@@ -213,13 +228,20 @@ export default async function StudentsPage(props: {
                                   <div className="font-semibold truncate">
                                     {item.course.name}
                                   </div>
-                                  <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
+                                  <div className="text-[10px] text-muted-foreground flex flex-col mt-1">
                                     <span>
-                                      {/* Show selected term name if filter is active, else show all terms for this course */}
                                       {terminId
-                                        ? (terminer.find((t) => t.id === terminId)?.name || "Vald termin")
-                                        : Array.from(new Set(item.course.schemaItems.map((si) => terminer.find((t) => t.id === si.terminId)?.name).filter(Boolean))).join(", ") || "Ingen termin"}
+                                        ? terminer.find(
+                                            (t) => t.id === terminId,
+                                          )?.name || "Vald termin"
+                                        : courseTerms.join(", ") ||
+                                          "Ingen termin"}
                                     </span>
+                                    {productName && (
+                                      <span className="italic">
+                                        Produkt: {productName}
+                                      </span>
+                                    )}
                                     <span
                                       className={
                                         remaining === Infinity || remaining > 0
@@ -231,6 +253,23 @@ export default async function StudentsPage(props: {
                                       lektioner kvar
                                     </span>
                                   </div>
+                                  {/* Show orderer if different from participant */}
+                                  {pur.addedBy &&
+                                    p.email !== pur.addedBy.email && (
+                                      <div className="text-[10px] text-muted-foreground mt-1">
+                                        Beställd av:{" "}
+                                        <span className="font-medium text-foreground">
+                                          {pur.addedBy.name} (
+                                          {pur.addedBy.email})
+                                        </span>
+                                      </div>
+                                    )}
+                                  {pur.addedBy &&
+                                    p.email === pur.addedBy.email && (
+                                      <div className="text-[10px] text-muted-foreground mt-1">
+                                        Självbeställare
+                                      </div>
+                                    )}
                                 </div>
                               );
                             }),
