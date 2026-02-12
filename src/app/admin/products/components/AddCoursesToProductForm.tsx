@@ -4,7 +4,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { Info } from "lucide-react";
+import { BookPlus, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -57,6 +57,7 @@ interface Props {
   clipCount: number;
   productCourses: ProdCourse[];
   allCourses: Course[];
+  count: number;
 }
 
 export default function AddCoursesToProductForm({
@@ -65,6 +66,7 @@ export default function AddCoursesToProductForm({
   clipCount,
   productCourses,
   allCourses,
+  count,
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -112,8 +114,9 @@ export default function AddCoursesToProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
-          Hantera kurser i produkten
+        <Button variant="ghost" size="sm" className="p-1">
+          <BookPlus className="h-4 w-4" />
+          <span>Redigera {count}st</span>
         </Button>
       </DialogTrigger>
 

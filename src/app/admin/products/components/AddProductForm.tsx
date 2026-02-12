@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -98,6 +99,7 @@ export default function AddProductForm() {
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
         <Button variant={"default"} className="bg-green-500 cursor-pointer">
+          <Plus className="mr-1 h-4 w-4" />
           Ny produkt
         </Button>
       </DialogTrigger>

@@ -1,4 +1,11 @@
 import { redirect } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllProducts, isAdminRole } from "@/lib/actions/admin";
 import AddProductForm from "./components/AddProductForm";
@@ -35,12 +42,26 @@ export default async function Page({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allProducts
-          .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
-          .map((p) => (
-            <ProductItem product={p} key={p.id} />
-          ))}
+      <div className="w-full overflow-x-auto rounded border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Produkt</TableHead>
+              <TableHead>Typ</TableHead>
+              <TableHead>Pris</TableHead>
+              <TableHead>Kurser</TableHead>
+              <TableHead>Tillfällen</TableHead>
+              <TableHead className="text-right">Åtgärder</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allProducts
+              .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+              .map((p) => (
+                <ProductItem product={p} key={p.id} />
+              ))}
+          </TableBody>
+        </Table>
       </div>
 
       {allProducts.filter((p) =>
