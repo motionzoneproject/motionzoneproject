@@ -174,10 +174,7 @@ model Termin {
 
   schemaItems SchemaItem[] // Implicit relation - SchemaItem pekar på Termin
 
-  // ...existing code...
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
-
-  // ...existing code...
 
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt
@@ -201,8 +198,10 @@ model SchemaItem {
 
     weekday Weekday
 
-    timeStart DateTime // är DateTime rätt här?
-    timeEnd DateTime // -||- ?
+    timeStart DateTime 
+    timeEnd DateTime
+    customStartDate DateTime?
+    customEndDate DateTime?
 
     terminId String
     termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
@@ -232,9 +231,8 @@ model Course {
 
   products ProductOnCourse[]
 
-  maxBookings Int @default(0) // Per tillfälle (standardvärdet, det går att ändra i veckorschemat eller per tillfälle med).
-
-  maxCustomer Int @default(0) // Detta sätter ett tak även ifall kursen säljs i flera produkter, så alla produkter inaktiveras om det blir fyllt..
+  maxBookings Int @default(0) // fix: jag använder inte denna för att prioritera att vi får något fungerande, men kan vara önskvärt så låter det vara kvar // T.E
+  maxCustomer Int @default(0) // fix: -||-
 
   lessons Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
   schemaItems SchemaItem[] // Veckoschemat.
@@ -252,7 +250,6 @@ model Course {
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
-  // ...existing code...
 
   level String? 
 
@@ -267,8 +264,6 @@ model Course {
 }
 
 
-// Denna tabell kopplar alltså kurs till termin, du kan ha samma kurs på flera terminer.
-// ...existing code...
 
 
 // Så här finns informationen om vilken/vilka kurser man kan boka med produkten, och i vilken termin (om specificerat). 
@@ -296,7 +291,6 @@ model Product {
   description String
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
-  // ...existing code...
 
   expireFixedDate DateTime? // Om den ska ha ett sista datum.
   expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
@@ -316,7 +310,6 @@ model Product {
   updatedAt DateTime @updatedAt
 
 
-  // ...existing code...
   @@map("product")
 }
 

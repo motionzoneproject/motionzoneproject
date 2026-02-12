@@ -38,7 +38,7 @@ export function HideOldCheckbox() {
         id="hideCheck"
       />
       <label htmlFor="hideCheck" className="">
-        Dölj gamla
+        Dölj inaktiva
       </label>
     </div>
   );

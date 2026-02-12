@@ -98,7 +98,7 @@ export default function EditProductForm({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ändra produkt</DialogTitle>
           <DialogDescription>
