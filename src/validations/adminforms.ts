@@ -44,14 +44,14 @@ export const adminAddTerminSchema = z
 
 export const adminAddCourseSchema = z.object({
   name: z.string().min(3),
-  maxbookings: z.coerce
-    .number()
-    .int("Antal bokningar måste vara ett heltal.")
-    .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
-  maxCustomers: z.coerce
-    .number()
-    .int("Antal platser måste vara ett heltal.")
-    .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
+  // maxbookings: z.coerce
+  //   .number()
+  //   .int("Antal bokningar måste vara ett heltal.")
+  //   .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
+  // maxCustomers: z.coerce
+  //   .number()
+  //   .int("Antal platser måste vara ett heltal.")
+  //   .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
   description: z.string(),
   level: z.string().optional(),
   minAge: z.coerce

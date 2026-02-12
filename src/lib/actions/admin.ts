@@ -570,8 +570,6 @@ export async function addNewCourse(
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
-        maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
@@ -613,30 +611,15 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
-    // Kolla hur många som redan har kursen via ett köp
-    const currentSubscribers = await prisma.purchaseItem.count({
-      where: { courseId: id },
-    });
-
-    // Om admin försöker sänka taket under antalet nuvarande kunder
-    if (validated.maxCustomers < currentSubscribers) {
-      return {
-        success: false,
-        msg: `Kan inte sänka max antal kunder till ${validated.maxCustomers}. Det finns redan ${currentSubscribers} kunder som äger kursen.`,
-      };
-    }
-
     const newCourseItem = await prisma.course.update({
       data: {
         name: validated.name,
-        maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
         adult: validated.adult,
         description: validated.description,
-        teacherId: validated.teacherid, // Om en lärare går in nu och ändrar en kurs, blir han lärare. fix.
+        teacherId: validated.teacherid,
       },
       where: { id: id },
     });
