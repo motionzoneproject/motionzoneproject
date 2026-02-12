@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusIcon } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -45,8 +45,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, Termin } from "@/generated/prisma/client";
-import { addCoursetoSchema } from "@/lib/actions/admin";
+import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
+import { editCourseInSchema } from "@/lib/actions/admin";
+import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 
@@ -56,24 +57,44 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
+  weekdays: string[];
+  schemaItem: SchemaItem;
 }
 
-export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
+export default function EditCourseToSchemaForm({
+  termin,
+  allCourses,
+  schemaItem,
+}: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      courseId: "",
-      place: "",
-      customEndDate: termin.endDate.toISOString().split("T")[0],
-      customStartDate: termin.startDate.toISOString().split("T")[0],
-      day: "MONDAY",
-      timeStart: "01:00",
-      timeEnd: "02:00",
+      courseId: schemaItem.courseId,
+      place: schemaItem.place ?? "",
+      customEndDate:
+        schemaItem.customEndDate?.toISOString().split("T")[0] ??
+        termin.endDate.toISOString().split("T")[0],
+      customStartDate:
+        schemaItem.customStartDate?.toISOString().split("T")[0] ??
+        termin.startDate.toISOString().split("T")[0],
+      day: schemaItem.weekday,
+      timeStart: dbToFormTime(schemaItem.timeStart),
+      timeEnd: dbToFormTime(schemaItem.timeEnd),
     },
   });
 
   const terminStartValue = termin.startDate.toISOString().split("T")[0];
   const terminEndValue = termin.endDate.toISOString().split("T")[0];
+
+  const sameDayUtc = useCallback(
+    (a?: Date | null, b?: Date | null) =>
+      !!a &&
+      !!b &&
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate(),
+    [],
+  );
 
   const formatDateToInput = (date: unknown) => {
     if (!date) {
@@ -95,31 +116,68 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
   };
 
   const [isOpen, setIsOpen] = useState(false);
-  const [useTerminStart, setUseTerminStart] = useState(true);
-  const [useTerminEnd, setUseTerminEnd] = useState(true);
+  const [useTerminStart, setUseTerminStart] = useState(
+    !schemaItem.customStartDate ||
+      sameDayUtc(schemaItem.customStartDate, termin.startDate),
+  );
+  const [useTerminEnd, setUseTerminEnd] = useState(
+    !schemaItem.customEndDate ||
+      sameDayUtc(schemaItem.customEndDate, termin.endDate),
+  );
   const customStartBackupRef = useRef<string>("");
   const customEndBackupRef = useRef<string>("");
-
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
-
-  const weekdays = getWeekdays();
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset();
+      form.reset({
+        courseId: schemaItem.courseId,
+        place: schemaItem.place ?? "",
+        customEndDate:
+          schemaItem.customEndDate?.toISOString().split("T")[0] ??
+          termin.endDate.toISOString().split("T")[0],
+        customStartDate:
+          schemaItem.customStartDate?.toISOString().split("T")[0] ??
+          termin.startDate.toISOString().split("T")[0],
+        day: schemaItem.weekday,
+        timeStart: dbToFormTime(schemaItem.timeStart),
+        timeEnd: dbToFormTime(schemaItem.timeEnd),
+      });
 
-      setUseTerminStart(true);
-      setUseTerminEnd(true);
+      setUseTerminStart(
+        !schemaItem.customStartDate ||
+          sameDayUtc(schemaItem.customStartDate, termin.startDate),
+      );
+      setUseTerminEnd(
+        !schemaItem.customEndDate ||
+          sameDayUtc(schemaItem.customEndDate, termin.endDate),
+      );
+
       customStartBackupRef.current = "";
       customEndBackupRef.current = "";
     }
-  }, [isOpen, form]);
+  }, [
+    isOpen,
+    form,
+    sameDayUtc,
+    schemaItem.customEndDate,
+    schemaItem.customStartDate,
+    termin.endDate,
+    termin.startDate,
+    schemaItem.courseId,
+    schemaItem.place,
+    schemaItem.timeEnd,
+    schemaItem.timeStart,
+    schemaItem.weekday,
+  ]);
 
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
-    const res = await addCoursetoSchema(termin.id, values);
+    console.log(`Values sent:\n${values}`);
 
+    const res = await editCourseInSchema(termin.id, schemaItem.id, values);
+    console.log(`res:\n${JSON.stringify(res)}`);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -129,26 +187,30 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
     }
   }
 
+  const weekdays = getWeekdays();
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="cursor-pointer mb-3">
-          <PlusIcon /> Lägg till
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Redigera kurstillfälle</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Lägg till kurstillfälle</DialogTitle>
+          <DialogTitle>Lägg till kurstillfälle i veckoschemat</DialogTitle>
           <DialogDescription>
             Ange vilken veckodag samt mellan vilka tider du vill lägga in
-            tillfället. Tillfället blir då bokningsbart av kunder som köpt
+            tillfället. Tillfället blir då{" "}
+            <span className="bold">bokningsbart</span> av kunder som köpt
             tillgång till kursen.
           </DialogDescription>
         </DialogHeader>
 
         <Card>
           <CardHeader>
-            <CardTitle>Nytt kurstillfälle i {termin.name}.</CardTitle>
+            <CardTitle>Ändra kurstillfälle i {termin.name}.</CardTitle>
             <CardDescription></CardDescription>
           </CardHeader>
           <CardContent>
@@ -396,7 +458,7 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
                   className="w-full"
                   disabled={isBusy}
                 >
-                  Lägg till!
+                  Ändra
                 </Button>
               </form>
             </Form>

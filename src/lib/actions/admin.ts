@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
   Course,
+  Lesson,
   Prisma,
   Product,
   SchemaItem,
@@ -55,7 +56,10 @@ export async function getTerminer(): Promise<Termin[]> {
  * Needed in admin/termin to list all schemaitems, including course for building coursename (see GetCourseName in app/tools).
  *
  */
-export type SchemaItemWithCourse = SchemaItem & { course: Course };
+export type SchemaItemWithCourse = SchemaItem & {
+  course: Course;
+  Lessons: Lesson[];
+};
 
 /**
  * Gets schemaItems (with course) for a specific termin
@@ -71,7 +75,7 @@ export async function getSchemaItems(
 
   const schemaItems = await prisma.schemaItem.findMany({
     where: { terminId },
-    include: { course: true },
+    include: { course: true, Lessons: true },
   });
 
   return schemaItems;
@@ -170,7 +174,11 @@ export async function editTermin(
     const newEndDate = new Date(validated.endDate);
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Uppdatera själva terminen
+      // 1. Hämta nuvarande termin (för att avgöra "följ termin")
+      const currentTermin = await tx.termin.findUnique({ where: { id } });
+      if (!currentTermin) throw new Error("No termin.");
+
+      // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
         data: {
@@ -180,32 +188,7 @@ export async function editTermin(
         },
       });
 
-      // 2. Hantera bokningar som hamnar utanför de nya datumen (Återbetalning).
-      const affectedBookings = await tx.booking.findMany({
-        where: {
-          lesson: {
-            terminId: id,
-            OR: [
-              { startTime: { lt: newStartDate } },
-              { startTime: { gt: newEndDate } },
-            ],
-          },
-        },
-        select: { id: true, purchaseItemId: true },
-      });
-
-      for (const booking of affectedBookings) {
-        if (!booking.purchaseItemId) continue;
-
-        // Ge tillbaka klipp via handleClips:
-        const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-
-        if (!clipResult.success) {
-          throw new Error(clipResult.msg || "Clip update failed.");
-        }
-      }
-
-      // 3. Hämta alla schemaItems för att synka lektioner
+      // 2. Hämta alla schemaItems för att synka lektioner
       const schemaItems = await tx.schemaItem.findMany({
         where: { terminId: id },
         include: {
@@ -214,19 +197,90 @@ export async function editTermin(
         },
       });
 
-      // 4. Städa bort lektioner som nu ligger utanför intervallet
-      // (Bokningarna raderas här pga Cascade Delete, klippen är redan återställda ovan).
-      await tx.lesson.deleteMany({
-        where: {
-          terminId: id,
-          OR: [
-            { startTime: { lt: newStartDate } },
-            { startTime: { gt: newEndDate } },
-          ],
-        },
-      });
+      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
 
-      // 5. Skapa nya lektioner för de datum som tillkommit
+      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
+      // for (const item of schemaItems) {
+      //   if (
+      //     item.customStartDate &&
+      //     (item.customStartDate < newStartDate ||
+      //       item.customStartDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+
+      //   if (
+      //     item.customEndDate &&
+      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
+      //   ) {
+      //     throw new Error(
+      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
+      //     );
+      //   }
+      // }
+
+      const sameDayUtc = (a: Date, b: Date) =>
+        a.getUTCFullYear() === b.getUTCFullYear() &&
+        a.getUTCMonth() === b.getUTCMonth() &&
+        a.getUTCDate() === b.getUTCDate();
+
+      // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
+      for (const item of schemaItems) {
+        // Kollar om schemaItem följer terminens datum:
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
+
+        // Beroende på det så ska vi bygga nya lektioner (eller ta bort). Om custom så kommer det bli orört
+        // (eftersom vi hämtar less than validStart och greater than validEnd)...
+        const validStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const validEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
+
+        // Hämta de boknignar som ev berörs:
+        const affectedBookings = await tx.booking.findMany({
+          where: {
+            lesson: {
+              schemaItemId: item.id,
+              OR: [
+                { startTime: { lt: validStart } },
+                { startTime: { gt: validEnd } },
+              ],
+            },
+          },
+          select: { id: true, purchaseItemId: true },
+        });
+
+        for (const booking of affectedBookings) {
+          if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
+
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
+        }
+
+        // Städa bort lektioner utanför intervallet:
+        await tx.lesson.deleteMany({
+          where: {
+            schemaItemId: item.id,
+            OR: [
+              { startTime: { lt: validStart } },
+              { startTime: { gt: validEnd } },
+            ],
+          },
+        });
+      }
+
+      // 5. Skapa nya lektioner för de datum som ev tillkommit ()
       const WEEKDAY_MAP: Record<string, number> = {
         MONDAY: 1,
         TUESDAY: 2,
@@ -241,14 +295,27 @@ export async function editTermin(
 
       for (const item of schemaItems) {
         const targetDay = WEEKDAY_MAP[item.weekday];
-        const currentDate = new Date(newStartDate.getTime());
+        const followsStart =
+          !item.customStartDate ||
+          sameDayUtc(item.customStartDate, currentTermin.startDate);
+        const followsEnd =
+          !item.customEndDate ||
+          sameDayUtc(item.customEndDate, currentTermin.endDate);
+
+        const actualStart = followsStart
+          ? newStartDate
+          : (item.customStartDate ?? newStartDate);
+        const actualEnd = followsEnd
+          ? newEndDate
+          : (item.customEndDate ?? newEndDate);
+        const currentDate = new Date(actualStart.getTime());
 
         const startHours = item.timeStart.getHours();
         const startMinutes = item.timeStart.getMinutes();
         const endHours = item.timeEnd.getHours();
         const endMinutes = item.timeEnd.getMinutes();
 
-        while (currentDate <= newEndDate) {
+        while (currentDate <= actualEnd) {
           currentDate.setHours(0, 0, 0, 0);
 
           if (currentDate.getDay() === targetDay) {
@@ -296,7 +363,9 @@ export async function editTermin(
     };
   } catch (e) {
     console.error("Fel vid editTermin:", e);
-    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
+    const msg =
+      e instanceof Error ? e.message : "Ett fel uppstod vid uppdatering.";
+    return { success: false, msg };
   }
 }
 
@@ -323,42 +392,128 @@ export async function addCoursetoSchema(
 
     if (!getCourse) throw new Error("Course was not found.");
 
-    const newSchemaItem = await prisma.schemaItem.create({
-      data: {
-        terminId,
-        place: validated.place,
-        courseId: validated.courseId,
-        maxBookings: getCourse?.maxBookings,
-        timeStart: formToDbDate(validated.timeStart),
-        timeEnd: formToDbDate(validated.timeEnd),
-        weekday: validated.day as Weekday,
-      },
-      include: { course: true, termin: true },
-    });
+    const result = await prisma.$transaction(async (tx) => {
+      const termin = await tx.termin.findUnique({ where: { id: terminId } });
+      if (!termin) throw new Error("No termin.");
 
-    // SKapa lessons!
-    const lessons = await createLessons(newSchemaItem.id);
+      const finalStartDate = validated.customStartDate
+        ? new Date(validated.customStartDate)
+        : termin.startDate;
+      const finalEndDate = validated.customEndDate
+        ? new Date(validated.customEndDate)
+        : termin.endDate;
 
-    if (!lessons.success) {
-      const del = await prisma.schemaItem.delete({
-        where: { id: newSchemaItem.id },
+      const newSchemaItem = await tx.schemaItem.create({
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
       });
-      if (!del)
-        throw new Error(
-          "SchemaItem was created, but could not create lessons, and could not delete the schemaItem. Empty schemaItem can be in the db.",
-        );
 
-      throw new Error(
-        "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
-      );
-    }
+      const lessons = await createLessons(newSchemaItem.id, tx);
+
+      if (!lessons.success) {
+        throw new Error(
+          "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
+        );
+      }
+
+      return { newSchemaItem, lessonsMsg: lessons.msg };
+    });
 
     return {
       success: true,
-      msg: `Kursen ${newSchemaItem.course.name} lades till i terminen ${newSchemaItem.termin.name}. ${lessons.msg}`,
+      msg: `Kursen ${result.newSchemaItem.course.name} lades till i terminen ${result.newSchemaItem.termin.name}. ${result.lessonsMsg}`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return { success: false, msg };
+  }
+}
+
+/**
+  Edit schemaitems and lessons when editing a course in a termin week schema.
+ * @auth Admin
+ */
+export async function editCourseInSchema(
+  terminId: string,
+  schemaItemId: string,
+  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
+
+    const getCourse = await prisma.course.findUnique({
+      where: { id: validated.courseId },
+    });
+
+    if (!getCourse) throw new Error("Course was not found.");
+
+    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
+    if (!termin) throw new Error("No termin.");
+
+    const finalStartDate = validated.customStartDate
+      ? new Date(validated.customStartDate)
+      : termin.startDate;
+    const finalEndDate = validated.customEndDate
+      ? new Date(validated.customEndDate)
+      : termin.endDate;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedSchemaItem = await tx.schemaItem.update({
+        where: { id: schemaItemId },
+        data: {
+          terminId,
+          place: validated.place,
+          courseId: validated.courseId,
+          maxBookings: getCourse?.maxBookings,
+          timeStart: formToDbDate(validated.timeStart),
+          timeEnd: formToDbDate(validated.timeEnd),
+          customStartDate: finalStartDate,
+          customEndDate: finalEndDate,
+          weekday: validated.day as Weekday,
+        },
+        include: { course: true, termin: true },
+      });
+
+      await tx.lesson.deleteMany({
+        where: { schemaItemId: updatedSchemaItem.id },
+      });
+
+      return updatedSchemaItem;
+    });
+
+    const lessons = await createLessons(schemaItemId);
+
+    if (!lessons.success) {
+      throw new Error(
+        "Kunde inte generera nya lektioner. Kontrollera dina datum.",
+      );
+    }
+
+    revalidatePath("/admin/termin");
+    revalidatePath("/admin/courses");
+
+    return {
+      success: true,
+      msg: `Kursen ${result.course.name} har uppdaterats i ${result.termin.name}. ${lessons.msg}`,
+    };
+  } catch (e) {
+    console.error(e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return { success: false, msg };
   }
 }
 
@@ -640,6 +795,7 @@ export async function editCourse(
  */
 async function createLessons(
   schemaItemId: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -649,7 +805,9 @@ async function createLessons(
 
     // Behöver vi validatera någonting här? ev. fix.
 
-    const schemaItm = await prisma.schemaItem.findUnique({
+    const db = tx ?? prisma;
+
+    const schemaItm = await db.schemaItem.findUnique({
       where: { id: schemaItemId },
       include: { termin: true, course: true },
     });
@@ -668,8 +826,8 @@ async function createLessons(
 
     const targetDay = WEEKDAY_MAP[schemaItm?.weekday]; // Få targetday som rätt nummer.
 
-    const startDate = schemaItm.termin.startDate;
-    const endDate = schemaItm.termin.endDate;
+    const startDate = schemaItm.customStartDate ?? schemaItm.termin.startDate;
+    const endDate = schemaItm.customEndDate ?? schemaItm.termin.endDate;
     const teacherId = schemaItm.course.teacherId;
 
     const lessonsToCreate = []; // Dessa lessions ska skapas.
@@ -718,19 +876,17 @@ async function createLessons(
       };
     }
 
-    // 1. Definiera de operationer som ska ingå i transaktionen
-    const creationOperation = prisma.lesson.createMany({
+    const result = await db.lesson.createMany({
       data: lessonsToCreate,
       skipDuplicates: true,
     });
-
-    const [result] = await prisma.$transaction([creationOperation]);
 
     return {
       success: true,
       msg: `Successfully created ${result.count} lessons.`,
     };
   } catch (e) {
+    console.error(e);
     return { success: false, msg: JSON.stringify(e) };
   }
 }
