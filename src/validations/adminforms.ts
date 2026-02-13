@@ -161,3 +161,12 @@ export const AdminAddUserInLessonSchema = z.object({
   purchaseItemId: z.string().min(1),
   lessonId: z.string().min(1),
 });
+
+export const adminTeacherSchema = z.object({
+  id: z.string().optional(), // Optional for creation, required for updates (but we usually handle id separately)
+  name: z.string().min(1, "Namn måste anges."),
+  specialty: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
+});
