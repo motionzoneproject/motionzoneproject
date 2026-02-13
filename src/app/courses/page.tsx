@@ -25,6 +25,7 @@ import {
   getProductTermin,
 } from "@/lib/actions/server-actions";
 import { getVeckodag } from "@/lib/tools";
+import Image from "next/image";
 
 export default async function Page() {
   const products = await getAllProducts();
@@ -75,10 +76,21 @@ export default async function Page() {
                   <CardDescription className="whitespace-pre-line">
                     Produkttyp: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
                   </CardDescription>
-                  {/*TODO: Add the image of the course here */}
                 </CardHeader>
 
                 <CardContent className="flex-1 space-y-4">
+                  {/* Note: Attempting to use images sizes to help next/image optimize */}
+                  {p.imageURL && (
+                    <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                      <Image
+                        src={p.imageURL}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <CalendarDays className="w-3 h-3" />
