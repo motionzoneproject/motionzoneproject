@@ -96,12 +96,14 @@ export default function Events({ events }: EventsProps) {
                   </div>
                 </div>
 
-                <Button
-                  asChild
-                  className="w-full mt-4 bg-brand hover:bg-brand-light text-white"
-                >
-                  <Link href={currentEvent.link}>Köp Biljett</Link>
-                </Button>
+                {currentEvent.link && (
+                  <Button
+                    asChild
+                    className="w-full mt-4 bg-brand hover:bg-brand-light text-white"
+                  >
+                    <Link href={currentEvent.link}>Köp Biljett</Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

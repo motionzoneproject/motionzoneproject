@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 // import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewEvent } from "@/lib/actions/admin";
+import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEventSchema } from "@/validations/adminforms";
 
 const formSchema = adminEventSchema;
@@ -49,7 +51,21 @@ export default function NewEventForm() {
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addNewEvent(values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error(`Uppladdning misslyckades.`);
+        return;
+      }
+    }
+    const res = await addNewEvent({ ...values, imageURL: finalImageURL });
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -178,9 +194,9 @@ export default function NewEventForm() {
               name="imageURL"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bildlänk</FormLabel>
+                  <FormLabel>Bild</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <ImageInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
