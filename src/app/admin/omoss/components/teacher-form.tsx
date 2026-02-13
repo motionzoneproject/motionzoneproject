@@ -79,7 +79,11 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
             <FormItem>
               <FormLabel>Namn</FormLabel>
               <FormControl>
-                <Input placeholder="Förnamn Efternamn" {...field} />
+                <Input
+                  placeholder="Förnamn Efternamn"
+                  {...field}
+                  value={field.value || ""}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -93,7 +97,11 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
             <FormItem>
               <FormLabel>Specialitet</FormLabel>
               <FormControl>
-                <Input placeholder="t.ex. Balett & Modern dans" {...field} />
+                <Input
+                  placeholder="t.ex. Balett & Modern dans"
+                  {...field}
+                  value={field.value || ""}
+                />
               </FormControl>
               <FormDescription>
                 Kort beskrivning av vad läraren undervisar i.
@@ -114,6 +122,7 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
                   placeholder="Längre beskrivning om läraren..."
                   className="min-h-[120px]"
                   {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -128,7 +137,11 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
             <FormItem>
               <FormLabel>Bild URL</FormLabel>
               <FormControl>
-                <Input placeholder="/bilder/larare.jpg" {...field} />
+                <Input
+                  placeholder="/bilder/larare.jpg"
+                  {...field}
+                  value={field.value || ""}
+                />
               </FormControl>
               <FormDescription>Länk till bildfil.</FormDescription>
               <FormMessage />

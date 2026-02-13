@@ -1,4 +1,4 @@
-import { TeacherList } from "@/components/admin/teacher-list";
+import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
 import { getTeachers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
