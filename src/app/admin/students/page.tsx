@@ -254,22 +254,19 @@ export default async function StudentsPage(props: {
                                     </span>
                                   </div>
                                   {/* Show orderer if different from participant */}
-                                  {pur.addedBy &&
-                                    p.email !== pur.addedBy.email && (
-                                      <div className="text-[10px] text-muted-foreground mt-1">
-                                        Beställd av:{" "}
-                                        <span className="font-medium text-foreground">
-                                          {pur.addedBy.name} (
-                                          {pur.addedBy.email})
-                                        </span>
-                                      </div>
-                                    )}
-                                  {pur.addedBy &&
-                                    p.email === pur.addedBy.email && (
-                                      <div className="text-[10px] text-muted-foreground mt-1">
-                                        Självbeställare
-                                      </div>
-                                    )}
+                                  {p.addedBy && p.email !== p.addedBy.email && (
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                      Beställd av:{" "}
+                                      <span className="font-medium text-foreground">
+                                        {p.addedBy.name} ({p.addedBy.email})
+                                      </span>
+                                    </div>
+                                  )}
+                                  {p.addedBy && p.email === p.addedBy.email && (
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                      Självbeställare
+                                    </div>
+                                  )}
                                 </div>
                               );
                             }),
