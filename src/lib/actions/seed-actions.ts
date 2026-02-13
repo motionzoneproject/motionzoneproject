@@ -60,8 +60,8 @@ export async function addCourse(
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
-        maxBookings: validated.maxbookings,
-        maxCustomer: validated.maxCustomers,
+        maxBookings: 0,
+        maxCustomer: 0,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
