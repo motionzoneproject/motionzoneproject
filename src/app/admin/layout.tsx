@@ -1,5 +1,9 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 export default function RootLayout({
   children,
@@ -9,12 +13,12 @@ export default function RootLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="flex-1 w-full min-w-0">
-        <div className="sticky top-2 z-40 px-2">
+      <SidebarInset className="min-w-0">
+        <div className="sticky top-2 z-40 px-2 md:px-4">
           <SidebarTrigger className="size-9" />
         </div>
         {children}
-      </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

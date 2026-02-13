@@ -54,7 +54,7 @@ export default async function RootLayout({
             user={session?.user ?? null}
           >
             <NavBar />
-            <div className="flex-1 flex flex-col max-w-7xl">{children}</div>
+            <main className="flex-1 flex flex-col w-full">{children}</main>
             <Footer />
             <Toaster richColors position="top-center" />
           </SessionProvider>
