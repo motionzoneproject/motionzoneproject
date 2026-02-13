@@ -41,7 +41,7 @@ export default async function Page() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {products.map(async (p) => {
             const [terminer, schemaItems] = await Promise.all([
               getProductTermin(p.id),
@@ -72,10 +72,10 @@ export default async function Page() {
                     )}
                   </div>
                   <CardTitle className="text-lg">{p.name}</CardTitle>
-                  <CardDescription>
-                    {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
-                    {p.description && ` – ${p.description}`}
+                  <CardDescription className="whitespace-pre-line">
+                    Produkttyp: {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
                   </CardDescription>
+                  {/*TODO: Add the image of the course here */}
                 </CardHeader>
 
                 <CardContent className="flex-1 space-y-4">
@@ -98,7 +98,19 @@ export default async function Page() {
                     ))}
                   </div>
 
-                  <Accordion type="single" collapsible>
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="description"
+                  >
+                    <AccordionItem value="description">
+                      <AccordionTrigger className="text-sm hover:text-brand">
+                        Om Produkten
+                      </AccordionTrigger>
+                      <AccordionContent className="whitespace-pre-line">
+                        {p.description && ` – ${p.description}`}
+                      </AccordionContent>
+                    </AccordionItem>
                     <AccordionItem value="item-1">
                       <AccordionTrigger className="text-sm hover:text-brand">
                         Innehåll och schema
