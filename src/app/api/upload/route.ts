@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const bucket = process.env.S3_BUCKET;
     const endpoint = process.env.S3_ENDPOINT;
     const region = process.env.S3_REGION || "us-east-1";
-    const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+    const publicUrl = process.env.S3_PUBLIC_URL;
     const accessKeyId = process.env.S3_ACCESS_KEY_ID;
     const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       expiresIn: 60,
     });
 
-    const imageUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${uniqueFileName}`;
+    const imageUrl = `${process.env.S3_PUBLIC_URL}/${uniqueFileName}`;
 
     return NextResponse.json({
       success: true,
