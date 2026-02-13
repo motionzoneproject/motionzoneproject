@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner"; // Assuming you use sonner for toasts
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea"; // Assuming you have a Textarea component
 import { createTeacher, updateTeacher } from "@/lib/actions/teacher-actions";
+import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminTeacherSchema } from "@/validations/adminforms";
 
 type TeacherFormProps = {
@@ -45,9 +47,27 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
   async function onSubmit(values: z.infer<typeof adminTeacherSchema>) {
     setIsPending(true);
     try {
+      let finalImageURL = values.imageUrl ?? "";
+
+      if (finalImageURL.startsWith("blob:")) {
+        try {
+          const res = await fetch(finalImageURL);
+          const blob = await res.blob();
+          finalImageURL = await uploadImageFromBlob(blob);
+          URL.revokeObjectURL(values.imageUrl ?? "");
+        } catch (e) {
+          console.error(e);
+          toast.error(`Uppladdning misslyckades.`);
+          return;
+        }
+      }
+
       const result = teacher
-        ? await updateTeacher(teacher.id, values)
-        : await createTeacher(values);
+        ? await updateTeacher(teacher.id, {
+            ...values,
+            imageUrl: finalImageURL,
+          })
+        : await createTeacher({ ...values, imageUrl: finalImageURL });
 
       if (result.success) {
         toast.success(result.msg);
@@ -135,15 +155,12 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bild URL</FormLabel>
+              <FormLabel>Bild</FormLabel>
+
               <FormControl>
-                <Input
-                  placeholder="/bilder/larare.jpg"
-                  {...field}
-                  value={field.value || ""}
-                />
+                <ImageInput {...field} value={field.value || ""} />
               </FormControl>
-              <FormDescription>Länk till bildfil.</FormDescription>
+
               <FormMessage />
             </FormItem>
           )}
