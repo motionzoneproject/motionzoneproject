@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 // Vi hämtar denna från env så det blir rätt.
-const r2Host = process.env.NEXT_PUBLIC_R2_PUBLIC_URL
-  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_URL).hostname
+const r2Host = process.env.S3_PUBLIC_URL
+  ? new URL(process.env.S3_PUBLIC_URL).hostname
   : "";
 const legacyR2Host = "r2.motionzoneworld.com";
 
