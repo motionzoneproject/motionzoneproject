@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Booking } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
 
 // Define a type that matches the structure we expect from the server
@@ -26,7 +27,7 @@ interface LessonWithCourse {
   teacher: {
     name: string;
   };
-  bookings: any[];
+  bookings: Booking[];
   maxBookings: number;
 }
 

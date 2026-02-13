@@ -20,8 +20,7 @@ import type {
   Termin,
   User,
 } from "@/generated/prisma/client";
-import { getCourseName } from "@/lib/tools";
-import { getVeckodag } from "../../termin/SchemaDay";
+import { getCourseName, getVeckodag } from "@/lib/tools";
 import { DatePickerWithRange } from "./DatePicker";
 
 // Som jag tänker nu så kommer vi ha väldigt mycket data här dock, kanske bättre att hämta härifrån via useEffect? Vi börjar väl såhär.
