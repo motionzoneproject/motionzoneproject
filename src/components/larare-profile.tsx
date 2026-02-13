@@ -37,10 +37,10 @@ const LarareProfile = async () => {
                         alt={teacher.name}
                         height={150}
                         width={150}
-                        className="object-cover h-[150px] w-[150px]"
+                        className="object-cover h-full w-full"
                       />
                     ) : (
-                      <div className="h-[150px] w-[150px] flex items-center justify-center bg-gray-200 text-gray-500">
+                      <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500">
                         No Image
                       </div>
                     )}
