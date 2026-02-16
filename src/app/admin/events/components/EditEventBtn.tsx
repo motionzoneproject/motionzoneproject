@@ -1,4 +1,7 @@
+"use client";
+
 import { MinusIcon } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,8 +19,10 @@ interface Props {
 }
 
 export default function EditEventBtn({ event }: Props) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="default" className="cursor-pointer">
           <MinusIcon /> Ändra event
@@ -30,7 +35,11 @@ export default function EditEventBtn({ event }: Props) {
             Fyll i formuläret för att redigera eventet
           </DialogDescription>
         </DialogHeader>
-        <EditEventForm event={event} />
+        <EditEventForm
+          event={event}
+          isOpen={isOpen}
+          onSuccess={() => setIsOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

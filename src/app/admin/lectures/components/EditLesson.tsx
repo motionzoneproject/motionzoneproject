@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EditIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -48,6 +48,16 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
 
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    form.reset({
+      cancelled: lesson.cancelled,
+      id: lesson.id,
+      message: lesson.message ?? "",
+    });
+  }, [isOpen, form, lesson.cancelled, lesson.id, lesson.message]);
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
