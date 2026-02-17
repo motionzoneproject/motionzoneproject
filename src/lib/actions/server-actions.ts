@@ -3,11 +3,16 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Booking,
   Course,
+  Participant,
   Prisma,
   Product,
+  Purchase,
+  PurchaseItem,
   SchemaItem,
   Termin,
+  User,
 } from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
@@ -532,5 +537,101 @@ export async function getCourseCountInProduct(
   } catch (e) {
     console.error("Fel vid hämtning av bokningsgräns:", e);
     return 0;
+  }
+}
+
+export async function autobook(
+  user: User,
+  participant: Participant | null,
+  purchase: Purchase,
+  purchaseItem: PurchaseItem,
+  course: Course,
+  schemaItem: SchemaItem,
+): Promise<Booking[]> {
+  try {
+    // Först och främst, hur många klipp har vi tillgodo?
+    const aClip = calcRemainingCount({ purchase, purchaseItem });
+
+    if (!hasRemainingCount(aClip)) return [];
+
+    // Så många lektioner framåt ska vi hämta, om de finns.
+    const now = new Date();
+
+    // Hämta lektionerna
+    const lessonsToBook = await prisma.lesson.findMany({
+      where: {
+        courseId: course.id,
+        schemaItemId: schemaItem.id,
+        startTime: { gte: now },
+        cancelled: false,
+      },
+      orderBy: { startTime: "asc" },
+      select: { id: true },
+    });
+
+    // Om inga lektioner, returnera nada lektioner
+    if (lessonsToBook.length === 0) return [];
+
+    // Hämta befintliga bokningar (från nu och framåt)
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        lessonId: { in: lessonsToBook.map((l) => l.id) },
+        ...(participant?.id
+          ? { purchaseItem: { purchase: { participantId: participant.id } } }
+          : {
+              userId: user.id,
+              purchaseItem: { purchase: { participantId: null } },
+            }),
+      },
+      select: { lessonId: true },
+    });
+
+    // Hitta vilka bokningar som inte är gjorda.
+    const existingIds = new Set(existingBookings.map((b) => b.lessonId));
+
+    const availableLessons = lessonsToBook.filter(
+      (lesson) => !existingIds.has(lesson.id),
+    );
+
+    // aClip är ju >= 0 | Infinity, så det är bara att slajsa.
+    const lessons = availableLessons.slice(0, aClip);
+
+    // Inga lektioner? Returnera tomt
+    if (lessons.length === 0) return [];
+
+    // Bokningar finns att göra...
+    const bookings = await prisma.$transaction(async (tx) => {
+      const created: Booking[] = []; // Skapade bokningar.
+
+      for (const lesson of lessons) {
+        const booking = await tx.booking.create({
+          data: {
+            lessonId: lesson.id,
+            userId: user.id,
+            purchaseItemId: purchaseItem.id,
+          },
+        });
+        created.push(booking);
+      }
+
+      const clipResult = await handleClips(
+        tx,
+        purchaseItem.id,
+        -created.length,
+      );
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
+      }
+
+      return created;
+    });
+
+    return bookings;
+  } catch (e) {
+    console.error(
+      `Kunde inte autoboka ${participant?.name ?? user.name} i kursen ${course.name} `,
+      e,
+    );
+    return [];
   }
 }
