@@ -23,12 +23,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useSession } from "@/lib/session-provider";
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useSession();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const formatDate = (date: Date) => date.toISOString().split("T")[0];
   const today = new Date();
@@ -117,7 +119,12 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isItemActive(item.url)}>
-                    <Link href={item.url}>
+                    <Link
+                      href={item.url}
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>

@@ -19,11 +19,11 @@ export default async function RootLayout({
     <SidebarProvider className="relative !min-h-0">
       <AppSidebar />
       <SidebarInset className="min-w-0">
-        <div className="sticky top-2 z-51 flex items-center gap-2 px-2 py-1">
+        <div className="flex items-center gap-2 px-2 py-1">
           <SidebarTrigger className="size-9" />
           <h2 className="text-sm font-semibold tracking-wide">Adminpanelen</h2>
         </div>
-        {children}
+        <div className="min-h-[33vh]">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
