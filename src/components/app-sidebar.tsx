@@ -1,3 +1,5 @@
+"use client";
+
 import {
   BookOpen,
   CalendarDays,
@@ -11,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -22,15 +24,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { isAdminRole } from "@/lib/actions/admin";
-import { getSessionData } from "@/lib/actions/sessiondata";
+import { useSession } from "@/lib/session-provider";
 
-export async function AppSidebar() {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return notFound();
-
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { user } = useSession();
 
   const formatDate = (date: Date) => date.toISOString().split("T")[0];
   const today = new Date();
@@ -98,8 +96,14 @@ export async function AppSidebar() {
     },
   ];
 
+  const isItemActive = (url: string) => {
+    const itemPath = url.split("?")[0];
+    if (itemPath === "/admin") return pathname === "/admin";
+    return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+  };
+
   return (
-    <Sidebar className="absolute h-full">
+    <Sidebar className="absolute! h-full!">
       <SidebarContent className="mt-4">
         <SidebarGroup>
           <SidebarGroupLabel>
@@ -112,7 +116,7 @@ export async function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={isItemActive(item.url)}>
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
