@@ -100,7 +100,7 @@ export async function AppSidebar() {
   ];
 
   return (
-    <Sidebar>
+    <Sidebar className="absolute h-full">
       <SidebarContent className="mt-4">
         <SidebarGroup>
           <SidebarGroupLabel>
