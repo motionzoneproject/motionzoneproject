@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "../prisma";
+import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 
 async function requireAdmin() {
@@ -79,12 +80,11 @@ export async function adminGetOrder(orderId: string) {
   });
 }
 
-// fix: klippkort.
 // kör denna när man accepterar ordern.
 export async function createPurchaseFromOrder(orderId: string) {
   await requireAdmin();
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // 1. SÄKERHETSSPÄRR: Kolla om ordern redan har genererat ett köp
     const existingPurchase = await tx.purchase.findFirst({
       where: { orderId: orderId },
@@ -125,6 +125,7 @@ export async function createPurchaseFromOrder(orderId: string) {
 
     // 3. Skapa Purchases för varje OrderItem (en purchase per produkt i ordern)
     const purchaseResults = [];
+    const purchaseItemIdsToAutobook: string[] = [];
 
     for (const orderItem of order.orderItems) {
       // Skapa en purchase för varje enskild enhet i count?
@@ -162,16 +163,31 @@ export async function createPurchaseFromOrder(orderId: string) {
         }),
       );
 
-      await Promise.all(itemPromises);
+      const createdItems = await Promise.all(itemPromises);
+
+      if (orderItem.product.type !== "CLIP") {
+        purchaseItemIdsToAutobook.push(...createdItems.map((item) => item.id));
+      }
+
       purchaseResults.push(purchase.id);
     }
 
     return {
       success: true,
       purchaseIds: purchaseResults,
+      purchaseItemIdsToAutobook,
       message: `${purchaseResults.length} köp skapade.`,
     };
   });
+
+  // Autoboka :)
+  if (result.success && Array.isArray(result.purchaseItemIdsToAutobook)) {
+    await Promise.all(
+      result.purchaseItemIdsToAutobook.map((id) => autobook(id)),
+    );
+  }
+
+  return result;
 }
 
 export async function getPurchaseFromOrder(id: string) {
