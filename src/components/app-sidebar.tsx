@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/sidebar";
 import { isAdminRole } from "@/lib/actions/admin";
 import { getSessionData } from "@/lib/actions/sessiondata";
-import { Button } from "./ui/button";
 
 export async function AppSidebar() {
   const isAdmin = await isAdminRole();
@@ -104,10 +103,10 @@ export async function AppSidebar() {
       <SidebarContent className="mt-4">
         <SidebarGroup>
           <SidebarGroupLabel>
-            <Button variant="ghost">
+            <div className="flex gap-2 items-end py-2 mb-3">
               <Crown className="text-brand" />
-              Admin panel
-            </Button>
+              <span>Adminpanelen</span>
+            </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
