@@ -6,7 +6,6 @@ import type {
   Course,
   Prisma,
   Product,
-  SchemaItem,
   Termin,
 } from "@/generated/prisma/client";
 import { UserBookLessonSchema } from "@/validations/userforms";
@@ -437,6 +436,37 @@ export async function getAllProducts(): Promise<Product[]> {
   }
 }
 
+// Optimized function to fetch all products with their related data in a single query
+export async function getAllProductsWithDetails() {
+  try {
+    const products = await prisma.product.findMany({
+      include: {
+        courses: {
+          include: {
+            course: {
+              include: {
+                schemaItems: {
+                  include: {
+                    termin: true,
+                  },
+                  orderBy: {
+                    weekday: "asc",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return products;
+  } catch (e) {
+    console.error("Error fetching products with details:", e);
+    return [];
+  }
+}
+
 export async function getProductTermin(pid: string): Promise<Termin[]> {
   try {
     // 1. Hämta produkten och gå djupt ner i relationerna på en gång
@@ -480,7 +510,7 @@ export async function getProductTermin(pid: string): Promise<Termin[]> {
   }
 }
 
-export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
+export async function getProductSchema(pid: string) {
   try {
     const schemaItems = await prisma.schemaItem.findMany({
       where: {
@@ -492,10 +522,6 @@ export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
           },
         },
       },
-      // include: { // eventuellt.
-      //   termin: true,
-      //   course: true,
-      // },
       orderBy: {
         weekday: "asc", // Eller vad som passar din sortering
       },
