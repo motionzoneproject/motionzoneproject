@@ -165,13 +165,26 @@ export default async function Page() {
                                     </DialogTrigger>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>{c.name}</DialogTitle>
+                                        <DialogTitle>{`${c.name} ${c.minAge}+ år - ${c.level}`}</DialogTitle>
                                         <DialogDescription>
-                                          {/* TODO*/}
                                           {c.description}
                                         </DialogDescription>
                                       </DialogHeader>
-                                      {/* TODO */}
+                                      {/* Bunch of dialog content that is hard to format without rawdogging divs */}
+                                      <div className="space-y-3 text-sm">
+                                        <div className="space-y-1">
+                                          <p>{`Lärare: ${c.teacher.name}`}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {`Email: ${c.teacher.email}`}
+                                          </p>
+                                        </div>
+                                        <p>
+                                          {`Målgrupp: ${c.adult ? "Vuxna" : "Barn/Ungdom"}`}
+                                        </p>
+                                        <p>
+                                          {`Åldersgrupp: ${c.minAge}-${c.maxAge} år`}
+                                        </p>
+                                      </div>
                                     </DialogContent>
                                   </Dialog>
                                 </div>

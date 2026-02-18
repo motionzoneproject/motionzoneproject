@@ -445,6 +445,13 @@ export async function getAllProductsWithDetails() {
           include: {
             course: {
               include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
                 schemaItems: {
                   include: {
                     termin: true,
