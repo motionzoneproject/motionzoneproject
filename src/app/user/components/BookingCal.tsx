@@ -163,7 +163,6 @@ export default function BookingCal({
                     ) : (
                       <div className="text-right">
                         <BookBtn
-                          courseId={lesson.courseId}
                           lessonId={lesson.id}
                           purschaseItems={purschaseItems.filter(
                             (itm) => itm.courseId === lesson.courseId,

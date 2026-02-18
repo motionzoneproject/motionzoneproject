@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type z from "zod";
 import type {
   Course,
   Prisma,
@@ -9,10 +8,8 @@ import type {
   SchemaItem,
   Termin,
 } from "@/generated/prisma/client";
-import { UserBookLessonSchema } from "@/validations/userforms";
 import prisma from "../prisma";
 import { handleClips } from "./purchase-actions";
-import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{
@@ -212,102 +209,6 @@ export async function getUserPendingRegistrations() {
     },
     orderBy: { createdAt: "desc" },
   });
-}
-
-export async function addBooking(
-  formData: z.output<typeof UserBookLessonSchema>,
-): Promise<{ success: boolean; msg?: string }> {
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
-
-  if (!user) return { success: false, msg: "Ingen giltig session." };
-
-  try {
-    const validated = await UserBookLessonSchema.parseAsync(formData);
-
-    // 1. Hämta PurchaseItem inkl. huvud-Purchase för att se saldotyp och ägare
-    const pItem = await prisma.purchaseItem.findUnique({
-      where: { id: validated.purchaseItemId },
-      include: { purchase: true },
-    });
-
-    if (!pItem) return { success: false, msg: "Kunde inte hitta köpet." };
-
-    // Säkerhetscheck: Äger användaren detta köp?
-    if (pItem.purchase.userId !== user.id) {
-      return { success: false, msg: "Obehörig åtkomst till köpet." };
-    }
-
-    const purchase = pItem.purchase;
-
-    // 2. Kontrollera saldo baserat på typ (Klippkort vs Kursbundet)
-    const remaining = calcRemainingCount({
-      purchase,
-      purchaseItem: pItem,
-    });
-
-    if (!hasRemainingCount(remaining)) {
-      if (purchase.type === "CLIP") {
-        return { success: false, msg: "Inga klipp kvar på klippkortet." };
-      }
-      return {
-        success: false,
-        msg: "Inga tillfällen kvar på detta kurskort.",
-      };
-    }
-
-    // 3. Kontrollera om användaren redan är bokad på lektionen
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        lessonId: validated.lessonId,
-        userId: user.id,
-        // Vi kollar på lektionsnivå, användaren ska inte kunna boka samma lektion två gånger
-        // oavsett vilket purchaseItem de använder.
-      },
-    });
-
-    if (existingBooking) {
-      return { success: false, msg: "Du är redan bokad på denna lektion." };
-    }
-
-    // 4. Kolla status på lektionen
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: validated.lessonId },
-      select: { cancelled: true },
-    });
-
-    if (!lesson || lesson.cancelled) {
-      return {
-        success: false,
-        msg: "Lektionen är inställd eller hittades inte.",
-      };
-    }
-
-    // 5. Utför bokning och saldo-dragning i en transaktion
-    await prisma.$transaction(async (tx) => {
-      // Skapa bokningen
-      await tx.booking.create({
-        data: {
-          lessonId: validated.lessonId,
-          userId: user.id,
-          purchaseItemId: pItem.id,
-        },
-      });
-
-      const clipResult = await handleClips(tx, pItem.id, -1);
-
-      if (!clipResult.success) {
-        throw new Error(clipResult.msg || "Clip update failed.");
-      }
-    });
-
-    revalidatePath("/user");
-
-    return { success: true, msg: "Du är nu inbokad på lektionen!" };
-  } catch (e) {
-    console.error("Fel vid bokning:", e);
-    return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };
-  }
 }
 
 export async function delBooking(

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -41,7 +41,7 @@ import {
   showRemaining,
   showTypeInSwedish,
 } from "@/lib/actions/purchase-helpers";
-import { AdminAddStudentToLessonForm } from "@/validations/adminforms";
+import { AddStudentToLessonForm } from "@/validations/adminforms";
 import { AttendeceItem } from "./AttendenceItem";
 
 interface Props {
@@ -50,7 +50,7 @@ interface Props {
   bookings: BookingWithUserAndParticipant[];
 }
 
-const formSchema = AdminAddStudentToLessonForm;
+const formSchema = AddStudentToLessonForm;
 
 // Vi behöver hämta participants som elever i listan, och sen deras produkter.
 
@@ -67,7 +67,6 @@ export function AttendenceForm({
     defaultValues: {
       lessonId: lessonId,
       userId: "",
-      participantId: "",
       purchaseItemId: "",
     },
   });
@@ -93,6 +92,8 @@ export function AttendenceForm({
   const getUserId = (studentId: string) =>
     userIdByStudentId.get(studentId) ?? "";
 
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+
   return (
     <div>
       <Accordion type="single" collapsible>
@@ -104,37 +105,31 @@ export function AttendenceForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-2 p-2 rounded-xl"
               >
-                <FormField
-                  control={form.control}
-                  name="participantId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Deltagare</FormLabel>
+                <FormItem>
+                  <FormLabel>Deltagare</FormLabel>
 
-                      <Select
-                        onValueChange={(e) => {
-                          field.onChange(e);
-                          form.setValue("userId", getUserId(e));
-                          form.setValue("purchaseItemId", "");
-                        }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Välj en elev i kursen" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {studentsAndPurchases.map((c) => (
-                            <SelectItem key={c.studentId} value={c.studentId}>
-                              {c.displayName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                ></FormField>
+                  <Select
+                    onValueChange={(value) => {
+                      setSelectedStudentId(value);
+                      form.setValue("userId", getUserId(value));
+                      form.setValue("purchaseItemId", "");
+                    }}
+                    value={selectedStudentId}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Välj en elev i kursen" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {studentsAndPurchases.map((c) => (
+                        <SelectItem key={c.studentId} value={c.studentId}>
+                          {c.displayName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
                 <FormField
                   control={form.control}
                   name="purchaseItemId"
@@ -147,13 +142,13 @@ export function AttendenceForm({
                           field.onChange(value);
                         }}
                         value={field.value}
-                        disabled={!form.watch("participantId")}
+                        disabled={!selectedStudentId}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue
                               placeholder={
-                                form.watch("participantId")
+                                selectedStudentId
                                   ? "Välj produkt"
                                   : "Välj deltagare först"
                               }
@@ -165,10 +160,7 @@ export function AttendenceForm({
                             <SelectLabel>Tillgängliga produkter</SelectLabel>
 
                             {studentsAndPurchases
-                              .filter(
-                                (s) =>
-                                  s.studentId === form.watch("participantId"),
-                              )
+                              .filter((s) => s.studentId === selectedStudentId)
                               .flatMap((pi) => pi.purchaseItems)
                               .map((p) => {
                                 const remaining = calcRemainingCount({

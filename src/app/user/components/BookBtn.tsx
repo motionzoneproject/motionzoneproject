@@ -35,28 +35,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { addUserInLesson } from "@/lib/actions/admin";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
-import {
-  addBooking,
-  type UserPurchaseWithProduct,
-} from "@/lib/actions/server-actions";
+import type { UserPurchaseWithProduct } from "@/lib/actions/server-actions";
 import { useSession } from "@/lib/session-provider";
-import { UserBookLessonSchema } from "@/validations/userforms";
+import { AdminAddUserInLessonSchema } from "@/validations/adminforms";
 
-const formSchema = UserBookLessonSchema;
+const formSchema = AdminAddUserInLessonSchema;
 
 type FormInput = z.input<typeof formSchema>;
 type FormOutput = z.output<typeof formSchema>;
 
 interface Props {
-  courseId: string;
   lessonId: string;
   purschaseItems: UserPurchaseWithProduct[];
   disabled?: boolean;
 }
 
 export default function AddTerminForm({
-  courseId,
   lessonId,
   purschaseItems,
   disabled,
@@ -66,7 +62,7 @@ export default function AddTerminForm({
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      courseId: courseId,
+      userId: user?.id,
       lessonId: lessonId,
       purchaseItemId: "",
     },
@@ -81,7 +77,7 @@ export default function AddTerminForm({
   }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await addBooking(values);
+    const res = await addUserInLesson(values);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -119,12 +115,12 @@ export default function AddTerminForm({
               >
                 <FormField
                   control={form.control}
-                  name="courseId"
+                  name="userId"
                   render={({ field }) => (
                     <FormItem className="hidden">
-                      <FormLabel>Kurs id</FormLabel>
+                      <FormLabel>Userid</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled />
+                        <Input type="hidden" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -138,7 +134,7 @@ export default function AddTerminForm({
                     <FormItem className="hidden">
                       <FormLabel>lektion id</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled />
+                        <Input type="hidden" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
