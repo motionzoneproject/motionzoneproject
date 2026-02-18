@@ -1,3 +1,5 @@
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -64,7 +66,16 @@ export default async function EventsPage() {
                   {event.endDate?.toLocaleString()}
                 </TableCell>
                 <TableCell className="ml-2">{event.imageURL}</TableCell>
-                <TableCell className="ml-2">{event.link}</TableCell>
+                <TableCell className="ml-2">
+                  <Link
+                    href={`/admin/events/${event.id}`}
+                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                    title="Visa eventdetaljer"
+                  >
+                    <ArrowUpRight className="w-4 h-4" />
+                    Visa
+                  </Link>
+                </TableCell>
                 <TableCell className="text-right">
                   {" "}
                   <DelEventBtn eventId={event.id} />

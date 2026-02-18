@@ -106,6 +106,18 @@ export async function getAllCourses(q: string = ""): Promise<Course[]> {
   return courses;
 }
 
+/**
+ * Get all events (id + headline) for admin dropdowns etc.
+ */
+export async function getAllEvents() {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+  return prisma.event.findMany({
+    select: { id: true, headline: true },
+    orderBy: { startDate: "asc" },
+  });
+}
+
 export async function editNewEvent(
   formData: z.infer<typeof adminEditEventSchema>,
 ) {

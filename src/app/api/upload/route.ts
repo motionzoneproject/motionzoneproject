@@ -1,3 +1,4 @@
+import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
@@ -51,28 +52,25 @@ export async function POST(req: Request) {
     const accessKeyId = process.env.S3_ACCESS_KEY_ID;
     const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
 
-    if (
-      !bucket ||
-      !endpoint ||
-      !publicUrl ||
-      !accessKeyId ||
-      !secretAccessKey
-    ) {
+    if (!bucket || !publicUrl || !accessKeyId || !secretAccessKey) {
       return NextResponse.json(
         { error: "Saknar S3-konfiguration i miljövariabler" },
         { status: 500 },
       );
     }
 
-    const s3Client = new S3Client({
+    const s3ClientConfig: S3ClientConfig = {
       region,
-      endpoint,
       forcePathStyle: true,
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
-    });
+    };
+    if (endpoint) {
+      s3ClientConfig.endpoint = endpoint;
+    }
+    const s3Client = new S3Client(s3ClientConfig);
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -94,9 +92,33 @@ export async function POST(req: Request) {
       method: "PUT",
     });
   } catch (error) {
+    // Logga ut mer detaljer om felet
     console.error("S3 Upload Error:", error);
+    if (error instanceof Error) {
+      console.error("S3 Upload Error stack:", error.stack);
+    }
+    // Logga ut vilka miljövariabler som används (ej credentials)
+    console.error("S3_BUCKET:", process.env.S3_BUCKET);
+    console.error("S3_REGION:", process.env.S3_REGION);
+    console.error("S3_PUBLIC_URL:", process.env.S3_PUBLIC_URL);
+    console.error("S3_ENDPOINT:", process.env.S3_ENDPOINT);
+    let errorMsg = "Internt serverfel vid uppladdning";
+    if (error instanceof Error) {
+      errorMsg += `: ${error.message}`;
+    } else if (typeof error === "string") {
+      errorMsg += `: ${error}`;
+    }
     return NextResponse.json(
-      { error: "Internt serverfel vid uppladdning" },
+      {
+        error: errorMsg,
+        stack: error instanceof Error ? error.stack : undefined,
+        s3_env: {
+          S3_BUCKET: process.env.S3_BUCKET,
+          S3_REGION: process.env.S3_REGION,
+          S3_PUBLIC_URL: process.env.S3_PUBLIC_URL,
+          S3_ENDPOINT: process.env.S3_ENDPOINT,
+        },
+      },
       { status: 500 },
     );
   }

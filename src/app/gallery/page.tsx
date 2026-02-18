@@ -1,17 +1,12 @@
 import { Instagram } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-const galleryItems = [
-  { id: 1, alt: "Danslektion Hip Hop" },
-  { id: 2, alt: "Balett uppträdande" },
-  { id: 3, alt: "Studio miljö" },
-  { id: 4, alt: "Gruppträning" },
-  { id: 5, alt: "Elevuppvisning" },
-  { id: 6, alt: "Instruktör demonstration" },
-];
+import { getVisiblePhotos } from "@/lib/actions/photos";
 
-export default function Page() {
+export default async function Page() {
+  const photos = await getVisiblePhotos();
   return (
     <main className="bg-background">
       {/* Hero */}
@@ -33,18 +28,37 @@ export default function Page() {
             Bilder från studion
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {galleryItems.map((item) => (
-              <div
-                key={item.id}
-                className="aspect-square bg-muted border border-border rounded-lg flex items-center justify-center hover:border-brand/50 transition-colors cursor-pointer"
-              >
-                <span className="text-muted-foreground text-sm">
-                  {item.alt}
-                </span>
-              </div>
-            ))}
-          </div>
+          {photos.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12">
+              Inga bilder uppladdade ännu.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {photos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="aspect-square bg-muted border border-border rounded-lg flex flex-col items-center justify-center hover:border-brand/50 transition-colors cursor-pointer overflow-hidden"
+                >
+                  <Image
+                    src={photo.url}
+                    alt={photo.caption || "Bild"}
+                    className="object-cover w-full h-3/4 rounded-t-lg"
+                    width={400}
+                    height={300}
+                    style={{ width: "100%", height: "75%" }}
+                  />
+                  <div className="w-full px-2 py-1 text-xs text-center text-foreground bg-background/80">
+                    {photo.caption}
+                    {photo.event?.headline && (
+                      <span className="block text-[10px] text-blue-600 mt-1">
+                        Event: {photo.event.headline}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
