@@ -534,3 +534,15 @@ export async function getCourseCountInProduct(
     return 0;
   }
 }
+
+// Counts how many slots are left for a course, so we can show it on the cards on the course page.
+// Returns the total number of slots left, or null if there is no limit (unlimitedCustomers = true).
+export async function getRemainingSlotsForCourse(
+  productId: string,
+  maxCustomer: number,
+) {
+  const totalPurchases = await prisma.purchase.count({
+    where: { productId: productId },
+  });
+  return maxCustomer - totalPurchases;
+}

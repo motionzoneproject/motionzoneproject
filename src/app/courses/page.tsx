@@ -1,4 +1,5 @@
 import { Book, Calendar, CalendarDays, Clock, MapPin } from "lucide-react";
+import Image from "next/image";
 import {
   Accordion,
   AccordionContent,
@@ -23,9 +24,9 @@ import {
   getFullCourseNameFromId,
   getProductSchema,
   getProductTermin,
+  getRemainingSlotsForCourse,
 } from "@/lib/actions/server-actions";
 import { getVeckodag } from "@/lib/tools";
-import Image from "next/image";
 
 export default async function Page() {
   const products = await getAllProducts();
@@ -51,15 +52,17 @@ export default async function Page() {
 
             const courses = await getAllCoursesInProduct(p.id);
 
-            const spotsLeft =
-              p.maxCustomer > 0 ? p.maxCustomer - (p.totalCount ?? 0) : null;
+            // If the product has unlimited customers, we don't display anthing
+            const spotsLeft = p.unlimitedCustomers
+              ? null
+              : await getRemainingSlotsForCourse(p.id, p.maxCustomer);
 
             return (
               <Card
                 key={p.id}
                 className="flex flex-col h-full hover:border-brand/50 transition-colors"
               >
-                <CardHeader className="pb-4">
+                <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <Badge className="font-bold text-lg bg-brand text-white border-0">
                       {p.price} kr
@@ -79,7 +82,8 @@ export default async function Page() {
                 </CardHeader>
 
                 <CardContent className="flex-1 space-y-4">
-                  {/* Note: Attempting to use images sizes to help next/image optimize */}
+                  {/* Note: Attempting to use images sizes to help next/image optimize 
+                      Unclear what the best aspect ratio is, has to be tested with customer images */}
                   {p.imageURL && (
                     <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
                       <Image
@@ -110,11 +114,7 @@ export default async function Page() {
                     ))}
                   </div>
 
-                  <Accordion
-                    type="single"
-                    collapsible
-                    defaultValue="description"
-                  >
+                  <Accordion type="single" collapsible>
                     <AccordionItem value="description">
                       <AccordionTrigger className="text-sm hover:text-brand">
                         Om Produkten
@@ -125,7 +125,7 @@ export default async function Page() {
                     </AccordionItem>
                     <AccordionItem value="item-1">
                       <AccordionTrigger className="text-sm hover:text-brand">
-                        Innehåll och schema
+                        Innehåll och Schema
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-3 text-sm">
