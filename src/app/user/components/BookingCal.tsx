@@ -1,10 +1,21 @@
 "use client";
 
 import { sv } from "date-fns/locale";
+import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+} from "@/components/ui/item";
+import {
+  calcRemainingCount,
+  hasRemainingCount,
+} from "@/lib/actions/purchase-helpers";
 import {
   type BookingWithLesson,
   delBooking,
@@ -119,28 +130,77 @@ export default function BookingCal({
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedDateLessons.length > 0 ? (
+              // mappa lektionerna för det valda datumet.
               selectedDateLessons.map((lesson) => {
+                // Samla purchaseItems som kunden äger för den lektionen
                 const lessonPurchaseItems = purschaseItems.filter(
                   (itm) => itm.courseId === lesson.courseId,
                 );
+
+                // Hämta bokningar gjorda för lektionen.
                 const bookingsOnLesson = bookings.filter(
                   (b) => b.lessonId === lesson.id && !b.cancelled,
                 );
-                const bookedPurchaseItemIds = new Set(
-                  bookingsOnLesson.map((b) => b.purchaseItemId),
-                );
-                const availablePurchaseItems = lessonPurchaseItems.filter(
-                  (itm) => !bookedPurchaseItemIds.has(itm.id),
-                );
+
+                // Samla vilka deltagare som redan är bokade på just denna lektion.
+                const bookedParticipantIds = new Set<string>();
+                let ownerAlreadyBooked = false;
+
+                // Kolla varje bokning och markera om det är en participant eller owner.
+                for (const b of bookingsOnLesson) {
+                  const bookingPurchaseItem = lessonPurchaseItems.find(
+                    (itm) => itm.id === b.purchaseItemId,
+                  );
+
+                  if (!bookingPurchaseItem) continue;
+
+                  const participantId =
+                    bookingPurchaseItem.purchase.participant?.id;
+
+                  if (participantId) {
+                    bookedParticipantIds.add(participantId);
+                  } else {
+                    ownerAlreadyBooked = true;
+                  }
+                }
+
+                // Bygg listan över vad som går att boka nu.
+                const availablePurchaseItems: UserPurchaseWithProduct[] = [];
+
+                for (const itm of lessonPurchaseItems) {
+                  // Endast med klipp kvar:
+                  const remaining = calcRemainingCount({
+                    purchase: itm.purchase,
+                    purchaseItem: itm,
+                  });
+                  if (!hasRemainingCount(remaining)) continue;
+
+                  const participantId = itm.purchase.participant?.id;
+
+                  if (participantId) {
+                    if (bookedParticipantIds.has(participantId)) continue;
+                  } else {
+                    if (ownerAlreadyBooked) continue;
+                  }
+
+                  availablePurchaseItems.push(itm);
+                }
+
+                // Nu kan vi avgöra:
                 const hasAnyBooking = bookingsOnLesson.length > 0;
                 const canBookMore = availablePurchaseItems.length > 0;
+
+                // För att hämta data att visa:
+                const purchaseItemById = new Map(
+                  lessonPurchaseItems.map((itm) => [itm.id, itm]),
+                );
 
                 return (
                   <div
                     key={lesson.id}
-                    className="flex items-center justify-between border-b pb-4 last:border-0"
+                    className="flex items-start justify-between border-b pb-4 last:border-0"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
                         {lesson.startTime.toLocaleTimeString("sv-SE", {
                           hour: "2-digit",
@@ -157,11 +217,62 @@ export default function BookingCal({
                         <br />
                         {lesson.message}
                       </p>
+                      {hasAnyBooking && (
+                        <div className="mt-2 space-y-1.5 w-full">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Dina bokningar
+                          </p>
+                          {bookingsOnLesson.map((b) => {
+                            const bookedItem = purchaseItemById.get(
+                              b.purchaseItemId,
+                            );
+                            if (!bookedItem) return null;
+
+                            const participantName =
+                              bookedItem.purchase.participant?.name ?? "Du";
+                            const productName =
+                              bookedItem.purchase.product.name;
+
+                            return (
+                              <Item
+                                key={b.id}
+                                variant="muted"
+                                size="sm"
+                                className="w-full"
+                              >
+                                <ItemContent>
+                                  <ItemDescription className="text-xs">
+                                    {participantName} ({productName})
+                                  </ItemDescription>
+                                </ItemContent>
+                                <ItemActions>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive hover:text-destructive"
+                                    onClick={() =>
+                                      delBooking(lesson.id, b.purchaseItemId)
+                                    }
+                                    title="Avboka"
+                                    disabled={
+                                      lesson.cancelled ||
+                                      lesson.startTime.getTime() < Date.now()
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </ItemActions>
+                              </Item>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                     {lesson.cancelled ? (
                       "Inställd."
                     ) : (
-                      <div className="text-right flex items-center gap-2">
+                      <div className="text-right flex items-center gap-2 self-start">
                         {canBookMore && (
                           <BookBtn
                             lessonId={lesson.id}
@@ -169,7 +280,7 @@ export default function BookingCal({
                             disabled={lesson.startTime.getTime() < now}
                           />
                         )}
-                        {hasAnyBooking && (
+                        {/* {hasAnyBooking && (
                           <Button
                             variant={"destructive"}
                             onClick={async () => await delBooking(lesson.id)}
@@ -177,7 +288,7 @@ export default function BookingCal({
                           >
                             Avboka
                           </Button>
-                        )}
+                        )} */}
                       </div>
                     )}
                   </div>

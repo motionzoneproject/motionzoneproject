@@ -213,6 +213,7 @@ export async function getUserPendingRegistrations() {
 
 export async function delBooking(
   lessonId: string,
+  purchaseItemId: string,
 ): Promise<{ success: boolean; msg?: string }> {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
@@ -224,7 +225,7 @@ export async function delBooking(
     // 1. Hämta lektionsstatus och tid
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { cancelled: true, startTime: true },
+      select: { id: true, cancelled: true, startTime: true },
     });
 
     if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
@@ -249,12 +250,8 @@ export async function delBooking(
       const booking = await tx.booking.findFirst({
         where: {
           userId: user.id,
+          purchaseItemId: purchaseItemId,
           lessonId: lessonId,
-        },
-        include: {
-          purchaseItem: {
-            include: { purchase: true },
-          },
         },
       });
 

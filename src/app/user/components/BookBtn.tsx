@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -94,9 +95,10 @@ export default function AddTerminForm({
       <DialogTrigger asChild>
         <Button
           variant={"default"}
-          className="cursor-pointer"
+          className="cursor-pointer gap-1.5"
           disabled={!!disabled}
         >
+          <PlusIcon className="h-4 w-4" />
           Boka
         </Button>
       </DialogTrigger>
