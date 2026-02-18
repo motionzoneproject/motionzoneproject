@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { isAdminRole } from "@/lib/actions/admin";
 import {
   approveOrder,
+  cancelOrder,
   createPurchaseFromOrder,
   markOrderPaid,
 } from "@/lib/actions/orders";
@@ -19,7 +20,8 @@ type OrderStatus =
   | "PENDING_PAYMENT"
   | "AWAITING_APPROVAL"
   | "APPROVED"
-  | "PAID";
+  | "PAID"
+  | "CANCELLED";
 
 type OrderLite = {
   id: string;
@@ -102,6 +104,14 @@ export default async function Page({
     revalidatePath("/admin/orders");
   }
 
+  async function onCancel(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    const note = formData.get("note")?.toString();
+    await cancelOrder(orderId, note);
+    revalidatePath("/admin/orders");
+  }
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Ordrar</h1>
@@ -110,6 +120,7 @@ export default async function Page({
         defaultStatus={status}
         onApprove={onApprove}
         onMarkPaid={onMarkPaid}
+        onCancel={onCancel}
       />
     </div>
   );

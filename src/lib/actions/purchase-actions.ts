@@ -116,12 +116,8 @@ export async function countSoldProducts(
   const reserved = await prisma.orderItem.aggregate({
     where: {
       productId,
-      purchaseItems: { none: {} }, // ännu ej skapat till purchases
-      // order: {
-      //   status: {
-      //     in: ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL", "PAID"], Här behöver vi lägga till CANCELLED innan.
-      //   },
-      // },
+      purchaseItems: { none: {} },
+      order: { status: { not: "CANCELLED" } },
     },
     _sum: { count: true },
   });

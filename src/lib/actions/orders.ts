@@ -18,7 +18,8 @@ export async function updateOrderStatus(
     | "PENDING_PAYMENT"
     | "AWAITING_APPROVAL"
     | "PAID"
-    | "APPROVED",
+    | "APPROVED"
+    | "CANCELLED",
   note?: string,
 ) {
   const adminUserId = await requireAdmin();
@@ -28,6 +29,12 @@ export async function updateOrderStatus(
 
     if (!current) throw new Error("Order not found");
     if (current.status === toStatus) return { success: true };
+    if (
+      toStatus === "CANCELLED" &&
+      ["APPROVED", "PAID"].includes(current.status)
+    ) {
+      throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
+    }
 
     const updated = await tx.order.update({
       where: { id: orderId },
@@ -58,6 +65,10 @@ export async function approveOrder(orderId: string, note?: string) {
 
 export async function markOrderPaid(orderId: string, note?: string) {
   return updateOrderStatus(orderId, "PAID", note);
+}
+
+export async function cancelOrder(orderId: string, note?: string) {
+  return updateOrderStatus(orderId, "CANCELLED", note);
 }
 
 export async function adminGetOrder(orderId: string) {
