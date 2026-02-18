@@ -995,7 +995,6 @@ export async function editLessonItem(
   try {
     const validated = await adminLessonFormSchema.parseAsync(formData);
 
-    // 1. Hämta nuvarande status innan vi ändrar något
     const currentLesson = await prisma.lesson.findUnique({
       where: { id: validated.id },
       include: { bookings: true },
@@ -1004,28 +1003,21 @@ export async function editLessonItem(
     if (!currentLesson) return { success: false, msg: "Lesson not found." };
 
     await prisma.$transaction(async (tx) => {
-      // 2. Kolla om vi ställer in lektionen NU (från false till true)
       if (!currentLesson.cancelled && validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          // Via rätt nu:
           const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
           if (!clipResult.success) {
             throw new Error(clipResult.msg || "Clip update failed.");
           }
         }
-      }
-      // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
-      else if (currentLesson.cancelled && !validated.cancelled) {
-        for (const booking of currentLesson.bookings) {
-          // Via rätt nu:
-          const clipResult = await handleClips(tx, booking.purchaseItemId, -1);
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
-        }
+
+        // Ta bort bokningarna när lektionen ställs in.
+        await tx.booking.deleteMany({
+          where: { lessonId: validated.id },
+        });
       }
 
-      // 4. Uppdatera själva lektionen och bokningarna
+      // 4. Uppdatera själva lektionen
       await tx.lesson.update({
         where: { id: validated.id },
         data: {
@@ -1033,18 +1025,13 @@ export async function editLessonItem(
           cancelled: validated.cancelled,
         },
       });
-
-      await tx.booking.updateMany({
-        where: { lessonId: validated.id },
-        data: { cancelled: validated.cancelled },
-      });
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return {
       success: true,
-      msg: "Lektionen och klipp-saldon har uppdaterats.",
+      msg: "Lektionen, bokningar och klipp-saldon har uppdaterats.",
     };
   } catch (e) {
     console.error(e);
