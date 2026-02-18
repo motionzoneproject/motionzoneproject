@@ -62,8 +62,8 @@ export default async function Page() {
             });
             const terminer = Array.from(terminMap.values());
 
-            // Extract courses from the product
-            const courses = p.courses.map((pc) => pc.course);
+            // Keep ProductOnCourse relationships to access lessonsIncluded
+            const productCourses = p.courses;
 
             // Calculate spots left
             const spotsLeft = p.unlimitedCustomers
@@ -146,98 +146,107 @@ export default async function Page() {
                             <span className="font-medium text-sm flex items-center gap-1 mb-2">
                               <Book className="w-3 h-3" /> Kurser som ingår:
                             </span>
-                            {courses.map(async (c) => (
-                              <div
-                                key={c.id}
-                                className="bg-muted rounded mb-2 p-2 border border-border"
-                              >
-                                <div className="flex justify-between gap-2 mb-1 items-center">
-                                  <div className="font-medium">
-                                    {`${c.name} ${c.minAge}+ år - ${c.level}`}
-                                  </div>
-                                  {/* DIALOG FOR COURSE DETAILS */}
-                                  <Dialog>
-                                    <DialogTrigger asChild>
-                                      <span className="flex min-w-20 gap-1 items-center text-xs text-brand hover:underline cursor-pointer">
-                                        Läs mer om kursen
-                                        <ArrowUpRight className="w-3 h-3 shrink-0" />
-                                      </span>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>{`${c.name} ${c.minAge}+ år - ${c.level}`}</DialogTitle>
-                                        <DialogDescription>
-                                          {c.description}
-                                        </DialogDescription>
-                                      </DialogHeader>
-                                      {/* Bunch of dialog content that is hard to format without rawdogging divs */}
-                                      <div className="space-y-3 text-sm">
-                                        <div className="space-y-1">
-                                          <p>{`Lärare: ${c.teacher.name}`}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {`Email: ${c.teacher.email}`}
-                                          </p>
-                                        </div>
-                                        <p>
-                                          {`Målgrupp: ${c.adult ? "Vuxna" : "Barn/Ungdom"}`}
-                                        </p>
-                                        <p>
-                                          {`Åldersgrupp: ${c.minAge}-${c.maxAge} år`}
-                                        </p>
-                                      </div>
-                                    </DialogContent>
-                                  </Dialog>
-                                </div>
-                                <p className="text-muted-foreground text-xs">
-                                  Antal Tillfällen: {c.maxBookings}
-                                </p>
-                                <div className="mt-2">
-                                  {schemaItems
-                                    .filter((s) => s.courseId === c.id)
-                                    .map(async (s) => {
-                                      return (
-                                        <div
-                                          key={s.id}
-                                          className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
-                                        >
-                                          <p className="font-medium">
-                                            {s.termin.name}
-                                          </p>
-                                          <p className="flex items-center text-muted-foreground">
-                                            {getVeckodag(s.weekday)}{" "}
-                                            <Clock className="inline w-3 h-3 mx-1" />
-                                            {s.timeStart.toLocaleTimeString(
-                                              "sv-SE",
-                                              {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                              },
-                                            )}
-                                            –
-                                            {s.timeEnd.toLocaleTimeString(
-                                              "sv-SE",
-                                              {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                              },
-                                            )}
-                                          </p>
-                                          {s.place && (
-                                            <p className="text-brand flex items-center gap-1 mt-1">
-                                              <MapPin className="w-3 h-3" />
-                                              {s.place}
+                            {productCourses.map(async (pc) => {
+                              const c = pc.course;
+                              // For CLIP products, use totalCount; otherwise use lessonsIncluded
+                              const lessonCount =
+                                p.type === "CLIP"
+                                  ? p.totalCount
+                                  : pc.lessonsIncluded;
+
+                              return (
+                                <div
+                                  key={c.id}
+                                  className="bg-muted rounded mb-2 p-2 border border-border"
+                                >
+                                  <div className="flex justify-between gap-2 mb-1 items-center">
+                                    <div className="font-medium">
+                                      {`${c.name} ${c.minAge}+ år - ${c.level}`}
+                                    </div>
+                                    {/* DIALOG FOR COURSE DETAILS */}
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <span className="flex min-w-20 gap-1 items-center text-xs text-brand hover:underline cursor-pointer">
+                                          Läs mer om kursen
+                                          <ArrowUpRight className="w-3 h-3 shrink-0" />
+                                        </span>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>{`${c.name} ${c.minAge}+ år - ${c.level}`}</DialogTitle>
+                                          <DialogDescription>
+                                            {c.description}
+                                          </DialogDescription>
+                                        </DialogHeader>
+                                        {/* Bunch of dialog content that is hard to format without rawdogging divs */}
+                                        <div className="space-y-3 text-sm">
+                                          <div className="space-y-1">
+                                            <p>{`Lärare: ${c.teacher.name}`}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {`Email: ${c.teacher.email}`}
                                             </p>
-                                          )}
-                                          <div className="mt-2">
-                                            {" "}
-                                            {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
                                           </div>
+                                          <p>
+                                            {`Målgrupp: ${c.adult ? "Vuxna" : "Barn/Ungdom"}`}
+                                          </p>
+                                          <p>
+                                            {`Åldersgrupp: ${c.minAge}-${c.maxAge} år`}
+                                          </p>
                                         </div>
-                                      );
-                                    })}
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                  <p className="text-muted-foreground text-xs">
+                                    Antal Tillfällen: {lessonCount}
+                                  </p>
+                                  <div className="mt-2">
+                                    {schemaItems
+                                      .filter((s) => s.courseId === c.id)
+                                      .map(async (s) => {
+                                        return (
+                                          <div
+                                            key={s.id}
+                                            className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
+                                          >
+                                            <p className="font-medium">
+                                              {s.termin.name}
+                                            </p>
+                                            <p className="flex items-center text-muted-foreground">
+                                              {getVeckodag(s.weekday)}{" "}
+                                              <Clock className="inline w-3 h-3 mx-1" />
+                                              {s.timeStart.toLocaleTimeString(
+                                                "sv-SE",
+                                                {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                },
+                                              )}
+                                              –
+                                              {s.timeEnd.toLocaleTimeString(
+                                                "sv-SE",
+                                                {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                },
+                                              )}
+                                            </p>
+                                            {s.place && (
+                                              <p className="text-brand flex items-center gap-1 mt-1">
+                                                <MapPin className="w-3 h-3" />
+                                                {s.place}
+                                              </p>
+                                            )}
+                                            <div className="mt-2">
+                                              {" "}
+                                              {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       </AccordionContent>
