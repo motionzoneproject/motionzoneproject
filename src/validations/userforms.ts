@@ -23,3 +23,30 @@ export const UserDetailsSchema = z.object({
   bio: z.string().trim().max(500).or(z.literal("")),
   allowPhotoVideo: z.boolean(),
 });
+
+export const UserPasswordSchema = z
+  .object({
+    oldPassword: z
+      .string()
+      .min(8, "Lösenordet måste vara minst 8 tecken")
+      .max(128)
+      .regex(/[A-Z]/, "Lösenordet måste innehålla minst en stor bokstav")
+      .regex(/[a-z]/, "Lösenordet måste innehålla minst en liten bokstav")
+      .regex(/[0-9]/, "Lösenordet måste innehålla minst en siffra"),
+    password: z
+      .string()
+      .min(8, "Lösenordet måste vara minst 8 tecken")
+      .max(128)
+      .regex(/[A-Z]/, "Lösenordet måste innehålla minst en stor bokstav")
+      .regex(/[a-z]/, "Lösenordet måste innehålla minst en liten bokstav")
+      .regex(/[0-9]/, "Lösenordet måste innehålla minst en siffra"),
+    confirmPassword: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.confirmPassword !== values.password)
+      ctx.addIssue({
+        code: "custom",
+        message: "Lösenorden matchar inte",
+        path: ["confirmPassword"],
+      });
+  });

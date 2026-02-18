@@ -4,7 +4,7 @@ import type z from "zod";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
-import { UserDetailsSchema } from "@/validations/userforms";
+import { UserDetailsSchema, UserPasswordSchema } from "@/validations/userforms";
 
 type SignUpValues = z.infer<typeof SignUpFormSchema>;
 
@@ -131,6 +131,45 @@ export async function changeDetails(values: ChangeDetailsValues) {
     return { success: true };
   } catch (error: unknown) {
     console.error("Change details error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade vid uppdatering";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+type ChangePasswordValues = z.infer<typeof UserPasswordSchema>;
+
+export async function changePassword(values: ChangePasswordValues) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({
+    headers: reqHeaders,
+  });
+  if (!session) return { success: false, error: "Ej inloggad." };
+
+  try {
+    const validated = await UserPasswordSchema.parseAsync(values);
+
+    const res = await auth.api.changePassword({
+      body: {
+        currentPassword: validated.oldPassword,
+        newPassword: validated.password,
+        revokeOtherSessions: true,
+      },
+      headers: reqHeaders,
+    });
+
+    if (!res) {
+      return { success: false, error: "Kunde inte ändra lösenordet via api." };
+    }
+
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("Change password error:", error);
     const errorMessage =
       error instanceof Error
         ? error.message
