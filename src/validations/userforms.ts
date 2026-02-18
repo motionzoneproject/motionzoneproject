@@ -5,3 +5,21 @@ export const UserBookLessonSchema = z.object({
   purchaseItemId: z.string().min(1),
   lessonId: z.string().min(1),
 });
+
+export const UserDetailsSchema = z.object({
+  firstName: z.string().trim().min(1, "Förnamn krävs").max(100),
+  lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(5, "Ogiltigt telefonnummer")
+    .or(z.literal("")),
+  address: z.string().trim().min(5, "Adressen är för kort").or(z.literal("")),
+  postalCode: z.string().trim().min(5, "Ogiltigt postnummer").or(z.literal("")),
+  city: z.string().trim().min(1, "Ort krävs").or(z.literal("")),
+  dateOfBirth: z
+    .string()
+    .regex(/^$|^\d{4}-\d{2}-\d{2}$/, "Ogiltigt datum (ÅÅÅÅ-MM-DD)"),
+  bio: z.string().trim().max(500).or(z.literal("")),
+  allowPhotoVideo: z.boolean(),
+});
