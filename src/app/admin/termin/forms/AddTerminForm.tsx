@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { addNewTermin } from "@/lib/actions/admin";
+import { formatDateToInput } from "@/lib/date-utils";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddTerminSchema;
@@ -70,26 +71,6 @@ export default function AddTerminForm() {
       toast.error(res.msg);
     }
   }
-
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 

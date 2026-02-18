@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Event } from "@/generated/prisma/client";
 import { editNewEvent } from "@/lib/actions/admin";
+import { formatDateToInput } from "@/lib/date-utils";
 import { adminEditEventSchema } from "@/validations/adminforms";
 
 const formSchema = adminEditEventSchema;
@@ -64,26 +65,6 @@ export default function EditEventForm({ event }: Props) {
       toast.error(res.msg);
     }
   }
-
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 

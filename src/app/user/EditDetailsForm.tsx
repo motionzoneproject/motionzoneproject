@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { UserDetails } from "@/generated/prisma/client";
+import { formatDateToInput } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { UserDetailsSchema } from "@/validations/userforms";
 
@@ -33,19 +34,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function ProfileForm({ details }: { details: UserDetails }) {
   const { user, session } = useSession();
-
-  const formatDateToInput = (date: unknown) => {
-    if (!date) return "";
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) return "";
-      return date.toISOString().split("T")[0] ?? "";
-    }
-
-    if (typeof date === "string") return date;
-
-    return "";
-  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
