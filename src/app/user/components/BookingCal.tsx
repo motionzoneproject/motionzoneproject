@@ -120,10 +120,20 @@ export default function BookingCal({
           <CardContent className="space-y-4">
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
-                // Okej så här kollar vi om den redan är bokad genom att söka efter lessonId i bookings:
-                const isAlreadyBooked = bookings.some(
-                  (b) => b.lessonId === lesson.id,
+                const lessonPurchaseItems = purschaseItems.filter(
+                  (itm) => itm.courseId === lesson.courseId,
                 );
+                const bookingsOnLesson = bookings.filter(
+                  (b) => b.lessonId === lesson.id && !b.cancelled,
+                );
+                const bookedPurchaseItemIds = new Set(
+                  bookingsOnLesson.map((b) => b.purchaseItemId),
+                );
+                const availablePurchaseItems = lessonPurchaseItems.filter(
+                  (itm) => !bookedPurchaseItemIds.has(itm.id),
+                );
+                const hasAnyBooking = bookingsOnLesson.length > 0;
+                const canBookMore = availablePurchaseItems.length > 0;
 
                 return (
                   <div
@@ -150,25 +160,24 @@ export default function BookingCal({
                     </div>
                     {lesson.cancelled ? (
                       "Inställd."
-                    ) : isAlreadyBooked ? (
-                      <div>
-                        <Button
-                          variant={"destructive"}
-                          onClick={async () => await delBooking(lesson.id)}
-                          disabled={lesson.startTime.getTime() < now}
-                        >
-                          Avboka
-                        </Button>
-                      </div>
                     ) : (
-                      <div className="text-right">
-                        <BookBtn
-                          lessonId={lesson.id}
-                          purschaseItems={purschaseItems.filter(
-                            (itm) => itm.courseId === lesson.courseId,
-                          )}
-                          disabled={lesson.startTime.getTime() < now}
-                        />
+                      <div className="text-right flex items-center gap-2">
+                        {canBookMore && (
+                          <BookBtn
+                            lessonId={lesson.id}
+                            purschaseItems={availablePurchaseItems}
+                            disabled={lesson.startTime.getTime() < now}
+                          />
+                        )}
+                        {hasAnyBooking && (
+                          <Button
+                            variant={"destructive"}
+                            onClick={async () => await delBooking(lesson.id)}
+                            disabled={lesson.startTime.getTime() < now}
+                          >
+                            Avboka
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

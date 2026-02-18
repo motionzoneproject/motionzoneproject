@@ -174,6 +174,7 @@ export default function AddTerminForm({
                                 return (
                                   <SelectItem key={c.id} value={c.id}>
                                     {c.purchase.product.name} (
+                                    {c.purchase.participant?.name ?? "Du"}) (
                                     {remaining === Infinity ? "∞" : remaining})
                                   </SelectItem>
                                 );

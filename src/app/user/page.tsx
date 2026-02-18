@@ -117,7 +117,14 @@ export default async function Page() {
                       <span className="text-xs text-brand">
                         Produkt / Paket
                       </span>
-                      <p className="font-medium">{group.productName}</p>
+                      <p className="font-medium">
+                        {group.productName}{" "}
+                        {group.items[0]?.purchase.participant && (
+                          <span>
+                            ({group.items[0]?.purchase.participant?.name})
+                          </span>
+                        )}
+                      </p>
                     </div>
                     <Badge variant="outline">
                       {group.items.length}{" "}

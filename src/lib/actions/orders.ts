@@ -191,6 +191,7 @@ export async function getUserOrders() {
       orderItems: {
         include: {
           product: true,
+          participant: true,
         },
       },
     },
@@ -209,6 +210,7 @@ export async function getUserOrder(orderId: string) {
       orderItems: {
         include: {
           product: true,
+          participant: true,
         },
       },
       statusEvents: {

@@ -53,7 +53,12 @@ export default async function Page({
                   key={it.id}
                   className="grid grid-cols-4 gap-2 p-2 border-t text-sm"
                 >
-                  <span>{it.product?.name ?? it.productId}</span>
+                  <span>
+                    {it.product?.name ?? it.productId}
+                    <span className="block text-xs text-gray-500">
+                      Deltagare: {it.participant?.name ?? "Du själv"}
+                    </span>
+                  </span>
                   <span className="text-right">{unit.toFixed(2)} SEK</span>
                   <span className="text-right">{it.count}</span>
                   <span className="text-right font-medium">

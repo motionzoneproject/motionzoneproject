@@ -66,7 +66,7 @@ export async function getOrderById(orderId: string) {
     include: {
       user: true,
       orderItems: {
-        include: { product: true },
+        include: { product: true, participant: true },
       },
     },
   });
