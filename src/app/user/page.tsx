@@ -26,8 +26,9 @@ import {
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
-import BookingCal from "./BookingCal";
-import OrderHistory from "./OrderHistory";
+import BookingCal from "./components/BookingCal";
+import { EditDetailsForm } from "./components/EditDetailsForm";
+import OrderHistory from "./components/OrderHistory";
 
 export default async function Page() {
   const sessionData = await getSessionData();
@@ -83,6 +84,7 @@ export default async function Page() {
                   ? "📸 Foto/Video OK"
                   : "🚫 Inga foton/videos"}
               </Badge>
+              <EditDetailsForm details={userDetails} />
             </div>
           )}
         </div>

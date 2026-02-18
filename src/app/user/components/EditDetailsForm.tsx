@@ -1,19 +1,21 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -32,8 +34,9 @@ import { UserDetailsSchema } from "@/validations/userforms";
 const formSchema = UserDetailsSchema;
 type FormValues = z.infer<typeof formSchema>;
 
-export function ProfileForm({ details }: { details: UserDetails }) {
+export function EditDetailsForm({ details }: { details: UserDetails }) {
   const { user, session } = useSession();
+  const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,12 +54,13 @@ export function ProfileForm({ details }: { details: UserDetails }) {
   });
 
   if (!session) return notFound();
-  if (user?.id !== details.id) return notFound();
+  if (user?.id !== details.userId) return notFound();
 
   async function onSubmit(_values: FormValues) {
     try {
       // Skapa server action.
       toast.success("Uppgifter ändrade");
+      setOpen(false);
     } catch (e) {
       console.error(e);
       toast.error(JSON.stringify(e));
@@ -64,12 +68,17 @@ export function ProfileForm({ details }: { details: UserDetails }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Redigera konto</CardTitle>
-        <CardDescription>Dina uppgifter</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="mx-2">
+          <Pencil className="h-4 w-4" />
+          Ändra uppgifter
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[680px]">
+        <DialogHeader>
+          <DialogTitle>Redigera konto</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -241,7 +250,7 @@ export function ProfileForm({ details }: { details: UserDetails }) {
             </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
