@@ -52,6 +52,8 @@ export default function BookingCal({
     );
   }, [date, lessons]);
 
+  const now = Date.now();
+
   return (
     <div className="flex flex-col gap-6 md:flex-row">
       <div className="flex-none">
@@ -153,18 +155,20 @@ export default function BookingCal({
                         <Button
                           variant={"destructive"}
                           onClick={async () => await delBooking(lesson.id)}
+                          disabled={lesson.startTime.getTime() < now}
                         >
                           Avboka
                         </Button>
                       </div>
                     ) : (
-                      <div>
+                      <div className="text-right">
                         <BookBtn
                           courseId={lesson.courseId}
                           lessonId={lesson.id}
                           purschaseItems={purschaseItems.filter(
                             (itm) => itm.courseId === lesson.courseId,
                           )}
+                          disabled={lesson.startTime.getTime() < now}
                         />
                       </div>
                     )}

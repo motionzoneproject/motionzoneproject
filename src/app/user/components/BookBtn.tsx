@@ -52,12 +52,14 @@ interface Props {
   courseId: string;
   lessonId: string;
   purschaseItems: UserPurchaseWithProduct[];
+  disabled?: boolean;
 }
 
 export default function AddTerminForm({
   courseId,
   lessonId,
   purschaseItems,
+  disabled,
 }: Props) {
   const { user } = useSession();
 
@@ -94,7 +96,11 @@ export default function AddTerminForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button
+          variant={"default"}
+          className="cursor-pointer"
+          disabled={!!disabled}
+        >
           Boka
         </Button>
       </DialogTrigger>
