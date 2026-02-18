@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -36,7 +36,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function EditDetailsForm({ details }: { details: UserDetails }) {
   const { user, session } = useSession();
-  const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,22 +52,54 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
     },
   });
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Reset för att gammal data annars visas.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    form.reset({
+      firstName: details?.firstName ?? "",
+      lastName: details?.lastName ?? "",
+      phoneNumber: details?.phoneNumber ?? "",
+      address: details?.address ?? "",
+      postalCode: details.postalCode ?? "",
+      city: details.city ?? "",
+      dateOfBirth: formatDateToInput(details.dateOfBirth),
+      bio: details.bio ?? "",
+      allowPhotoVideo: details.allowPhotoVideo,
+    });
+  }, [
+    isOpen,
+    form,
+    details.firstName,
+    details.lastName,
+    details.phoneNumber,
+    details.address,
+    details.postalCode,
+    details.city,
+    details.dateOfBirth,
+    details.bio,
+    details.allowPhotoVideo,
+  ]);
+
   if (!session) return notFound();
   if (user?.id !== details.userId) return notFound();
 
-  async function onSubmit(_values: FormValues) {
+  async function onSubmit(values: FormValues) {
     try {
       // Skapa server action.
+
       toast.success("Uppgifter ändrade");
-      setOpen(false);
+      setIsOpen(false);
     } catch (e) {
-      console.error(e);
+      console.error(e, JSON.stringify(values));
       toast.error(JSON.stringify(e));
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="mx-2">
           <Pencil className="h-4 w-4" />
