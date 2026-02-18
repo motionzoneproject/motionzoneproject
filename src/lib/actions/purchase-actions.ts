@@ -2,6 +2,7 @@
 // Så i denna samlar vi actions som rör köpta produkter.
 
 import type { Prisma } from "@/generated/prisma/client";
+import prisma from "../prisma";
 
 // Behöver den här typen för att fortsätta en tx:
 export type PrismaTx = Prisma.TransactionClient;
@@ -97,4 +98,33 @@ export async function handleClips(
   }
 
   return { success: true };
+}
+
+// Så denna funktion räknar antal redan sålda produkter av den specifika produkten, och om man vill räkna med de som ligger och väntar i order.
+export async function countSoldProducts(
+  productId: string,
+  countReserved: boolean,
+): Promise<number> {
+  // 1. Hämta alla purchases med det produktId:t.
+
+  const sold = await prisma.purchase.count({
+    where: { productId: productId },
+  });
+
+  if (!countReserved) return sold;
+
+  const reserved = await prisma.orderItem.aggregate({
+    where: {
+      productId,
+      purchaseItems: { none: {} }, // ännu ej skapat till purchases
+      // order: {
+      //   status: {
+      //     in: ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL", "PAID"], Här behöver vi lägga till CANCELLED innan.
+      //   },
+      // },
+    },
+    _sum: { count: true },
+  });
+
+  return sold + (reserved._sum.count ?? 0);
 }
