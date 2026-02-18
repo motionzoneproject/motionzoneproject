@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { UserDetails } from "@/generated/prisma/client";
+import { changeDetails } from "@/lib/actions/auth";
 import { formatDateToInput } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { UserDetailsSchema } from "@/validations/userforms";
@@ -36,6 +37,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function EditDetailsForm({ details }: { details: UserDetails }) {
   const { user, session } = useSession();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,10 +90,17 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
 
   async function onSubmit(values: FormValues) {
     try {
-      // Skapa server action.
+      const result = await changeDetails(values);
+      if (!result.success) {
+        toast.error("Kunde inte spara uppgifter", {
+          description: result.error,
+        });
+        return;
+      }
 
-      toast.success("Uppgifter ändrade");
+      toast.success("Uppgifter ändrades.");
       setIsOpen(false);
+      router.refresh();
     } catch (e) {
       console.error(e, JSON.stringify(values));
       toast.error(JSON.stringify(e));
@@ -112,7 +121,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="md:grid md:grid-cols-2 md:gap-4">
               <FormField
                 control={form.control}
                 name="firstName"
@@ -182,7 +191,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="md:grid md:grid-cols-2 md:gap-4">
               <FormField
                 control={form.control}
                 name="postalCode"
