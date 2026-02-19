@@ -66,6 +66,7 @@ export default async function LecturePage({ searchParams }: Props) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
+  // Build filters based on search params
   const filters = {
     ...(sp.teacher ? { teacherId: sp.teacher } : {}),
     ...(sp.termin ? { terminId: sp.termin } : {}),
