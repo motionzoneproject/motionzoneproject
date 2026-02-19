@@ -517,7 +517,21 @@ model Event {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime @updatedAt
+  photos Photo[]
 
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  url       String
+  caption   String?
+  isVisible Boolean  @default(true)
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("Photo")
 }
 
 // Enum for order lifecycle states

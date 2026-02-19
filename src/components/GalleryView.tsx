@@ -12,7 +12,7 @@ export default function GalleryView({
     id: string;
     url: string;
     caption?: string;
-    event?: { id: string; headline?: string } | null;
+    event?: { id: string; headline?: string } | null | undefined;
   }>;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,7 +47,7 @@ export default function GalleryView({
       <section>
         <h3 className="text-xl font-semibold mb-4">Alla bilder</h3>
         <PhotoGrid
-          photos={photos}
+          photos={photos.map((p) => ({ ...p, event: p.event ?? undefined }))}
           onClick={(id) => {
             openPhoto(id);
           }}

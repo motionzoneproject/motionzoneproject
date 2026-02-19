@@ -32,7 +32,9 @@ export async function PATCH(
   }
   const body = await req.json();
   if (Object.hasOwn(body, "isVisible")) {
-    await setPhotoVisibility(id, (body as { isVisible?: boolean }).isVisible);
+    const payload = body as { isVisible?: boolean };
+    const isVisible = payload.isVisible === true;
+    await setPhotoVisibility(id, isVisible);
     return NextResponse.json({ success: true });
   }
   // Edit caption/eventId

@@ -37,7 +37,14 @@ export default async function EventPage({ params }: PageProps) {
             Inga bilder kopplade till detta event ännu.
           </div>
         ) : (
-          <GalleryView photos={photos} />
+          <GalleryView
+            photos={photos.map((p) => ({
+              id: p.id,
+              url: p.url,
+              caption: p.caption ?? undefined,
+              event: undefined,
+            }))}
+          />
         )}
       </section>
     </main>

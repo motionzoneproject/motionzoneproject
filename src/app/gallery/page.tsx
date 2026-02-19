@@ -34,7 +34,16 @@ export default async function Page() {
               Inga bilder uppladdade ännu.
             </div>
           ) : (
-            <GalleryView photos={photos} />
+            <GalleryView
+              photos={photos.map((p) => ({
+                id: p.id,
+                url: p.url,
+                caption: p.caption ?? undefined,
+                event: p.event
+                  ? { id: p.event.id, headline: p.event.headline ?? undefined }
+                  : undefined,
+              }))}
+            />
           )}
         </div>
       </section>

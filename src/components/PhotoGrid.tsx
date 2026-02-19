@@ -11,7 +11,7 @@ export default function PhotoGrid({
     id: string;
     url: string;
     caption?: string;
-    event?: { id: string; headline?: string };
+    event?: { id: string; headline?: string } | null;
   }>;
   onClick?: (photoId: string) => void;
 }) {

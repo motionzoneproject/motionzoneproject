@@ -1,76 +1,61 @@
-"use client";
-import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import {
+  deletePhoto,
+  getAllPhotos,
+  setPhotoVisibility,
+  updatePhoto,
+} from "@/lib/actions/photos";
+import PhotoList from "./PhotoList";
+import PhotoUploadForm from "./PhotoUploadForm";
 
-const PhotoUploadForm = dynamic(() => import("./PhotoUploadForm"), {
-  ssr: false,
-});
-
-export default function AdminGalleryPage() {
-  const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const fetchPhotos = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/photos");
-      if (!res.ok) throw new Error("Kunde inte hämta bilder");
-      const data = await res.json();
-      setPhotos(data);
-    } catch (_err) {
-      setError("Fel vid hämtning av bilder");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchPhotos();
-  }, [fetchPhotos]);
-
-  const PhotoList = dynamic(() => import("./PhotoList"), { ssr: false });
+export default async function AdminGalleryPage() {
+  const photos = await getAllPhotos();
 
   async function handleDelete(id: string) {
-    await fetch(`/api/admin/photos/${id}`, { method: "DELETE" });
-    fetchPhotos();
+    "use server";
+    await deletePhoto(id);
   }
 
   async function handleToggleVisibility(id: string, isVisible: boolean) {
-    await fetch(`/api/admin/photos/${id}/visibility`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isVisible }),
-    });
-    fetchPhotos();
+    "use server";
+    await setPhotoVisibility(id, isVisible);
   }
 
-  async function handleEdit(id: string, data: Record<string, unknown>) {
-    await fetch(`/api/admin/photos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+  async function handleEdit(
+    id: string,
+    data: {
+      url?: string;
+      caption?: string | null;
+      eventId?: string | null;
+      isVisible?: boolean;
+    },
+  ) {
+    "use server";
+    await updatePhoto(id, {
+      url: data.url ?? undefined,
+      caption: data.caption ?? undefined,
+      eventId: data.eventId ?? undefined,
+      isVisible: data.isVisible,
     });
-    fetchPhotos();
   }
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Galleri - Hantera bilder</h1>
-      <PhotoUploadForm onUpload={fetchPhotos} />
-      {loading ? (
-        <div>Laddar bilder...</div>
-      ) : error ? (
-        <div className="text-red-600">{error}</div>
-      ) : (
-        <PhotoList
-          photos={photos}
-          onDelete={handleDelete}
-          onToggleVisibility={handleToggleVisibility}
-          onEdit={handleEdit}
-        />
-      )}
+      <PhotoUploadForm />
+      <PhotoList
+        photos={photos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption ?? undefined,
+          isVisible: p.isVisible,
+          event: p.event
+            ? { id: p.event.id, headline: p.event.headline ?? undefined }
+            : undefined,
+        }))}
+        onDelete={handleDelete}
+        onToggleVisibility={handleToggleVisibility}
+        onEdit={handleEdit}
+      />
     </div>
   );
 }

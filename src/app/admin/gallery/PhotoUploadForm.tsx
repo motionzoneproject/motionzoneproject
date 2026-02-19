@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAllEvents } from "@/lib/actions/admin";
 import { addPhoto } from "@/lib/actions/photos";
@@ -10,6 +11,7 @@ interface PhotoUploadFormProps {
 }
 
 export default function PhotoUploadForm({ onUpload }: PhotoUploadFormProps) {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [eventId, setEventId] = useState("");
@@ -40,7 +42,12 @@ export default function PhotoUploadForm({ onUpload }: PhotoUploadFormProps) {
       setCaption("");
       setEventId("");
       setIsVisible(true);
-      if (onUpload) onUpload();
+      if (onUpload) {
+        onUpload();
+      } else {
+        // Refresh server-rendered parent so the new photo appears in the admin list
+        router.refresh();
+      }
       console.log("Photo added:", result);
     } catch (err) {
       if (
