@@ -1,6 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import prisma from "@/lib/prisma";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
 import DeleteProductBtn from "./DelProductBtn";
@@ -12,6 +13,7 @@ interface Props {
 
 export default async function ProductItem({ product }: Props) {
   const allCourses = await getAllCourses();
+  const productStats = await getProductStats(product.id);
   const prodCourse: ProdCourse[] = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
     include: { course: true },
@@ -38,6 +40,14 @@ export default async function ProductItem({ product }: Props) {
           clipCount={product.totalCount ?? 0}
           productCourses={prodCourse}
         />
+      </TableCell>
+      <TableCell>
+        {!productStats.success
+          ? "Okänd"
+          : typeof productStats.spotsLeft === "number" &&
+              Number.isFinite(productStats.spotsLeft)
+            ? `${productStats.spotsLeft} kvar`
+            : "Obegränsat"}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">

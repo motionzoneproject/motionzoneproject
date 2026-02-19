@@ -50,6 +50,7 @@ export default async function Page({
               <TableHead>Typ</TableHead>
               <TableHead>Pris</TableHead>
               <TableHead>Kurser</TableHead>
+              <TableHead>Platser</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
