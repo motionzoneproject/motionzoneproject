@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Termin, User } from "@/generated/prisma/client";
+import useDebounce from "@/hooks/useDebounce";
 
 interface Props {
   teachers: User[];
@@ -30,6 +31,9 @@ export default function CourseFilter({ teachers, terminer }: Props) {
     [searchParams],
   );
 
+  const [searchValue, setSearchValue] = useState(params.get("q") || "");
+  const debouncedSearchValue = useDebounce(searchValue, 300);
+
   const validParam = useCallback(
     (param: "teacher" | "termin", value?: string | null): string => {
       if (param === "teacher")
@@ -42,11 +46,23 @@ export default function CourseFilter({ teachers, terminer }: Props) {
   const setFilter = useCallback(
     (name: string, term: string) => {
       const next = new URLSearchParams(searchParams);
+
+      // Check if the filter value is actually changing
+      const currentValue = searchParams.get(name);
+      const newValue = !term || term === "all" ? null : term;
+      const isChanging = currentValue !== newValue;
+
       if (!term || term === "all") {
         next.delete(name);
       } else {
         next.set(name, term);
       }
+
+      // Reset to page 1 only when filter value actually changes
+      if (isChanging) {
+        next.delete("page");
+      }
+
       const nextQuery = next.toString();
       const currentQuery = searchParams.toString();
       if (nextQuery !== currentQuery) {
@@ -56,21 +72,27 @@ export default function CourseFilter({ teachers, terminer }: Props) {
     [searchParams, pathname, replace],
   );
 
-  const handleSearch = useCallback(
-    (term: string) => {
-      const next = new URLSearchParams(searchParams);
-      if (term) {
-        next.set("q", term);
-      } else {
-        next.delete("q");
-      }
-      const nextQuery = next.toString();
-      if (nextQuery !== searchParams.toString()) {
-        replace(`${pathname}?${nextQuery}`);
-      }
-    },
-    [searchParams, pathname, replace],
-  );
+  // Update URL when debounced search value changes
+  useEffect(() => {
+    if (debouncedSearchValue === undefined) return;
+
+    const next = new URLSearchParams(searchParams);
+
+    if (!debouncedSearchValue) {
+      next.delete("q");
+    } else {
+      next.set("q", debouncedSearchValue);
+    }
+
+    // Reset to page 1 when search changes
+    if (debouncedSearchValue !== (searchParams.get("q") || "")) {
+      next.delete("page");
+    }
+
+    if (next.toString() !== searchParams.toString()) {
+      replace(`${pathname}?${next.toString()}`);
+    }
+  }, [debouncedSearchValue, searchParams, pathname, replace]);
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -99,8 +121,8 @@ export default function CourseFilter({ teachers, terminer }: Props) {
           <Input
             className="w-full"
             placeholder="Sök kursnamn..."
-            onChange={(e) => handleSearch(e.target.value)}
-            defaultValue={searchParams.get("q")?.toString()}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
           />
         </div>
         <div className="space-y-1">
