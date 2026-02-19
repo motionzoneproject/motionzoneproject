@@ -46,7 +46,7 @@ export default async function ProductItem({ product }: Props) {
           ? "Okänd"
           : typeof productStats.spotsLeft === "number" &&
               Number.isFinite(productStats.spotsLeft)
-            ? `${productStats.spotsLeft} kvar`
+            ? `${productStats.spotsLeft} kvar (${productStats.sold} skapade, ${productStats.reserved} reserverade)`
             : "Obegränsat"}
       </TableCell>
       <TableCell className="text-right">
