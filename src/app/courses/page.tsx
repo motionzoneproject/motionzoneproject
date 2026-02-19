@@ -34,6 +34,35 @@ import { getVeckodag } from "@/lib/tools";
 export default async function Page() {
   const products = await getAllProductsWithDetails();
 
+  // Calculate all async data before rendering
+  const productsWithData = await Promise.all(
+    products.map(async (p) => {
+      // Extract unique schemaItems and terminer from all courses in the product
+      const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
+
+      const terminMap = new Map();
+      schemaItems.forEach((s) => {
+        if (s.termin) {
+          terminMap.set(s.termin.id, s.termin);
+        }
+      });
+      const terminer = Array.from(terminMap.values());
+
+      // Calculate spots left
+      // !!! BYT UT MED getProductStats() !!!
+      const spotsLeft = p.unlimitedCustomers
+        ? null
+        : await getRemainingSlotsForCourse(p.id, p.maxCustomer);
+
+      return {
+        ...p,
+        schemaItems,
+        terminer,
+        spotsLeft,
+      };
+    }),
+  );
+
   return (
     <main className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
@@ -47,28 +76,8 @@ export default async function Page() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {products.map(async (p) => {
-            // Extract all schema items from the courses
-            const schemaItems = p.courses.flatMap(
-              (pc) => pc.course.schemaItems,
-            );
-
-            // Extract unique termins from schema items
-            const terminMap = new Map();
-            schemaItems.forEach((s) => {
-              if (s.termin) {
-                terminMap.set(s.termin.id, s.termin);
-              }
-            });
-            const terminer = Array.from(terminMap.values());
-
-            // Keep ProductOnCourse relationships to access lessonsIncluded
+          {productsWithData.map((p) => {
             const productCourses = p.courses;
-
-            // Calculate spots left
-            const spotsLeft = p.unlimitedCustomers
-              ? null
-              : await getRemainingSlotsForCourse(p.id, p.maxCustomer);
 
             return (
               <Card
@@ -80,11 +89,11 @@ export default async function Page() {
                     <Badge className="font-bold text-lg bg-brand text-white border-0">
                       {p.price} kr
                     </Badge>
-                    {spotsLeft !== null && (
+                    {p.spotsLeft !== null && (
                       <Badge
-                        variant={spotsLeft <= 3 ? "destructive" : "outline"}
+                        variant={p.spotsLeft <= 3 ? "destructive" : "outline"}
                       >
-                        {spotsLeft} platser kvar
+                        {p.spotsLeft} platser kvar
                       </Badge>
                     )}
                   </div>
@@ -113,7 +122,7 @@ export default async function Page() {
                       <CalendarDays className="w-3 h-3" />
                       Giltig under
                     </div>
-                    {terminer.map((t) => (
+                    {p.terminer.map((t) => (
                       <div
                         key={t.id}
                         className="text-sm bg-muted p-2 rounded border border-border"
@@ -146,7 +155,7 @@ export default async function Page() {
                             <span className="font-medium text-sm flex items-center gap-1 mb-2">
                               <Book className="w-3 h-3" /> Kurser som ingår:
                             </span>
-                            {productCourses.map(async (pc) => {
+                            {productCourses.map((pc) => {
                               const c = pc.course;
                               // For CLIP products, use totalCount; otherwise use lessonsIncluded
                               const lessonCount =
@@ -200,49 +209,47 @@ export default async function Page() {
                                     Antal Tillfällen: {lessonCount}
                                   </p>
                                   <div className="mt-2">
-                                    {schemaItems
+                                    {p.schemaItems
                                       .filter((s) => s.courseId === c.id)
-                                      .map(async (s) => {
-                                        return (
-                                          <div
-                                            key={s.id}
-                                            className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
-                                          >
-                                            <p className="font-medium">
-                                              {s.termin.name}
-                                            </p>
-                                            <p className="flex items-center text-muted-foreground">
-                                              {getVeckodag(s.weekday)}{" "}
-                                              <Clock className="inline w-3 h-3 mx-1" />
-                                              {s.timeStart.toLocaleTimeString(
-                                                "sv-SE",
-                                                {
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                },
-                                              )}
-                                              –
-                                              {s.timeEnd.toLocaleTimeString(
-                                                "sv-SE",
-                                                {
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                },
-                                              )}
-                                            </p>
-                                            {s.place && (
-                                              <p className="text-brand flex items-center gap-1 mt-1">
-                                                <MapPin className="w-3 h-3" />
-                                                {s.place}
-                                              </p>
+                                      .map((s) => (
+                                        <div
+                                          key={s.id}
+                                          className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
+                                        >
+                                          <p className="font-medium">
+                                            {s.termin.name}
+                                          </p>
+                                          <p className="flex items-center text-muted-foreground">
+                                            {getVeckodag(s.weekday)}{" "}
+                                            <Clock className="inline w-3 h-3 mx-1" />
+                                            {s.timeStart.toLocaleTimeString(
+                                              "sv-SE",
+                                              {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              },
                                             )}
-                                            <div className="mt-2">
-                                              {" "}
-                                              {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
-                                            </div>
+                                            –
+                                            {s.timeEnd.toLocaleTimeString(
+                                              "sv-SE",
+                                              {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              },
+                                            )}
+                                          </p>
+                                          {s.place && (
+                                            <p className="text-brand flex items-center gap-1 mt-1">
+                                              <MapPin className="w-3 h-3" />
+                                              {s.place}
+                                            </p>
+                                          )}
+                                          <div className="mt-2">
+                                            {" "}
+                                            {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
                                           </div>
-                                        );
-                                      })}
+                                        </div>
+                                      ))}
                                   </div>
                                 </div>
                               );
