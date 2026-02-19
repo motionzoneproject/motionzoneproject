@@ -101,26 +101,65 @@ export async function handleClips(
 }
 
 // Så denna funktion räknar antal redan sålda produkter av den specifika produkten, och om man vill räkna med de som ligger och väntar i order.
-export async function countSoldProducts(
-  productId: string,
-  countReserved: boolean,
-): Promise<number> {
+export async function getProductStats(productId: string): Promise<{
+  sold: number | null;
+  reserved: number | null;
+  spotsLeft: number | null;
+  success: boolean;
+  error?: string;
+}> {
   // 1. Hämta alla purchases med det produktId:t.
+  try {
+    const product = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+      select: { maxCustomer: true, unlimitedCustomers: true },
+    });
 
-  const sold = await prisma.purchase.count({
-    where: { productId: productId },
-  });
+    const sold = await prisma.purchase.count({
+      where: {
+        productId: productId,
+        order: { status: { not: "CANCELLED" } },
+      },
+    });
 
-  if (!countReserved) return sold;
+    const orderCount = await prisma.orderItem.aggregate({
+      where: {
+        productId,
+        order: {
+          status: {
+            in: [
+              "CREATED",
+              "PENDING_PAYMENT",
+              "AWAITING_APPROVAL",
+              "PAID",
+              "APPROVED", // Så inte CANCELLED räknas med.
+            ],
+          },
+          // Förhindra dubbelräkning när purchase redan skapats för denna produkt.
+          purchases: { none: { productId } },
+        },
+      },
+      _sum: { count: true },
+    });
 
-  const reserved = await prisma.orderItem.aggregate({
-    where: {
-      productId,
-      purchaseItems: { none: {} },
-      order: { status: { not: "CANCELLED" } },
-    },
-    _sum: { count: true },
-  });
+    const reserved = orderCount._sum.count ?? 0;
 
-  return sold + (reserved._sum.count ?? 0);
+    return {
+      sold: sold,
+      reserved: reserved,
+      spotsLeft: product.unlimitedCustomers
+        ? Infinity
+        : Math.max(0, product.maxCustomer - (sold + reserved)),
+      success: true,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      sold: null,
+      reserved: null,
+      spotsLeft: null,
+      success: false,
+      error: JSON.stringify(e),
+    };
+  }
 }
