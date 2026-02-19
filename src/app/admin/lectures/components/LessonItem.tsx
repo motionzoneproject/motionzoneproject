@@ -30,7 +30,7 @@ export async function LessonItem({ lesson }: { lesson: Lesson }) {
         {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
       </TableCell>
       <TableCell>
-        0/{lesson.maxBookings} <AttendeDialog lesson={lesson} />
+        <AttendeDialog lesson={lesson} />
       </TableCell>
       <TableCell className="text-right">
         <EditLessonBtn lesson={lesson} />
