@@ -58,7 +58,11 @@ export default async function AdminEventPage({ params }: PageProps) {
     );
   }
 
-  const photos = await getPhotosByEvent(id);
+  const photos = (await getPhotosByEvent(id)) as Array<{
+    id: string;
+    url: string;
+    caption?: string | null;
+  }>;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
