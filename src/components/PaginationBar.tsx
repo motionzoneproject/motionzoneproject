@@ -14,13 +14,15 @@ import {
 interface PaginationBarProps {
   currentPage: number;
   totalPages: number;
-  // Number of page links to show on either side of the current page, defaults to 1
   siblingCount?: number;
 }
 
-// A generic Pagination component that preserves existing URL search params.
-// Example usage:
-// <PaginationBar currentPage={page} totalPages={totalPages} />
+/**
+ * Reusable pagination component that preserves existing URL search params
+ * @param currentPage - The current active page number (1-indexed)
+ * @param totalPages - Total number of pages available
+ * @param siblingCount - Number of page links to show on either side of the current page (defaults to 1)
+ */
 export function PaginationBar({
   currentPage,
   totalPages,

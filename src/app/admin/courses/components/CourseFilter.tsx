@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useCallback, useEffect, useMemo } from "react";
+import { SearchInput } from "@/components/SearchInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Termin, User } from "@/generated/prisma/client";
-import useDebounce from "@/hooks/useDebounce";
 
 interface Props {
   teachers: User[];
@@ -30,9 +29,6 @@ export default function CourseFilter({ teachers, terminer }: Props) {
     () => new URLSearchParams(searchParams),
     [searchParams],
   );
-
-  const [searchValue, setSearchValue] = useState(params.get("q") || "");
-  const debouncedSearchValue = useDebounce(searchValue, 300);
 
   const validParam = useCallback(
     (param: "teacher" | "termin", value?: string | null): string => {
@@ -72,28 +68,6 @@ export default function CourseFilter({ teachers, terminer }: Props) {
     [searchParams, pathname, replace],
   );
 
-  // Update URL when debounced search value changes
-  useEffect(() => {
-    if (debouncedSearchValue === undefined) return;
-
-    const next = new URLSearchParams(searchParams);
-
-    if (!debouncedSearchValue) {
-      next.delete("q");
-    } else {
-      next.set("q", debouncedSearchValue);
-    }
-
-    // Reset to page 1 when search changes
-    if (debouncedSearchValue !== (searchParams.get("q") || "")) {
-      next.delete("page");
-    }
-
-    if (next.toString() !== searchParams.toString()) {
-      replace(`${pathname}?${next.toString()}`);
-    }
-  }, [debouncedSearchValue, searchParams, pathname, replace]);
-
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     const sanitize = (key: "teacher" | "termin") => {
@@ -118,12 +92,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1">
           <Label className="text-sm">Sök</Label>
-          <Input
-            className="w-full"
-            placeholder="Sök kursnamn..."
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
+          <SearchInput className="w-full" placeholder="Sök kursnamn..." />
         </div>
         <div className="space-y-1">
           <Label className="text-sm">Lärare</Label>

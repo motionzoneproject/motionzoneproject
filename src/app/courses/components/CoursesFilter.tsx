@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useCallback, useMemo } from "react";
+import { SearchInput } from "@/components/SearchInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import useDebounce from "@/hooks/useDebounce";
 
 export function CoursesFilter() {
   const searchParams = useSearchParams();
@@ -25,9 +24,6 @@ export function CoursesFilter() {
     () => new URLSearchParams(searchParams),
     [searchParams],
   );
-
-  const [searchValue, setSearchValue] = useState(params.get("q") || "");
-  const debouncedSearchValue = useDebounce(searchValue, 300);
 
   const setFilter = useCallback(
     (name: string, value: string) => {
@@ -58,28 +54,6 @@ export function CoursesFilter() {
     [searchParams, pathname, replace],
   );
 
-  // Update URL when debounced search value changes
-  useEffect(() => {
-    if (debouncedSearchValue === undefined) return;
-
-    const next = new URLSearchParams(searchParams);
-
-    if (!debouncedSearchValue) {
-      next.delete("q");
-    } else {
-      next.set("q", debouncedSearchValue);
-    }
-
-    // Reset to page 1 when search changes
-    if (debouncedSearchValue !== (searchParams.get("q") || "")) {
-      next.delete("page");
-    }
-
-    if (next.toString() !== searchParams.toString()) {
-      replace(`${pathname}?${next.toString()}`);
-    }
-  }, [debouncedSearchValue, searchParams, pathname, replace]);
-
   return (
     <div className="w-full">
       <div className="text-xl font-bold mb-3">Filter & Sökning</div>
@@ -87,12 +61,9 @@ export function CoursesFilter() {
         {/* Search Field */}
         <div className="space-y-1">
           <Label className="text-sm">Sök produktnamn</Label>
-          <Input
-            type="text"
+          <SearchInput
             placeholder="Sök..."
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            className="border-0 ring-1 ring-input"
+            className="border-0 ring-1 ring-input w-full"
           />
         </div>
 
