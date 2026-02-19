@@ -224,6 +224,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
               )}
             />
 
+            {isBusy && <Loader />}
             <Button
               type="submit"
               variant="secondary"
@@ -232,7 +233,6 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
             >
               {isBusy ? "Uppdaterar..." : "Uppdatera event"}
             </Button>
-            {/* {isBusy && <Loader />} */}
           </form>
         </Form>
       </CardContent>

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import Loader from "@/components/Loader";
 import {
   Accordion,
   AccordionContent,
@@ -72,6 +73,7 @@ export function AttendenceForm({
   });
 
   const router = useRouter();
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   const userIdByStudentId = useMemo(
     () =>
@@ -213,7 +215,8 @@ export function AttendenceForm({
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
+                {isBusy && <Loader />}
+                <Button type="submit" className="w-full" disabled={isBusy}>
                   Lägg till i lektionen
                 </Button>
               </form>

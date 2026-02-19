@@ -6,7 +6,6 @@ import prisma from "@/lib/prisma";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
 import DeleteProductBtn from "./DelProductBtn";
 import EditProductForm from "./EditProductForm";
-import { RemovePicBtn } from "./RemovePicBtn";
 
 interface Props {
   product: Product;
@@ -33,7 +32,6 @@ export default async function ProductItem({ product }: Props) {
       <TableCell>{productTypeLabel}</TableCell>
       <TableCell>{product.price} kr</TableCell>
       <TableCell>
-        {product.imageURL && <RemovePicBtn url={product.imageURL} />}
         <AddCoursesToProductForm
           count={prodCourse.length}
           allCourses={allCourses}

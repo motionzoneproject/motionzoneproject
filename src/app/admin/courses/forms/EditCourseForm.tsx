@@ -42,6 +42,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,6 +107,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -341,7 +343,8 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                {isBusy && <Loader />}
+                <Button type="submit" className="w-full" disabled={isBusy}>
                   Ändra
                 </Button>
               </form>
