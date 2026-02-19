@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { editProduct } from "@/lib/actions/admin";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
 
@@ -127,11 +128,28 @@ export default function EditProductForm({
       }
     }
 
+    const stats = await getProductStats(productId);
+
     const payload = await formSchema.parseAsync({
       ...values,
       imageURL: finalImageURL,
       maxCustomers: values.unlimitedCustomers ? 0 : values.maxCustomers,
     });
+
+    if (!payload.unlimitedCustomers) {
+      if (!stats.success || stats.sold === null || stats.reserved === null) {
+        toast.error("Kunde inte verifiera platsstatistik. Försök igen.");
+        return;
+      }
+
+      const usedSpots = stats.sold + stats.reserved;
+      if (payload.maxCustomers < usedSpots) {
+        toast.error(
+          `Kan inte sätta max under redan upptagna platser (${usedSpots}).`,
+        );
+        return;
+      }
+    }
 
     const res = await editProduct(productId, payload);
     if (res.success) {

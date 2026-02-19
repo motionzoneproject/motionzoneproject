@@ -47,7 +47,7 @@ export default async function ProductItem({ product }: Props) {
           : typeof productStats.spotsLeft === "number" &&
               Number.isFinite(productStats.spotsLeft)
             ? `${productStats.spotsLeft} kvar (${productStats.sold} skapade, ${productStats.reserved} reserverade)`
-            : "Obegränsat"}
+            : `∞ (${productStats.sold} skapade, ${productStats.reserved} reserverade)`}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
