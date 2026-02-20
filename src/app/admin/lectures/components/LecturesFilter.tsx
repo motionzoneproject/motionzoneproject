@@ -65,10 +65,22 @@ export function LecturesFilter({
   const setFilter = useCallback(
     (name: string, term: string) => {
       const next = new URLSearchParams(searchParams);
+
+      // Check if the filter value is actually changing
+      // This prevents unnecessary URL updates and page resets
+      const currentValue = searchParams.get(name);
+      const newValue = !term || term === "all" ? null : term;
+      const isChanging = currentValue !== newValue;
+
       if (!term || term === "all") {
         next.delete(name);
       } else {
         next.set(name, term);
+      }
+
+      // Reset to page 1 only when filter value actually changes
+      if (isChanging) {
+        next.delete("page");
       }
 
       const nextQuery = next.toString();
@@ -109,7 +121,7 @@ export function LecturesFilter({
   return (
     <div className="w-full rounded border-2 p-3">
       <div className="text-xl font-bold">Filter</div>
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <div className="space-y-1">
           <Label className="text-sm">Lärare</Label>
           <Select

@@ -6,7 +6,6 @@ import type {
   Course,
   Prisma,
   Product,
-  SchemaItem,
   Termin,
 } from "@/generated/prisma/client";
 import prisma from "../prisma";
@@ -379,7 +378,7 @@ export async function getProductTermin(pid: string): Promise<Termin[]> {
   }
 }
 
-export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
+export async function getProductSchema(pid: string) {
   try {
     const schemaItems = await prisma.schemaItem.findMany({
       where: {
@@ -391,10 +390,6 @@ export async function getProductSchema(pid: string): Promise<SchemaItem[]> {
           },
         },
       },
-      // include: { // eventuellt.
-      //   termin: true,
-      //   course: true,
-      // },
       orderBy: {
         weekday: "asc", // Eller vad som passar din sortering
       },
@@ -525,4 +520,16 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     console.error("Kunde inte autoboka lektioner", e);
     return [];
   }
+}
+
+// Counts how many slots are left for a course, so we can show it on the cards on the course page.
+// Returns the total number of slots left, or null if there is no limit (unlimitedCustomers = true).
+export async function getRemainingSlotsForCourse(
+  productId: string,
+  maxCustomer: number,
+) {
+  const totalPurchases = await prisma.purchase.count({
+    where: { productId: productId },
+  });
+  return maxCustomer - totalPurchases;
 }

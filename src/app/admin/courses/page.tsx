@@ -1,3 +1,4 @@
+import { PaginationBar } from "@/components/PaginationBar";
 import {
   Table,
   TableBody,
@@ -14,7 +15,12 @@ import AddCourseForm from "./forms/AddCourseForm";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; teacher?: string; termin?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    teacher?: string;
+    termin?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
   const query = params.q || "";
@@ -35,9 +41,20 @@ export default async function Page({
     ...(termin ? { schemaItems: { some: { terminId: termin } } } : {}),
   };
 
+  // Pagination
+  const ITEMS_PER_PAGE = 10;
+  const currentPage = Number(params.page) || 1;
+  const skip = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  // Get total count for pagination
+  const totalCourses = await prisma.course.count({ where });
+  const totalPages = Math.ceil(totalCourses / ITEMS_PER_PAGE);
+
   const allCourses = await prisma.course.findMany({
     where,
     orderBy: { name: "asc" },
+    skip,
+    take: ITEMS_PER_PAGE,
   });
   const teacherMap = new Map(teachers.map((t) => [t.id, t.name]));
 
@@ -48,6 +65,10 @@ export default async function Page({
         <AddCourseForm teachers={teachers} />
       </div>
       <CourseFilter teachers={teachers} terminer={terminer} />
+
+      <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>Totalt {totalCourses} kurser</span>
+      </div>
 
       <div className="mt-2">
         <Table className="min-w-[760px]">
@@ -77,6 +98,13 @@ export default async function Page({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4">
+          <PaginationBar currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      )}
     </div>
   );
 }

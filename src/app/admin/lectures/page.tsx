@@ -1,3 +1,4 @@
+import { PaginationBar } from "@/components/PaginationBar";
 import {
   Table,
   TableBody,
@@ -9,7 +10,6 @@ import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { LecturesFilter } from "./components/LecturesFilter";
 import { LessonItem } from "./components/LessonItem";
-import { Paginate } from "./components/Paginate";
 
 interface Props {
   searchParams: Promise<{
@@ -21,7 +21,7 @@ interface Props {
     schemaitem?: string;
     status?: string;
     hideold?: string;
-    take: string;
+    page?: string;
   }>;
 }
 
@@ -66,7 +66,8 @@ export default async function LecturePage({ searchParams }: Props) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const where = {
+  // Build filters based on search params
+  const filters = {
     ...(sp.teacher ? { teacherId: sp.teacher } : {}),
     ...(sp.termin ? { terminId: sp.termin } : {}),
     ...(sp.course ? { courseId: sp.course } : {}),
@@ -90,10 +91,20 @@ export default async function LecturePage({ searchParams }: Props) {
         : {}),
   };
 
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const currentPage = Number(sp.page) || 1;
+  const skip = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  // Get total count for pagination
+  const totalLessons = await prisma.lesson.count({ where: filters });
+  const totalPages = Math.ceil(totalLessons / ITEMS_PER_PAGE);
+
   const lessons = await prisma.lesson.findMany({
-    where,
+    where: filters,
     orderBy: { startTime: "asc" },
-    take: 25,
+    skip,
+    take: ITEMS_PER_PAGE,
   });
 
   return (
@@ -107,31 +118,43 @@ export default async function LecturePage({ searchParams }: Props) {
         terminer={terminer}
       />
 
-      <Paginate />
+      {totalLessons > 0 ? (
+        <>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Visar {skip + 1}-{Math.min(skip + ITEMS_PER_PAGE, totalLessons)}{" "}
+              av {totalLessons} lektioner
+            </span>
+          </div>
 
-      <div className="mt-2">
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Datum - tid</TableHead>
-              <TableHead>Kurs</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Närvaro</TableHead>
-              <TableHead className="text-right">Åtgärder</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lessons.map((l) => (
-              <LessonItem lesson={l} key={l.id} />
-            ))}
-          </TableBody>
-        </Table>
-        {lessons.length === 25 && (
-          <span className="italic p-2 bg-amber-200 text-black">
-            (visar max 25 lektioner, använd filtret för att hitta fler.)
-          </span>
-        )}
-      </div>
+          <div className="mt-2">
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Datum - tid</TableHead>
+                  <TableHead>Kurs</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Närvaro</TableHead>
+                  <TableHead className="text-right">Åtgärder</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lessons.map((l) => (
+                  <LessonItem lesson={l} key={l.id} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationBar currentPage={currentPage} totalPages={totalPages} />
+        </>
+      ) : (
+        <div className="text-center py-12 border rounded-lg bg-muted/20 mt-4">
+          <p className="text-muted-foreground">
+            Inga lektioner hittades med nuvarande filter.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

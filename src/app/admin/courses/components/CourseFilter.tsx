@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/SearchInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -42,30 +42,26 @@ export default function CourseFilter({ teachers, terminer }: Props) {
   const setFilter = useCallback(
     (name: string, term: string) => {
       const next = new URLSearchParams(searchParams);
+
+      // Check if the filter value is actually changing
+      const currentValue = searchParams.get(name);
+      const newValue = !term || term === "all" ? null : term;
+      const isChanging = currentValue !== newValue;
+
       if (!term || term === "all") {
         next.delete(name);
       } else {
         next.set(name, term);
       }
+
+      // Reset to page 1 only when filter value actually changes
+      if (isChanging) {
+        next.delete("page");
+      }
+
       const nextQuery = next.toString();
       const currentQuery = searchParams.toString();
       if (nextQuery !== currentQuery) {
-        replace(`${pathname}?${nextQuery}`);
-      }
-    },
-    [searchParams, pathname, replace],
-  );
-
-  const handleSearch = useCallback(
-    (term: string) => {
-      const next = new URLSearchParams(searchParams);
-      if (term) {
-        next.set("q", term);
-      } else {
-        next.delete("q");
-      }
-      const nextQuery = next.toString();
-      if (nextQuery !== searchParams.toString()) {
         replace(`${pathname}?${nextQuery}`);
       }
     },
@@ -96,12 +92,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1">
           <Label className="text-sm">Sök</Label>
-          <Input
-            className="w-full"
-            placeholder="Sök kursnamn..."
-            onChange={(e) => handleSearch(e.target.value)}
-            defaultValue={searchParams.get("q")?.toString()}
-          />
+          <SearchInput className="w-full" placeholder="Sök kursnamn..." />
         </div>
         <div className="space-y-1">
           <Label className="text-sm">Lärare</Label>
