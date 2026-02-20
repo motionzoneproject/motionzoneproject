@@ -36,12 +36,12 @@ export async function AttendeDialog({ lesson }: Props) {
     <Dialog>
       <DialogTrigger asChild>
         <Button>
-          <EditIcon />
+          <EditIcon />({bookings.length}st)
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Hantera närvaro</DialogTitle>
+          <DialogTitle>Hantera närvaro ({bookings.length}st)</DialogTitle>
           <DialogDescription>
             Lägg till eller ta bort elever från lektionen.
             <br />
