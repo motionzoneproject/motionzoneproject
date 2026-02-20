@@ -26,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { addToCart } from "@/lib/actions/cart";
-import { getRemainingSlotsForCourse } from "@/lib/actions/server-actions";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import prisma from "@/lib/prisma";
 import { getVeckodag } from "@/lib/tools";
 import { CoursesFilter } from "./components/CoursesFilter";
@@ -118,6 +118,10 @@ export default async function Page({ searchParams }: Props) {
   // Calculate all async data before rendering
   const productsWithData = await Promise.all(
     products.map(async (p) => {
+      const stats = await getProductStats(p.id);
+      if (!stats.success || typeof stats.spotsLeft !== "number")
+        throw new Error(`Could not get stats for product: \n${stats.error}`);
+
       // Extract unique schemaItems and terminer from all courses in the product
       const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
 
@@ -129,11 +133,7 @@ export default async function Page({ searchParams }: Props) {
       });
       const terminer = Array.from(terminMap.values());
 
-      // Calculate spots left
-      // !!! BYT UT MED getProductStats() !!!
-      const spotsLeft = p.unlimitedCustomers
-        ? null
-        : await getRemainingSlotsForCourse(p.id, p.maxCustomer);
+      const spotsLeft = stats.spotsLeft;
 
       return {
         ...p,
@@ -186,13 +186,13 @@ export default async function Page({ searchParams }: Props) {
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
                           {p.price} kr
                         </Badge>
-                        {p.spotsLeft !== null && (
+                        {Number.isFinite(p.spotsLeft) && (
                           <Badge
                             variant={
                               p.spotsLeft <= 3 ? "destructive" : "outline"
                             }
                           >
-                            {p.spotsLeft} platser kvar
+                            {`${p.spotsLeft} platser kvar`}
                           </Badge>
                         )}
                       </div>
@@ -374,6 +374,7 @@ export default async function Page({ searchParams }: Props) {
                       >
                         <Button
                           type="submit"
+                          disabled={p.spotsLeft === 0}
                           className="w-full bg-brand hover:bg-brand-light text-white font-medium"
                         >
                           Köp nu →
