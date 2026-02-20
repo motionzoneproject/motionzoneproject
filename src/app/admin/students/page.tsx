@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { isAdminRole } from "@/lib/actions/admin";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
+import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 
 export const dynamic = "force-dynamic";
 
@@ -110,9 +112,9 @@ export default async function StudentsPage(props: {
             className="h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="">Alla kurser</option>
-            {courses.map((c) => (
+            {courses.map(async (c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {await getFullCourseNameFromId(c.id)}
               </option>
             ))}
           </select>
@@ -210,14 +212,22 @@ export default async function StudentsPage(props: {
                                 purchase: pur,
                                 purchaseItem: item,
                               });
+
                               // Find relevant term(s) for this course
-                              const courseTerms = item.course.schemaItems
+                              const courseTerms = [
+                                ...new Set(
+                                  item.course.schemaItems.map(
+                                    (si) => si.terminId,
+                                  ),
+                                ),
+                              ]
                                 .map(
-                                  (si) =>
-                                    terminer.find((t) => t.id === si.terminId)
-                                      ?.name,
+                                  (id) =>
+                                    terminer.find((t) => t.id === id)?.name,
                                 )
-                                .filter(Boolean);
+                                .filter((name): name is string =>
+                                  Boolean(name),
+                                );
                               // Product info
                               const productName = pur.product?.name;
                               return (
@@ -226,7 +236,7 @@ export default async function StudentsPage(props: {
                                   className="p-2 rounded border bg-card text-sm"
                                 >
                                   <div className="font-semibold truncate">
-                                    {item.course.name}
+                                    {getCourseName(item.course)}
                                   </div>
                                   <div className="text-[10px] text-muted-foreground flex flex-col mt-1">
                                     <span>
