@@ -11,7 +11,8 @@ type OrderStatus =
   | "PENDING_PAYMENT"
   | "AWAITING_APPROVAL"
   | "APPROVED"
-  | "PAID";
+  | "PAID"
+  | "CANCELLED";
 
 type OrderItemLite = {
   id: string;

@@ -31,7 +31,7 @@ import {
 import prisma from "../prisma";
 
 import { formToDbDate } from "../time-convert";
-import { handleClips } from "./purchase-actions";
+import { getProductStats, handleClips } from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
 
 /**
@@ -1133,15 +1133,23 @@ export async function editProduct(
     const unlimitedCustomers = validated.unlimitedCustomers === true;
     const maxCustomers = unlimitedCustomers ? 0 : validated.maxCustomers;
 
-    // kolla så vi inte sänker för lågt. och får minus i plats kvar osv.
-    const salesCount = await prisma.purchase.count({
-      where: { productId: id },
-    });
-    if (!unlimitedCustomers && maxCustomers < salesCount) {
-      return {
-        success: false,
-        msg: "Kan inte sänka maxantalet under redan sålt antal.",
-      };
+    // Kolla så vi inte sänker under redan upptagna platser (sålda + reserverade).
+    if (!unlimitedCustomers) {
+      const stats = await getProductStats(id);
+      if (!stats.success || stats.sold === null || stats.reserved === null) {
+        return {
+          success: false,
+          msg: "Kunde inte verifiera platsstatistik. Försök igen.",
+        };
+      }
+
+      const usedSpots = stats.sold + stats.reserved;
+      if (maxCustomers < usedSpots) {
+        return {
+          success: false,
+          msg: `Kan inte sänka maxantalet under redan upptagna platser (${usedSpots}).`,
+        };
+      }
     }
 
     const newProd = await prisma.product.update({

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { clearCart } from "@/lib/cart";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
+import prisma from "../prisma";
+import { getProductStats } from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
 
 export type CheckoutItem = {
@@ -25,6 +27,54 @@ export async function createCheckout(params: {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("No items provided");
   }
+
+  // kontrollera så platser kvar inte överstigs (och kan beräknas) och att produkten är giltig.
+
+  const pCountTotal = new Map();
+
+  for (const itm of items) {
+    const p = await prisma.product.findUnique({
+      where: { id: itm.productId },
+    });
+    if (!p)
+      throw new Error(
+        `Product ${itm.productId} was not found. Order cancelled.`,
+      );
+
+    const stats = await getProductStats(p.id);
+
+    if (!stats.success)
+      throw new Error(
+        `Could not get stats for product ${itm.productId}. Order cancelled.`,
+      );
+
+    if (
+      typeof stats.spotsLeft === "number" &&
+      Number.isFinite(stats.spotsLeft) &&
+      itm.count > stats.spotsLeft
+    )
+      throw new Error(
+        `prodcut count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
+      );
+
+    // Vi behöver kolla totalt också.
+    pCountTotal.set(
+      itm.productId,
+      (pCountTotal.get(itm.productId) ?? 0) + itm.count,
+    );
+
+    const totalInCartForProduct = pCountTotal.get(itm.productId) ?? 0;
+    if (
+      typeof stats.spotsLeft === "number" &&
+      Number.isFinite(stats.spotsLeft) &&
+      totalInCartForProduct > stats.spotsLeft
+    )
+      throw new Error(
+        `product count exceeds limit for product ${itm.productId}. Count was ${totalInCartForProduct} and spotsLeft is ${stats.spotsLeft}.`,
+      );
+  }
+
+  // Order ok!
 
   const order = await createOrder({
     userId: session.user.id,

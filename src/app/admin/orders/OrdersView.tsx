@@ -10,7 +10,8 @@ type OrderStatus =
   | "PENDING_PAYMENT"
   | "AWAITING_APPROVAL"
   | "APPROVED"
-  | "PAID";
+  | "PAID"
+  | "CANCELLED";
 
 type OrderLite = {
   id: string;
@@ -41,11 +42,13 @@ export default function OrdersView({
   defaultStatus,
   onApprove,
   onMarkPaid,
+  onCancel,
 }: {
   orders: OrderLite[];
   defaultStatus: string;
   onApprove: (formData: FormData) => void;
   onMarkPaid: (formData: FormData) => void;
+  onCancel: (formData: FormData) => void;
 }) {
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
@@ -126,6 +129,8 @@ export default function OrdersView({
         return "Godkänd";
       case "PAID":
         return "Betald";
+      case "CANCELLED":
+        return "Avbruten";
       default:
         return status;
     }
@@ -141,6 +146,8 @@ export default function OrdersView({
         return "bg-emerald-500/10 text-emerald-500";
       case "PAID":
         return "bg-blue-500/10 text-blue-500";
+      case "CANCELLED":
+        return "bg-rose-500/10 text-rose-500";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -316,6 +323,7 @@ export default function OrdersView({
                         "CREATED",
                         "PENDING_PAYMENT",
                         "AWAITING_APPROVAL",
+                        "PAID",
                       ].includes(o.status || "") && (
                         <form
                           action={onApprove}
@@ -346,6 +354,24 @@ export default function OrdersView({
                             pendingText="..."
                           >
                             Betald
+                          </SubmitButton>
+                        </form>
+                      )}
+                      {[
+                        "CREATED",
+                        "PENDING_PAYMENT",
+                        "AWAITING_APPROVAL",
+                      ].includes(o.status || "") && (
+                        <form
+                          action={onCancel}
+                          className="flex items-center gap-2"
+                        >
+                          <input type="hidden" name="orderId" value={o.id} />
+                          <SubmitButton
+                            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-medium transition-colors"
+                            pendingText="..."
+                          >
+                            Avbryt
                           </SubmitButton>
                         </form>
                       )}

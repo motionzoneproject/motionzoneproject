@@ -4,6 +4,7 @@ export const revalidate = 0;
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import { readCart } from "@/lib/cart";
 import prisma from "@/lib/prisma";
 
@@ -25,24 +26,51 @@ export default async function CartSummary() {
   const ids = items.map((i) => i.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true, price: true },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      maxCustomer: true,
+      unlimitedCustomers: true,
+    },
   });
-  const byId = new Map(products.map((p) => [p.id, p]));
+
+  const getProductById = new Map(products.map((p) => [p.id, p]));
 
   let total = 0;
-  const rows = items.map((it) => {
-    const p = byId.get(it.productId);
-    const unit = p ? parseFloat(String(p.price)) : 0;
-    const line = unit * it.qty;
-    total += line;
-    return {
-      id: it.productId,
-      name: p?.name ?? "Okänd produkt",
-      unit,
-      qty: it.qty,
-      line,
-    };
-  });
+  const rows = await Promise.all(
+    items.map(async (it) => {
+      const p = getProductById.get(it.productId);
+      if (!p) {
+        return {
+          id: it.productId,
+          name: "Okänd produkt",
+          unit: 0,
+          qty: 0,
+          available: 0,
+          success: false,
+          line: 0,
+        };
+      }
+
+      const unit = parseFloat(String(p.price));
+      const line = unit * it.qty;
+      const stats = await getProductStats(p.id);
+      const available = stats.success ? (stats.spotsLeft ?? 0) : 0;
+      total += line;
+
+      return {
+        id: it.productId,
+        name: p.name,
+        unit,
+        qty: stats.success ? it.qty : 0,
+        maxCustomer: p.maxCustomer,
+        success: stats.success,
+        available,
+        line,
+      };
+    }),
+  );
 
   return (
     <div className="space-y-4">
@@ -54,6 +82,20 @@ export default async function CartSummary() {
               <p className="text-sm text-muted-foreground">
                 {r.unit.toFixed(0)} kr / st
               </p>
+              <p className="text-xs text-muted-foreground">
+                {!r.success
+                  ? "Platsstatus: okänd (fel vid hämtning)"
+                  : Number.isFinite(r.available)
+                    ? `max: ${r.available}st`
+                    : "Obegränsat"}
+              </p>
+              {r.success &&
+                Number.isFinite(r.available) &&
+                r.qty >= r.available && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Max antal platser uppnått för denna produkt.
+                  </p>
+                )}
             </div>
             <div className="flex items-center gap-3">
               <form
@@ -80,7 +122,11 @@ export default async function CartSummary() {
               >
                 <button
                   type="submit"
-                  className="w-8 h-8 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground"
+                  disabled={
+                    !r.success ||
+                    (Number.isFinite(r.available) && r.qty >= r.available)
+                  }
+                  className="w-8 h-8 flex items-center justify-center rounded bg-muted hover:bg-muted/80 text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   +
                 </button>

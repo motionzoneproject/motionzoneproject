@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { clearCart, readCart, writeCart } from "@/lib/cart";
+import prisma from "../prisma";
+import { getProductStats } from "./purchase-actions";
 
 export async function addToCart(params: {
   productId: string;
@@ -31,7 +33,29 @@ export async function updateCart(params: { productId: string; qty: number }) {
   const cart = await readCart();
   const item = cart.items.find((i) => i.productId === productId);
   if (item) {
-    item.qty = qty;
+    // kontroll av max.
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { maxCustomer: true, unlimitedCustomers: true },
+    });
+
+    let finalQty = qty;
+
+    if (product && !product.unlimitedCustomers && product.maxCustomer > 0) {
+      const stats = await getProductStats(productId);
+      if (
+        stats.success &&
+        typeof stats.spotsLeft === "number" &&
+        Number.isFinite(stats.spotsLeft)
+      ) {
+        finalQty = Math.min(qty, stats.spotsLeft);
+      } else {
+        finalQty = 0;
+      }
+    }
+
+    item.qty = finalQty;
     if (item.qty <= 0) {
       cart.items = cart.items.filter((i) => i.productId !== productId);
     }
