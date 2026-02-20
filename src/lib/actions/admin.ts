@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import type z from "zod";
 import type {
   Booking,
@@ -18,7 +19,7 @@ import type {
   Weekday,
 } from "@/generated/prisma/client";
 import {
-  AdminAddStudentToLessonForm,
+  AddStudentToLessonForm,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
@@ -28,10 +29,11 @@ import {
   adminLessonFormSchema,
   adminProductSchema,
 } from "@/validations/adminforms";
+import { auth } from "../auth";
 import prisma from "../prisma";
-
 import { formToDbDate } from "../time-convert";
 import { getProductStats, handleClips } from "./purchase-actions";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 /**
@@ -993,7 +995,6 @@ export async function editLessonItem(
   try {
     const validated = await adminLessonFormSchema.parseAsync(formData);
 
-    // 1. Hämta nuvarande status innan vi ändrar något
     const currentLesson = await prisma.lesson.findUnique({
       where: { id: validated.id },
       include: { bookings: true },
@@ -1002,28 +1003,21 @@ export async function editLessonItem(
     if (!currentLesson) return { success: false, msg: "Lesson not found." };
 
     await prisma.$transaction(async (tx) => {
-      // 2. Kolla om vi ställer in lektionen NU (från false till true)
       if (!currentLesson.cancelled && validated.cancelled) {
         for (const booking of currentLesson.bookings) {
-          // Via rätt nu:
           const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
           if (!clipResult.success) {
             throw new Error(clipResult.msg || "Clip update failed.");
           }
         }
-      }
-      // 3. Kolla om vi aktiverar en inställd lektion igen (från true till false)
-      else if (currentLesson.cancelled && !validated.cancelled) {
-        for (const booking of currentLesson.bookings) {
-          // Via rätt nu:
-          const clipResult = await handleClips(tx, booking.purchaseItemId, -1);
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
-        }
+
+        // Ta bort bokningarna när lektionen ställs in.
+        await tx.booking.deleteMany({
+          where: { lessonId: validated.id },
+        });
       }
 
-      // 4. Uppdatera själva lektionen och bokningarna
+      // 4. Uppdatera själva lektionen
       await tx.lesson.update({
         where: { id: validated.id },
         data: {
@@ -1031,18 +1025,13 @@ export async function editLessonItem(
           cancelled: validated.cancelled,
         },
       });
-
-      await tx.booking.updateMany({
-        where: { lessonId: validated.id },
-        data: { cancelled: validated.cancelled },
-      });
     });
 
-    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
 
     return {
       success: true,
-      msg: "Lektionen och klipp-saldon har uppdaterats.",
+      msg: "Lektionen, bokningar och klipp-saldon har uppdaterats.",
     };
   } catch (e) {
     console.error(e);
@@ -1592,53 +1581,85 @@ export async function getBookings(
   }
 }
 
+// Kanske flytta ut denna sen från admin, tänker att vi använder samma för bokning ifrån profilsidan också.
 export async function addUserInLesson(
-  formData: z.output<typeof AdminAddStudentToLessonForm>,
+  formData: z.output<typeof AddStudentToLessonForm>,
 ): Promise<{ success: boolean; msg: string }> {
+  const validated = await AddStudentToLessonForm.parseAsync(formData);
+  const session = await auth.api.getSession({ headers: await headers() });
   const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+
+  if (!session) return { success: false, msg: "Ingen session." };
+  if (session.user.id !== validated.userId) {
+    if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+  }
 
   try {
-    const validated = await AdminAddStudentToLessonForm.parseAsync(formData);
+    // hämta purchaseItem och purchase för kontroller
+    const pitem = await prisma.purchaseItem.findUnique({
+      where: { id: validated.purchaseItemId },
+      include: { purchase: true, course: true },
+    });
 
-    // 1. Kontrollera om deltagaren redan är bokad på lektionen (genom att kolla om purchaseItems använts)
+    if (!pitem) return { success: false, msg: "Ingen purchaseItem hittades." };
+    // Kontrollera om purchaseItem redan har använts på lektionen.
+
     const existingBooking = await prisma.booking.findFirst({
-      where: {
-        lessonId: validated.lessonId,
-        OR: [
-          // Om participant:
-          {
+      where: pitem.purchase.participantId
+        ? {
+            // Deltagare-bokning: samma participant får inte bokas två gånger
+            lessonId: validated.lessonId,
             purchaseItem: {
-              purchase: { participantId: validated.participantId },
+              purchase: { participantId: pitem.purchase.participantId },
+            },
+          }
+        : {
+            // Owner-bokning: samma user får inte bokas två gånger som owner
+            lessonId: validated.lessonId,
+            userId: validated.userId,
+            purchaseItem: {
+              purchase: { participantId: null },
             },
           },
-
-          // Om owner:
-          {
-            userId: validated.userId,
-            purchaseItem: { purchase: { participantId: null } },
-          },
-        ],
-      },
     });
 
     if (existingBooking) {
       return {
         success: false,
-        msg: "Användaren är redan bokad på denna lektion.",
+        msg: "Deltagaren har redan bokats på denna lektion.",
       };
     }
 
     // 2. Kolla status på lektionen
     const lesson = await prisma.lesson.findUnique({
       where: { id: validated.lessonId },
-      select: { cancelled: true },
     });
 
     if (!lesson || lesson.cancelled) {
       return {
         success: false,
         msg: "Lektionen är inställd eller hittades inte.",
+      };
+    }
+
+    if (!pitem.purchase)
+      return { success: false, msg: "Ingen purchase hittades." };
+
+    // Kolla så kursen är samma.
+    if (pitem?.courseId !== lesson.courseId)
+      return { success: false, msg: "Kursen stämmer ej med vald produkt." };
+
+    const hasClips = hasRemainingCount(
+      calcRemainingCount({ purchase: pitem.purchase, purchaseItem: pitem }),
+    );
+
+    if (!hasClips)
+      return { success: false, msg: "inga tillgängliga klipp i vald produkt" };
+
+    if (!isAdmin && lesson.startTime.getTime() < Date.now()) {
+      return {
+        success: false,
+        msg: "Lektionen har redan varit, ednast lärare kan lägga in bakåt i tiden.",
       };
     }
 
@@ -1660,8 +1681,9 @@ export async function addUserInLesson(
     });
 
     revalidatePath("/admin/lectures");
+    revalidatePath("/user");
 
-    return { success: true, msg: "Användaren är nu inbokad på lektionen!" };
+    return { success: true, msg: `Bokning slutförd!` };
   } catch (e) {
     console.error("Fel vid admin-bokning:", e);
     return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };

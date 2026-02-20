@@ -27,8 +27,10 @@ import {
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { AutobookBtn } from "./AutobookBtn";
-import BookingCal from "./BookingCal";
-import OrderHistory from "./OrderHistory";
+import BookingCal from "./components/BookingCal";
+import { EditDetailsForm } from "./components/EditDetailsForm";
+import { EditPwForm } from "./components/EditPwForm";
+import OrderHistory from "./components/OrderHistory";
 
 export default async function Page() {
   const sessionData = await getSessionData();
@@ -89,34 +91,9 @@ export default async function Page() {
         </div>
       </CardHeader>
       <CardContent>
-        {userDetails && (
-          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border bg-muted/30">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Kontaktuppgifter
-              </p>
-              <p className="text-sm mt-1">
-                <span className="font-semibold">Telefon:</span>{" "}
-                {userDetails.phoneNumber || "Ej angivet"}
-              </p>
-              <p className="text-sm">
-                <span className="font-semibold">E-post:</span> {user?.email}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Adress
-              </p>
-              <p className="text-sm mt-1">
-                {userDetails.address || "Ej angiven adress"}
-              </p>
-              <p className="text-sm">
-                {userDetails.postalCode} {userDetails.city}
-              </p>
-            </div>
-          </div>
-        )}
-
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">
+          Bokningar
+        </h3>
         <BookingCal
           purschaseItems={purschaseItems}
           lessons={lessons}
@@ -141,7 +118,14 @@ export default async function Page() {
                       <span className="text-xs text-brand">
                         Produkt / Paket
                       </span>
-                      <p className="font-medium">{group.productName}</p>
+                      <p className="font-medium">
+                        {group.productName}{" "}
+                        {group.items[0]?.purchase.participant && (
+                          <span>
+                            ({group.items[0]?.purchase.participant?.name})
+                          </span>
+                        )}
+                      </p>
                     </div>
                     <Badge variant="outline">
                       {group.items.length}{" "}
@@ -316,6 +300,39 @@ export default async function Page() {
         )}
 
         <OrderHistory orders={orders} />
+
+        {userDetails && (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border bg-muted/30">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Kontaktuppgifter
+              </p>
+              <p className="text-sm mt-1">
+                <span className="font-semibold">Telefon:</span>{" "}
+                {userDetails.phoneNumber || "Ej angivet"}
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold">E-post:</span> {user?.email}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Adress
+              </p>
+              <p className="text-sm mt-1">
+                {userDetails.address || "Ej angiven adress"}
+              </p>
+              <p className="text-sm">
+                {userDetails.postalCode} {userDetails.city}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="my-4 flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
+          {userDetails && <EditDetailsForm details={userDetails} />}
+          <EditPwForm />
+        </div>
       </CardContent>
     </Card>
   );

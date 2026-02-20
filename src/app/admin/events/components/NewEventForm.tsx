@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewEvent } from "@/lib/actions/admin";
+import { formatDateToInput } from "@/lib/date-utils";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEventSchema } from "@/validations/adminforms";
 
@@ -74,26 +75,6 @@ export default function NewEventForm() {
       toast.error(res.msg);
     }
   }
-
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    // Fallback: Returnera tomt
-    return "";
-  };
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 

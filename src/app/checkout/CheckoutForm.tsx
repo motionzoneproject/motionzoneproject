@@ -111,14 +111,8 @@ export default function CheckoutForm({
         let participantId: string | null = null;
 
         if (slot.isSelf) {
-          // It's the user themselves.
-          const p = await getOrCreateParticipant({
-            name: user.name,
-            email: user.email,
-            allowPhotoVideo: userDetails?.allowPhotoVideo ?? false,
-            userId: user.id,
-          });
-          participantId = p.id;
+          // It's the user themselves, keep participant null.
+          participantId = null;
         } else if (slot.participantId && slot.participantId !== "new") {
           participantId = slot.participantId;
         } else if (slot.customData) {

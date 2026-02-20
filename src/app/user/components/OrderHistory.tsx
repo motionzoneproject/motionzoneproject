@@ -20,6 +20,9 @@ type OrderItem = {
   product: {
     name: string;
   };
+  participant?: {
+    name: string;
+  } | null;
 };
 
 type Order = {
@@ -143,11 +146,17 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                 {selectedOrder.orderItems.map((item) => (
                                   <div
                                     key={item.id}
-                                    className="flex justify-between text-sm"
+                                    className="flex justify-between text-sm gap-3"
                                   >
-                                    <span>
-                                      {item.product.name} x {item.count}
-                                    </span>
+                                    <div>
+                                      <span>
+                                        {item.product.name} x {item.count}
+                                      </span>
+                                      <p className="text-xs text-muted-foreground">
+                                        Deltagare:{" "}
+                                        {item.participant?.name ?? "Du själv"}
+                                      </p>
+                                    </div>
                                     <span>{item.price?.toString()} kr</span>
                                   </div>
                                 ))}

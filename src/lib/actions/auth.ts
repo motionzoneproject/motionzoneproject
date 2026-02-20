@@ -4,6 +4,7 @@ import type z from "zod";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
+import { UserDetailsSchema, UserPasswordSchema } from "@/validations/userforms";
 
 type SignUpValues = z.infer<typeof SignUpFormSchema>;
 
@@ -59,6 +60,120 @@ export async function signUpWithDetails(values: SignUpValues) {
       error instanceof Error
         ? error.message
         : "Ett oväntat fel inträffade vid registrering";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+type ChangeDetailsValues = z.infer<typeof UserDetailsSchema>;
+
+const nullIfEmpty = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+export async function changeDetails(values: ChangeDetailsValues) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({
+    headers: reqHeaders,
+  });
+  if (!session) return { success: false, error: "Ej inloggad." };
+  const user = session.user;
+
+  try {
+    const validated = await UserDetailsSchema.parseAsync(values);
+    const fullName = `${validated.firstName} ${validated.lastName}`.trim();
+    const dateOfBirth = validated.dateOfBirth
+      ? new Date(`${validated.dateOfBirth}T00:00:00.000Z`)
+      : null;
+
+    const result = await auth.api.updateUser({
+      body: {
+        name: fullName,
+      },
+      headers: reqHeaders,
+    });
+
+    if (!result) {
+      return { success: false, error: "Kunde inte ändra namnet i användaren." };
+    }
+
+    // Egentligen går ju registrering av användare alltid via funktionen signUpWithDetails så details bör alltid finnas, men kör en upsert ändå.
+    await prisma.userDetails.upsert({
+      where: { userId: user.id },
+      update: {
+        firstName: validated.firstName,
+        lastName: validated.lastName,
+        phoneNumber: nullIfEmpty(validated.phoneNumber),
+        address: nullIfEmpty(validated.address),
+        postalCode: nullIfEmpty(validated.postalCode),
+        city: nullIfEmpty(validated.city),
+        dateOfBirth,
+        bio: nullIfEmpty(validated.bio),
+        allowPhotoVideo: validated.allowPhotoVideo,
+      },
+      create: {
+        userId: user.id,
+        firstName: validated.firstName,
+        lastName: validated.lastName,
+        phoneNumber: nullIfEmpty(validated.phoneNumber),
+        address: nullIfEmpty(validated.address),
+        postalCode: nullIfEmpty(validated.postalCode),
+        city: nullIfEmpty(validated.city),
+        dateOfBirth,
+        bio: nullIfEmpty(validated.bio),
+        allowPhotoVideo: validated.allowPhotoVideo,
+      },
+    });
+
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("Change details error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade vid uppdatering";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+type ChangePasswordValues = z.infer<typeof UserPasswordSchema>;
+
+export async function changePassword(values: ChangePasswordValues) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({
+    headers: reqHeaders,
+  });
+  if (!session) return { success: false, error: "Ej inloggad." };
+
+  try {
+    const validated = await UserPasswordSchema.parseAsync(values);
+
+    const res = await auth.api.changePassword({
+      body: {
+        currentPassword: validated.oldPassword,
+        newPassword: validated.password,
+        revokeOtherSessions: true,
+      },
+      headers: reqHeaders,
+    });
+
+    if (!res) {
+      return { success: false, error: "Kunde inte ändra lösenordet via api." };
+    }
+
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("Change password error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade vid uppdatering";
     return {
       success: false,
       error: errorMessage,

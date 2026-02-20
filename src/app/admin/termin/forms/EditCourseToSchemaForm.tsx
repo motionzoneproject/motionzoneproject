@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/select";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { editCourseInSchema } from "@/lib/actions/admin";
+import { formatDateToInput } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
@@ -95,25 +96,6 @@ export default function EditCourseToSchemaForm({
       a.getUTCDate() === b.getUTCDate(),
     [],
   );
-
-  const formatDateToInput = (date: unknown) => {
-    if (!date) {
-      return "";
-    }
-
-    if (date instanceof Date) {
-      if (Number.isNaN(date.getTime())) {
-        return "";
-      }
-      return date.toISOString().split("T")[0];
-    }
-
-    if (typeof date === "string") {
-      return date;
-    }
-
-    return "";
-  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [useTerminStart, setUseTerminStart] = useState(
