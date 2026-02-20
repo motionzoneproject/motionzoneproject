@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import ImageInput from "@/components/ImageInput";
 // import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Event } from "@/generated/prisma/client";
 import { editNewEvent } from "@/lib/actions/admin";
+import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEditEventSchema } from "@/validations/adminforms";
 
 const formSchema = adminEditEventSchema;
@@ -75,7 +77,22 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await editNewEvent(values);
+    let finalImageURL = values.imageURL ?? "";
+
+    if (finalImageURL.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalImageURL);
+        const blob = await res.blob();
+        finalImageURL = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.imageURL ?? "");
+      } catch (e) {
+        console.error(e);
+        toast.error(`Uppladdning misslyckades.`);
+        return;
+      }
+    }
+
+    const res = await editNewEvent({ ...values, imageURL: finalImageURL });
     if (res.success) {
       toast.success(res.msg);
       onSuccess?.();
@@ -219,7 +236,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
                 <FormItem>
                   <FormLabel>Bildlänk</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <ImageInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

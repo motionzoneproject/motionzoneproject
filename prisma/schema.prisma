@@ -592,3 +592,18 @@ model Participant {
 
   @@map("participant")
 }
+
+model TeacherProfile {
+  id          String   @id @default(uuid())
+  name        String
+  specialty   String
+  description String
+  imageUrl    String?
+  displayOrder Int     @default(0)
+  active      Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("teacher_profile")
+}
