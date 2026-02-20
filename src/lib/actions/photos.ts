@@ -36,7 +36,12 @@ export async function updatePhoto(
     caption,
     eventId,
     isVisible,
-  }: { url?: string; caption?: string; eventId?: string; isVisible?: boolean },
+  }: {
+    url?: string;
+    caption?: string;
+    eventId?: string | null;
+    isVisible?: boolean;
+  },
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) throw new Error("No permission.");
@@ -127,6 +132,13 @@ export async function getVisiblePhotos() {
 export async function getPhotosByEvent(eventId: string) {
   return prisma.photo.findMany({
     where: { eventId, isVisible: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getPhotosWithoutEvent() {
+  return prisma.photo.findMany({
+    where: { eventId: null, isVisible: true },
     orderBy: { createdAt: "desc" },
   });
 }

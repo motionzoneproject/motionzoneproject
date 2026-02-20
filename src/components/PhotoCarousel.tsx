@@ -5,8 +5,10 @@ import { useRef } from "react";
 
 export default function PhotoCarousel({
   photos,
+  onClick,
 }: {
   photos: Array<{ id: string; url: string; caption?: string }>;
+  onClick?: (id: string) => void;
 }) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -31,13 +33,19 @@ export default function PhotoCarousel({
       >
         {photos.map((p) => (
           <div key={p.id} className="min-w-[280px] rounded-lg overflow-hidden">
-            <Image
-              src={p.url}
-              alt={p.caption || "Photo"}
-              width={640}
-              height={480}
-              className="object-cover w-full h-56 rounded-lg"
-            />
+            <button
+              type="button"
+              onClick={() => onClick?.(p.id)}
+              className="w-full"
+            >
+              <Image
+                src={p.url}
+                alt={p.caption || "Photo"}
+                width={640}
+                height={480}
+                className="object-cover w-full h-56 rounded-lg"
+              />
+            </button>
             {p.caption && (
               <div className="text-sm p-2 text-foreground bg-background/80">
                 {p.caption}

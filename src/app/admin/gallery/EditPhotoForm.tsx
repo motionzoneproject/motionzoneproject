@@ -6,13 +6,14 @@ type Photo = {
   id: string;
   caption?: string;
   eventId?: string;
+  event?: { id?: string } | null;
 };
 
 interface EditPhotoFormProps {
   photo: Photo;
   onSave: (
     id: string,
-    data: { caption: string; eventId: string },
+    data: { caption: string; eventId: string | null },
   ) => Promise<void>;
   onCancel: () => void;
 }
@@ -23,7 +24,9 @@ export default function EditPhotoForm({
   onCancel,
 }: EditPhotoFormProps) {
   const [caption, setCaption] = useState(photo.caption || "");
-  const [eventId, setEventId] = useState(photo.eventId || "");
+  const [eventId, setEventId] = useState<string>(
+    photo.event?.id ?? photo.eventId ?? "__none",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [events, setEvents] = useState<{ id: string; headline: string }[]>([]);
@@ -37,7 +40,10 @@ export default function EditPhotoForm({
     setSaving(true);
     setError("");
     try {
-      await onSave(photo.id, { caption, eventId });
+      await onSave(photo.id, {
+        caption,
+        eventId: eventId === "__none" ? null : eventId === "" ? null : eventId,
+      });
     } catch (_) {
       setError("Kunde inte spara ändringar");
     } finally {
@@ -75,6 +81,7 @@ export default function EditPhotoForm({
         aria-label="Välj event (valfritt)"
       >
         <option value="">Välj event (valfritt)</option>
+        <option value="__none">Ingen event (Övriga bilder)</option>
         {events.map((event) => (
           <option key={event.id} value={event.id}>
             {event.headline}

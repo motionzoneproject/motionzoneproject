@@ -1,6 +1,6 @@
 import { Instagram } from "lucide-react";
 import Link from "next/link";
-import GalleryView from "@/components/GalleryView";
+import EventSection from "@/components/EventSection";
 import { Button } from "@/components/ui/button";
 
 import { getVisiblePhotos } from "@/lib/actions/photos";
@@ -9,6 +9,21 @@ import { getVisiblePhotos } from "@/lib/actions/photos";
 
 export default async function Page() {
   const photos = await getVisiblePhotos();
+
+  // Group photos by event id (including null for no event)
+  const byEvent = new Map<string | null, Array<(typeof photos)[0]>>();
+  for (const p of photos) {
+    const key = p.event?.id ?? null;
+    const arr = byEvent.get(key) ?? [];
+    arr.push(p);
+    byEvent.set(key, arr);
+  }
+
+  const eventGroups = Array.from(byEvent.entries()).filter(
+    ([k]) => k !== null,
+  ) as Array<[string, Array<(typeof photos)[0]>]>;
+  const unlinked = byEvent.get(null) ?? [];
+
   return (
     <main className="bg-background">
       {/* Hero */}
@@ -34,16 +49,34 @@ export default async function Page() {
               Inga bilder uppladdade ännu.
             </div>
           ) : (
-            <GalleryView
-              photos={photos.map((p) => ({
-                id: p.id,
-                url: p.url,
-                caption: p.caption ?? undefined,
-                event: p.event
-                  ? { id: p.event.id, headline: p.event.headline ?? undefined }
-                  : undefined,
-              }))}
-            />
+            <div>
+              {eventGroups.length > 0 ? (
+                eventGroups.map(([eventId, group]) => (
+                  <EventSection
+                    key={eventId}
+                    event={{ id: eventId, headline: group[0].event?.headline }}
+                    photos={group.map((p) => ({
+                      id: p.id,
+                      url: p.url,
+                      caption: p.caption ?? undefined,
+                    }))}
+                  />
+                ))
+              ) : (
+                <div className="text-muted-foreground mb-6">
+                  Inga eventkopplade bilder ännu.
+                </div>
+              )}
+
+              <EventSection
+                event={null}
+                photos={unlinked.map((p) => ({
+                  id: p.id,
+                  url: p.url,
+                  caption: p.caption ?? undefined,
+                }))}
+              />
+            </div>
           )}
         </div>
       </section>

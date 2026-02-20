@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAllEvents } from "@/lib/actions/admin";
 import { addPhoto } from "@/lib/actions/photos";
 import { uploadImageFromBlob } from "@/lib/uploads";
@@ -13,6 +13,7 @@ interface PhotoUploadFormProps {
 export default function PhotoUploadForm({ onUpload }: PhotoUploadFormProps) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [caption, setCaption] = useState("");
   const [eventId, setEventId] = useState("");
   const [isVisible, setIsVisible] = useState(true);
@@ -67,31 +68,66 @@ export default function PhotoUploadForm({ onUpload }: PhotoUploadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="mb-6 space-y-4">
-      <label
-        htmlFor="upload-file-input"
-        className="block text-sm font-medium mb-1"
-      >
-        Välj bildfil
-      </label>
-      <input
-        id="upload-file-input"
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          const files = e.target.files;
-          if (files?.[0]) {
-            setFile(files[0]);
-          } else {
-            setFile(null);
-          }
-        }}
-        required
-      />
+      <div>
+        <label
+          htmlFor="upload-file-input"
+          className="block text-sm font-medium mb-1"
+        >
+          Välj bildfil
+        </label>
+
+        <label
+          htmlFor="upload-file-input"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const f = e.dataTransfer?.files?.[0];
+            if (f) setFile(f);
+          }}
+          className="border-dashed border-2 border-border rounded p-6 text-center cursor-pointer hover:bg-muted/50"
+        >
+          <p className="text-muted-foreground mb-3">
+            Dra och släpp eller klicka för att lägga till en bild
+          </p>
+          <span className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded">
+            Lägg till bild
+          </span>
+          {file && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              Vald fil: {file.name} ({Math.round(file.size / 1024)} KB)
+            </div>
+          )}
+        </label>
+
+        <input
+          ref={inputRef}
+          id="upload-file-input"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const files = e.target.files;
+            if (files?.[0]) {
+              setFile(files[0]);
+            } else {
+              setFile(null);
+            }
+          }}
+          className="sr-only"
+          required
+        />
+      </div>
       <label
         htmlFor="upload-caption-input"
         className="block text-sm font-medium mb-1"
       >
-        Bildtext
+        Caption
       </label>
       <input
         id="upload-caption-input"

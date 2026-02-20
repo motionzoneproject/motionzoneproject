@@ -16,16 +16,14 @@ export default function GalleryView({
   }>;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalPhotos, setModalPhotos] = useState<
-    Array<{ id: string; url: string; caption?: string }>
-  >([]);
+  const [modalIndex, setModalIndex] = useState<number>(0);
 
-  const featured = photos.slice(0, 6);
+  const featured = photos.filter((p) => !p.event).slice(0, 6);
 
   function openPhoto(photoId: string) {
-    const p = photos.find((x) => x.id === photoId);
-    if (!p) return;
-    setModalPhotos([p]);
+    const idx = photos.findIndex((x) => x.id === photoId);
+    if (idx === -1) return;
+    setModalIndex(idx);
     setModalOpen(true);
   }
 
@@ -40,6 +38,7 @@ export default function GalleryView({
               url: p.url,
               caption: p.caption,
             }))}
+            onClick={(id) => openPhoto(id)}
           />
         </section>
       )}
@@ -57,7 +56,12 @@ export default function GalleryView({
       <EventPhotoModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        photos={modalPhotos}
+        photos={photos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption,
+        }))}
+        initialIndex={modalIndex}
       />
     </div>
   );

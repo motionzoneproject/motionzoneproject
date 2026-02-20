@@ -33,7 +33,8 @@ export default async function AdminGalleryPage() {
     await updatePhoto(id, {
       url: data.url ?? undefined,
       caption: data.caption ?? undefined,
-      eventId: data.eventId ?? undefined,
+      // Preserve explicit null to unlink; only omit field when undefined
+      eventId: data.eventId === undefined ? undefined : data.eventId,
       isVisible: data.isVisible,
     });
   }
