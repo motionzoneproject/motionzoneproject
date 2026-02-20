@@ -108,8 +108,28 @@ export default function EditCourseForm({ course, teachers }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
+    if (!isOpen) return;
+
+    form.reset({
+      name: course.name,
+      description: course.description,
+      minAge: course.minAge,
+      maxAge: course.maxAge,
+      level: course.level ?? "",
+      adult: course.adult,
+      teacherid: course.teacherId,
+    });
+  }, [
+    isOpen,
+    form,
+    course.name,
+    course.description,
+    course.minAge,
+    course.maxAge,
+    course.level,
+    course.adult,
+    course.teacherId,
+  ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await editCourse(course.id, values);

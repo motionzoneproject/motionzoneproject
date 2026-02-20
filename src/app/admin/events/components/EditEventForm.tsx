@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -30,9 +30,11 @@ type FormOutput = z.output<typeof adminEditEventSchema>;
 
 interface Props {
   event: Event;
+  isOpen: boolean;
+  onSuccess?: () => void;
 }
 
-export default function EditEventForm({ event }: Props) {
+export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,17 +50,35 @@ export default function EditEventForm({ event }: Props) {
 
   const router = useRouter();
 
-  const [isOpen, setIsOpen] = useState(false);
-
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
+    if (!isOpen) return;
+
+    form.reset({
+      id: event.id,
+      headline: event.headline,
+      description: event.description,
+      link: event.link,
+      imageURL: event.imageURL,
+      startDate: event.startDate,
+      endDate: event.endDate,
+    });
+  }, [
+    isOpen,
+    form,
+    event.id,
+    event.headline,
+    event.description,
+    event.link,
+    event.imageURL,
+    event.startDate,
+    event.endDate,
+  ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const res = await editNewEvent(values);
     if (res.success) {
       toast.success(res.msg);
-      setIsOpen(false);
+      onSuccess?.();
       router.refresh();
     } else {
       toast.error(res.msg);

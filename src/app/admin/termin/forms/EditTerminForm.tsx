@@ -57,8 +57,14 @@ export default function EditTerminForm({ termin }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
+    if (!isOpen) return;
+
+    form.reset({
+      name: termin.name,
+      startDate: termin.startDate,
+      endDate: termin.endDate,
+    });
+  }, [isOpen, form, termin.name, termin.startDate, termin.endDate]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const check = await checkTerminDateChange(

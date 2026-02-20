@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -59,6 +59,24 @@ export default function EditParticipantForm({
       allowPhotoVideo: participant.allowPhotoVideo,
     },
   });
+
+  useEffect(() => {
+    if (!open) return;
+
+    form.reset({
+      name: participant.name,
+      email: participant.email || "",
+      phone: participant.phone || "",
+      allowPhotoVideo: participant.allowPhotoVideo,
+    });
+  }, [
+    open,
+    form,
+    participant.name,
+    participant.email,
+    participant.phone,
+    participant.allowPhotoVideo,
+  ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
