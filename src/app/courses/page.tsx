@@ -1,4 +1,11 @@
-import { ArrowUpRight, Book, CalendarDays, Clock, MapPin } from "lucide-react";
+import {
+  ArrowUpRight,
+  Book,
+  CalendarDays,
+  Clock,
+  Info,
+  MapPin,
+} from "lucide-react";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
 import {
@@ -119,8 +126,6 @@ export default async function Page({ searchParams }: Props) {
   const productsWithData = await Promise.all(
     products.map(async (p) => {
       const stats = await getProductStats(p.id);
-      if (!stats.success || typeof stats.spotsLeft !== "number")
-        throw new Error(`Could not get stats for product: \n${stats.error}`);
 
       // Extract unique schemaItems and terminer from all courses in the product
       const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
@@ -133,13 +138,11 @@ export default async function Page({ searchParams }: Props) {
       });
       const terminer = Array.from(terminMap.values());
 
-      const spotsLeft = stats.spotsLeft;
-
       return {
         ...p,
         schemaItems,
         terminer,
-        spotsLeft,
+        spotsLeft: stats.spotsLeft,
       };
     }),
   );
@@ -186,13 +189,18 @@ export default async function Page({ searchParams }: Props) {
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
                           {p.price} kr
                         </Badge>
-                        {Number.isFinite(p.spotsLeft) && (
+                        {typeof p.spotsLeft === "number" &&
+                        Number.isFinite(p.spotsLeft) ? (
                           <Badge
                             variant={
                               p.spotsLeft <= 3 ? "destructive" : "outline"
                             }
                           >
                             {`${p.spotsLeft} platser kvar`}
+                          </Badge>
+                        ) : (
+                          <Badge variant={"destructive"}>
+                            <Info /> Osäkert
                           </Badge>
                         )}
                       </div>
@@ -346,7 +354,7 @@ export default async function Page({ searchParams }: Props) {
                                               )}
                                               <div className="mt-2">
                                                 {" "}
-                                                {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
+                                                {`Giltig: ${s.customStartDate ?? s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.customEndDate ?? s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
                                               </div>
                                             </div>
                                           ))}
