@@ -67,7 +67,7 @@ export default async function EventsPage() {
                 <TableCell className="ml-2">{event.link}</TableCell>
                 <TableCell className="text-right">
                   {" "}
-                  <DelEventBtn eventId={event.id} />
+                  <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
                 <TableCell className="flex gap-2 justify-end">
                   {/* <Link href={`/admin/events/${event.id}/edit`}>

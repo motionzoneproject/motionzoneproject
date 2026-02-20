@@ -1,7 +1,5 @@
 "use client";
 
-// ev fix: Gör en generisk ta bort-knapp och passa funktionen som den ska köra.
-
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
