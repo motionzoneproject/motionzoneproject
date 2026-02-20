@@ -18,7 +18,7 @@ export default async function EditEventPage({ params }: PageProps) {
   return (
     <div className="p-6 max-w-xl">
       <h1 className="text-2xl font-bold mb-4">Edit event</h1>
-      <EditEventForm event={event} />
+      <EditEventForm event={event} isOpen={true} />
     </div>
   );
 }

@@ -16,12 +16,16 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: r2Host,
-        port: "",
-        pathname: "/**",
-      },
+      ...(r2Host
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: r2Host,
+              port: "",
+              pathname: "/**",
+            },
+          ]
+        : []),
       {
         protocol: "https",
         hostname: legacyR2Host,

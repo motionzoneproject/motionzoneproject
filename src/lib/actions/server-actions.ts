@@ -10,6 +10,7 @@ import type {
 } from "@/generated/prisma/client";
 import prisma from "../prisma";
 import { handleClips } from "./purchase-actions";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{

@@ -7,10 +7,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { TeacherProfile } from "@/generated/prisma/client";
 import { getTeachers } from "@/lib/actions/teacher-actions";
 
 const LarareProfile = async () => {
-  const teachers = await getTeachers();
+  const teachers: TeacherProfile[] = await getTeachers();
 
   const activeTeachers = teachers.filter((t) => t.active);
 
