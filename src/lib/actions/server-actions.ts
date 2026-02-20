@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type {
+  Booking,
   Course,
   Prisma,
   Product,
@@ -532,5 +533,98 @@ export async function getCourseCountInProduct(
   } catch (e) {
     console.error("Fel vid hämtning av bokningsgräns:", e);
     return 0;
+  }
+}
+
+export async function autobook(purchaseItemId: string): Promise<Booking[]> {
+  const sessionData = await getSessionData();
+  const sessionUser = sessionData?.user;
+  if (!sessionUser) return [];
+
+  try {
+    const purchaseItem = await prisma.purchaseItem.findUnique({
+      where: { id: purchaseItemId },
+      include: {
+        purchase: true,
+        course: true,
+      },
+    });
+    if (!purchaseItem) return [];
+
+    const purchase = purchaseItem.purchase;
+    const course = purchaseItem.course;
+    const participantId = purchase.participantId;
+
+    // Säkerhetscheck: admin får boka för andra, övriga bara för sina egna köp.
+    const isAdmin = sessionUser.role === "admin";
+    if (!isAdmin && purchase.userId !== sessionUser.id) return [];
+
+    const aClip = calcRemainingCount({ purchase, purchaseItem });
+    if (!hasRemainingCount(aClip)) return [];
+
+    const now = new Date();
+
+    const lessonsToBook = await prisma.lesson.findMany({
+      where: {
+        courseId: course.id,
+        startTime: { gte: now },
+        cancelled: false,
+      },
+      orderBy: { startTime: "asc" },
+      select: { id: true },
+    });
+    if (lessonsToBook.length === 0) return [];
+
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        lessonId: { in: lessonsToBook.map((l) => l.id) },
+        ...(participantId
+          ? { purchaseItem: { purchase: { participantId: participantId } } }
+          : {
+              userId: purchase.userId,
+              purchaseItem: { purchase: { participantId: null } },
+            }),
+      },
+      select: { lessonId: true },
+    });
+
+    const existingIds = new Set(existingBookings.map((b) => b.lessonId));
+    const availableLessons = lessonsToBook.filter(
+      (lesson) => !existingIds.has(lesson.id),
+    );
+
+    const lessons = availableLessons.slice(0, aClip);
+    if (lessons.length === 0) return [];
+
+    const bookings = await prisma.$transaction(async (tx) => {
+      const created: Booking[] = [];
+
+      for (const lesson of lessons) {
+        const booking = await tx.booking.create({
+          data: {
+            lessonId: lesson.id,
+            userId: purchase.userId,
+            purchaseItemId: purchaseItem.id,
+          },
+        });
+        created.push(booking);
+      }
+
+      const clipResult = await handleClips(
+        tx,
+        purchaseItem.id,
+        -created.length,
+      );
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Clip update failed.");
+      }
+
+      return created;
+    });
+
+    return bookings;
+  } catch (e) {
+    console.error("Kunde inte autoboka lektioner", e);
+    return [];
   }
 }

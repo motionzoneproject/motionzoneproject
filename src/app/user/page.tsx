@@ -26,6 +26,7 @@ import {
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
+import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./BookingCal";
 import OrderHistory from "./OrderHistory";
 
@@ -212,7 +213,7 @@ export default async function Page() {
                               </p>
                             )}
                           </div>
-
+                          <AutobookBtn purchaseItemId={pi.id} />
                           <div className="text-right">
                             <span
                               className={`text-lg font-bold ${
