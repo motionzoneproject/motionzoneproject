@@ -1,3 +1,5 @@
+"use client";
+
 import {
   BookOpen,
   CalendarDays,
@@ -11,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -21,17 +23,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { isAdminRole } from "@/lib/actions/admin";
-import { getSessionData } from "@/lib/actions/sessiondata";
-import { Button } from "./ui/button";
+import { useSession } from "@/lib/session-provider";
 
-export async function AppSidebar() {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return notFound();
-
-  const sessionData = await getSessionData();
-  const user = sessionData?.user;
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { user } = useSession();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const formatDate = (date: Date) => date.toISOString().split("T")[0];
   const today = new Date();
@@ -99,22 +98,33 @@ export async function AppSidebar() {
     },
   ];
 
+  const isItemActive = (url: string) => {
+    const itemPath = url.split("?")[0];
+    if (itemPath === "/admin") return pathname === "/admin";
+    return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+  };
+
   return (
-    <Sidebar>
+    <Sidebar className="absolute! h-full!">
       <SidebarContent className="mt-4">
         <SidebarGroup>
           <SidebarGroupLabel>
-            <Button variant="ghost">
+            <div className="flex gap-2 items-end py-2 mb-3">
               <Crown className="text-brand" />
-              Admin panel
-            </Button>
+              <span>Adminpanelen</span>
+            </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
+                  <SidebarMenuButton asChild isActive={isItemActive(item.url)}>
+                    <Link
+                      href={item.url}
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
