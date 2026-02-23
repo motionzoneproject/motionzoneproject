@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Plus, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -236,8 +237,20 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
           )}
         />
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Sparar..." : teacher ? "Uppdatera" : "Skapa"}
+        <Button
+          variant="ghost"
+          type="submit"
+          className="w-full"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : teacher ? (
+            <Save className="h-4 w-4" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+          {isPending ? "Sparar..." : teacher ? "Spara" : "Skapa"}
         </Button>
       </form>
     </Form>
