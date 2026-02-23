@@ -601,7 +601,6 @@ model TeacherProfile {
   specialty   String
   description String
   imageUrl    String?
-  displayOrder Int     @default(0)
   active      Boolean  @default(true)
 
   createdAt   DateTime @default(now())
