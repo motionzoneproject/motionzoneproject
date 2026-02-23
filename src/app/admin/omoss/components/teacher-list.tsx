@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Edit, Plus, Trash2, X } from "lucide-react";
+import { Check, Edit, Pencil, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -70,11 +70,12 @@ export function TeacherList({
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
-              variant="default"
-              className="cursor-pointer"
+              variant="ghost"
+              size="sm"
+              className="mx-2"
               onClick={() => setEditingTeacher(null)}
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <Pencil className="h-4 w-4" />
               Lägg till lärarprofil
             </Button>
           </DialogTrigger>
