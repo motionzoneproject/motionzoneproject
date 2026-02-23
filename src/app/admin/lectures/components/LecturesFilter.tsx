@@ -19,6 +19,7 @@ import type {
   SchemaItem,
   Termin,
   User,
+  Weekday,
 } from "@/generated/prisma/client";
 import { getCourseName, getVeckodag } from "@/lib/tools";
 import { DatePickerWithRange } from "./DatePicker";
@@ -46,6 +47,17 @@ export function LecturesFilter({
     () => new URLSearchParams(searchParams),
     [searchParams],
   );
+
+  const getWeekdayNumber = (d: Weekday) => {
+    if (d === "MONDAY") return 0;
+    if (d === "TUESDAY") return 1;
+    if (d === "WEDNESDAY") return 2;
+    if (d === "THURSDAY") return 3;
+    if (d === "FRIDAY") return 4;
+    if (d === "SATURDAY") return 5;
+    if (d === "SUNDAY") return 6;
+    return 0;
+  };
 
   const validParam = useCallback(
     (param: string, value?: string | null): string => {
@@ -121,7 +133,7 @@ export function LecturesFilter({
   return (
     <div className="w-full rounded border-2 p-3">
       <div className="text-xl font-bold">Filter</div>
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1">
           <Label className="text-sm">Lärare</Label>
           <Select
@@ -233,20 +245,36 @@ export function LecturesFilter({
                 <SelectLabel>Välj kurstillfälle</SelectLabel>
                 <SelectItem value={"all"}>Alla</SelectItem>
                 <SelectSeparator></SelectSeparator>
-                {schemaItems.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {getVeckodag(t.weekday)} kl{" "}
-                    {t.timeStart.toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    -{" "}
-                    {t.timeEnd.toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </SelectItem>
-                ))}
+                {schemaItems
+                  .sort((a, b) => {
+                    if (a.weekday !== b.weekday)
+                      return (
+                        getWeekdayNumber((a.weekday as Weekday) ?? "MONDAY") -
+                        getWeekdayNumber((b.weekday as Weekday) ?? "MONDAY")
+                      );
+
+                    if (a.timeStart.getTime() !== b.timeStart.getTime())
+                      return a.timeStart.getTime() - b.timeStart.getTime();
+
+                    return a.timeEnd.getTime() - b.timeEnd.getTime();
+                  })
+                  .map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {getVeckodag(t.weekday).slice(0, 3)}{" "}
+                      {t.timeStart.toLocaleTimeString("sv-SE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      -{" "}
+                      {t.timeEnd.toLocaleTimeString("sv-SE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      {t.courseId &&
+                        courses.find((c) => c.id === t.courseId) &&
+                        `${getCourseName(courses.find((c) => c.id === t.courseId) as Course)}`}
+                    </SelectItem>
+                  ))}
               </SelectGroup>
             </SelectContent>
           </Select>
