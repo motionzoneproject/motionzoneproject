@@ -1,4 +1,10 @@
 import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
@@ -6,16 +12,34 @@ export default async function Page() {
   const teacherUsers = await getTeacherUsers();
 
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/30 p-6 rounded-lg border">
-        <h1 className="text-3xl font-bold mb-2 text-center">Hantera Om Oss</h1>
-        <p className="text-muted-foreground">
-          Här kan du lägga till, redigera och ta bort lärare som visas på "Om
-          oss"-sidan.
-        </p>
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Om oss</span>
       </div>
 
-      <TeacherList teachersWithProfile={teachers} teacherUsers={teacherUsers} />
+      <Accordion type="single" collapsible defaultValue="teachers">
+        <AccordionItem value="studio">
+          <AccordionTrigger>Om studion</AccordionTrigger>
+          <AccordionContent>
+            <div className="text-sm text-muted-foreground">Kommer snart.</div>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="teachers">
+          <AccordionTrigger>Lärarprofiler</AccordionTrigger>
+          <AccordionContent>
+            <TeacherList
+              teachersWithProfile={teachers}
+              teacherUsers={teacherUsers}
+            />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="styles">
+          <AccordionTrigger>Dansstilar</AccordionTrigger>
+          <AccordionContent>
+            <div className="text-sm text-muted-foreground">Kommer snart.</div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

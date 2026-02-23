@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Edit, Trash2, X } from "lucide-react";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -65,11 +65,16 @@ export function TeacherList({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4  p-4">
-        <h2 className="text-xl font-bold">Lärarlista</h2>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Lärarprofiler</span>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTeacher(null)}>
+            <Button
+              variant="default"
+              className="cursor-pointer"
+              onClick={() => setEditingTeacher(null)}
+            >
+              <Plus className="mr-1 h-4 w-4" />
               Lägg till lärarprofil
             </Button>
           </DialogTrigger>
@@ -88,7 +93,7 @@ export function TeacherList({
         </Dialog>
       </div>
 
-      <div className="rounded-md border items-center">
+      <div className="mt-2">
         <Table>
           <TableHeader>
             <TableRow>
@@ -99,56 +104,48 @@ export function TeacherList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {teachers.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center h-24 text-muted-foreground"
-                >
-                  Inga lärare tillagda än.
-                </TableCell>
-              </TableRow>
-            ) : (
-              teachers.map((teacher) => {
-                const profile = teacher.teacherProfile;
-                if (!profile) return null;
+            {teachers.map((teacher) => {
+              const profile = teacher.teacherProfile;
+              if (!profile) return null;
 
-                return (
-                  <TableRow key={profile.id}>
-                    <TableCell className="font-medium">
-                      {profile.name}
-                    </TableCell>
-                    <TableCell>{profile.specialty}</TableCell>
-                    <TableCell>
-                      {profile.active ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <X className="h-4 w-4 text-red-500" />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(teacher)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(profile.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
+              return (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>{profile.specialty}</TableCell>
+                  <TableCell>
+                    {profile.active ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500" />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEdit(teacher)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDelete(profile.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
+        {teachers.length === 0 && (
+          <div className="text-sm text-muted-foreground p-2 italic">
+            Inga lärarprofiler hittades.
+          </div>
+        )}
       </div>
     </div>
   );

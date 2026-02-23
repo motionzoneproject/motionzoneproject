@@ -1,5 +1,4 @@
 import { Clock, Users } from "lucide-react";
-import { TeacherProfileDialog } from "@/app/components/TeacherProfileDialog";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import {
   Accordion,
@@ -32,6 +31,7 @@ import BookingCal from "./components/BookingCal";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditPwForm } from "./components/EditPwForm";
 import OrderHistory from "./components/OrderHistory";
+import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
 
 export default async function Page() {
   const sessionData = await getSessionData();
@@ -336,7 +336,7 @@ export default async function Page() {
           </div>
         )}
 
-        <div className="my-4 flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
+        <div className="my-4 md:flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
           {userDetails && <EditDetailsForm details={userDetails} />}
           <EditPwForm />
           {user?.role === "admin" && userWithTeacherProfile && (

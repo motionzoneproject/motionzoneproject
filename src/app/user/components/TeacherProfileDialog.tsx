@@ -26,7 +26,6 @@ export function TeacherProfileDialog({ user }: TeacherProfileDialogProps) {
   };
 
   if (user.role !== "admin") return null;
-
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
