@@ -1,5 +1,6 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -136,7 +137,13 @@ export default function AddGalleryItemBtn() {
             <p className="text-sm text-destructive">{uploadError}</p>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button
+            type="submit"
+            disabled={loading}
+            variant="ghost"
+            className="w-full"
+          >
+            <Save className="h-4 w-4" />
             {loading ? "Sparar..." : "Spara"}
           </Button>
         </form>
