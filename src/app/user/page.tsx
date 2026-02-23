@@ -1,4 +1,5 @@
 import { Clock, Users } from "lucide-react";
+import { TeacherProfileDialog } from "@/app/components/TeacherProfileDialog";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import {
   Accordion,
@@ -38,6 +39,12 @@ export default async function Page() {
 
   const userDetails = user
     ? await prisma.userDetails.findUnique({ where: { userId: user.id } })
+    : null;
+  const userWithTeacherProfile = user
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { teacherProfile: true },
+      })
     : null;
 
   const { lessons = [] } = await getUserLessons();
@@ -332,6 +339,9 @@ export default async function Page() {
         <div className="my-4 flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
           {userDetails && <EditDetailsForm details={userDetails} />}
           <EditPwForm />
+          {user?.role === "admin" && userWithTeacherProfile && (
+            <TeacherProfileDialog user={userWithTeacherProfile} />
+          )}
         </div>
       </CardContent>
     </Card>
