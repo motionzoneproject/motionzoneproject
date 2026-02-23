@@ -1,6 +1,7 @@
 export type UploadMetadata = {
   contentType: string;
   size: number;
+  folder?: string;
 };
 
 export type PresignResponse = {
@@ -46,6 +47,59 @@ export async function uploadImageFromBlob(blob: Blob) {
   if (!putRes.ok) {
     throw new Error(`Uppladdning misslyckades: ${putRes.statusText}`);
   }
+
+  return url;
+}
+
+/**
+ * Upload a video blob to R2 via presigned URL, with progress callback.
+ * @param blob - Video file as Blob
+ * @param folder - R2 folder prefix (defaults to "gallery")
+ * @param onProgress - Called with 0-100 progress value
+ */
+export async function uploadVideoFromBlob(
+  blob: Blob,
+  folder = "gallery",
+  onProgress?: (percent: number) => void,
+): Promise<string> {
+  const contentType = blob.type || "video/mp4";
+  const payload: UploadMetadata = { contentType, size: blob.size, folder };
+
+  const presignRes = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!presignRes.ok) {
+    throw new Error(await readErrorMessage(presignRes));
+  }
+
+  const { uploadUrl, url } = (await presignRes.json()) as PresignResponse;
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", contentType);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Uppladdning misslyckades: ${xhr.statusText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Nätverksfel under uppladdning"));
+
+    xhr.send(blob);
+  });
 
   return url;
 }
