@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { type ChangeEvent, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +91,14 @@ export default function VideoInput({
           >
             <track kind="captions" />
           </video>
-          <Button type="button" variant="secondary" onClick={clearVideo}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mb-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={clearVideo}
+          >
+            <Trash2 className="h-4 w-4" />
             Ta bort video
           </Button>
         </div>
@@ -124,7 +132,7 @@ export default function VideoInput({
             onChange={handleFileChange}
             ref={inputRef}
             disabled={uploading}
-            className="mt-1"
+            className="w-full mt-2"
           />
         </div>
       )}
