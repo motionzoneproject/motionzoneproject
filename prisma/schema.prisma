@@ -34,14 +34,15 @@ model User {
   // Order status audit events authored by this user (e.g., admin/teacher)
   orderStatusEvents OrderStatusEvent[]
 
-
-  teachingCourses Course[] @relation("TeacherCourses") // är lärare på dessa kurser
+  //kommande fix: Används de här verkligen?
+  teachingCourses Course[] @relation("TeacherCourses") // är lärare på dessa kurser. 
   teachingLessons Lesson[] @relation("TeacherLessons") // är lärare på dessa tillfällen.
   
   enrolledCourses Course[] @relation("StudentCourses") // är elev på dessa kurser.
   bookings        Booking[] @relation("StudentBookings") //är elev på dessa bokningar.
 
-  details       UserDetails?
+  details       UserDetails? // De vanliga uppgifterna
+  teacherProfile TeacherProfile? 
 
   addedParticipants Participant[] @relation("AddedParticipants")
   asParticipant     Participant[] @relation("UserAsParticipant")
@@ -605,6 +606,10 @@ model TeacherProfile {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
 
   @@map("teacher_profile")
 }

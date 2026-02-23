@@ -22,18 +22,22 @@ import {
 } from "@/components/ui/table";
 import {
   deleteTeacher,
-  type TeacherProfileType,
-} from "@/lib/actions/teacher-actions"; // Assuming you export TeacherProfileType
+  type TeacherWithProfile,
+} from "@/lib/actions/teacher-actions";
 import { TeacherForm } from "./teacher-form";
 
 type TeacherListProps = {
-  teachers: TeacherProfileType[];
+  teachersWithProfile: TeacherWithProfile[];
+  teacherUsers: TeacherWithProfile[];
 };
 
-export function TeacherList({ teachers }: TeacherListProps) {
+export function TeacherList({
+  teachersWithProfile: teachers,
+  teacherUsers,
+}: TeacherListProps) {
   const router = useRouter();
   const [editingTeacher, setEditingTeacher] =
-    useState<TeacherProfileType | null>(null);
+    useState<TeacherWithProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -48,7 +52,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
     }
   };
 
-  const openEdit = (teacher: TeacherProfileType) => {
+  const openEdit = (teacher: TeacherWithProfile) => {
     setEditingTeacher(teacher);
     setIsDialogOpen(true);
   };
@@ -66,7 +70,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingTeacher(null)}>
-              Lägg till lärare
+              Lägg till lärarprofil
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -77,6 +81,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
             </DialogHeader>
             <TeacherForm
               teacher={editingTeacher || undefined}
+              users={teacherUsers}
               onSuccess={handleSuccess}
             />
           </DialogContent>
@@ -89,7 +94,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
             <TableRow>
               <TableHead>Namn</TableHead>
               <TableHead>Specialitet</TableHead>
-              <TableHead>Aktiv</TableHead>
+              <TableHead>Visa</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
@@ -104,36 +109,43 @@ export function TeacherList({ teachers }: TeacherListProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              teachers.map((teacher) => (
-                <TableRow key={teacher.id}>
-                  <TableCell className="font-medium">{teacher.name}</TableCell>
-                  <TableCell>{teacher.specialty}</TableCell>
-                  <TableCell>
-                    {teacher.active ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <X className="h-4 w-4 text-red-500" />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(teacher)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(teacher.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              teachers.map((teacher) => {
+                const profile = teacher.teacherProfile;
+                if (!profile) return null;
+
+                return (
+                  <TableRow key={profile.id}>
+                    <TableCell className="font-medium">
+                      {profile.name}
+                    </TableCell>
+                    <TableCell>{profile.specialty}</TableCell>
+                    <TableCell>
+                      {profile.active ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEdit(teacher)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(profile.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

@@ -1,8 +1,9 @@
 import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
-import { getTeachers } from "@/lib/actions/teacher-actions";
+import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
   const teachers = await getTeachers();
+  const teacherUsers = await getTeacherUsers();
 
   return (
     <div className="space-y-6">
@@ -14,7 +15,7 @@ export default async function Page() {
         </p>
       </div>
 
-      <TeacherList teachers={teachers} />
+      <TeacherList teachersWithProfile={teachers} teacherUsers={teacherUsers} />
     </div>
   );
 }
