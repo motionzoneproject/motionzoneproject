@@ -52,7 +52,21 @@ export async function uploadImageFromBlob(blob: Blob) {
 }
 
 /**
- * Upload a video blob to R2 via presigned URL, with progress callback.
+ * Delete a previously uploaded file from R2 via the upload API.
+ * Safe to call with any URL — the server validates it belongs to the bucket.
+ * @param url - The public R2 URL returned when the file was uploaded
+ */
+export async function deleteUploadedFile(url: string): Promise<void> {
+  await fetch("/api/upload", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  // Errors are intentionally swallowed — a failed delete on discard is non-critical
+}
+
+/**
+ * Upload a video file to R2 using a presigned URL obtained from the upload API.
  * @param blob - Video file as Blob
  * @param folder - R2 folder prefix (defaults to "gallery")
  * @param onProgress - Called with 0-100 progress value

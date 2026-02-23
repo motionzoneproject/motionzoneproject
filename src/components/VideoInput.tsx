@@ -3,7 +3,7 @@
 import { type ChangeEvent, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { uploadVideoFromBlob } from "@/lib/uploads";
+import { deleteUploadedFile, uploadVideoFromBlob } from "@/lib/uploads";
 
 const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
@@ -30,11 +30,15 @@ export default function VideoInput({
     if (inputRef.current) {
       inputRef.current.value = "";
     }
+    // If the video was already uploaded to R2, delete it from the bucket
+    if (value) {
+      deleteUploadedFile(value);
+    }
     onChange("");
     onBlur();
     setError(null);
     setProgress(0);
-  }, [onChange, onBlur]);
+  }, [onChange, onBlur, value]);
 
   const handleFileChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
