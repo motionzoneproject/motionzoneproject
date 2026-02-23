@@ -50,8 +50,8 @@ export default function DeleteProductBtn({ productId }: Props) {
       <AlertDialogTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          size="icon"
+          className="text-destructive hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Ta bort produkt</span>
@@ -64,7 +64,10 @@ export default function DeleteProductBtn({ productId }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <AlertDialogAction onClick={async () => await delItm()}>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => await delItm()}
+          >
             Ta bort
           </AlertDialogAction>
         </AlertDialogFooter>

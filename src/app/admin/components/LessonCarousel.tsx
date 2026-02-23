@@ -84,7 +84,7 @@ export function LessonCarousel({
     <div className="relative w-full group">
       <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
           onClick={scrollLeft}
@@ -159,7 +159,7 @@ export function LessonCarousel({
 
       <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
           onClick={scrollRight}

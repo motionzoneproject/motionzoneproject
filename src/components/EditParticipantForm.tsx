@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil } from "lucide-react";
+import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -97,7 +97,7 @@ export default function EditParticipantForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="icon">
           <Pencil className="h-4 w-4" />
           <span className="sr-only">Redigera</span>
         </Button>
@@ -169,15 +169,14 @@ export default function EditParticipantForm({
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setOpen(false)}
               >
+                <X className="h-4 w-4" />
                 Avbryt
               </Button>
-              <Button
-                type="submit"
-                className="bg-brand text-white hover:bg-brand-light"
-              >
+              <Button type="submit" variant="ghost">
+                <Save className="h-4 w-4" />
                 Spara ändringar
               </Button>
             </div>

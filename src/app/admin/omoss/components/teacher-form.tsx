@@ -187,7 +187,7 @@ export function TeacherForm({ teacher, onSuccess }: TeacherFormProps) {
           )}
         />
 
-        <Button type="submit" disabled={isPending}>
+        <Button variant="ghost" type="submit" disabled={isPending}>
           {isPending ? "Sparar..." : teacher ? "Uppdatera" : "Skapa"}
         </Button>
       </form>
