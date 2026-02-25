@@ -1,8 +1,4 @@
-import {
-  DeleteObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -109,64 +105,6 @@ export async function POST(req: Request) {
     console.error("S3 Upload Error:", error);
     return NextResponse.json(
       { error: "Internt serverfel vid uppladdning" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(req: Request) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return new Response("Unauthorized", { status: 401 });
-
-  try {
-    const { url } = (await req.json().catch(() => null)) ?? {};
-    if (typeof url !== "string" || !url) {
-      return NextResponse.json({ error: "Ogiltig URL" }, { status: 400 });
-    }
-
-    const bucket = process.env.S3_BUCKET;
-    const endpoint = process.env.S3_ENDPOINT;
-    const region = process.env.S3_REGION ?? "us-east-1";
-    const publicUrl = process.env.S3_PUBLIC_URL;
-    const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-
-    if (
-      !bucket ||
-      !endpoint ||
-      !publicUrl ||
-      !accessKeyId ||
-      !secretAccessKey
-    ) {
-      return NextResponse.json(
-        { error: "Saknar S3-konfiguration i miljövariabler" },
-        { status: 500 },
-      );
-    }
-
-    if (!url.startsWith(publicUrl)) {
-      return NextResponse.json(
-        { error: "URL tillhör inte denna bucket" },
-        { status: 400 },
-      );
-    }
-
-    const key = url.slice(publicUrl.length).replace(/^\//, "");
-
-    const s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: true,
-      credentials: { accessKeyId, secretAccessKey },
-    });
-
-    await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("S3 Delete Error:", error);
-    return NextResponse.json(
-      { error: "Internt serverfel vid borttagning" },
       { status: 500 },
     );
   }

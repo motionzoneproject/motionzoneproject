@@ -57,7 +57,7 @@ export async function uploadImageFromBlob(blob: Blob) {
  * @param url - The public R2 URL returned when the file was uploaded
  */
 export async function deleteUploadedFile(url: string): Promise<void> {
-  await fetch("/api/upload", {
+  await fetch("/api/remove", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
