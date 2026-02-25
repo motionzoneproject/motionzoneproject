@@ -25,7 +25,7 @@ export default async function Page() {
         <span className="font-bold text-2xl">Om oss</span>
       </div>
 
-      <Accordion type="single" collapsible defaultValue="teachers">
+      <Accordion type="single" collapsible defaultValue="studio">
         <AccordionItem value="studio">
           <AccordionTrigger>Studios</AccordionTrigger>
           <AccordionContent>
