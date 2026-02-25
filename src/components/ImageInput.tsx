@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import Image from "next/image";
 import { type ChangeEvent, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -67,16 +68,24 @@ export default function ImageInput({
             alt="Preview image"
             unoptimized={value.startsWith("blob:")} // Skippa server-optimering för lokala filer
           ></Image>
-          <Button type="button" variant="secondary" onClick={clearImage}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mb-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={clearImage}
+          >
+            <Trash2 className="h-4 w-4" />
             Ta bort bild
           </Button>
         </div>
       )}
-      <div className="sm:grid sm:grid-cols-2 gap-1 p-2 border-2 rounded-lg">
+      <div className="p-2 border-2 rounded-lg">
         <div>
           <label htmlFor="uImg">Upload image</label>
           <div className="flex">
             <Input
+              className="w-full"
               id="uImg"
               type="file"
               accept="image/*"

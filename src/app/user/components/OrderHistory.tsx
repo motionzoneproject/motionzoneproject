@@ -99,7 +99,6 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                       <DialogTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="sm"
                           onClick={() => setSelectedOrder(order)}
                         >
                           Visa detaljer

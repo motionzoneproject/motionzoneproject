@@ -228,7 +228,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
             {isBusy && <Loader />}
             <Button
               type="submit"
-              variant="secondary"
+              variant="ghost"
               className="w-full"
               disabled={isBusy}
             >

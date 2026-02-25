@@ -70,12 +70,6 @@ export default async function EventsPage() {
                   <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
                 <TableCell className="flex gap-2 justify-end">
-                  {/* <Link href={`/admin/events/${event.id}/edit`}>
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
-                  </Link> */}
-
                   <EditEventBtn event={event} />
                 </TableCell>
               </TableRow>
@@ -83,37 +77,6 @@ export default async function EventsPage() {
           </TableBody>
         </Table>
       </div>
-
-      {/* 
-      <div className="flex  gap-4">
-      {events.map((event) => (
-
-        <Card key={event.id} className=" grid grid-rows-2 gap-4 mt-4">
-          <CardHeader>
-            <CardTitle>{event.headline}</CardTitle>
-            <CardDescription><p>{event.description}</p></CardDescription>
-            <CardAction>
-              <Link href={`/admin/events/${event.id}/edit`}>
-                <Button>Edit</Button>
-              </Link>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p>Image: {event.imageURL}</p>
-            <p>Link: {event.link}</p>
-
-          </CardContent>
-          <CardFooter>
-            <p>Start: {event.startDate.toLocaleString()}</p>
-            <p>End: {event.endDate?.toLocaleString()}</p>
-          </CardFooter>
-        </Card>
-
-
-
-
-      ))}
-      </div> */}
     </div>
   );
 }

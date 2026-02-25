@@ -65,9 +65,9 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          variant="destructive"
-          size="sm"
-          className="h-8 w-8 p-0 text-white hover:text-white"
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Ta bort event</span>
@@ -80,7 +80,10 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <AlertDialogAction onClick={async () => await delItm()}>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => await delItm()}
+          >
             Ta bort
           </AlertDialogAction>
         </AlertDialogFooter>
