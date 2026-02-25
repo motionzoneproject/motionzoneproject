@@ -1,3 +1,4 @@
+import GoogleMap from "@/components/google-map";
 import prisma from "@/lib/prisma";
 import Events from "./start/Events";
 import Features from "./start/Features";
@@ -11,6 +12,7 @@ export default async function Page() {
       <Hero />
       <Features />
       <Events events={events} />
+      <GoogleMap />
     </main>
   );
 }
