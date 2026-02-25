@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Edit, Trash2, X } from "lucide-react";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -22,18 +22,22 @@ import {
 } from "@/components/ui/table";
 import {
   deleteTeacher,
-  type TeacherProfileType,
-} from "@/lib/actions/teacher-actions"; // Assuming you export TeacherProfileType
+  type TeacherWithProfile,
+} from "@/lib/actions/teacher-actions";
 import { TeacherForm } from "./teacher-form";
 
 type TeacherListProps = {
-  teachers: TeacherProfileType[];
+  teachersWithProfile: TeacherWithProfile[];
+  teacherUsers: TeacherWithProfile[];
 };
 
-export function TeacherList({ teachers }: TeacherListProps) {
+export function TeacherList({
+  teachersWithProfile: teachers,
+  teacherUsers,
+}: TeacherListProps) {
   const router = useRouter();
   const [editingTeacher, setEditingTeacher] =
-    useState<TeacherProfileType | null>(null);
+    useState<TeacherWithProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -48,7 +52,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
     }
   };
 
-  const openEdit = (teacher: TeacherProfileType) => {
+  const openEdit = (teacher: TeacherWithProfile) => {
     setEditingTeacher(teacher);
     setIsDialogOpen(true);
   };
@@ -61,12 +65,17 @@ export function TeacherList({ teachers }: TeacherListProps) {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4  p-4">
-        <h2 className="text-xl font-bold">Lärarlista</h2>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Lärarprofiler</span>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTeacher(null)}>
-              Lägg till lärare
+            <Button
+              variant="ghost"
+              className="cursor-pointer"
+              onClick={() => setEditingTeacher(null)}
+            >
+              <Plus className="h-4 w-4" />
+              Lägg till lärarprofil
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -77,39 +86,34 @@ export function TeacherList({ teachers }: TeacherListProps) {
             </DialogHeader>
             <TeacherForm
               teacher={editingTeacher || undefined}
+              users={teacherUsers}
               onSuccess={handleSuccess}
             />
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="rounded-md border items-center">
+      <div className="mt-2">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Namn</TableHead>
               <TableHead>Specialitet</TableHead>
-              <TableHead>Aktiv</TableHead>
+              <TableHead>Visa</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {teachers.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center h-24 text-muted-foreground"
-                >
-                  Inga lärare tillagda än.
-                </TableCell>
-              </TableRow>
-            ) : (
-              teachers.map((teacher) => (
-                <TableRow key={teacher.id}>
-                  <TableCell className="font-medium">{teacher.name}</TableCell>
-                  <TableCell>{teacher.specialty}</TableCell>
+            {teachers.map((teacher) => {
+              const profile = teacher.teacherProfile;
+              if (!profile) return null;
+
+              return (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>{profile.specialty}</TableCell>
                   <TableCell>
-                    {teacher.active ? (
+                    {profile.active ? (
                       <Check className="h-4 w-4 text-green-500" />
                     ) : (
                       <X className="h-4 w-4 text-red-500" />
@@ -122,21 +126,28 @@ export function TeacherList({ teachers }: TeacherListProps) {
                       onClick={() => openEdit(teacher)}
                     >
                       <Edit className="h-4 w-4" />
+                      <span className="sr-only">Redigera lärare</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(teacher.id)}
+                      onClick={() => handleDelete(profile.id)}
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Ta bort lärare</span>
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              );
+            })}
           </TableBody>
         </Table>
+        {teachers.length === 0 && (
+          <div className="text-sm text-muted-foreground p-2 italic">
+            Inga lärarprofiler hittades.
+          </div>
+        )}
       </div>
     </div>
   );

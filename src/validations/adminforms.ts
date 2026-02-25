@@ -162,6 +162,7 @@ export const AdminAddUserInLessonSchema = z.object({
 });
 
 export const adminTeacherSchema = z.object({
+  userId: z.string().min(1),
   id: z.string().optional(), // Optional for creation, required for updates (but we usually handle id separately)
   name: z.string().min(1, "Namn måste anges."),
   specialty: z.string().optional(),

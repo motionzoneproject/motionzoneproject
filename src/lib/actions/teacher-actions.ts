@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type z from "zod";
+import type { Prisma } from "@/generated/prisma/client";
 import { adminTeacherSchema } from "@/validations/adminforms";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
@@ -14,23 +15,30 @@ async function isAdminRole(): Promise<boolean> {
   return sessiondata?.user.role === "admin";
 }
 
-export type TeacherProfileType = z.infer<typeof adminTeacherSchema> & {
-  id: string;
-};
+export type TeacherWithProfile = Prisma.UserGetPayload<{
+  include: { teacherProfile: true };
+}>;
 
 /**
  * Get all teacher profiles.
  * Accessible by public (for now, or maybe restriction needed? Usually public).
  */
-export async function getTeachers() {
-  const teachers = await prisma.teacherProfile.findMany({
-    orderBy: { displayOrder: "asc" },
+export async function getTeachers(): Promise<TeacherWithProfile[]> {
+  return prisma.user.findMany({
+    where: { teacherProfile: { isNot: null } },
+    include: { teacherProfile: true },
   });
-  return teachers;
+}
+
+export async function getTeacherUsers(): Promise<TeacherWithProfile[]> {
+  return prisma.user.findMany({
+    where: { role: "admin" },
+    include: { teacherProfile: true },
+  });
 }
 
 /**
- * Create a new teacher profile.
+ * Create a new teacher profile. fix: should
  * @auth Admin
  */
 export async function createTeacher(
@@ -44,6 +52,7 @@ export async function createTeacher(
 
     await prisma.teacherProfile.create({
       data: {
+        userId: validated.userId,
         name: validated.name,
         specialty: validated.specialty ?? "",
         description: validated.description ?? "",
@@ -53,6 +62,7 @@ export async function createTeacher(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/user");
     revalidatePath("/about"); // Revalidate public page too
 
     return { success: true, msg: "Lärare skapad." };
@@ -79,6 +89,7 @@ export async function updateTeacher(
     await prisma.teacherProfile.update({
       where: { id },
       data: {
+        userId: validated.userId,
         name: validated.name,
         specialty: validated.specialty ?? "",
         description: validated.description ?? "",
