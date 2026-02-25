@@ -7,6 +7,7 @@ import { delEvent } from "@/lib/actions/admin";
 
 interface Props {
   eventId: string;
+  imageURL: string;
 }
 
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export default function DelEventBtn({ eventId }: Props) {
+export default function DelEventBtn({ eventId, imageURL }: Props) {
   const router = useRouter();
 
   const delItm = async () => {
@@ -33,6 +34,23 @@ export default function DelEventBtn({ eventId }: Props) {
         console.log(msg);
         return;
       }
+
+      if (imageURL) {
+        try {
+          const response = await fetch("/api/remove", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: imageURL }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data?.error || "Remove failed");
+          toast("Gammal bild borttagen");
+        } catch (err) {
+          toast(String(err));
+        }
+      }
+
       toast.success(msg);
       router.refresh();
     } catch (e) {

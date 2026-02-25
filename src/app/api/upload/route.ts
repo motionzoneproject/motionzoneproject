@@ -1,8 +1,9 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRole } from "@/lib/actions/admin";
+import { getS3Resources } from "@/lib/s3";
 import type { UploadMetadata } from "@/lib/uploads";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -44,35 +45,15 @@ export async function POST(req: Request) {
     const fileExt = CONTENT_TYPE_TO_EXT[contentType];
     const uniqueFileName = `products/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
 
-    const bucket = process.env.S3_BUCKET;
-    const endpoint = process.env.S3_ENDPOINT;
-    const region = process.env.S3_REGION || "us-east-1";
-    const publicUrl = process.env.S3_PUBLIC_URL;
-    const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-
-    if (
-      !bucket ||
-      !endpoint ||
-      !publicUrl ||
-      !accessKeyId ||
-      !secretAccessKey
-    ) {
+    const s3Resources = getS3Resources();
+    if (!s3Resources) {
       return NextResponse.json(
         { error: "Saknar S3-konfiguration i miljövariabler" },
         { status: 500 },
       );
     }
 
-    const s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+    const { bucket, publicUrl, client } = s3Resources;
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -80,11 +61,11 @@ export async function POST(req: Request) {
       ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, {
+    const uploadUrl = await getSignedUrl(client, command, {
       expiresIn: 60,
     });
 
-    const imageUrl = `${process.env.S3_PUBLIC_URL}/${uniqueFileName}`;
+    const imageUrl = `${publicUrl}/${uniqueFileName}`;
 
     return NextResponse.json({
       success: true,
