@@ -19,7 +19,6 @@ const quickLinks = [
 const Footer = () => {
   return (
     <footer className="relative  border-t border-brand/20 bg-card min-h-[300px]">
-      {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-40 w-96 h-96 rounded-full bg-brand-secondary/5 blur-3xl" />
@@ -27,7 +26,6 @@ const Footer = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-8">
         <div className="grid gap-12 md:grid-cols-4 mb-12">
-          {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center group mb-4">
               <Image
@@ -70,7 +68,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Links */}
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
               Sidor
@@ -90,7 +87,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
               Kontakt
@@ -128,7 +124,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* CTA */}
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
               Bli Medlem
@@ -146,7 +141,6 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} MotionZone Växjö.

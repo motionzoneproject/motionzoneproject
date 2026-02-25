@@ -12,7 +12,7 @@ export default function Hero() {
             animation: "subtlePan 20s ease-in-out infinite alternate",
           }}
         />
-        <div className="absolute inset-0 bg-linear-to-r from-black via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-black via-black/50 to-transparent" />
         <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent" />
       </div>
 
