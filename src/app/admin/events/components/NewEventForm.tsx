@@ -186,7 +186,7 @@ export default function NewEventForm() {
 
             <Button
               type="submit"
-              variant="secondary"
+              variant="ghost"
               className="w-full"
               disabled={isBusy}
             >

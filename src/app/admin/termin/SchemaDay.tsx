@@ -83,7 +83,6 @@ export default function SchemaDay({
                   >
                     <Button
                       variant="outline"
-                      size="sm"
                       className="h-8 p-0 cursor-pointer"
                     >
                       <ListChecks />

@@ -46,8 +46,12 @@ export default function DeleteCourseBtn({ courseId }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant={"destructive"} className="cursor-pointer">
-          <Trash2 />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
           <span className="sr-only">Ta bort kurs</span>
         </Button>
       </AlertDialogTrigger>
@@ -58,7 +62,10 @@ export default function DeleteCourseBtn({ courseId }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <AlertDialogAction onClick={async () => await delItm()}>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => await delItm()}
+          >
             Ta bort
           </AlertDialogAction>
         </AlertDialogFooter>

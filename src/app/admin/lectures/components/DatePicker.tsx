@@ -91,7 +91,7 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               id="date-picker-range"
               className="justify-start px-2.5 font-normal"
             >
