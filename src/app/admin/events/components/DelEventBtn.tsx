@@ -38,7 +38,7 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
       if (imageURL) {
         try {
           const response = await fetch("/api/remove", {
-            method: "POST",
+            method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: imageURL }),
           });

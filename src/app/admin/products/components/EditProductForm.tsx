@@ -161,7 +161,7 @@ export default function EditProductForm({
         // Ta bort gamla
         try {
           const res = await fetch("/api/remove", {
-            method: "POST",
+            method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: oldImageUrl }),
           });

@@ -46,7 +46,7 @@ export default function DeleteProductBtn({ productId, imageURL }: Props) {
         // Ta bort gamla bilden.
         try {
           const res = await fetch("/api/remove", {
-            method: "POST",
+            method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: imageURL }),
           });

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRole } from "@/lib/actions/admin";
 
-export async function POST(req: Request) {
+export async function DELETE(req: Request) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return new Response("Unauthorized", { status: 401 });
 
