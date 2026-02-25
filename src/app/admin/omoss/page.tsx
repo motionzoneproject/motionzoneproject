@@ -1,3 +1,4 @@
+import { StudiosList } from "@/app/admin/omoss/components/StudiosList";
 import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
 import {
   Accordion,
@@ -5,9 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { getStudios } from "@/lib/actions/studio-actions";
 import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
+  const studios = await getStudios();
   const teachers = await getTeachers();
   const teacherUsers = await getTeacherUsers();
 
@@ -19,9 +22,9 @@ export default async function Page() {
 
       <Accordion type="single" collapsible defaultValue="teachers">
         <AccordionItem value="studio">
-          <AccordionTrigger>Om studion</AccordionTrigger>
+          <AccordionTrigger>Studios</AccordionTrigger>
           <AccordionContent>
-            <div className="text-sm text-muted-foreground">Kommer snart.</div>
+            <StudiosList studios={studios} />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="teachers">
