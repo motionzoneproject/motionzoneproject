@@ -1,6 +1,4 @@
 import { Instagram } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 const galleryItems = [
   { id: 1, alt: "Danslektion Hip Hop" },
@@ -49,24 +47,45 @@ export default function Page() {
       </section>
 
       {/* Instagram CTA */}
-      <section className="py-16 bg-muted/50">
-        <div className="max-w-md mx-auto px-6 text-center">
-          <Instagram className="w-12 h-12 mx-auto mb-4 text-brand" />
-          <h2 className="text-2xl font-bold mb-2 text-foreground">
-            Följ oss på Instagram
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Se fler bilder och håll dig uppdaterad om våra aktiviteter.
-          </p>
-          <Button asChild className="bg-brand hover:bg-brand-light text-white">
-            <Link
-              href="https://instagram.com/motionzonevaxjo"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              @motionzonevaxjo
-            </Link>
-          </Button>
+      <section className="py-16 relative overflow-hidden">
+        {/* Bakgrunds-glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand/10 blur-[120px]" />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+          <div className="group relative inline-block">
+            {/* Gradient Glow bakom kortet */}
+            <div className="absolute -inset-1 bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
+
+            {/* Själva kortet */}
+            <div className="relative backdrop-blur-2xl bg-card/40 border border-white/10 p-8 md:p-12 rounded-3xl shadow-2xl">
+              <div className="flex flex-col items-center gap-6">
+                {/* Instagram Ikon Cirkel */}
+                <div className="w-20 h-20 rounded-2xl bg-linear-to-tr from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center shadow-lg transform transition-transform duration-500 group-hover:rotate-12">
+                  <Instagram className="text-white w-10 h-10" />
+                </div>
+
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-black mb-3 text-foreground tracking-tight">
+                    Följ oss på Instagram
+                  </h2>
+                  <p className="text-muted-foreground text-lg mb-8">
+                    Se fler bilder och håll dig uppdaterad om våra aktiviteter.
+                  </p>
+                </div>
+
+                <a
+                  href="https://instagram.com/motionzonevaxjo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background font-bold rounded-full hover:scale-105 transition-transform duration-300"
+                >
+                  @motionzonevaxjo
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
