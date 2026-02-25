@@ -1,29 +1,22 @@
-import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRole } from "@/lib/actions/admin";
+import { getS3Resources } from "@/lib/s3";
 
 export async function DELETE(req: Request) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return new Response("Unauthorized", { status: 401 });
 
-  const publicUrl = process.env.S3_PUBLIC_URL;
-  const bucket = process.env.S3_BUCKET;
-  const endpoint = process.env.S3_ENDPOINT;
-  const region = process.env.S3_REGION || "us-east-1";
-  const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-
-  if (!publicUrl || !bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+  const s3Resources = getS3Resources();
+  if (!s3Resources) {
     return NextResponse.json(
       { error: "Saknar S3-konfiguration i miljövariabler" },
       { status: 500 },
     );
   }
 
-  const normalizedPublicUrl = publicUrl.endsWith("/")
-    ? publicUrl.slice(0, -1)
-    : publicUrl;
+  const { normalizedPublicUrl, bucket, client } = s3Resources;
 
   const removefileSchema = z.object({
     url: z.url().startsWith(normalizedPublicUrl),
@@ -48,22 +41,12 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-
     const command = new DeleteObjectCommand({
       Bucket: bucket,
       Key: key,
     });
 
-    const send = await s3Client.send(command);
+    const send = await client.send(command);
 
     console.log("Fil togs bort från bucket:", key, send);
 
