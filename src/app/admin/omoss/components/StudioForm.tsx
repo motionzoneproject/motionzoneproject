@@ -46,6 +46,7 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
   async function onSubmit(values: z.infer<typeof adminStudioSchema>) {
     setIsPending(true);
     try {
+      const oldImageUrl = studio?.imageUrl ?? "";
       let finalImageURL = values.imageUrl ?? "";
 
       if (finalImageURL.startsWith("blob:")) {
@@ -72,6 +73,24 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
           });
 
       if (result.success) {
+        if (studio && oldImageUrl && finalImageURL !== oldImageUrl) {
+          try {
+            const removeRes = await fetch("/api/remove", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: oldImageUrl }),
+            });
+
+            const removeData = await removeRes.json().catch(() => null);
+            if (!removeRes.ok) {
+              throw new Error(removeData?.error || "Remove failed");
+            }
+            toast("Gammal bild borttagen");
+          } catch (err) {
+            toast(String(err));
+          }
+        }
+
         toast.success(result.msg);
         if (onSuccess) {
           onSuccess();
