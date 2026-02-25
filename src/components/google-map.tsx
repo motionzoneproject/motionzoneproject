@@ -1,5 +1,7 @@
 "use client";
 
+import { MapPin } from "lucide-react";
+
 export default function GoogleMap() {
   // Google Maps URL för Smedsvängen 70, Växjö
   const mapSrc =
@@ -7,14 +9,11 @@ export default function GoogleMap() {
 
   return (
     <section className="relative w-full py-24">
-      {/* Bakgrunds-glow för att matcha Hero-stilen */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Text-del */}
           <div>
-            {/* Badge - Samma stil som Hero */}
             <div className="flex items-center gap-3 mb-6">
               <span className="h-2px w-8 bg-brand" />
               <p className="text-brand-secondary  animate-pulse font-bold tracking-[0.2em] uppercase text-sm">
@@ -31,27 +30,7 @@ export default function GoogleMap() {
             <div className="space-y-6 text-zinc-300">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shrink-0">
-                  <svg
-                    className="w-5 h-5 text-brand"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <title>Platsikon</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  <MapPin className="w-5 h-5 text-brand" aria-hidden="true" />
                 </div>
                 <div>
                   <h4 className="text-foreground font-medium text-lg">
@@ -71,7 +50,7 @@ export default function GoogleMap() {
               </p>
 
               <a
-                href="https://maps.app.goo.gl/..."
+                href="https://www.google.com/maps?ll=56.852854,14.820693&z=16&t=m&hl=sv&gl=SE&mapclient=embed&q=Smedsv%C3%A4ngen+70+352+54+V%C3%A4xj%C3%B6"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block mt-4 px-8 py-3 border shadow border-brand-secondary text-foreground font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-white hover:text-black transition-all duration-300"
