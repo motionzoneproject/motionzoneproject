@@ -33,7 +33,7 @@ const Footer = () => {
                 alt="MotionZone Växjö"
                 width={320}
                 height={90}
-                className="hidden dark:block h-14 w-auto"
+                className="hidden dark:block h-18 w-auto"
                 priority
               />
               <Image
@@ -41,7 +41,7 @@ const Footer = () => {
                 alt="MotionZone Växjö"
                 width={320}
                 height={90}
-                className="block dark:hidden h-14 w-auto"
+                className="block dark:hidden h-18 w-auto"
                 priority
               />
             </Link>
