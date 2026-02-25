@@ -47,8 +47,6 @@ model User {
   addedParticipants Participant[] @relation("AddedParticipants")
   asParticipant     Participant[] @relation("UserAsParticipant")
 
-  styles     Style[]
-
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
@@ -255,8 +253,6 @@ model Course {
 
 
   level String? 
-
-  styles  Style[]
 
   minAge Int?
   maxAge Int?
@@ -631,6 +627,4 @@ model Style {
   name        String
   description String
   imageUrl    String?
-  teachers    User[]
-  courses     Course[]
 }
