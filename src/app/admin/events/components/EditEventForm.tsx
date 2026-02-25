@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import Loader from "@/components/Loader";
 // import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -224,6 +225,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
               )}
             />
 
+            {isBusy && <Loader />}
             <Button
               type="submit"
               variant="ghost"
@@ -232,7 +234,6 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
             >
               {isBusy ? "Uppdaterar..." : "Uppdatera event"}
             </Button>
-            {/* {isBusy && <Loader />} */}
           </form>
         </Form>
       </CardContent>
