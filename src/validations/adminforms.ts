@@ -176,6 +176,7 @@ export const adminStudioSchema = z.object({
   name: z.string().min(1, "Namn måste anges."),
   description: z.string().min(1, "Beskrivning måste anges."),
   imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
 });
 
 export const adminStyleSchema = z.object({
@@ -183,4 +184,5 @@ export const adminStyleSchema = z.object({
   name: z.string().min(1, "Namn måste anges."),
   description: z.string().min(1, "Beskrivning måste anges."),
   imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
 });

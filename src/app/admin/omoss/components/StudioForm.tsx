@@ -10,9 +10,11 @@ import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -40,6 +42,7 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
       name: studio?.name ?? "",
       description: studio?.description ?? "",
       imageUrl: studio?.imageUrl ?? "",
+      active: studio?.active ?? true,
     },
   });
 
@@ -154,6 +157,27 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
                 <ImageInput {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="active"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+              <FormControl>
+                <Checkbox
+                  checked={field.value ?? false}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Visa</FormLabel>
+                <FormDescription>
+                  Om avmarkerad visas inte studion på "Om oss"-sidan.
+                </FormDescription>
+              </div>
             </FormItem>
           )}
         />

@@ -619,7 +619,7 @@ model Studio {
   name        String
   description String
   imageUrl    String?
-  active      Boolean
+  active      Boolean @default(false)
 }
 
 
@@ -628,5 +628,5 @@ model Style {
   name        String
   description String
   imageUrl    String?
-  active      Boolean
+  active      Boolean @default(false)
 }

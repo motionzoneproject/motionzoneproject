@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -90,7 +90,7 @@ export function StudiosList({ studios }: StudiosListProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Namn</TableHead>
-              <TableHead>Beskrivning</TableHead>
+              <TableHead>Visa</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
@@ -98,8 +98,12 @@ export function StudiosList({ studios }: StudiosListProps) {
             {studios.map((studio) => (
               <TableRow key={studio.id}>
                 <TableCell className="font-medium">{studio.name}</TableCell>
-                <TableCell className="max-w-[520px] truncate">
-                  {studio.description}
+                <TableCell>
+                  {studio.active ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <X className="h-4 w-4 text-red-500" />
+                  )}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button

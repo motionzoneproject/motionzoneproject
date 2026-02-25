@@ -34,6 +34,7 @@ export async function createStudio(
         name: validated.name,
         description: validated.description,
         imageUrl: validated.imageUrl ?? "",
+        active: validated.active ?? true,
       },
     });
 
@@ -63,6 +64,7 @@ export async function updateStudio(
         name: validated.name,
         description: validated.description,
         imageUrl: validated.imageUrl ?? "",
+        active: validated.active ?? true,
       },
     });
 

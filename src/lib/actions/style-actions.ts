@@ -32,6 +32,7 @@ export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
         name: validated.name,
         description: validated.description,
         imageUrl: validated.imageUrl ?? "",
+        active: validated.active ?? true,
       },
     });
 
@@ -61,6 +62,7 @@ export async function updateStyle(
         name: validated.name,
         description: validated.description,
         imageUrl: validated.imageUrl ?? "",
+        active: validated.active ?? true,
       },
     });
 
