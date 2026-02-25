@@ -24,7 +24,7 @@ export default function EditEventBtn({ event }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <MinusIcon /> Ändra event
         </Button>
       </DialogTrigger>

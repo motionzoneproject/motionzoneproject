@@ -89,8 +89,8 @@ const Footer = () => {
             </p>
             <Button
               asChild
-              size="sm"
-              className="bg-brand hover:bg-brand-light text-white"
+              variant={"ghost"}
+              className="hover:bg-brand-light text-white cursor-pointer"
             >
               <Link href="/signup">Skapa konto</Link>
             </Button>

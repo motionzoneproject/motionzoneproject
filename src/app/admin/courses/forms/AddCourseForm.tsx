@@ -1,40 +1,5 @@
 "use client";
 
-/* 
-
-Skillnaden i formulären (AddCourseForm och EditCourseForm) mellan din branch och profilsidor är i korthet:
-
-maxbookings hanteras om:
-
-I profilsidor finns unlimitedBookings (checkbox) som styr om maxbookings ska vara 0.
-Fältet för numeriskt max visas bara när unlimitedBookings är av.
-Min-värde ändrat till 1 när begränsat läge används.
-maxCustomers är borttaget i båda formulären i profilsidor.
-
-Bättre submit-state:
-
-isBusy (isSubmitting || isValidating)
-spinner + disable på submit-knapp under submit.
-Förhandsvisning av kursnamn:
-
-getCourseName(...) används live i formuläret för preview baserat på namn/ålder/level/adult.
-UI/textjusteringar:
-
-Add: knapp ändrad till variant="secondary" (istället för grön default).
-Edit: trigger ändrad till ikonknapp (Pencil) istället för textknapp.
-Label Namn -> Dansstil / kurs.
-“varningsruta med Flag” om lärare är borttagen.
-Hjälptexter bytta från gul text till text-muted-foreground.
-Default values:
-
-Add: default maxbookings: 1, unlimitedBookings: true.
-Edit: unlimitedBookings sätts från befintlig kurs (course.maxBookings <= 0).
-Små skillnader/inkonsekvens i profilsidor:
-
-I EditCourseForm står dialogtiteln fortfarande Skapa en ny kurs (bör vara typ Ändra kurs).
-
-*/
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -42,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -107,6 +73,7 @@ export default function AddCourseForm({ teachers }: Props) {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) form.reset();
@@ -132,7 +99,7 @@ export default function AddCourseForm({ teachers }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <Plus />
           Ny kurs
         </Button>
@@ -322,7 +289,8 @@ export default function AddCourseForm({ teachers }: Props) {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button variant="ghost" type="submit" className="w-full">
+                  <Plus className="h-4 w-4" />
                   Skapa
                 </Button>
               </form>
@@ -332,7 +300,7 @@ export default function AddCourseForm({ teachers }: Props) {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="ghost">
               Avbryt
             </Button>
           </DialogClose>

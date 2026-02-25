@@ -1,6 +1,6 @@
 "use client";
 
-import { DeleteIcon, UserIcon } from "lucide-react";
+import { Trash2, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Item,
@@ -48,14 +48,17 @@ export function AttendeceItem({
       </ItemContent>
       <ItemActions>
         <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
           disabled={booking.cancelled}
           type="button"
-          variant={"destructive"}
           onClick={() =>
             removeUserFromLesson(purchaseItem.id, booking.lessonId)
           }
         >
-          <DeleteIcon />
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">Ta bort från lektion</span>
         </Button>
       </ItemActions>
     </Item>

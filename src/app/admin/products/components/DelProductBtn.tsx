@@ -1,7 +1,5 @@
 "use client";
 
-// ev fix: Gör en generisk ta bort-knapp och passa funktionen som den ska köra.
-
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,8 +7,10 @@ import { removeProduct } from "@/lib/actions/admin";
 
 interface Props {
   productId: string;
+  imageURL: string | null;
 }
 
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -24,24 +24,49 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export default function DeleteProductBtn({ productId }: Props) {
+export default function DeleteProductBtn({ productId, imageURL }: Props) {
   const router = useRouter();
+
+  const [loader, setLoader] = useState(false);
 
   const delItm = async () => {
     try {
+      setLoader(true);
+
       const { success, msg } = await removeProduct(productId);
       if (!success) {
         toast.error(
           `Kunde inte ta bort kursen. Anledning: ${JSON.stringify(msg)}`,
         );
-
+        setLoader(false);
         return;
       }
+
+      if (imageURL) {
+        // Ta bort gamla bilden.
+        try {
+          const res = await fetch("/api/remove", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: imageURL }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || "Remove failed");
+          console.log(JSON.stringify(data));
+          toast("Gammal bild borttagen");
+        } catch (err) {
+          toast(String(err));
+        }
+      }
+
       toast.success(msg);
+      setLoader(false);
       router.refresh();
     } catch (e) {
       console.error(e);
       toast.error(`Kunde inte ta bort kursen. Anledning: ${JSON.stringify(e)}`);
+      setLoader(false);
     }
   };
 
@@ -49,9 +74,10 @@ export default function DeleteProductBtn({ productId }: Props) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
+          disabled={loader}
           variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          size="icon"
+          className="text-destructive hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Ta bort produkt</span>
@@ -64,7 +90,10 @@ export default function DeleteProductBtn({ productId }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Avbryt</AlertDialogCancel>
-          <AlertDialogAction onClick={async () => await delItm()}>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => await delItm()}
+          >
             Ta bort
           </AlertDialogAction>
         </AlertDialogFooter>

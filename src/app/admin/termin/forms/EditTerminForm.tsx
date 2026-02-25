@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil } from "lucide-react";
+import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -99,7 +99,7 @@ export default function EditTerminForm({ termin }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="icon">
           <Pencil className="h-4 w-4" />
           <span className="sr-only">Redigera termin</span>
         </Button>
@@ -178,12 +178,13 @@ export default function EditTerminForm({ termin }: Props) {
 
                 {isBusy && <Loader />}
                 <Button
+                  variant="ghost"
                   type="submit"
-                  variant="secondary"
                   className="w-full"
                   disabled={isBusy}
                 >
-                  Ändra
+                  <Save className="h-4 w-4" />
+                  Spara
                 </Button>
               </form>
             </Form>
@@ -192,8 +193,9 @@ export default function EditTerminForm({ termin }: Props) {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
+            <Button type="button" variant="ghost">
+              <X className="h-4 w-4" />
+              Avbryt
             </Button>
           </DialogClose>
         </DialogFooter>

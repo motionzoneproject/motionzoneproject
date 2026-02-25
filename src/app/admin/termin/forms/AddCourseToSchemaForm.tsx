@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -114,7 +114,7 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="cursor-pointer mb-3">
+        <Button variant="ghost" className="cursor-pointer mb-3">
           <PlusIcon /> Lägg till
         </Button>
       </DialogTrigger>
@@ -374,11 +374,12 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
                 {isBusy && <Loader />}
                 <Button
                   type="submit"
-                  variant="secondary"
+                  variant="ghost"
                   className="w-full"
                   disabled={isBusy}
                 >
-                  Lägg till!
+                  <PlusIcon className="h-4 w-4" />
+                  Lägg till
                 </Button>
               </form>
             </Form>
@@ -387,8 +388,9 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
+            <Button type="button" variant="ghost">
+              <X className="h-4 w-4" />
+              Avbryt
             </Button>
           </DialogClose>
         </DialogFooter>

@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -58,6 +59,7 @@ export default function AddProductForm() {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) form.reset();
@@ -98,7 +100,7 @@ export default function AddProductForm() {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="bg-green-500 cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <Plus className="mr-1 h-4 w-4" />
           Ny produkt
         </Button>
@@ -296,7 +298,8 @@ export default function AddProductForm() {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button variant="ghost" type="submit" className="w-full">
+                  <Plus className="h-4 w-4" />
                   Skapa
                 </Button>
               </form>
@@ -306,7 +309,8 @@ export default function AddProductForm() {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="ghost">
+              <X className="h-4 w-4" />
               Avbryt
             </Button>
           </DialogClose>

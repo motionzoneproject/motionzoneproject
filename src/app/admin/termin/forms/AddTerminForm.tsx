@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -77,7 +77,7 @@ export default function AddTerminForm() {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <PlusIcon /> Ny termin
         </Button>
       </DialogTrigger>
@@ -155,10 +155,11 @@ export default function AddTerminForm() {
 
                 <Button
                   type="submit"
-                  variant="secondary"
+                  variant="ghost"
                   className="w-full"
                   disabled={isBusy}
                 >
+                  <PlusIcon className="h-4 w-4" />
                   Skapa
                 </Button>
                 {isBusy && <Loader />}
@@ -169,8 +170,9 @@ export default function AddTerminForm() {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
+            <Button type="button" variant="ghost">
+              <X className="h-4 w-4" />
+              Avbryt
             </Button>
           </DialogClose>
         </DialogFooter>
