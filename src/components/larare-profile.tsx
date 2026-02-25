@@ -7,13 +7,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { TeacherProfile } from "@/generated/prisma/client";
+import type { TeacherWithProfile } from "@/lib/actions/teacher-actions";
 import { getTeachers } from "@/lib/actions/teacher-actions";
 
 const LarareProfile = async () => {
-  const teachers: TeacherProfile[] = await getTeachers();
+  const teachers: TeacherWithProfile[] = await getTeachers();
 
-  const activeTeachers = teachers.filter((t) => t.active);
+  const activeTeachers = teachers.filter((t) => t.teacherProfile?.active);
 
   if (activeTeachers.length === 0) {
     return null; // Or return a message "No teachers found"
@@ -27,44 +27,49 @@ const LarareProfile = async () => {
         </h2>
 
         <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
-          {activeTeachers.map((teacher) => (
-            <Dialog key={teacher.id}>
-              <DialogTrigger>
-                <div className="border-2 max-w-full border-border rounded-lg p-6 flex flex-col items-center text-center b hover:bg-accent/50 cursor-pointer transition">
-                  <div className="relative h-50 w-50 mb-4 rounded-full overflow-hidden bg-brand/20">
-                    {teacher.imageUrl ? (
-                      <Image
-                        src={teacher.imageUrl}
-                        alt={teacher.name}
-                        height={150}
-                        width={150}
-                        className="object-cover h-full w-full"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500">
-                        No Image
-                      </div>
-                    )}
-                  </div>
+          {activeTeachers.map((teacher) => {
+            const profile = teacher.teacherProfile;
+            if (!profile) return null;
 
-                  <h3 className="font-semibold text-lg">{teacher.name}</h3>
-                </div>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{teacher.name}</DialogTitle>
-                  <DialogDescription className="text-base mt-2">
-                    <span className="font-semibold block mb-2">
-                      {teacher.specialty}
-                    </span>
-                    <span className="whitespace-pre-wrap">
-                      {teacher.description}
-                    </span>
-                  </DialogDescription>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
-          ))}
+            return (
+              <Dialog key={profile.id}>
+                <DialogTrigger>
+                  <div className="border-2 max-w-full border-border rounded-lg p-6 flex flex-col items-center text-center b hover:bg-accent/50 cursor-pointer transition">
+                    <div className="relative h-50 w-50 mb-4 rounded-full overflow-hidden bg-brand/20">
+                      {profile.imageUrl ? (
+                        <Image
+                          src={profile.imageUrl}
+                          alt={profile.name}
+                          height={150}
+                          width={150}
+                          className="object-cover h-full w-full"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <h3 className="font-semibold text-lg">{profile.name}</h3>
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{profile.name}</DialogTitle>
+                    <DialogDescription className="text-base mt-2">
+                      <span className="font-semibold block mb-2">
+                        {profile.specialty}
+                      </span>
+                      <span className="whitespace-pre-wrap">
+                        {profile.description}
+                      </span>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            );
+          })}
         </div>
       </div>
     </section>
