@@ -612,3 +612,12 @@ model TeacherProfile {
 
   @@map("teacher_profile")
 }
+
+
+model Studio {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  imageUrl    String?
+}
+
