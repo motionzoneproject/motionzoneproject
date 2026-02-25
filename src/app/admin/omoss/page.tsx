@@ -1,4 +1,5 @@
 import { StudiosList } from "@/app/admin/omoss/components/StudiosList";
+import { StyleList } from "@/app/admin/omoss/components/StyleList";
 import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
 import {
   Accordion,
@@ -7,12 +8,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { getStudios } from "@/lib/actions/studio-actions";
+import { getStyles } from "@/lib/actions/style-actions";
 import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
-  const studios = await getStudios();
-  const teachers = await getTeachers();
-  const teacherUsers = await getTeacherUsers();
+  const [studios, teachers, teacherUsers, styles] = await Promise.all([
+    getStudios(),
+    getTeachers(),
+    getTeacherUsers(),
+    getStyles(),
+  ]);
 
   return (
     <div className="p-4 space-y-4">
@@ -39,7 +44,7 @@ export default async function Page() {
         <AccordionItem value="styles">
           <AccordionTrigger>Dansstilar</AccordionTrigger>
           <AccordionContent>
-            <div className="text-sm text-muted-foreground">Kommer snart.</div>
+            <StyleList styles={styles} />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
