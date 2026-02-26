@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const features = [
   {
-    image: "/proffetionella-instruktörer.png",
+    image: "/professionella-instruktörer.png",
     title: "Professionella instruktörer",
     description:
       "Våra erfarna lärare har lång erfarenhet och brinner för att dela sin passion för dans.",

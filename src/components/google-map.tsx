@@ -15,19 +15,19 @@ export default function GoogleMap() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <span className="h-2px w-8 bg-brand" />
-              <p className="text-brand-secondary  animate-pulse font-bold tracking-[0.2em] uppercase text-sm">
+              <span className="h-[2px] w-8 bg-brand" />
+              <p className="text-brand-secondary font-bold tracking-[0.2em] uppercase text-sm">
                 Hitta till oss
               </p>
             </div>
 
-            <h2 className="text-4xl md:text-6xl font-light  text-foreground leading-tight mb-8">
+            <h2 className="text-4xl md:text-6xl font-light text-foreground leading-tight mb-8">
               Besök vår{" "}
               <span className="font-serif italic text-brand-light">Studio</span>{" "}
               i Växjö
             </h2>
 
-            <div className="space-y-6 text-zinc-300">
+            <div className="space-y-6 text-muted-foreground">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shrink-0">
                   <MapPin className="w-5 h-5 text-brand" aria-hidden="true" />
@@ -65,7 +65,7 @@ export default function GoogleMap() {
             {/* Dekorativ ram bakom kartan */}
             <div className="absolute -inset-4 border border-brand/20 rounded-2xl shadow-2xl group-hover:border-brand/40 transition-colors duration-500" />
 
-            <div className="relative h-[450px] w-full rounded-xl overflow-hidden grayscale-[0.8] hover:grayscale-0 transition-all duration-700 ">
+            <div className="relative h-[450px] w-full rounded-xl overflow-hidden grayscale-[0.8] hover:grayscale-0 transition-all duration-700">
               <iframe
                 src={mapSrc}
                 title="Karta över MotionZone"

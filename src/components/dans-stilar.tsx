@@ -31,7 +31,7 @@ const DansStilar = ({ styles }: DansStilarProps) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <h2 className="text-2xl font-bold mb-8 text-center text-foreground">
+        <h2 className="text-4xl md:text-5xl font-black mb-8 text-center text-foreground tracking-tight">
           Dansstilar
         </h2>
 

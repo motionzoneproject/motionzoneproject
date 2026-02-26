@@ -3,7 +3,11 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative w-full h-[550px] md:h-[650px] flex items-center overflow-hidden bg-black pt-20">
+    <section
+      className="relative w-full h-[550px] md:h-[650px] flex items-center overflow-hidden bg-black pt-20"
+      role="img"
+      aria-label="Dansare i studio"
+    >
       <div className="absolute inset-0 z-0">
         <div
           className="absolute bg-top inset-0 bg-cover bg-no-repeat scale-105"
@@ -19,8 +23,8 @@ export default function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12">
         <div className="max-w-2xl">
           <div className="flex items-center gap-3 mb-6 animate-fade-in-left">
-            <span className="h-2px w-8 bg-brand" />
-            <p className="text-brand-secondary animate-pulse font-semibold tracking-[0.2em] uppercase text-lg">
+            <span className="h-[2px] w-8 bg-brand" />
+            <p className="text-brand-secondary font-semibold tracking-[0.2em] uppercase text-lg">
               Välkommen till Motion Zone
             </p>
           </div>
@@ -34,7 +38,7 @@ export default function Hero() {
             </span>
           </h1>
 
-          <p className="text-base md:text-lg text-zinc-300 leading-relaxed max-w-lg mb-10 font-light animate-fade-in-left [animation-delay:400ms]">
+          <p className="text-base md:text-lg text-white/70 leading-relaxed max-w-lg mb-10 font-light animate-fade-in-left [animation-delay:400ms]">
             Upplev dansen på ett helt nytt sätt. Vår studio erbjuder kurser för
             alla åldrar och nivåer med professionella instruktörer.
           </p>
@@ -75,21 +79,6 @@ export default function Hero() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-black to-transparent" />
-
-      <style>{`
-        @keyframes subtlePan {
-          0% { transform: scale(1); }
-          100% { transform: scale(1.1); }
-        }
-        @keyframes fade-in-left {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-fade-in-left {
-          animation: fade-in-left 0.8s ease-out forwards;
-          opacity: 0;
-        }
-      `}</style>
     </section>
   );
 }

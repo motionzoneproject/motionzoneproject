@@ -18,7 +18,7 @@ const quickLinks = [
 
 const Footer = () => {
   return (
-    <footer className="relative  border-t border-brand/20 bg-card min-h-[300px]">
+    <footer className="relative border-t border-brand/20 bg-card min-h-[300px]">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-40 w-96 h-96 rounded-full bg-brand-secondary/5 blur-3xl" />
