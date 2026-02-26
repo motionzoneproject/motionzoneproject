@@ -1,4 +1,11 @@
-import { ArrowUpRight, Book, CalendarDays, Clock, MapPin } from "lucide-react";
+import {
+  ArrowUpRight,
+  Book,
+  CalendarDays,
+  Clock,
+  Info,
+  MapPin,
+} from "lucide-react";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
 import {
@@ -26,7 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { addToCart } from "@/lib/actions/cart";
-import { getRemainingSlotsForCourse } from "@/lib/actions/server-actions";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import prisma from "@/lib/prisma";
 import { getVeckodag } from "@/lib/tools";
 import { CoursesFilter } from "./components/CoursesFilter";
@@ -118,6 +125,8 @@ export default async function Page({ searchParams }: Props) {
   // Calculate all async data before rendering
   const productsWithData = await Promise.all(
     products.map(async (p) => {
+      const stats = await getProductStats(p.id);
+
       // Extract unique schemaItems and terminer from all courses in the product
       const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
 
@@ -129,17 +138,11 @@ export default async function Page({ searchParams }: Props) {
       });
       const terminer = Array.from(terminMap.values());
 
-      // Calculate spots left
-      // !!! BYT UT MED getProductStats() !!!
-      const spotsLeft = p.unlimitedCustomers
-        ? null
-        : await getRemainingSlotsForCourse(p.id, p.maxCustomer);
-
       return {
         ...p,
         schemaItems,
         terminer,
-        spotsLeft,
+        spotsLeft: stats.spotsLeft,
       };
     }),
   );
@@ -188,13 +191,18 @@ export default async function Page({ searchParams }: Props) {
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
                           {p.price} kr
                         </Badge>
-                        {p.spotsLeft !== null && (
+                        {typeof p.spotsLeft === "number" &&
+                        Number.isFinite(p.spotsLeft) ? (
                           <Badge
                             variant={
                               p.spotsLeft <= 3 ? "destructive" : "outline"
                             }
                           >
-                            {p.spotsLeft} platser kvar
+                            {`${p.spotsLeft} platser kvar`}
+                          </Badge>
+                        ) : (
+                          <Badge variant={"destructive"}>
+                            <Info /> Osäkert
                           </Badge>
                         )}
                       </div>
@@ -206,16 +214,15 @@ export default async function Page({ searchParams }: Props) {
                     </CardHeader>
 
                     <CardContent className="flex-1 space-y-4">
-                      {/* Note: Attempting to use images sizes to help next/image optimize 
-                      Unclear what the best aspect ratio is, has to be tested with customer images */}
                       {p.imageURL && (
-                        <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                        <div className="overflow-hidden max-h-64 rounded-md">
                           <Image
                             src={p.imageURL}
                             alt={p.name}
-                            fill
+                            width={800}
+                            height={600}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover"
+                            className="w-full h-auto"
                           />
                         </div>
                       )}
@@ -348,7 +355,7 @@ export default async function Page({ searchParams }: Props) {
                                               )}
                                               <div className="mt-2">
                                                 {" "}
-                                                {`Giltig: ${s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
+                                                {`Giltig: ${s.customStartDate ?? s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.customEndDate ?? s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
                                               </div>
                                             </div>
                                           ))}
@@ -376,6 +383,7 @@ export default async function Page({ searchParams }: Props) {
                       >
                         <Button
                           type="submit"
+                          disabled={p.spotsLeft === 0}
                           className="w-full bg-brand hover:bg-brand-light text-white font-medium"
                         >
                           Köp nu →

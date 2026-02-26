@@ -1,10 +1,6 @@
-"use client";
-
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
-import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { Clock, MapPin } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,27 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Booking } from "@/generated/prisma/client";
-import { cn } from "@/lib/utils";
 
-// Define a type that matches the structure we expect from the server
-interface LessonWithCourse {
-  id: string;
-  startTime: Date;
-  endTime: Date;
-  course: {
-    name: string;
-  };
-  place?: string | null;
-  teacher: {
-    name: string;
-  };
-  bookings: Booking[];
-  maxBookings: number;
-}
+import { cn } from "@/lib/utils";
+import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
+import { EditLessonBtn } from "../lectures/components/EditLesson";
+import type { LessonWithData } from "../page";
+import { LessonCarouselInteractive } from "./LessonCarouselInteractive";
 
 interface LessonCarouselProps {
-  lessons: LessonWithCourse[];
+  lessons: LessonWithData[];
   initialScrollIndex: number;
 }
 
@@ -40,38 +24,6 @@ export function LessonCarousel({
   lessons,
   initialScrollIndex,
 }: LessonCarouselProps) {
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-
-  // Scroll to the initial index on mount
-  React.useEffect(() => {
-    if (scrollContainerRef.current && initialScrollIndex >= 0) {
-      const container = scrollContainerRef.current;
-      const cardWidth = 300; // Approximate width of a card + gap
-      const scrollPos = initialScrollIndex * cardWidth;
-
-      // Attempt to center it:
-      const containerWidth = container.clientWidth;
-      const centeredPos = scrollPos - containerWidth / 2 + cardWidth / 2;
-
-      container.scrollTo({
-        left: Math.max(0, centeredPos),
-        behavior: "smooth",
-      });
-    }
-  }, [initialScrollIndex]);
-
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -300, behavior: "smooth" });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 300, behavior: "smooth" });
-    }
-  };
-
   if (lessons.length === 0) {
     return (
       <div className="text-muted-foreground p-4">
@@ -81,67 +33,69 @@ export function LessonCarousel({
   }
 
   return (
-    <div className="relative w-full group">
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
-          onClick={scrollLeft}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div
-        ref={scrollContainerRef}
-        className="flex overflow-x-auto gap-4 p-4 scrollbar-hide snap-x snap-mandatory"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {lessons.map((lesson, _index) => {
-          const isPast = new Date(lesson.endTime) < new Date();
-          return (
-            <div
-              key={lesson.id}
-              className="min-w-[280px] max-w-[280px] snap-center"
+    <LessonCarouselInteractive initialScrollIndex={initialScrollIndex}>
+      {lessons.map((lesson) => {
+        const isPast = new Date(lesson.endTime) < new Date();
+        return (
+          <div
+            key={lesson.id}
+            className="min-w-[280px] max-w-[280px] snap-center"
+          >
+            <Card
+              className={cn(
+                "h-full border-l-4 transition-all hover:shadow-md",
+                isPast
+                  ? "border-l-gray-300 opacity-70 grayscale-[0.5]"
+                  : "border-l-primary",
+              )}
             >
-              <Card
-                className={cn(
-                  "h-full border-l-4 transition-all hover:shadow-md",
-                  isPast
-                    ? "border-l-gray-300 opacity-70 grayscale-[0.5]"
-                    : "border-l-primary",
-                )}
-              >
-                <CardHeader className="pb-2">
-                  <div className="text-sm text-muted-foreground capitalize">
-                    {format(new Date(lesson.startTime), "EEEE d MMMM", {
-                      locale: sv,
-                    })}
-                  </div>
-                  <CardTitle className="text-lg leading-tight line-clamp-2">
-                    {lesson.course.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-2 space-y-2 text-sm">
+              <CardHeader className="pb-2">
+                <div className="text-sm text-muted-foreground capitalize">
+                  {format(new Date(lesson.startTime), "EEEE d MMMM", {
+                    locale: sv,
+                  })}
+                </div>
+                <CardTitle className="text-lg leading-tight line-clamp-2">
+                  {lesson.course.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2 space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    {format(new Date(lesson.startTime), "HH:mm")} -{" "}
+                    {format(new Date(lesson.endTime), "HH:mm")}
+                  </span>
+                </div>
+                {lesson.schemaItem.place && (
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {format(new Date(lesson.startTime), "HH:mm")} -{" "}
-                      {format(new Date(lesson.endTime), "HH:mm")}
-                    </span>
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{lesson.schemaItem.place}</span>
                   </div>
-                  {lesson.place && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{lesson.place}</span>
-                    </div>
-                  )}
-                  <div className="text-muted-foreground truncate">
-                    Lärare: {lesson.teacher.name}
+                )}
+                <div className="text-muted-foreground truncate">
+                  Lärare: {lesson.teacher.name}
+                </div>
+                <div className="text-muted-foreground truncate">
+                  Meddelande:
+                  <br />
+                  {lesson.message} {lesson.cancelled && "(Inställd)"}
+                </div>
+              </CardContent>
+              <CardFooter className="pt-2 border-t text-xs flex flex-col justify-between text-foreground  gap-2">
+                <div className="flex  justify-between gap-6 w-full">
+                  <div className="font-bold ">
+                    <span className="p-2">Närvaro</span>
+                    <br />
+                    <AttendeDialog lesson={lesson} />
                   </div>
-                </CardContent>
-                <CardFooter className="pt-2 border-t text-xs flex justify-between text-muted-foreground">
+                  <div className="font-bold text-center">
+                    <span className="p-2">Status</span>
+                    <br />
+                    <EditLessonBtn lesson={lesson} />
+                  </div>
+                </div>
+                {/* <div className="flex justify-between gap-6">
                   <span>
                     {lesson.bookings.length} / {lesson.maxBookings} bokade
                   </span>
@@ -150,23 +104,13 @@ export function LessonCarousel({
                   ) : (
                     <span className="text-primary font-medium">Kommande</span>
                   )}
-                </CardFooter>
-              </Card>
-            </div>
-          );
-        })}
-      </div>
 
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
-          onClick={scrollRight}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+                </div> */}
+              </CardFooter>
+            </Card>
+          </div>
+        );
+      })}
+    </LessonCarouselInteractive>
   );
 }

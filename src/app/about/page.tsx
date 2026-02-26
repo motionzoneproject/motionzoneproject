@@ -1,8 +1,12 @@
-import Link from "next/link";
+import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
 import LarareProfile from "@/components/larare-profile";
+import { getStudios } from "@/lib/actions/studio-actions";
 
-export default function About() {
+export default async function About() {
+  const studios = await getStudios();
+  const activeStudios = studios.filter((studio) => studio.active);
+
   return (
     <main className="bg-background">
       {/* Hero */}
@@ -24,61 +28,44 @@ export default function About() {
       <LarareProfile />
       <DansStilar />
 
-      <section className="relative w-full bg-black overflow-hidden py-28">
-        <div className="absolute inset-0 z-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/hiphop.jpg')" }}
-          />
-          <div className="absolute inset-0 bg-black/70" />
-          <div className="absolute inset-0 bg-linear-to-r from-black via-black/60 to-black/30" />
-          <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/60" />
-        </div>
-
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-brand/40 to-transparent" />
-
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <span className="h-2px w-8 bg-brand" />
-                <p className="text-brand-secondary font-semibold tracking-[0.2em] uppercase text-sm">
-                  Vår Studio
-                </p>
-              </div>
-
-              <h2 className="text-4xl md:text-6xl font-light text-white leading-[1.1] tracking-tight mb-6">
-                En plats skapad
-                <br />
-                <span className="font-serif italic text-brand-light">
-                  för rörelse
-                </span>
-              </h2>
-
-              <p className="text-zinc-300 text-base md:text-lg leading-relaxed font-light max-w-md mb-10">
-                Vår studio är designad för att kännas inspirerande, trygg och
-                professionell. Ljusa salar, speglar och högkvalitativa golv
-                skapar den perfekta miljön för dans.
-              </p>
-
-              <div className="flex flex-wrap  gap-5 items-center">
-                <Link
-                  href="/courses"
-                  className="px-8 py-3.5 bg-brand text-white font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-brand/20"
+      {/* Studio */}
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-foreground">
+            Våra lokaler
+          </h2>
+          {activeStudios.length === 0 ? (
+            <p className="text-muted-foreground mb-8">
+              Information om våra studios kommer snart.
+            </p>
+          ) : (
+            <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-6">
+              {activeStudios.map((studio) => (
+                <div
+                  key={studio.id}
+                  className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
                 >
-                  Se kurser
-                </Link>
-              </div>
-              <div className="relative border mt-10 border-brand/30 bg-brand/10 backdrop-blur-sm rounded-2xl p-7 overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-brand rounded-l-2xl" />
-                <p className="text-white text-xl font-light leading-snug">
-                  Här är alla välkomna –{" "}
-                  <span className="font-serif italic text-brand-light">
-                    oavsett nivå.
-                  </span>
-                </p>
-              </div>
+                  {studio.imageUrl && (
+                    <Image
+                      src={studio.imageUrl}
+                      alt={studio.name}
+                      height={220}
+                      width={420}
+                      className="mb-4 h-[220px] w-full rounded-lg object-cover"
+                    />
+                  )}
+                  <h3 className="font-semibold text-lg">{studio.name}</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    {studio.description}
+                  </p>
+                </div>
+              ))}
             </div>
+          )}
+          <div className="bg-brand rounded-lg p-6 mb-10 mt-8">
+            <p className="text-white text-lg font-semibold">
+              Här är alla välkomna - oavsett nivå.
+            </p>
           </div>
         </div>
 

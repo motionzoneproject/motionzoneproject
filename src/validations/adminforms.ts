@@ -170,3 +170,19 @@ export const adminTeacherSchema = z.object({
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });
+
+export const adminStudioSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Namn måste anges."),
+  description: z.string().min(1, "Beskrivning måste anges."),
+  imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
+});
+
+export const adminStyleSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Namn måste anges."),
+  description: z.string().min(1, "Beskrivning måste anges."),
+  imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
+});

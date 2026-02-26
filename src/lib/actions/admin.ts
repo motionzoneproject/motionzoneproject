@@ -1028,6 +1028,7 @@ export async function editLessonItem(
     });
 
     revalidatePath("/admin/lectures");
+    revalidatePath("/admin");
 
     return {
       success: true,
@@ -1681,6 +1682,7 @@ export async function addUserInLesson(
     });
 
     revalidatePath("/admin/lectures");
+    revalidatePath("/admin");
     revalidatePath("/user");
 
     return { success: true, msg: `Bokning slutförd!` };

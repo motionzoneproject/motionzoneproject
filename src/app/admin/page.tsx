@@ -1,39 +1,42 @@
+import type { Prisma } from "@/generated/prisma/client";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { LessonCarousel } from "./components/LessonCarousel";
 
+const lessonsInclude = {
+  bookings: true,
+  teacher: true,
+  course: true,
+  schemaItem: true,
+} satisfies Prisma.LessonInclude;
+
+export type LessonWithData = Prisma.LessonGetPayload<{
+  include: typeof lessonsInclude;
+}>;
+
 export default async function Page() {
-  const now = new Date();
-
-  // Find the current or next term
-  const currentTerm = await prisma.termin.findFirst({
-    where: {
-      endDate: {
-        gte: now,
-      },
-    },
-    orderBy: {
-      startDate: "asc",
-    },
-  });
-
-  if (!currentTerm) {
-    return (
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-6">Profilsida</h1>
-        <div>Ingen aktiv termin hittades.</div>
-      </div>
-    );
+  const sessionData = await getSessionData();
+  const user = sessionData?.user;
+  if (!sessionData || !user || user.role !== "admin") {
+    return null;
   }
 
-  // Fetch all lessons for the term
-  const lessons = await prisma.lesson.findMany({
+  const now = new Date();
+
+  // Fetch all lessons for the user:
+  const lessons: LessonWithData[] = await prisma.lesson.findMany({
     where: {
-      terminId: currentTerm.id,
+      teacherId: user.id,
+      startTime: {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // En vecka bakåt
+        lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // En vecka framåt
+      },
     },
     include: {
       course: true,
       teacher: true,
       bookings: true,
+      schemaItem: true,
     },
     orderBy: {
       startTime: "asc",
@@ -66,11 +69,8 @@ export default async function Page() {
       <div className="space-y-4">
         <div className="flex justify-between items-baseline">
           <h2 className="text-xl font-semibold">
-            Senaste och kommande tillfällen
+            Dina senaste och kommande lektioner
           </h2>
-          <span className="text-sm text-muted-foreground">
-            Termin: {currentTerm.name}
-          </span>
         </div>
 
         <div className="bg-muted/30 p-1 rounded-xl">
@@ -79,11 +79,6 @@ export default async function Page() {
             initialScrollIndex={initialScrollIndex}
           />
         </div>
-
-        <p className="text-sm text-muted-foreground px-2">
-          Listar alla kurser i pågående termin, centrerad på det närmaste
-          tillfället.
-        </p>
       </div>
     </div>
   );

@@ -1,51 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { getStyles } from "@/lib/actions/style-actions";
 
-const danceStyles = [
-  {
-    name: "Hip Hop",
-    image: "/hiphop.jpg",
-    accentGradient: "from-violet-600 via-brand to-brand-secondary",
-  },
-  {
-    name: "Salsa",
-    image: "/salsa.jpg",
-    accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
-  },
-  {
-    name: "Heel",
-    image: "/heel.jpg",
-    accentGradient: "from-brand-secondary via-purple-500 to-brand",
-  },
-  {
-    name: "Jazz",
-    image: "/jazz.jpg",
-    accentGradient: "from-violet-600 via-brand to-brand-secondary",
-  },
-  {
-    name: "Bachata",
-    image: "/bachata.jpg",
-    accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
-  },
-  {
-    name: "Latinrhythms",
-    image: "/latinrhythms19+.jpg",
-    accentGradient: "from-brand-secondary via-purple-500 to-brand",
-  },
-  {
-    name: "Contemporary",
-    image: "/contemporary.jpg",
-    accentGradient: "from-violet-600 via-brand to-brand-secondary",
-  },
-  {
-    name: "Barre",
-    image: "/barre.jpg",
-    accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
-  },
-];
+const DansStilar = async () => {
+  const styles = await getStyles();
+  const danceStyles = styles.filter((style) => style.active);
 
-const DansStilar = () => {
+  if (danceStyles.length === 0) return null;
+
   return (
     <section
       className="py-10 relative overflow-hidden"
@@ -61,36 +32,32 @@ const DansStilar = () => {
           Dansstilar
         </h2>
 
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-4 max-w-4xl mx-auto">
+        <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-4">
           {danceStyles.map((style) => (
-            <div key={style.name} className="group relative">
-              <div
-                className={`absolute -inset-1 bg-linear-to-r ${style.accentGradient} rounded-2xl blur-lg opacity-20 group-hover:opacity-50 transition duration-500`}
-              />
-
-              <div className="relative h-full backdrop-blur-xl bg-card/60 border border-white/10 rounded-2xl shadow-2xl transform transition-all duration-500 group-hover:scale-[1.03] group-hover:-translate-y-2 flex flex-col overflow-hidden">
-                {style.image && (
-                  <div className="relative overflow-hidden h-36 flex items-center justify-center">
+            <Dialog key={style.id}>
+              <DialogTrigger>
+                <div className="w-[180px] cursor-pointer rounded-xl border border-border p-3 text-center text-lg font-semibold text-foreground transition-colors hover:border-brand/50">
+                  {style.imageUrl && (
                     <Image
-                      src={style.image}
+                      src={style.imageUrl}
                       alt={style.name}
-                      width={300}
-                      height={200}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      height={150}
+                      width={150}
+                      className="w-50 h-50 rounded-lg object-cover mt-2"
                     />
-                    <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent opacity-60" />
-                  </div>
-                )}
-
-                <div className="p-3 text-center">
-                  <p className="text-foreground text-sm font-semibold">
-                    {style.name}
-                  </p>
+                  )}
+                  <h3>{style.name}</h3>
                 </div>
-
-                <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-              </div>
-            </div>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{style.name}</DialogTitle>
+                  <DialogDescription className="text-base mt-2 whitespace-pre-wrap">
+                    {style.description}
+                  </DialogDescription>
+                </DialogHeader>
+              </DialogContent>
+            </Dialog>
           ))}
         </div>
       </div>

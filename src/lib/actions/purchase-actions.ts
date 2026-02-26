@@ -104,6 +104,7 @@ export async function handleClips(
 export async function getProductStats(productId: string): Promise<{
   sold: number | null;
   reserved: number | null;
+  total: number | null;
   spotsLeft: number | null;
   success: boolean;
   error?: string;
@@ -147,6 +148,7 @@ export async function getProductStats(productId: string): Promise<{
     return {
       sold: sold,
       reserved: reserved,
+      total: sold + reserved,
       spotsLeft: product.unlimitedCustomers
         ? Infinity
         : Math.max(0, product.maxCustomer - (sold + reserved)),
@@ -157,6 +159,7 @@ export async function getProductStats(productId: string): Promise<{
     return {
       sold: null,
       reserved: null,
+      total: null,
       spotsLeft: null,
       success: false,
       error: JSON.stringify(e),

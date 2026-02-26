@@ -26,7 +26,7 @@ const LarareProfile = async () => {
           Våra lärare
         </h2>
 
-        <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
+        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-6">
           {activeTeachers.map((teacher) => {
             const profile = teacher.teacherProfile;
             if (!profile) return null;
@@ -34,7 +34,7 @@ const LarareProfile = async () => {
             return (
               <Dialog key={profile.id}>
                 <DialogTrigger>
-                  <div className="border-2 max-w-full border-border rounded-lg p-6 flex flex-col items-center text-center b hover:bg-accent/50 cursor-pointer transition">
+                  <div className="b flex w-[280px] cursor-pointer flex-col items-center rounded-lg border-2 border-border p-6 text-center transition hover:bg-accent/50">
                     <div className="relative h-50 w-50 mb-4 rounded-full overflow-hidden bg-brand/20">
                       {profile.imageUrl ? (
                         <Image
