@@ -212,16 +212,15 @@ export default async function Page({ searchParams }: Props) {
                     </CardHeader>
 
                     <CardContent className="flex-1 space-y-4">
-                      {/* Note: Attempting to use images sizes to help next/image optimize 
-                      Unclear what the best aspect ratio is, has to be tested with customer images */}
                       {p.imageURL && (
-                        <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                        <div className="overflow-hidden max-h-64 rounded-md">
                           <Image
                             src={p.imageURL}
                             alt={p.name}
-                            fill
+                            width={800}
+                            height={600}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover"
+                            className="w-full h-auto"
                           />
                         </div>
                       )}
