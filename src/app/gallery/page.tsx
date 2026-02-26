@@ -73,7 +73,7 @@ export default function Page() {
             <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
               Bilder från studion
             </h2>
-            <p className="text-brand-secondary font-bold animate-pulse max-w-xl mx-auto text-lg">
+            <p className="text-brand-secondary font-bold max-w-xl mx-auto text-lg">
               Ta en titt in i vår värld
             </p>
           </div>
