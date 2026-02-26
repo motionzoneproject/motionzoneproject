@@ -68,7 +68,6 @@ export default function Features() {
                     height={400}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-
                   <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent opacity-60"></div>
                 </div>
 
@@ -78,9 +77,7 @@ export default function Features() {
                     style={{ background: feature.accentVar }}
                   />
 
-                  <h3
-                    className={`text-2xl font-bold mb-3 bg-linear-to-r ${feature.accentGradient} bg-clip-text text-transparent`}
-                  >
+                  <h3 className="text-2xl font-bold mb-3 text-foreground">
                     {feature.title}
                   </h3>
 
@@ -89,7 +86,7 @@ export default function Features() {
                   </p>
                 </div>
 
-                <div className="absolute top-0 left-0 right-0 h-1px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
+                <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
               </div>
             </div>
           ))}

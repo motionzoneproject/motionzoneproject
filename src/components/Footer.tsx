@@ -146,7 +146,6 @@ const Footer = () => {
             © {new Date().getFullYear()} MotionZone Växjö.
           </p>
           <div className="h-px flex-1 mx-8 hidden sm:block bg-linear-to-r from-transparent via-brand/20 to-transparent" />
-          <p className="text-xs text-muted-foreground">Dans är livet 💜</p>
         </div>
       </div>
     </footer>

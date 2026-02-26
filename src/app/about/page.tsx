@@ -8,8 +8,12 @@ export default function About() {
       {/* Hero */}
       <section className="py-16 md:py-20 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Om vår dansstudio
+          <h1 className="text-5xl md:text-7xl font-light text-white leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+            Om vår
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              Dansstudio
+            </span>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             En plats där rörelse möter gemenskap, kreativitet och passion.
@@ -78,7 +82,6 @@ export default function About() {
           </div>
         </div>
 
-        {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-black to-transparent" />
       </section>
     </main>
