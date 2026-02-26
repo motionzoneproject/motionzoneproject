@@ -2,9 +2,10 @@ import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
 import LarareProfile from "@/components/larare-profile";
 import { getStudios } from "@/lib/actions/studio-actions";
+import { getStyles } from "@/lib/actions/style-actions";
 
 export default async function About() {
-  const studios = await getStudios();
+  const [studios, styles] = await Promise.all([getStudios(), getStyles()]);
   const activeStudios = studios.filter((studio) => studio.active);
 
   return (
@@ -26,7 +27,7 @@ export default async function About() {
       </section>
 
       <LarareProfile />
-      <DansStilar />
+      <DansStilar styles={styles} />
 
       {/* Studio */}
       <section className="py-16 bg-muted/50">

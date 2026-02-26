@@ -9,10 +9,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getStyles } from "@/lib/actions/style-actions";
+import type { Style } from "@/generated/prisma/client";
 
-const DansStilar = async () => {
-  const styles = await getStyles();
+interface DansStilarProps {
+  styles: Style[];
+}
+
+const DansStilar = ({ styles }: DansStilarProps) => {
   const danceStyles = styles.filter((style) => style.active);
 
   if (danceStyles.length === 0) return null;

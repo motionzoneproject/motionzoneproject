@@ -76,7 +76,7 @@ export default function Hero() {
 
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-black to-transparent" />
 
-      <style jsx>{`
+      <style>{`
         @keyframes subtlePan {
           0% { transform: scale(1); }
           100% { transform: scale(1.1); }
