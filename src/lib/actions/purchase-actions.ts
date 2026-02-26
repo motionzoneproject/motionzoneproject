@@ -162,7 +162,7 @@ export async function getProductStats(productId: string): Promise<{
       total: null,
       spotsLeft: null,
       success: false,
-      error: JSON.stringify(e),
+      error: "Kunde inte hämta produktstatistik.",
     };
   }
 }
