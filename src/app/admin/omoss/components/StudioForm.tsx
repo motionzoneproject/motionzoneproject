@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Plus, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner"; // Assuming you use sonner for toasts
+import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,63 +21,35 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Assuming you have a Textarea component
-import {
-  createTeacher,
-  type TeacherWithProfile,
-  updateTeacher,
-} from "@/lib/actions/teacher-actions";
+import { Textarea } from "@/components/ui/textarea";
+import type { Studio } from "@/generated/prisma/client";
+import { createStudio, updateStudio } from "@/lib/actions/studio-actions";
 import { uploadImageFromBlob } from "@/lib/uploads";
-import { adminTeacherSchema } from "@/validations/adminforms";
+import { adminStudioSchema } from "@/validations/adminforms";
 
-type TeacherFormProps = {
-  teacher?: TeacherWithProfile;
-  users: TeacherWithProfile[];
+type StudioFormProps = {
+  studio?: Studio;
   onSuccess?: () => void;
 };
 
-export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
+export function StudioForm({ studio, onSuccess }: StudioFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
-  const profile = teacher?.teacherProfile ?? null;
-  const availableUsers = users.filter(
-    (user) => !user.teacherProfile || user.id === teacher?.id,
-  );
-
   const form = useForm({
-    resolver: zodResolver(adminTeacherSchema),
+    resolver: zodResolver(adminStudioSchema),
     defaultValues: {
-      userId: teacher?.id || "",
-      name: teacher?.name || "",
-      specialty: profile?.specialty || "",
-      description: profile?.description || "",
-      imageUrl: profile?.imageUrl || "",
-      active: profile?.active ?? true,
+      name: studio?.name ?? "",
+      description: studio?.description ?? "",
+      imageUrl: studio?.imageUrl ?? "",
+      active: studio?.active ?? true,
     },
   });
 
-  const selectedUserId = form.watch("userId");
-  const selectedUser = availableUsers.find(
-    (user) => user.id === selectedUserId,
-  );
-
-  useEffect(() => {
-    if (!selectedUser) return;
-    form.setValue("name", selectedUser.name, { shouldValidate: true });
-  }, [form, selectedUser]);
-
-  async function onSubmit(values: z.infer<typeof adminTeacherSchema>) {
+  async function onSubmit(values: z.infer<typeof adminStudioSchema>) {
     setIsPending(true);
     try {
-      const oldImageUrl = profile?.imageUrl ?? "";
+      const oldImageUrl = studio?.imageUrl ?? "";
       let finalImageURL = values.imageUrl ?? "";
 
       if (finalImageURL.startsWith("blob:")) {
@@ -87,30 +60,23 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
           URL.revokeObjectURL(values.imageUrl ?? "");
         } catch (e) {
           console.error(e);
-          toast.error(`Uppladdning misslyckades.`);
+          toast.error("Uppladdning misslyckades.");
           return;
         }
       }
 
-      if (teacher && !profile) {
-        toast.error("Kunde inte hitta lärarprofilen.");
-        return;
-      }
-
-      const result = teacher
-        ? await updateTeacher(profile?.id ?? "", {
+      const result = studio
+        ? await updateStudio(studio.id, {
             ...values,
-            name: selectedUser?.name ?? values.name,
             imageUrl: finalImageURL,
           })
-        : await createTeacher({
+        : await createStudio({
             ...values,
-            name: selectedUser?.name ?? values.name,
             imageUrl: finalImageURL,
           });
 
       if (result.success) {
-        if (teacher && oldImageUrl && finalImageURL !== oldImageUrl) {
+        if (studio && oldImageUrl && finalImageURL !== oldImageUrl) {
           try {
             const removeRes = await fetch("/api/remove", {
               method: "DELETE",
@@ -132,7 +98,6 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
         if (onSuccess) {
           onSuccess();
         } else {
-          // If used in a page directly, refresh
           router.refresh();
           form.reset();
         }
@@ -152,49 +117,13 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="userId"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Användare</FormLabel>
-              <Select
-                value={field.value || ""}
-                onValueChange={field.onChange}
-                disabled={!!teacher}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Välj användare" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {availableUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="specialty"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Specialitet</FormLabel>
+              <FormLabel>Namn</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="t.ex. Balett & Modern dans"
-                  {...field}
-                  value={field.value || ""}
-                />
+                <Input placeholder="t.ex. Studio 1" {...field} />
               </FormControl>
-              <FormDescription>
-                Kort beskrivning av vad läraren undervisar i.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -208,10 +137,9 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
               <FormLabel>Beskrivning</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Längre beskrivning om läraren..."
+                  placeholder="Beskriv studion..."
                   className="min-h-[120px]"
                   {...field}
-                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -225,11 +153,9 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Bild</FormLabel>
-
               <FormControl>
                 <ImageInput {...field} value={field.value || ""} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
@@ -249,7 +175,7 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
               <div className="space-y-1 leading-none">
                 <FormLabel>Visa</FormLabel>
                 <FormDescription>
-                  Om avmarkerad visas inte läraren på "Om oss"-sidan.
+                  Om avmarkerad visas inte studion på "Om oss"-sidan.
                 </FormDescription>
               </div>
             </FormItem>
@@ -263,13 +189,13 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
           disabled={isPending}
         >
           {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : teacher ? (
+            <Loader />
+          ) : studio ? (
             <Save className="h-4 w-4" />
           ) : (
             <Plus className="h-4 w-4" />
           )}
-          {isPending ? "Sparar..." : teacher ? "Spara" : "Skapa"}
+          {isPending ? "Sparar..." : studio ? "Spara" : "Skapa"}
         </Button>
       </form>
     </Form>

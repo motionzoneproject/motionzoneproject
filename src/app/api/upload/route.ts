@@ -6,7 +6,12 @@ import { isAdminRole } from "@/lib/actions/admin";
 import { getS3Resources } from "@/lib/s3";
 import type { UploadMetadata } from "@/lib/uploads";
 
-const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+const IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg",
+] as const;
 const VIDEO_MIME_TYPES = [
   "video/mp4",
   "video/webm",
@@ -21,6 +26,7 @@ const CONTENT_TYPE_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "image/jpg": "jpg",
   "video/mp4": "mp4",
   "video/webm": "webm",
   "video/quicktime": "mov",
@@ -53,7 +59,10 @@ export async function POST(req: Request) {
         : "Ogiltig metadata";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
-    const { contentType, size, folder } = parsed.data satisfies UploadMetadata;
+    const { size, folder } = parsed.data satisfies UploadMetadata;
+    const rawContentType = parsed.data.contentType;
+    const contentType =
+      rawContentType === "image/jpg" ? "image/jpeg" : rawContentType;
 
     // Validate size per media category
     const isVideo = (VIDEO_MIME_TYPES as readonly string[]).includes(

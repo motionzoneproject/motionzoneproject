@@ -588,3 +588,19 @@ model GalleryItem {
 
   @@map("gallery_item")
 }
+
+model Studio {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  imageUrl    String?
+  active      Boolean @default(false)
+}
+
+model Style {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  imageUrl    String?
+  active      Boolean @default(false)
+}

@@ -54,7 +54,7 @@ export async function createCheckout(params: {
       itm.count > stats.spotsLeft
     )
       throw new Error(
-        `prodcut count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
+        `Product count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
       );
 
     // Vi behöver kolla totalt också.
