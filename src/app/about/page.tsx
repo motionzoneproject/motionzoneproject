@@ -12,7 +12,7 @@ export default async function About() {
       {/* Hero */}
       <section className="py-16 md:py-20 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+        <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
             Om vår
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -68,8 +68,6 @@ export default async function About() {
             </p>
           </div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-black to-transparent" />
       </section>
     </main>
   );

@@ -1,4 +1,6 @@
 import { Instagram } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const galleryItems = [
   {
@@ -42,6 +44,7 @@ const galleryItems = [
 export default function Page() {
   return (
     <main className="bg-background">
+      {/* Hero */}
       <section className="py-16 md:py-20 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
@@ -54,6 +57,7 @@ export default function Page() {
         </div>
       </section>
 
+      {/* Gallery Grid */}
       <section
         id="galleri"
         className="py-20 md:py-32 relative overflow-hidden"
@@ -74,7 +78,7 @@ export default function Page() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
             {galleryItems.map((item) => (
               <div key={item.id} className="group relative cursor-pointer">
                 <div
@@ -84,7 +88,7 @@ export default function Page() {
                 <div className="relative h-full backdrop-blur-xl bg-card/60 border border-white/10 rounded-2xl shadow-2xl transform transition-all duration-500 group-hover:scale-[1.03] group-hover:-translate-y-2 flex flex-col overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent z-10" />
 
-                  <div className="relative overflow-hidden h-60 flex items-center justify-center bg-muted">
+                  <div className="relative overflow-hidden aspect-square flex items-center justify-center bg-muted">
                     <span className="text-muted-foreground text-sm z-10 relative">
                       {item.alt}
                     </span>
@@ -107,7 +111,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Instagram */}
+      {/* Instagram CTA */}
       <section className="py-16 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand/10 blur-[120px]" />
@@ -115,7 +119,7 @@ export default function Page() {
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
           <div className="group relative inline-block">
-            <div className="absolute -inset-1 bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
+            <div className="absolute -inset-1 bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-1000" />
 
             <div className="relative backdrop-blur-2xl bg-card/40 border border-white/10 p-8 md:p-12 rounded-3xl shadow-2xl">
               <div className="flex flex-col items-center gap-6">
@@ -132,14 +136,18 @@ export default function Page() {
                   </p>
                 </div>
 
-                <a
-                  href="https://instagram.com/motionzonevaxjo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background font-bold rounded-full hover:scale-105 transition-transform duration-300"
+                <Button
+                  asChild
+                  className="px-8 py-4 bg-foreground text-background font-bold rounded-full hover:scale-105 transition-transform duration-300"
                 >
-                  @motionzonevaxjo
-                </a>
+                  <Link
+                    href="https://instagram.com/motionzonevaxjo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    @motionzonevaxjo
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
