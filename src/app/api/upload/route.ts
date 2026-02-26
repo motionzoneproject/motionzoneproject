@@ -6,13 +6,19 @@ import { isAdminRole } from "@/lib/actions/admin";
 import { getS3Resources } from "@/lib/s3";
 import type { UploadMetadata } from "@/lib/uploads";
 
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg",
+] as const;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const CONTENT_TYPE_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "image/jpg": "jpg",
 };
 const uploadMetadataSchema = z.object({
   contentType: z.enum(ALLOWED_MIME_TYPES),
@@ -40,7 +46,10 @@ export async function POST(req: Request) {
         : "Ogiltig metadata";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
-    const { contentType } = parsed.data satisfies UploadMetadata;
+    const rawContentType = parsed.data
+      .contentType satisfies UploadMetadata["contentType"];
+    const contentType =
+      rawContentType === "image/jpg" ? "image/jpeg" : rawContentType;
 
     const fileExt = CONTENT_TYPE_TO_EXT[contentType];
     const uniqueFileName = `products/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;

@@ -8,6 +8,13 @@ export type PresignResponse = {
   url: string;
 };
 
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+function normalizeContentType(type: string) {
+  if (type === "image/jpg") return "image/jpeg";
+  return type;
+}
+
 async function readErrorMessage(res: Response) {
   try {
     const data = (await res.json()) as { error?: string };
@@ -18,7 +25,15 @@ async function readErrorMessage(res: Response) {
 }
 
 export async function uploadImageFromBlob(blob: Blob) {
-  const contentType = blob.type || "image/jpeg";
+  const contentType = normalizeContentType(blob.type || "image/jpeg");
+  if (
+    !ALLOWED_MIME_TYPES.includes(
+      contentType as (typeof ALLOWED_MIME_TYPES)[number],
+    )
+  ) {
+    throw new Error("Ogiltig bildtyp. Endast JPEG, PNG och WEBP stöds.");
+  }
+
   const payload: UploadMetadata = { contentType, size: blob.size };
 
   const presignRes = await fetch("/api/upload", {
