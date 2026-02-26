@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Lora, Montserrat } from "next/font/google";
 import { headers } from "next/headers";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
@@ -7,6 +8,15 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
+});
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+});
 
 export const metadata: Metadata = {
   title: "MotionZone Växjö",
@@ -41,7 +51,11 @@ export default async function RootLayout({
   });
 
   return (
-    <html lang="sv" suppressHydrationWarning>
+    <html
+      lang="sv"
+      suppressHydrationWarning
+      className={`${lora.variable} ${montserrat.variable}`}
+    >
       <body className="antialiased min-h-screen flex flex-col">
         <ThemeProvider
           attribute="class"

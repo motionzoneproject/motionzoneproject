@@ -2,9 +2,10 @@ import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
 import LarareProfile from "@/components/larare-profile";
 import { getStudios } from "@/lib/actions/studio-actions";
+import { getStyles } from "@/lib/actions/style-actions";
 
 export default async function About() {
-  const studios = await getStudios();
+  const [studios, styles] = await Promise.all([getStudios(), getStyles()]);
   const activeStudios = studios.filter((studio) => studio.active);
 
   return (
@@ -12,8 +13,12 @@ export default async function About() {
       {/* Hero */}
       <section className="py-16 md:py-20 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Om vår dansstudio
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+            Om vår
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              Dansstudio
+            </span>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             En plats där rörelse möter gemenskap, kreativitet och passion.
@@ -22,7 +27,7 @@ export default async function About() {
       </section>
 
       <LarareProfile />
-      <DansStilar />
+      <DansStilar styles={styles} />
 
       {/* Studio */}
       <section className="py-16 bg-muted/50">

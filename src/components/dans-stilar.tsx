@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import {
   Dialog,
@@ -7,18 +9,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getStyles } from "@/lib/actions/style-actions";
+import type { Style } from "@/generated/prisma/client";
 
-const DansStilar = async () => {
-  const styles = await getStyles();
+interface DansStilarProps {
+  styles: Style[];
+}
+
+const DansStilar = ({ styles }: DansStilarProps) => {
   const danceStyles = styles.filter((style) => style.active);
 
   if (danceStyles.length === 0) return null;
 
   return (
-    <section className="py-10">
-      <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-2xl font-bold mb-8 text-center text-foreground">
+    <section
+      className="py-10 relative overflow-hidden"
+      style={{ background: "var(--background)" }}
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-brand/5 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-brand-secondary/5 blur-[120px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <h2 className="text-4xl md:text-5xl font-black mb-8 text-center text-foreground tracking-tight">
           Dansstilar
         </h2>
 
@@ -54,4 +67,5 @@ const DansStilar = async () => {
     </section>
   );
 };
+
 export default DansStilar;

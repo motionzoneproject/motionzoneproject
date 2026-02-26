@@ -5,12 +5,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/generated/prisma/client";
 
 interface EventsProps {
   events: Event[];
 }
+
+const accentGradients = [
+  {
+    gradient: "from-violet-600 via-brand to-brand-secondary",
+    accentVar: "var(--color-brand)",
+  },
+  {
+    gradient: "from-cyan-500 via-brand-secondary to-blue-600",
+    accentVar: "var(--color-brand-secondary)",
+  },
+  {
+    gradient: "from-brand-secondary via-purple-500 to-brand",
+    accentVar: "var(--color-brand)",
+  },
+];
 
 export default function Events({ events }: EventsProps) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
@@ -25,9 +39,13 @@ export default function Events({ events }: EventsProps) {
 
   if (!events || events.length === 0) {
     return (
-      <section id="events" className="py-16 md:py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+      <section
+        id="events"
+        className="py-16 md:py-24 relative overflow-hidden"
+        style={{ background: "var(--background)" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             Kommande Event
           </h2>
           <p className="text-muted-foreground">
@@ -39,15 +57,25 @@ export default function Events({ events }: EventsProps) {
   }
 
   const currentEvent = events[currentEventIndex];
+  const accent = accentGradients[currentEventIndex % accentGradients.length];
 
   return (
-    <section id="events" className="py-16 md:py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+    <section
+      id="events"
+      className="py-16 md:py-24 relative overflow-hidden"
+      style={{ background: "var(--background)" }}
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-brand/5 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-brand-secondary/5 blur-[120px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             Kommande Event
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground max-w-xl mx-auto text-lg">
             Köp biljetter och delta i våra danshöjdpunkter
           </p>
         </div>
@@ -58,60 +86,83 @@ export default function Events({ events }: EventsProps) {
               type="button"
               onClick={prevEvent}
               aria-label="Föregående event"
-              className="p-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors"
+              className="p-2 rounded-full backdrop-blur-xl bg-card/60 border border-white/10 text-foreground hover:scale-110 transition-all duration-300 shadow-lg"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            <Card className="flex-1 bg-card border-border">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-xl font-bold text-foreground">
-                  {currentEvent.headline}
-                </h3>
-                {/** bild **/}
+            <div className="group relative flex-1">
+              <div
+                className={`absolute -inset-1 bg-linear-to-r ${accent.gradient} rounded-2xl blur-lg opacity-20 group-hover:opacity-50 transition duration-500`}
+              />
+
+              <div className="relative h-full backdrop-blur-xl bg-card/60 border border-white/10 rounded-2xl shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1 flex flex-col overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent z-10" />
+
                 {currentEvent.imageURL && (
-                  <Image
-                    src={currentEvent.imageURL}
-                    alt="Event Bild"
-                    width={400}
-                    height={200}
-                    className="rounded-md"
+                  <div className="relative overflow-hidden h-52">
+                    <Image
+                      src={currentEvent.imageURL}
+                      alt="Event Bild"
+                      width={500}
+                      height={300}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent opacity-60" />
+                  </div>
+                )}
+
+                <div className="p-6 relative space-y-4">
+                  <div
+                    className="h-1 rounded-full transition-all duration-500 w-12 group-hover:w-24"
+                    style={{ background: accent.accentVar }}
                   />
-                )}
-                <p className="text-muted-foreground text-sm">
-                  {currentEvent.description}
-                </p>
 
-                <div className="space-y-2 pt-4 border-t border-border">
-                  <div className="flex items-center gap-3 text-sm text-foreground">
-                    <Calendar className="w-4 h-4 text-brand" />
-                    {currentEvent.startDate.toLocaleDateString("sv-SE")}
+                  <h3 className="text-xl font-bold text-foreground">
+                    {currentEvent.headline}
+                  </h3>
+
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {currentEvent.description}
+                  </p>
+
+                  <div className="space-y-2 pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-3 text-sm text-foreground">
+                      <Calendar
+                        className="w-4 h-4"
+                        style={{ color: accent.accentVar }}
+                      />
+                      {currentEvent.startDate.toLocaleDateString("sv-SE")}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-foreground">
+                      <Clock
+                        className="w-4 h-4"
+                        style={{ color: accent.accentVar }}
+                      />
+                      {currentEvent.startDate.toLocaleTimeString("sv-SE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-foreground">
-                    <Clock className="w-4 h-4 text-brand" />
-                    {currentEvent.startDate.toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
+
+                  {currentEvent.link && (
+                    <Button
+                      asChild
+                      className="w-full mt-2 bg-brand hover:bg-brand-light text-white"
+                    >
+                      <Link href={currentEvent.link}>Köp Biljett</Link>
+                    </Button>
+                  )}
                 </div>
-
-                {currentEvent.link && (
-                  <Button
-                    asChild
-                    className="w-full mt-4 bg-brand hover:bg-brand-light text-white"
-                  >
-                    <Link href={currentEvent.link}>Köp Biljett</Link>
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={nextEvent}
               aria-label="Nästa event"
-              className="p-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors"
+              className="p-2 rounded-full backdrop-blur-xl bg-card/60 border border-white/10 text-foreground hover:scale-110 transition-all duration-300 shadow-lg"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -125,10 +176,10 @@ export default function Events({ events }: EventsProps) {
                   type="button"
                   onClick={() => setCurrentEventIndex(index)}
                   aria-label={`Gå till event ${index + 1}`}
-                  className={`w-2 h-2 rounded-full transition-all ${
+                  className={`h-2 rounded-full transition-all duration-300 ${
                     index === currentEventIndex
                       ? "w-6 bg-brand"
-                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   }`}
                 />
               ))}

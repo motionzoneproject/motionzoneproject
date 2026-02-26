@@ -1,6 +1,13 @@
-import { Facebook, Instagram, Mail, MapPin, Phone } from "lucide-react";
+import {
+  ArrowRight,
+  Facebook,
+  Instagram,
+  Mail,
+  MapPin,
+  Phone,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 const quickLinks = [
   { name: "Hem", href: "/" },
@@ -11,45 +18,68 @@ const quickLinks = [
 
 const Footer = () => {
   return (
-    <footer className="bg-card text-card-foreground border-t border-brand/20">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid gap-8 md:grid-cols-4">
-          {/* Brand */}
-          <div>
-            <h2 className="text-lg font-bold mb-3">MotionZone</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+    <footer className="relative border-t border-brand/20 bg-card min-h-[300px]">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand/5 blur-3xl" />
+        <div className="absolute -bottom-20 -right-40 w-96 h-96 rounded-full bg-brand-secondary/5 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-8">
+        <div className="grid gap-12 md:grid-cols-4 mb-12">
+          <div className="md:col-span-1">
+            <Link href="/" className="flex items-center group mb-4">
+              <Image
+                src="/logo-dark.png"
+                alt="MotionZone Växjö"
+                width={320}
+                height={90}
+                className="hidden dark:block h-18 w-auto"
+                priority
+              />
+              <Image
+                src="/logo-light.png"
+                alt="MotionZone Växjö"
+                width={320}
+                height={90}
+                className="block dark:hidden h-18 w-auto"
+                priority
+              />
+            </Link>
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
               Din plats för dans, glädje och gemenskap.
             </p>
             <div className="flex gap-3">
               <Link
-                href="https://facebook.com"
+                href="https://www.facebook.com/p/Motion-Zone-V%C3%A4xj%C3%B6-61571413538266/"
                 target="_blank"
-                className="text-muted-foreground hover:text-brand transition-colors"
                 aria-label="Facebook"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:border-brand/50 hover:text-brand hover:bg-brand/5 transition-all duration-300"
               >
-                <Facebook className="w-5 h-5" />
+                <Facebook className="w-4 h-4" />
               </Link>
               <Link
-                href="https://instagram.com"
+                href="https://instagram.com/motionzonevaxjo"
                 target="_blank"
-                className="text-muted-foreground hover:text-brand transition-colors"
                 aria-label="Instagram"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:border-brand-secondary/50 hover:text-brand-secondary hover:bg-brand-secondary/5 transition-all duration-300"
               >
-                <Instagram className="w-5 h-5" />
+                <Instagram className="w-4 h-4" />
               </Link>
             </div>
           </div>
 
-          {/* Links */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Sidor</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
+              Sidor
+            </h3>
+            <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground hover:text-brand transition-colors"
+                    className="group flex items-center gap-1.5 text-sm text-muted-foreground hover:text-brand transition-colors duration-200"
                   >
+                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
                     {link.name}
                   </Link>
                 </li>
@@ -57,23 +87,39 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Kontakt</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-brand" />
-                Smedsvängen 70 Växjö, 35254
+            <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
+              Kontakt
+            </h3>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand/10 shrink-0 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand" />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Smedsvängen 70
+                  <br />
+                  Växjö, 35254
+                </span>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-brand" />
-                0707825273
+              <li className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-secondary/10 shrink-0">
+                  <Phone className="w-3.5 h-3.5 text-brand-secondary" />
+                </div>
+                <a
+                  href="tel:0707825273"
+                  className="text-sm text-muted-foreground hover:text-brand transition-colors duration-200"
+                >
+                  0707825273
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-brand" />
+              <li className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand/10 shrink-0">
+                  <Mail className="w-3.5 h-3.5 text-brand" />
+                </div>
                 <Link
-                  href="mailto:info@motionzone.se"
-                  className="hover:text-brand transition-colors"
+                  href="mailto:sophiebretonesh@gmail.com"
+                  className="text-sm text-muted-foreground hover:text-brand transition-colors duration-200"
                 >
                   sophiebretonesh@gmail.com
                 </Link>
@@ -81,24 +127,28 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* CTA */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Bli medlem</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
+              Bli Medlem
+            </h3>
+            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               Skapa ett konto och boka din första kurs idag!
             </p>
-            <Button
-              asChild
-              variant={"ghost"}
-              className="hover:bg-brand-light text-white cursor-pointer"
+            <Link
+              href="/signup"
+              className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-brand hover:bg-brand-light transition-all duration-300 hover:scale-105"
             >
-              <Link href="/signup">Skapa konto</Link>
-            </Button>
+              Skapa konto
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+            </Link>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} MotionZone Växjö
+        <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} MotionZone Växjö.
+          </p>
+          <div className="h-px flex-1 mx-8 hidden sm:block bg-linear-to-r from-transparent via-brand/20 to-transparent" />
         </div>
       </div>
     </footer>
