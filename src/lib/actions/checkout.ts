@@ -11,7 +11,6 @@ import { getSessionData } from "./sessiondata";
 export type CheckoutItem = {
   productId: string;
   count: number;
-  price: number;
   participantId?: string | null;
 };
 
@@ -28,9 +27,13 @@ export async function createCheckout(params: {
     throw new Error("No items provided");
   }
 
-  // kontrollera så platser kvar inte överstigs (och kan beräknas) och att produkten är giltig.
-
   const pCountTotal = new Map();
+  const serverItems: {
+    productId: string;
+    count: number;
+    participantId?: string | null;
+    price: number;
+  }[] = [];
 
   for (const itm of items) {
     const p = await prisma.product.findUnique({
@@ -72,13 +75,19 @@ export async function createCheckout(params: {
       throw new Error(
         `product count exceeds limit for product ${itm.productId}. Count was ${totalInCartForProduct} and spotsLeft is ${stats.spotsLeft}.`,
       );
-  }
 
-  // Order ok!
+    // Use the server-fetched price directly — never trust the client.
+    serverItems.push({
+      productId: itm.productId,
+      count: itm.count,
+      participantId: itm.participantId,
+      price: p.price,
+    });
+  }
 
   const order = await createOrder({
     userId: session.user.id,
-    items,
+    items: serverItems,
     postalcode,
     note,
   });
