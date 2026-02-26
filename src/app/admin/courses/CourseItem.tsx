@@ -1,4 +1,4 @@
-import { EditIcon } from "lucide-react";
+import { EditIcon, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -41,27 +41,31 @@ export default async function CourseItem({
       </TableCell>
       <TableCell>{teacherName ?? "Saknas"}</TableCell>
       <TableCell>
-        {soldProducts}st{" "}
-        <Link
-          href={
-            `../admin/students?course=${course.id}` /**fix: finns ej kursfilter ännu i admin/students, så kolla sen när det kommeer så det blir rätt. */
-          }
-        >
-          <Button>Elever</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <span>{soldProducts}st</span>
+          <Link
+            href={
+              `../admin/students?course=${course.id}` /**fix: finns ej kursfilter ännu i admin/students, så kolla sen när det kommeer så det blir rätt. */
+            }
+          >
+            <Button variant="ghost">
+              <Search className="h-4 w-4" /> Elever
+            </Button>
+          </Link>
+        </div>
       </TableCell>
-      <TableCell className="">
-        {lessonsCnt}st{" "}
+      <TableCell>
         <Link
           href={`../admin/lectures?teacher=${course.teacherId}&course=${course.id}`}
         >
-          <Button>
-            <EditIcon />
+          <Button variant="ghost">
+            <EditIcon /> ({lessonsCnt}st)
+            <span className="sr-only">Redigera lektioner </span>
           </Button>
         </Link>
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end items-center gap-2">
           <EditCourseForm teachers={teachers} course={course} />
           <DeleteCourseBtn courseId={course.id} />
         </div>

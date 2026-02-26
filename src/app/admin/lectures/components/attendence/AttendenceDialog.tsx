@@ -35,7 +35,7 @@ export async function AttendeDialog({ lesson }: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="ghost">
           <EditIcon />({bookings.length}st)
         </Button>
       </DialogTrigger>

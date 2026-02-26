@@ -1,20 +1,53 @@
+import { StudiosList } from "@/app/admin/omoss/components/StudiosList";
+import { StyleList } from "@/app/admin/omoss/components/StyleList";
 import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
-import { getTeachers } from "@/lib/actions/teacher-actions";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { getStudios } from "@/lib/actions/studio-actions";
+import { getStyles } from "@/lib/actions/style-actions";
+import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
-  const teachers = await getTeachers();
+  const [studios, teachers, teacherUsers, styles] = await Promise.all([
+    getStudios(),
+    getTeachers(),
+    getTeacherUsers(),
+    getStyles(),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/30 p-6 rounded-lg border">
-        <h1 className="text-3xl font-bold mb-2 text-center">Hantera Om Oss</h1>
-        <p className="text-muted-foreground">
-          Här kan du lägga till, redigera och ta bort lärare som visas på "Om
-          oss"-sidan.
-        </p>
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Om oss</span>
       </div>
 
-      <TeacherList teachers={teachers} />
+      <Accordion type="single" collapsible defaultValue="studio">
+        <AccordionItem value="studio">
+          <AccordionTrigger>Studios</AccordionTrigger>
+          <AccordionContent>
+            <StudiosList studios={studios} />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="teachers">
+          <AccordionTrigger>Lärarprofiler</AccordionTrigger>
+          <AccordionContent>
+            <TeacherList
+              teachersWithProfile={teachers}
+              teacherUsers={teacherUsers}
+            />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="styles">
+          <AccordionTrigger>Dansstilar</AccordionTrigger>
+          <AccordionContent>
+            <StyleList styles={styles} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

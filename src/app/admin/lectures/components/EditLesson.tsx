@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { EditIcon } from "lucide-react";
+import { EditIcon, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -77,7 +77,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <EditIcon />
         </Button>
       </DialogTrigger>
@@ -142,7 +142,13 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
             />
 
             {isBusy && <Loader />}
-            <Button type="submit" className="w-full" disabled={isBusy}>
+            <Button
+              variant="ghost"
+              type="submit"
+              className="w-full"
+              disabled={isBusy}
+            >
+              <Save className="h-4 w-4" />
               Spara
             </Button>
           </form>

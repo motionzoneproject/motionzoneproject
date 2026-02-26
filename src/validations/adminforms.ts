@@ -162,10 +162,27 @@ export const AdminAddUserInLessonSchema = z.object({
 });
 
 export const adminTeacherSchema = z.object({
+  userId: z.string().min(1),
   id: z.string().optional(), // Optional for creation, required for updates (but we usually handle id separately)
   name: z.string().min(1, "Namn måste anges."),
   specialty: z.string().optional(),
   description: z.string().optional(),
+  imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
+});
+
+export const adminStudioSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Namn måste anges."),
+  description: z.string().min(1, "Beskrivning måste anges."),
+  imageUrl: z.string().nullish(),
+  active: z.boolean().optional(),
+});
+
+export const adminStyleSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Namn måste anges."),
+  description: z.string().min(1, "Beskrivning måste anges."),
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });

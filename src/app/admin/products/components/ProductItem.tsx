@@ -62,7 +62,10 @@ export default async function ProductItem({ product }: Props) {
             name={product.name}
             price={product.price}
           />
-          <DeleteProductBtn productId={product.id} />
+          <DeleteProductBtn
+            productId={product.id}
+            imageURL={product.imageURL}
+          />
         </div>
       </TableCell>
     </TableRow>

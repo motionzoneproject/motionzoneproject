@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -72,6 +73,7 @@ export function AttendenceForm({
   });
 
   const router = useRouter();
+  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   const userIdByStudentId = useMemo(
     () =>
@@ -213,7 +215,8 @@ export function AttendenceForm({
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
+                <Button variant="ghost" type="submit" className="w-full">
+                  <Plus className="h-4 w-4" />
                   Lägg till i lektionen
                 </Button>
               </form>

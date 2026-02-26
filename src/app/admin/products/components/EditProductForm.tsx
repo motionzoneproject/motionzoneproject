@@ -4,7 +4,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { Pencil } from "lucide-react";
+import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -84,6 +84,7 @@ export default function EditProductForm({
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   // Reset för att gammal data annars visas.
   useEffect(() => {
@@ -113,6 +114,8 @@ export default function EditProductForm({
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    const oldImageUrl = imageURL;
+
     let finalImageURL = values.imageURL ?? "";
 
     if (finalImageURL.startsWith("blob:")) {
@@ -153,6 +156,24 @@ export default function EditProductForm({
 
     const res = await editProduct(productId, payload);
     if (res.success) {
+      if (!!oldImageUrl && finalImageURL !== oldImageUrl) {
+        // Ta bort gamla
+        try {
+          const res = await fetch("/api/remove", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: oldImageUrl }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || "Remove failed");
+          console.log(JSON.stringify(data));
+          toast("Gammal bild borttagen");
+        } catch (err) {
+          toast(String(err));
+        }
+      }
+
       toast.success(res.msg);
       setIsOpen(false);
       router.refresh();
@@ -164,7 +185,7 @@ export default function EditProductForm({
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="icon">
           <Pencil className="h-4 w-4" />
           <span className="sr-only">Ändra produkt</span>
         </Button>
@@ -361,8 +382,9 @@ export default function EditProductForm({
                   )}
                 />
 
-                <Button type="submit" className="w-full">
-                  Ändra
+                <Button variant="ghost" type="submit" className="w-full">
+                  <Save className="h-4 w-4" />
+                  Spara
                 </Button>
               </form>
             </Form>
@@ -371,7 +393,8 @@ export default function EditProductForm({
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="ghost">
+              <X className="h-4 w-4" />
               Avbryt
             </Button>
           </DialogClose>

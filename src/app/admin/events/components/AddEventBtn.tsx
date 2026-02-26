@@ -16,7 +16,7 @@ export function AddEventBtn() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="destructive" className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <PlusIcon /> Nytt event
         </Button>
       </DialogTrigger>

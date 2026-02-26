@@ -20,7 +20,6 @@ Förhandsvisning av kursnamn:
 getCourseName(...) används live i formuläret för preview baserat på namn/ålder/level/adult.
 UI/textjusteringar:
 
-Add: knapp ändrad till variant="secondary" (istället för grön default).
 Edit: trigger ändrad till ikonknapp (Pencil) istället för textknapp.
 Label Namn -> Dansstil / kurs.
 “varningsruta med Flag” om lärare är borttagen.
@@ -36,7 +35,7 @@ I EditCourseForm står dialogtiteln fortfarande Skapa en ny kurs (bör vara typ 
 */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { EditIcon } from "lucide-react";
+import { EditIcon, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -106,6 +105,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -151,7 +151,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
-        <Button variant={"default"} className="cursor-pointer">
+        <Button variant="ghost" className="cursor-pointer">
           <EditIcon />
           <span className="sr-only">Ändra kurs</span>
         </Button>
@@ -341,8 +341,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
-                  Ändra
+                <Button variant="ghost" type="submit" className="w-full">
+                  <Save className="h-4 w-4" />
+                  Spara
                 </Button>
               </form>
             </Form>
@@ -351,7 +352,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="ghost">
               Avbryt
             </Button>
           </DialogClose>

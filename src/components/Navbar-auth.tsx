@@ -25,7 +25,6 @@ export default function NavBarAuth() {
           </Button>
         )}
         <Button
-          size="sm"
           variant="ghost"
           className="text-muted-foreground hover:text-foreground"
           onClick={() => {
@@ -46,11 +45,7 @@ export default function NavBarAuth() {
   }
 
   return (
-    <Button
-      asChild
-      size="sm"
-      className="bg-brand hover:bg-brand-light text-white"
-    >
+    <Button asChild className="bg-brand hover:bg-brand-light text-white">
       <Link href="/signin">Logga in</Link>
     </Button>
   );

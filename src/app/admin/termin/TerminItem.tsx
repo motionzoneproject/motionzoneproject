@@ -58,11 +58,9 @@ export default async function TerminItem({ termin }: Props) {
         <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
           <Dialog>
             <DialogTrigger asChild>
-              <Button
-                variant="secondary"
-                className="cursor-pointer h-8 w-8 p-0"
-              >
-                <Calendar1Icon />
+              <Button variant="ghost" size="icon" className="cursor-pointer">
+                <Calendar1Icon className="h-4 w-4" />
+                <span className="sr-only">Visa veckoschema</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">

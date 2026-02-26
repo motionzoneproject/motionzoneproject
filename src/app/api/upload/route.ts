@@ -1,21 +1,41 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRole } from "@/lib/actions/admin";
+import { getS3Resources } from "@/lib/s3";
 import type { UploadMetadata } from "@/lib/uploads";
 
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg",
+] as const;
+const VIDEO_MIME_TYPES = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+] as const;
+const ALLOWED_MIME_TYPES = [...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES];
+
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const VIDEO_MAX_SIZE = 100 * 1024 * 1024; // 100 MB
 
 const CONTENT_TYPE_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "image/jpg": "jpg",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
 };
+
 const uploadMetadataSchema = z.object({
-  contentType: z.enum(ALLOWED_MIME_TYPES),
-  size: z.number().int().positive().max(MAX_FILE_SIZE),
+  contentType: z.enum(ALLOWED_MIME_TYPES as [string, ...string[]]),
+  size: z.number().int().positive(),
+  folder: z.string().optional(), // e.g. "gallery" or "products"
 });
 
 export async function POST(req: Request) {
@@ -39,40 +59,37 @@ export async function POST(req: Request) {
         : "Ogiltig metadata";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
-    const { contentType } = parsed.data satisfies UploadMetadata;
+    const { size, folder } = parsed.data satisfies UploadMetadata;
+    const rawContentType = parsed.data.contentType;
+    const contentType =
+      rawContentType === "image/jpg" ? "image/jpeg" : rawContentType;
+
+    // Validate size per media category
+    const isVideo = (VIDEO_MIME_TYPES as readonly string[]).includes(
+      contentType,
+    );
+    const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
+    if (size > maxSize) {
+      const maxMb = maxSize / (1024 * 1024);
+      return NextResponse.json(
+        { error: `Filen är för stor. Max ${maxMb} MB.` },
+        { status: 400 },
+      );
+    }
 
     const fileExt = CONTENT_TYPE_TO_EXT[contentType];
-    const uniqueFileName = `products/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+    const prefix = folder ?? (isVideo ? "gallery" : "products");
+    const uniqueFileName = `${prefix}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
 
-    const bucket = process.env.S3_BUCKET;
-    const endpoint = process.env.S3_ENDPOINT;
-    const region = process.env.S3_REGION || "us-east-1";
-    const publicUrl = process.env.S3_PUBLIC_URL;
-    const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-
-    if (
-      !bucket ||
-      !endpoint ||
-      !publicUrl ||
-      !accessKeyId ||
-      !secretAccessKey
-    ) {
+    const s3Resources = getS3Resources();
+    if (!s3Resources) {
       return NextResponse.json(
         { error: "Saknar S3-konfiguration i miljövariabler" },
         { status: 500 },
       );
     }
 
-    const s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+    const { bucket, publicUrl, client } = s3Resources;
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -80,11 +97,11 @@ export async function POST(req: Request) {
       ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, {
+    const uploadUrl = await getSignedUrl(client, command, {
       expiresIn: 60,
     });
 
-    const imageUrl = `${process.env.S3_PUBLIC_URL}/${uniqueFileName}`;
+    const imageUrl = `${publicUrl}/${uniqueFileName}`;
 
     return NextResponse.json({
       success: true,
