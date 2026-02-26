@@ -156,10 +156,7 @@ export default function EditCourseToSchemaForm({
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
-    console.log(`Values sent:\n${values}`);
-
     const res = await editCourseInSchema(termin.id, schemaItem.id, values);
-    console.log(`res:\n${JSON.stringify(res)}`);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
