@@ -30,16 +30,13 @@ export default function DeleteTerminBtn({ terminId }: Props) {
       const { success, msg } = await delTermin(terminId);
       if (!success) {
         toast.error(`Failed to delete article: ${msg}`);
-        console.log(msg);
         return;
       }
       toast.success(msg);
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort termin ${terminId}. Anledning: ${JSON.stringify(e)}`,
-      );
+      toast.error("Kunde inte ta bort terminen.");
     }
   };
 

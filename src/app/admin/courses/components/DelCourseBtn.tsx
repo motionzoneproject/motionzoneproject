@@ -30,16 +30,13 @@ export default function DeleteCourseBtn({ courseId }: Props) {
       const { success, msg } = await delCourse(courseId);
       if (!success) {
         toast.error(`Failed to delete article: ${msg}`);
-        console.log(msg);
         return;
       }
       toast.success(msg);
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort kursen ${courseId}. Anledning: ${JSON.stringify(e)}`,
-      );
+      toast.error("Kunde inte ta bort kursen.");
     }
   };
 

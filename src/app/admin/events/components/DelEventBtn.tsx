@@ -31,7 +31,6 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
       const { success, msg } = await delEvent(eventId);
       if (!success) {
         toast.error(`Failed to delete article: ${msg}`);
-        console.log(msg);
         return;
       }
 
@@ -55,9 +54,7 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort event ${eventId}. Anledning: ${JSON.stringify(e)}`,
-      );
+      toast.error("Kunde inte ta bort eventet.");
     }
   };
 
