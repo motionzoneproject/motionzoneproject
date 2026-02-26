@@ -148,7 +148,7 @@ export default async function Page({ searchParams }: Props) {
     <main className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="text-center py-8 border-b border-border mb-8">
-          <h1 className="text-5xl md:text-7xl font-light text-white leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
             Köp våra
             <span className="font-serif italic text-brand-light"> Kurser</span>
             <br />
