@@ -38,7 +38,7 @@ export async function getTeacherUsers(): Promise<TeacherWithProfile[]> {
 }
 
 /**
- * Create a new teacher profile. fix: should
+ * Create a new teacher profile.
  * @auth Admin
  */
 export async function createTeacher(
