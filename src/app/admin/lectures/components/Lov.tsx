@@ -278,7 +278,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
                       })}
                     {useAllCourses && (
                       <p className="text-sm text-muted-foreground">
-                        Alla kurser i vald termin kommer att stallas in.
+                        Alla kurser i vald termin kommer att ställas in.
                       </p>
                     )}
                     {!useAllCourses && filteredCourses.length === 0 && (
