@@ -1,24 +1,11 @@
 "use server";
 
-import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import type { GalleryItemType } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
+import { getS3Resources } from "@/lib/s3";
 import { isAdminRole } from "./admin";
-
-function getS3Client() {
-  return new S3Client({
-    region: process.env.S3_REGION,
-    endpoint: process.env.S3_ENDPOINT,
-    forcePathStyle: true,
-    credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
-    },
-  });
-}
-
-// ─── Queries ────────────────────────────────────────────────────────────────
 
 /** Get all active gallery items ordered by displayOrder (public). */
 export async function getActiveGalleryItems() {
@@ -37,8 +24,6 @@ export async function getAllGalleryItems() {
     orderBy: { displayOrder: "asc" },
   });
 }
-
-// ─── Mutations ───────────────────────────────────────────────────────────────
 
 export async function createGalleryItem(data: {
   type: GalleryItemType;
@@ -85,20 +70,20 @@ export async function deleteGalleryItem(id: string) {
   if (!item) throw new Error("Galleriobjektet hittades inte");
 
   // Delete from R2 — derive the object key by stripping the public URL prefix
-  const publicUrl = process.env.S3_PUBLIC_URL;
-  if (!publicUrl) {
-    throw new Error("S3_PUBLIC_URL är inte konfigurerad");
+  const s3 = getS3Resources();
+  if (!s3) {
+    throw new Error("S3 är inte konfigurerad");
   }
 
-  const key = item.url.startsWith(publicUrl)
-    ? item.url.slice(publicUrl.length).replace(/^\//, "")
+  const key = item.url.startsWith(s3.normalizedPublicUrl)
+    ? item.url.slice(s3.normalizedPublicUrl.length).replace(/^\//, "")
     : null;
 
   if (key) {
     try {
-      await getS3Client().send(
+      await s3.client.send(
         new DeleteObjectCommand({
-          Bucket: process.env.S3_BUCKET ?? "",
+          Bucket: s3.bucket,
           Key: key,
         }),
       );
@@ -108,7 +93,7 @@ export async function deleteGalleryItem(id: string) {
     }
   } else {
     console.error(
-      `deleteGalleryItem: URL "${item.url}" matchar inte S3_PUBLIC_URL "${publicUrl}", hoppade över R2-borttagning`,
+      `deleteGalleryItem: URL "${item.url}" matchar inte S3_PUBLIC_URL "${s3.normalizedPublicUrl}", hoppade över R2-borttagning`,
     );
   }
 
