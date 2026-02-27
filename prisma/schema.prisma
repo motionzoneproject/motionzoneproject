@@ -142,7 +142,6 @@ model Lesson {
   teacher   User   @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Restrict) // Hämtas från den Course som den tillhör(som en lärare skapat, och därmed teacherId) när lesson skapas.
 
   bookings    Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
-  maxBookings Int // Ärvs från schema, som ärver från course, men möjliggör att lärarna kan ändra specifika tillfällen.
 
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
 
@@ -200,8 +199,6 @@ model SchemaItem {
 
   place String?
 
-  maxBookings Int // Man kan väl ha en standard ärvd från course, men låta lärarna ange olika för vissa veckodagar med. Även specifika lessons, samma princip.
-
   Lessons Lesson[]
 
   @@index([terminId])
@@ -216,9 +213,6 @@ model Course {
   description String
 
   products ProductOnCourse[]
-
-  maxBookings Int @default(0) // fix: jag använder inte denna för att prioritera att vi får något fungerande, men kan vara önskvärt så låter det vara kvar // T.E
-  maxCustomer Int @default(0) // fix: -||-
 
   lessons     Lesson[] // Alla tillfällen som skapats i kursen (mha Termin --> schemaItems --> lesson)
   schemaItems SchemaItem[] // Veckoschemat.

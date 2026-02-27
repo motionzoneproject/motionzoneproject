@@ -95,17 +95,6 @@ export function LessonCarousel({
                     <EditLessonBtn lesson={lesson} />
                   </div>
                 </div>
-                {/* <div className="flex justify-between gap-6">
-                  <span>
-                    {lesson.bookings.length} / {lesson.maxBookings} bokade
-                  </span>
-                  {isPast ? (
-                    <span>Avslutad</span>
-                  ) : (
-                    <span className="text-primary font-medium">Kommande</span>
-                  )}
-
-                </div> */}
               </CardFooter>
             </Card>
           </div>

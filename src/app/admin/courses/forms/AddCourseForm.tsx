@@ -59,13 +59,11 @@ export default function AddCourseForm({ teachers }: Props) {
     defaultValues: {
       name: "",
       description: "",
-      // maxbookings: 0,
       minAge: "",
       maxAge: "",
       level: "",
       adult: false,
       teacherid: user?.id,
-      // maxCustomers: 0,
     },
   });
 
