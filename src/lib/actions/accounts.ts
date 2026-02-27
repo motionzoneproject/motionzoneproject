@@ -14,6 +14,17 @@ export type AccountUser = {
   email: string;
   role: string | null;
   createdAt: Date;
+  details: {
+    firstName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    dateOfBirth: Date | null;
+    bio: string | null;
+    allowPhotoVideo: boolean;
+  } | null;
 };
 
 /**
@@ -54,6 +65,19 @@ export async function getUsersForAdmin({
         email: true,
         role: true,
         createdAt: true,
+        details: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            address: true,
+            postalCode: true,
+            city: true,
+            dateOfBirth: true,
+            bio: true,
+            allowPhotoVideo: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,

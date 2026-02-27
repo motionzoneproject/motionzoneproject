@@ -14,6 +14,7 @@ import { getUsersForAdmin } from "@/lib/actions/accounts";
 import { isAdminRole } from "@/lib/actions/admin";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { SetRoleButton } from "./SetRoleButton";
+import { UserDetailsDialog } from "./UserDetailsDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -62,14 +63,15 @@ export default async function AccountsPage({ searchParams }: PageProps) {
               <TableHead>Namn</TableHead>
               <TableHead>E-post</TableHead>
               <TableHead className="hidden md:table-cell">Skapad</TableHead>
-              <TableHead className="text-right">Roll</TableHead>
+              <TableHead className="text-center">Mer information</TableHead>
+              <TableHead className="text-right pr-12">Roll</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center text-muted-foreground py-12"
                 >
                   Inga konton hittades.
@@ -84,6 +86,9 @@ export default async function AccountsPage({ searchParams }: PageProps) {
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                     {user.createdAt.toLocaleDateString("sv-SE")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <UserDetailsDialog user={user} />
                   </TableCell>
                   <TableCell className="text-right">
                     <SetRoleButton

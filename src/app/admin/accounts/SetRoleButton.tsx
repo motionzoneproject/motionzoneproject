@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,7 +42,16 @@ export function SetRoleButton({
   }
 
   if (isSelf) {
-    return <Badge variant={isAdmin ? "default" : "secondary"}>Jag</Badge>;
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        disabled
+        className="min-w-25 cursor-default"
+      >
+        {"Ditt Konto"}
+      </Button>
+    );
   }
 
   return (
