@@ -404,7 +404,6 @@ export async function editTermin(
                 terminId: id,
                 courseId: item.courseId,
                 teacherId: item.course.teacherId,
-                maxBookings: item.maxBookings,
                 schemaItemId: item.id,
               });
             }
@@ -475,7 +474,6 @@ export async function addCoursetoSchema(
           terminId,
           place: validated.place,
           courseId: validated.courseId,
-          maxBookings: getCourse?.maxBookings,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
           customStartDate: finalStartDate,
@@ -545,7 +543,6 @@ export async function editCourseInSchema(
           terminId,
           place: validated.place,
           courseId: validated.courseId,
-          maxBookings: getCourse?.maxBookings,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
           customStartDate: finalStartDate,
@@ -949,7 +946,6 @@ async function createLessons(
           terminId: schemaItm.termin.id,
           courseId: schemaItm.course.id,
           teacherId: teacherId,
-          maxBookings: schemaItm.maxBookings,
           schemaItemId: schemaItm.id, // Denna kopplar Lesson till mallen
           // message och cancelled får standardvärden/null
         });

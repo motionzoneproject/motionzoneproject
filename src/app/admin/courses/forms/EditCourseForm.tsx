@@ -1,39 +1,5 @@
 "use client";
 
-/* 
-
-Skillnaden i formulären (AddCourseForm och EditCourseForm) mellan din branch och profilsidor är i korthet:
-
-maxbookings hanteras om:
-
-I profilsidor finns unlimitedBookings (checkbox) som styr om maxbookings ska vara 0.
-Fältet för numeriskt max visas bara när unlimitedBookings är av.
-Min-värde ändrat till 1 när begränsat läge används.
-maxCustomers är borttaget i båda formulären i profilsidor.
-
-Bättre submit-state:
-
-isBusy (isSubmitting || isValidating)
-spinner + disable på submit-knapp under submit.
-Förhandsvisning av kursnamn:
-
-getCourseName(...) används live i formuläret för preview baserat på namn/ålder/level/adult.
-UI/textjusteringar:
-
-Edit: trigger ändrad till ikonknapp (Pencil) istället för textknapp.
-Label Namn -> Dansstil / kurs.
-“varningsruta med Flag” om lärare är borttagen.
-Hjälptexter bytta från gul text till text-muted-foreground.
-Default values:
-
-Add: default maxbookings: 1, unlimitedBookings: true.
-Edit: unlimitedBookings sätts från befintlig kurs (course.maxBookings <= 0).
-Små skillnader/inkonsekvens i profilsidor:
-
-I EditCourseForm står dialogtiteln fortfarande Skapa en ny kurs (bör vara typ Ändra kurs).
-
-*/
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EditIcon, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -92,20 +58,17 @@ export default function EditCourseForm({ course, teachers }: Props) {
     defaultValues: {
       name: course.name,
       description: course.description,
-      // maxbookings: course.maxBookings,
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
-      // maxCustomers: course.maxBookings,
     },
   });
 
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) return;
