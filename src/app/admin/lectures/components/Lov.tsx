@@ -122,13 +122,13 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
       <DialogTrigger asChild>
         <Button variant="ghost" className="gap-1">
           <Calendar className="h-4 w-4" />
-          <span>Stall in flera lektioner</span>
+          <span>Ställ in flera lektioner</span>
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Stall in flera lektioner</DialogTitle>
+          <DialogTitle>Ställ in flera lektioner</DialogTitle>
           <DialogDescription>
             Valj datum, kurser och anledning.
           </DialogDescription>
