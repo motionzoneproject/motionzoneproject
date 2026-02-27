@@ -10,6 +10,7 @@ import {
   Package,
   ShoppingCart,
   Sparkles,
+  UserCog,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -90,6 +91,11 @@ export function AppSidebar() {
       title: "Elever",
       url: "/admin/students",
       icon: Users,
+    },
+    {
+      title: "Konton",
+      url: "/admin/accounts",
+      icon: UserCog,
     },
     {
       title: "Terminer / Scheman",
