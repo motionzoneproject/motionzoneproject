@@ -267,30 +267,6 @@ export async function editTermin(
         },
       });
 
-      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
-
-      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
-      // for (const item of schemaItems) {
-      //   if (
-      //     item.customStartDate &&
-      //     (item.customStartDate < newStartDate ||
-      //       item.customStartDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-
-      //   if (
-      //     item.customEndDate &&
-      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-      // }
-
       const sameDayUtc = (a: Date, b: Date) =>
         a.getUTCFullYear() === b.getUTCFullYear() &&
         a.getUTCMonth() === b.getUTCMonth() &&
