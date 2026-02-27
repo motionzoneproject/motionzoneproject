@@ -63,9 +63,13 @@ export default async function About() {
               ))}
             </div>
           )}
-          <div className="bg-brand rounded-lg p-6 mb-10 mt-8">
-            <p className="text-white text-lg font-semibold">
-              Här är alla välkomna - oavsett nivå.
+          <div className="relative border border-brand/30 bg-brand/10 backdrop-blur-sm rounded-2xl p-7 overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand rounded-l-2xl" />
+            <p className="text-white text-xl font-light leading-snug">
+              Här är alla välkomna –{" "}
+              <span className="font-serif italic text-brand-light">
+                oavsett nivå.
+              </span>
             </p>
           </div>
         </div>

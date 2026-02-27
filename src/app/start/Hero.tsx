@@ -1,4 +1,5 @@
 "use client";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Hero() {
@@ -53,25 +54,9 @@ export default function Hero() {
 
             <Link
               href="/about"
-              className="group flex items-center gap-2 text-white/80 font-medium text-sm hover:text-white transition-colors"
+              className="group flex items-center gap-2 px-8 py-3.5 rounded-full border border-white/20 text-white/80 font-medium text-sm hover:text-white hover:border-brand transition-all duration-300"
             >
-              <span className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center group-hover:border-brand transition-all">
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <title>Pil höger</title>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </span>
+              <ArrowRight className="w-3 h-3" />
               Om Oss
             </Link>
           </div>
