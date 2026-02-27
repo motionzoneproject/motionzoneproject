@@ -39,7 +39,7 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <span className="flex min-w-20 gap-1 items-center text-xs text-brand hover:underline cursor-pointer">
+        <span className="flex shrink-0 gap-1 items-center whitespace-nowrap text-xs text-brand hover:underline cursor-pointer">
           Läs mer om kursen
           <ArrowUpRight className="w-3 h-3 shrink-0" />
         </span>
@@ -81,7 +81,7 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
                     alt={course.teacher.name}
                     fill
                     className="object-cover object-top"
-                    sizes="64px"
+                    sizes="96px"
                   />
                 </div>
               )}
