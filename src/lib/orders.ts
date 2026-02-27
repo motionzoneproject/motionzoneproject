@@ -1,3 +1,4 @@
+import type { PrismaTx } from "./actions/admin";
 import prisma from "./prisma";
 
 export type OrderItemInput = {
@@ -7,12 +8,15 @@ export type OrderItemInput = {
   participantId?: string | null;
 };
 
-export async function createOrder(params: {
-  userId: string;
-  items: OrderItemInput[];
-  postalcode?: string;
-  note?: string; // optional note to include in first status event
-}) {
+export async function createOrder(
+  tx: PrismaTx,
+  params: {
+    userId: string;
+    items: OrderItemInput[];
+    postalcode?: string;
+    note?: string; // optional note to include in first status event
+  },
+) {
   const { userId, items, postalcode, note } = params;
 
   if (!items || items.length === 0) throw new Error("No items provided");
@@ -22,42 +26,39 @@ export async function createOrder(params: {
   const totalStr = String(total);
 
   // Create order + items + initial status event atomically
-  const result = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.create({
-      data: {
-        userId,
-        postalcode,
-        totalPrice: Number.parseFloat(totalStr),
-        // default status is PENDING_PAYMENT per schema
-      },
-    });
 
-    await tx.orderItem.createMany({
-      data: items.map((it) => ({
-        orderId: order.id,
-        productId: it.productId,
-        count: it.count,
-        price: it.price,
-        participantId: it.participantId || null,
-      })),
-      skipDuplicates: true,
-    });
-
-    // Seed first status event (from null -> PENDING_PAYMENT)
-    await tx.orderStatusEvent.create({
-      data: {
-        orderId: order.id,
-        fromStatus: null,
-        toStatus: "PENDING_PAYMENT",
-        changedByUserId: userId,
-        note,
-      },
-    });
-
-    return order;
+  const orderResult = await tx.order.create({
+    data: {
+      userId,
+      postalcode,
+      totalPrice: Number.parseFloat(totalStr),
+      // default status is PENDING_PAYMENT per schema
+    },
   });
 
-  return result;
+  await tx.orderItem.createMany({
+    data: items.map((it) => ({
+      orderId: orderResult.id,
+      productId: it.productId,
+      count: it.count,
+      price: it.price,
+      participantId: it.participantId || null,
+    })),
+    skipDuplicates: true,
+  });
+
+  // Seed first status event (from null -> PENDING_PAYMENT)
+  await tx.orderStatusEvent.create({
+    data: {
+      orderId: orderResult.id,
+      fromStatus: null,
+      toStatus: "PENDING_PAYMENT",
+      changedByUserId: userId,
+      note,
+    },
+  });
+
+  return orderResult;
 }
 
 export async function getOrderById(orderId: string) {
