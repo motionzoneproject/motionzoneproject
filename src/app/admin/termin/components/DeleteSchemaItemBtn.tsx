@@ -31,11 +31,7 @@ export default function DeleteSchemaItemBtn({ itemId }: Props) {
     try {
       const { success, msg } = await delSchemaItem(itemId);
       if (!success) {
-        toast.error(
-          `Kunde inte ta bort tillfället med id ${itemId}. Anledning: ${JSON.stringify(
-            msg,
-          )}`,
-        );
+        toast.error(`Kunde inte ta bort tillfället med id ${itemId}`);
 
         return;
       }
@@ -43,11 +39,7 @@ export default function DeleteSchemaItemBtn({ itemId }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort tillfället med id ${itemId}. Anledning: ${JSON.stringify(
-          e,
-        )}`,
-      );
+      toast.error(`Kunde inte ta bort tillfället med id ${itemId}}`);
     }
   };
 

@@ -48,7 +48,8 @@ export async function getUserBookings(): Promise<{
       bookings: lessonsWithBookings,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 

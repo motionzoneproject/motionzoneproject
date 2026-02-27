@@ -134,7 +134,8 @@ export async function editNewEvent(
       msg: `Event ${editedEvent.headline} uppdaterades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -161,7 +162,8 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
       msg: `Event ${newEvent.headline} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -194,7 +196,8 @@ export async function addNewTermin(
       msg: `Terminen ${newSchemaItem.name} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -263,30 +266,6 @@ export async function editTermin(
           Lessons: true,
         },
       });
-
-      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
-
-      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
-      // for (const item of schemaItems) {
-      //   if (
-      //     item.customStartDate &&
-      //     (item.customStartDate < newStartDate ||
-      //       item.customStartDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-
-      //   if (
-      //     item.customEndDate &&
-      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-      // }
 
       const sameDayUtc = (a: Date, b: Date) =>
         a.getUTCFullYear() === b.getUTCFullYear() &&
@@ -428,10 +407,8 @@ export async function editTermin(
       msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och bokningar har återställts till eleverna.`,
     };
   } catch (e) {
-    console.error("Fel vid editTermin:", e);
-    const msg =
-      e instanceof Error ? e.message : "Ett fel uppstod vid uppdatering.";
-    return { success: false, msg };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -500,8 +477,7 @@ export async function addCoursetoSchema(
     };
   } catch (e) {
     console.error(e);
-    const msg = e instanceof Error ? e.message : JSON.stringify(e);
-    return { success: false, msg };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -576,8 +552,7 @@ export async function editCourseInSchema(
     };
   } catch (e) {
     console.error(e);
-    const msg = e instanceof Error ? e.message : JSON.stringify(e);
-    return { success: false, msg };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -656,10 +631,7 @@ export async function delEvent(
     };
   } catch (e) {
     console.error(e);
-    return {
-      success: false,
-      msg: "Ett fel uppstod vid radering av eventet.",
-    };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -717,10 +689,7 @@ export async function delTermin(
     };
   } catch (e) {
     console.error(e);
-    return {
-      success: false,
-      msg: "Kunde inte radera terminen. Kontrollera om den har aktiva kopplingar som hindrar radering.",
-    };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -778,11 +747,7 @@ export async function delCourse(
     };
   } catch (e) {
     console.error(e);
-
-    return {
-      success: false,
-      msg: `Kunde inte radera kursen. ${JSON.stringify(e)}`,
-    };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -825,7 +790,8 @@ export async function addNewCourse(
       msg: `Kursen ${newCourseItem.name} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -870,7 +836,8 @@ export async function editCourse(
       msg: `Kursen ${newCourseItem.name} ändrades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -973,7 +940,7 @@ async function createLessons(
     };
   } catch (e) {
     console.error(e);
-    return { success: false, msg: JSON.stringify(e) };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1032,7 +999,7 @@ export async function editLessonItem(
     };
   } catch (e) {
     console.error(e);
-    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1098,7 +1065,8 @@ export async function addNewProduct(
       msg: `Produkten ${newProd.name} av typen ${type} skapades.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1159,7 +1127,8 @@ export async function editProduct(
       msg: `Produkten ${newProd.name} ändrades.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1183,7 +1152,8 @@ export async function removeProduct(
       msg: `Produkten ${remProd.name} togs bort.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1256,7 +1226,8 @@ export async function addCourseToProduct(
       };
     }
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1290,7 +1261,8 @@ export async function removeCourseInProduct(
       msg: `Kursen togs bort i produkten.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1536,7 +1508,7 @@ export async function getUsersWithPurchasedProductsWithCourseInIt(
 
     return [...students.values()];
   } catch (e) {
-    console.error("Error fetching users with purchases:", e);
+    console.error(e);
     return [];
   }
 }
@@ -1573,7 +1545,7 @@ export async function getBookings(
 
     return [];
   } catch (e) {
-    console.error("Fel vid bokning:", e);
+    console.error(e);
     return [];
   }
 }
@@ -1683,8 +1655,8 @@ export async function addUserInLesson(
 
     return { success: true, msg: `Bokning slutförd!` };
   } catch (e) {
-    console.error("Fel vid admin-bokning:", e);
-    return { success: false, msg: "Ett tekniskt fel uppstod vid bokningen." };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }
 
@@ -1734,7 +1706,7 @@ export async function removeUserFromLesson(
 
     return { success: true, msg: "Bokningen har tagits bort." };
   } catch (e) {
-    console.error("Fel vid borttagning av bokning:", e);
-    return { success: false, msg: "Ett tekniskt fel uppstod." };
+    console.error(e);
+    return { success: false, msg: "Fel uppstod." };
   }
 }

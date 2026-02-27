@@ -37,9 +37,7 @@ export default function DeleteCourseBtn({ courseId }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort kursen ${courseId}. Anledning: ${JSON.stringify(e)}`,
-      );
+      toast.error(`Kunde inte ta bort kursen ${courseId}.`);
     }
   };
 

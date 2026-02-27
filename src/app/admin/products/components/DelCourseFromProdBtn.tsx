@@ -31,9 +31,7 @@ export default function DeleteCourseFromProdBtn({ pc }: Props) {
     try {
       const { success, msg } = await removeCourseInProduct(pc);
       if (!success) {
-        toast.error(
-          `Kunde inte ta bort kursen. Anledning: ${JSON.stringify(msg)}`,
-        );
+        toast.error(`Kunde inte ta bort kursen.`);
 
         return;
       }
@@ -41,7 +39,7 @@ export default function DeleteCourseFromProdBtn({ pc }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(`Kunde inte ta bort kursen. Anledning: ${JSON.stringify(e)}`);
+      toast.error(`Kunde inte ta bort kursen.`);
     }
   };
 

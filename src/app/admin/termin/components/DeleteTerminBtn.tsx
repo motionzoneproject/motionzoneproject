@@ -37,9 +37,7 @@ export default function DeleteTerminBtn({ terminId }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(
-        `Kunde inte ta bort termin ${terminId}. Anledning: ${JSON.stringify(e)}`,
-      );
+      toast.error(`Kunde inte ta bort termin ${terminId}.`);
     }
   };
 
