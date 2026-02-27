@@ -8,11 +8,11 @@ export default async function Page() {
   const events = await prisma.event.findMany();
 
   return (
-    <main className="flex-1 bg-background">
+    <div className="flex-1 bg-background">
       <Hero />
       <Features />
       <Events events={events} />
       <GoogleMap />
-    </main>
+    </div>
   );
 }

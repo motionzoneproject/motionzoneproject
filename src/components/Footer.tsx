@@ -16,10 +16,16 @@ const quickLinks = [
   { name: "Galleri", href: "/gallery" },
 ];
 
+const legalLinks = [
+  { name: "Integritetspolicy", href: "/integritetspolicy" },
+  { name: "Cookiepolicy", href: "/cookiepolicy" },
+  { name: "Köpvillkor", href: "/kopvillkor" },
+];
+
 const Footer = () => {
   return (
     <footer className="relative border-t border-brand/20 bg-card min-h-[300px]">
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-40 w-96 h-96 rounded-full bg-brand-secondary/5 blur-3xl" />
       </div>
@@ -85,6 +91,7 @@ const Footer = () => {
                 </li>
               ))}
             </ul>
+
           </div>
 
           <div>
@@ -144,11 +151,21 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} MotionZone Växjö.
           </p>
-          <div className="h-px flex-1 mx-8 hidden sm:block bg-linear-to-r from-transparent via-brand/20 to-transparent" />
+          <nav className="flex gap-4">
+            {legalLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="text-xs text-muted-foreground hover:text-brand transition-colors duration-200"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </footer>

@@ -8,6 +8,7 @@ import {
   Home,
   Image as ImageIcon,
   Package,
+  Scale,
   ShoppingCart,
   Sparkles,
   Users,
@@ -95,6 +96,11 @@ export function AppSidebar() {
       title: "Terminer / Scheman",
       url: "/admin/termin",
       icon: CalendarDays,
+    },
+    {
+      title: "Juridiskt",
+      url: "/admin/legal",
+      icon: Scale,
     },
   ];
 
