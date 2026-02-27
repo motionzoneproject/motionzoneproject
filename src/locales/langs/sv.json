@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "home": "Hem",
+    "courses": "Kurser",
+    "about": "Om oss",
+    "gallery": "Galleri"
+  },
+  "auth": {
+    "signIn": "Logga in",
+    "signOut": "Logga ut"
+  },
+  "cart": {
+    "title": "Varukorg"
+  }
+}

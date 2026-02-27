@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
-
 export default function NavBarAuth() {
   const { session, user } = useSession();
   const router = useRouter();
