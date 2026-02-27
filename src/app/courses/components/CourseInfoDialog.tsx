@@ -57,9 +57,13 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
             <p className="text-muted-foreground">
               {course.adult ? "Vuxna" : "Barn/Ungdom"}
             </p>
-            {course.minAge != null && course.maxAge != null && (
+            {course.minAge != null && (
               <p className="text-muted-foreground">
-                Åldersgrupp: {course.minAge}–{course.maxAge} år
+                Åldersgrupp: {course.minAge}
+                {course.maxAge != null && course.maxAge > 0
+                  ? `–${course.maxAge}`
+                  : "+"}{" "}
+                år
               </p>
             )}
           </div>
