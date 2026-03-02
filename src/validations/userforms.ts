@@ -24,6 +24,19 @@ export const UserDetailsSchema = z.object({
   allowPhotoVideo: z.boolean(),
 });
 
+export const AdminEditUserSchema = z.object({
+  firstName: z.string().trim().min(1, "Förnamn krävs").max(100),
+  lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(5, "Ogiltigt telefonnummer")
+    .or(z.literal("")),
+  address: z.string().trim().min(5, "Adressen är för kort").or(z.literal("")),
+  postalCode: z.string().trim().min(5, "Ogiltigt postnummer").or(z.literal("")),
+  city: z.string().trim().min(1, "Ort krävs").or(z.literal("")),
+});
+
 export const UserPasswordSchema = z
   .object({
     oldPassword: z
