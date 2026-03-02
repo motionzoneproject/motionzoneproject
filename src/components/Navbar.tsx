@@ -6,19 +6,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import CartIcon from "./CartIcon";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
-
-const navLinks = [
-  { href: "/", label: "Hem" },
-  { href: "/courses", label: "Kurser" },
-  { href: "/about", label: "Om oss" },
-  { href: "/gallery", label: "Galleri" },
-];
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const navLinks = [
+    { href: "/", label: "Hem" },
+    { href: "/courses", label: "Kurser" },
+    { href: "/about", label: "Om oss" },
+    { href: "/gallery", label: "Galleri" },
+  ];
 
   return (
     <header className="w-full sticky top-0 z-50 border-b border-brand/10 bg-background/85 backdrop-blur-xl">
@@ -70,6 +70,7 @@ export default function NavBar() {
           <div className="hover:scale-110 transition-transform duration-200">
             <CartIcon />
           </div>
+          <LanguageSwitcher />
           <ModeToggle />
           <NavBarAuth />
         </div>
@@ -102,6 +103,7 @@ export default function NavBar() {
           <div className="pt-3 border-t border-brand/10 flex items-center justify-between px-4">
             <CartIcon showLabel onClick={() => setMenuOpen(false)} />
             <div className="flex items-center gap-3">
+              <LanguageSwitcher />
               <NavBarAuth />
               <ModeToggle />
             </div>

@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { isAdminRole } from "./admin";
 
 export async function createEvent(formData: FormData) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) throw new Error("No permission.");
+
   const headline = formData.get("headline") as string;
   const startDate = new Date(formData.get("startDate") as string);
   const endDate = new Date(formData.get("endDate") as string);
@@ -31,6 +35,9 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(id: string, formData: FormData) {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) throw new Error("No permission.");
+
   const headline = formData.get("headline") as string;
   const startDate = new Date(formData.get("startDate") as string);
   const endDate = new Date(formData.get("endDate") as string);

@@ -110,6 +110,19 @@ export const adminLessonFormSchema = z.object({
   cancelled: z.coerce.boolean().optional(),
 });
 
+export const adminBulkCancelLessonsSchema = z
+  .object({
+    from: z.coerce.date("Ogiltigt startdatum"),
+    to: z.coerce.date("Ogiltigt slutdatum"),
+    courseIds: z.array(z.string().min(1)).min(1, "Valj minst en kurs."),
+    message: z.string().trim().min(1, "Anledning maste anges."),
+    cancelled: z.literal(true),
+  })
+  .refine((data) => data.to >= data.from, {
+    message: "Slutdatum maste vara samma eller senare an startdatum.",
+    path: ["to"],
+  });
+
 export const adminProductSchema = z
   .object({
     name: z.string().min(1),

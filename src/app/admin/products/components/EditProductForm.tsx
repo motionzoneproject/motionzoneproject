@@ -167,7 +167,6 @@ export default function EditProductForm({
 
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "Remove failed");
-          console.log(JSON.stringify(data));
           toast("Gammal bild borttagen");
         } catch (err) {
           toast(String(err));

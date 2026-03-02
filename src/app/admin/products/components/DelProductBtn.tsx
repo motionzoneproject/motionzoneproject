@@ -35,9 +35,7 @@ export default function DeleteProductBtn({ productId, imageURL }: Props) {
 
       const { success, msg } = await removeProduct(productId);
       if (!success) {
-        toast.error(
-          `Kunde inte ta bort kursen. Anledning: ${JSON.stringify(msg)}`,
-        );
+        toast.error(`Kunde inte ta bort produkten: ${msg}`);
         setLoader(false);
         return;
       }
@@ -53,7 +51,6 @@ export default function DeleteProductBtn({ productId, imageURL }: Props) {
 
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "Remove failed");
-          console.log(JSON.stringify(data));
           toast("Gammal bild borttagen");
         } catch (err) {
           toast(String(err));
@@ -65,7 +62,7 @@ export default function DeleteProductBtn({ productId, imageURL }: Props) {
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(`Kunde inte ta bort kursen. Anledning: ${JSON.stringify(e)}`);
+      toast.error("Kunde inte ta bort produkten.");
       setLoader(false);
     }
   };

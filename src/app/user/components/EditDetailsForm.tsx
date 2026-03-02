@@ -102,8 +102,8 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
       setIsOpen(false);
       router.refresh();
     } catch (e) {
-      console.error(e, JSON.stringify(values));
-      toast.error(JSON.stringify(e));
+      console.error(e);
+      toast.error("Ett oväntat fel uppstod.");
     }
   }
 

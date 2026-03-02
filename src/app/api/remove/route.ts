@@ -48,8 +48,6 @@ export async function DELETE(req: Request) {
 
     const send = await client.send(command);
 
-    console.log("Fil togs bort från bucket:", key, send);
-
     return NextResponse.json({
       success: true,
       key,

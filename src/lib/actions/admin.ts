@@ -24,6 +24,7 @@ import {
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
   adminAddTerminSchema,
+  adminBulkCancelLessonsSchema,
   adminEditEventSchema,
   adminEventSchema,
   adminLessonFormSchema,
@@ -134,7 +135,8 @@ export async function editNewEvent(
       msg: `Event ${editedEvent.headline} uppdaterades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera eventet." };
   }
 }
 
@@ -161,7 +163,8 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
       msg: `Event ${newEvent.headline} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte skapa eventet." };
   }
 }
 
@@ -194,7 +197,8 @@ export async function addNewTermin(
       msg: `Terminen ${newSchemaItem.name} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte skapa terminen." };
   }
 }
 
@@ -263,30 +267,6 @@ export async function editTermin(
           Lessons: true,
         },
       });
-
-      // // 3. Validera att custom-datum fortfarande ligger inom nya terminens datum
-
-      // Vi har inte längre den gränsen. Behåller just nu ifall vi vill ändra tillbaka logiken.
-      // for (const item of schemaItems) {
-      //   if (
-      //     item.customStartDate &&
-      //     (item.customStartDate < newStartDate ||
-      //       item.customStartDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Startdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-
-      //   if (
-      //     item.customEndDate &&
-      //     (item.customEndDate < newStartDate || item.customEndDate > newEndDate)
-      //   ) {
-      //     throw new Error(
-      //       "Slutdatum för en kurs ligger utanför terminens nya datum.",
-      //     );
-      //   }
-      // }
 
       const sameDayUtc = (a: Date, b: Date) =>
         a.getUTCFullYear() === b.getUTCFullYear() &&
@@ -500,7 +480,7 @@ export async function addCoursetoSchema(
     };
   } catch (e) {
     console.error(e);
-    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    const msg = e instanceof Error ? e.message : "Ett oväntat fel uppstod.";
     return { success: false, msg };
   }
 }
@@ -576,7 +556,7 @@ export async function editCourseInSchema(
     };
   } catch (e) {
     console.error(e);
-    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    const msg = e instanceof Error ? e.message : "Ett oväntat fel uppstod.";
     return { success: false, msg };
   }
 }
@@ -781,7 +761,7 @@ export async function delCourse(
 
     return {
       success: false,
-      msg: `Kunde inte radera kursen. ${JSON.stringify(e)}`,
+      msg: "Kunde inte radera kursen.",
     };
   }
 }
@@ -825,7 +805,8 @@ export async function addNewCourse(
       msg: `Kursen ${newCourseItem.name} skapades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte skapa kursen." };
   }
 }
 
@@ -870,7 +851,8 @@ export async function editCourse(
       msg: `Kursen ${newCourseItem.name} ändrades.`,
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera kursen." };
   }
 }
 
@@ -973,7 +955,7 @@ async function createLessons(
     };
   } catch (e) {
     console.error(e);
-    return { success: false, msg: JSON.stringify(e) };
+    return { success: false, msg: "Kunde inte skapa lektioner." };
   }
 }
 
@@ -1029,6 +1011,103 @@ export async function editLessonItem(
     return {
       success: true,
       msg: "Lektionen, bokningar och klipp-saldon har uppdaterats.",
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
+  }
+}
+
+/**
+ * Bulk update lessons to cancelled state in a date range and selected courses.
+ * Restores clips and removes existing bookings for newly cancelled lessons.
+ * @auth Admin
+ */
+export async function bulkCancelLessons(
+  formData: z.output<typeof adminBulkCancelLessonsSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
+    const from = new Date(validated.from);
+    from.setHours(0, 0, 0, 0);
+
+    const to = new Date(validated.to);
+    to.setHours(23, 59, 59, 999);
+
+    const lessons = await prisma.lesson.findMany({
+      where: {
+        startTime: {
+          gte: from,
+          lte: to,
+        },
+        courseId: {
+          in: validated.courseIds,
+        },
+      },
+      select: {
+        id: true,
+        cancelled: true,
+      },
+    });
+
+    if (lessons.length === 0) {
+      return {
+        success: false,
+        msg: "Inga lektioner matchade ditt urval.",
+      };
+    }
+
+    const lessonIds = lessons.map((lesson) => lesson.id);
+    const newlyCancelledLessonIds = lessons
+      .filter((lesson) => !lesson.cancelled)
+      .map((lesson) => lesson.id);
+
+    await prisma.$transaction(async (tx) => {
+      if (newlyCancelledLessonIds.length > 0) {
+        const bookings = await tx.booking.findMany({
+          where: {
+            lessonId: { in: newlyCancelledLessonIds },
+          },
+          select: {
+            id: true,
+            purchaseItemId: true,
+          },
+        });
+
+        for (const booking of bookings) {
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
+        }
+
+        await tx.booking.deleteMany({
+          where: {
+            lessonId: { in: newlyCancelledLessonIds },
+          },
+        });
+      }
+
+      await tx.lesson.updateMany({
+        where: {
+          id: { in: lessonIds },
+        },
+        data: {
+          cancelled: validated.cancelled,
+          message: validated.message,
+        },
+      });
+    });
+
+    revalidatePath("/admin/lectures");
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      msg: `${lessonIds.length} lektioner markerades som installda.`,
     };
   } catch (e) {
     console.error(e);
@@ -1098,7 +1177,8 @@ export async function addNewProduct(
       msg: `Produkten ${newProd.name} av typen ${type} skapades.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte skapa produkten." };
   }
 }
 
@@ -1159,7 +1239,8 @@ export async function editProduct(
       msg: `Produkten ${newProd.name} ändrades.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera produkten." };
   }
 }
 
@@ -1183,7 +1264,8 @@ export async function removeProduct(
       msg: `Produkten ${remProd.name} togs bort.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte ta bort produkten." };
   }
 }
 
@@ -1256,7 +1338,8 @@ export async function addCourseToProduct(
       };
     }
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera kurskopplingen." };
   }
 }
 
@@ -1290,7 +1373,8 @@ export async function removeCourseInProduct(
       msg: `Kursen togs bort i produkten.`, // fix
     };
   } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+    console.error(e);
+    return { success: false, msg: "Kunde inte ta bort kursen från produkten." };
   }
 }
 

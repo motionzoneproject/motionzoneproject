@@ -101,7 +101,10 @@ export async function handleClips(
 }
 
 // Så denna funktion räknar antal redan sålda produkter av den specifika produkten, och om man vill räkna med de som ligger och väntar i order.
-export async function getProductStats(productId: string): Promise<{
+export async function getProductStats(
+  productId: string,
+  tx?: PrismaTx,
+): Promise<{
   sold: number | null;
   reserved: number | null;
   total: number | null;
@@ -111,19 +114,21 @@ export async function getProductStats(productId: string): Promise<{
 }> {
   // 1. Hämta alla purchases med det produktId:t.
   try {
-    const product = await prisma.product.findUniqueOrThrow({
+    const db = tx ?? prisma;
+
+    const product = await db.product.findUniqueOrThrow({
       where: { id: productId },
       select: { maxCustomer: true, unlimitedCustomers: true },
     });
 
-    const sold = await prisma.purchase.count({
+    const sold = await db.purchase.count({
       where: {
         productId: productId,
         order: { status: { not: "CANCELLED" } },
       },
     });
 
-    const orderCount = await prisma.orderItem.aggregate({
+    const orderCount = await db.orderItem.aggregate({
       where: {
         productId,
         order: {
@@ -162,7 +167,7 @@ export async function getProductStats(productId: string): Promise<{
       total: null,
       spotsLeft: null,
       success: false,
-      error: JSON.stringify(e),
+      error: "Kunde inte hämta produktstatistik.",
     };
   }
 }

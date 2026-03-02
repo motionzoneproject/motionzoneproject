@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "about": "About us",
+    "gallery": "Gallery"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "cart": {
+    "title": "Cart"
+  }
+}
