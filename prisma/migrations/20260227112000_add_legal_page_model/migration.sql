@@ -1,14 +1,8 @@
-/*
-  Warnings:
+-- DropForeignKey (if Photo table exists from a previous migration)
+ALTER TABLE IF EXISTS "Photo" DROP CONSTRAINT IF EXISTS "Photo_eventId_fkey";
 
-  - You are about to drop the `Photo` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "Photo" DROP CONSTRAINT "Photo_eventId_fkey";
-
--- DropTable
-DROP TABLE "Photo";
+-- DropTable (if Photo table exists from a previous migration)
+DROP TABLE IF EXISTS "Photo";
 
 -- CreateTable
 CREATE TABLE "LegalPage" (
