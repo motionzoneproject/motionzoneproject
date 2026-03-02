@@ -35,62 +35,70 @@ export async function createCheckout(params: {
     price: number;
   }[] = [];
 
-  for (const itm of items) {
-    const p = await prisma.product.findUnique({
-      where: { id: itm.productId },
-    });
-    if (!p)
-      throw new Error(
-        `Product ${itm.productId} was not found. Order cancelled.`,
-      );
+  // Gör en transaction här då.
+  const order = await prisma.$transaction(
+    async (tx) => {
+      for (const itm of items) {
+        const p = await tx.product.findUnique({
+          where: { id: itm.productId },
+        });
+        if (!p)
+          throw new Error(
+            `Product ${itm.productId} was not found. Order cancelled.`,
+          );
 
-    const stats = await getProductStats(p.id);
+        const stats = await getProductStats(p.id, tx);
 
-    if (!stats.success)
-      throw new Error(
-        `Could not get stats for product ${itm.productId}. Order cancelled.`,
-      );
+        if (!stats.success)
+          throw new Error(
+            `Could not get stats for product ${itm.productId}. Order cancelled.`,
+          );
 
-    if (
-      typeof stats.spotsLeft === "number" &&
-      Number.isFinite(stats.spotsLeft) &&
-      itm.count > stats.spotsLeft
-    )
-      throw new Error(
-        `Product count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
-      );
+        if (
+          typeof stats.spotsLeft === "number" &&
+          Number.isFinite(stats.spotsLeft) &&
+          itm.count > stats.spotsLeft
+        )
+          throw new Error(
+            `Product count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
+          );
 
-    // Vi behöver kolla totalt också.
-    pCountTotal.set(
-      itm.productId,
-      (pCountTotal.get(itm.productId) ?? 0) + itm.count,
-    );
+        // Vi behöver kolla totalt också.
+        pCountTotal.set(
+          itm.productId,
+          (pCountTotal.get(itm.productId) ?? 0) + itm.count,
+        );
 
-    const totalInCartForProduct = pCountTotal.get(itm.productId) ?? 0;
-    if (
-      typeof stats.spotsLeft === "number" &&
-      Number.isFinite(stats.spotsLeft) &&
-      totalInCartForProduct > stats.spotsLeft
-    )
-      throw new Error(
-        `product count exceeds limit for product ${itm.productId}. Count was ${totalInCartForProduct} and spotsLeft is ${stats.spotsLeft}.`,
-      );
+        const totalInCartForProduct = pCountTotal.get(itm.productId) ?? 0;
+        if (
+          typeof stats.spotsLeft === "number" &&
+          Number.isFinite(stats.spotsLeft) &&
+          totalInCartForProduct > stats.spotsLeft
+        )
+          throw new Error(
+            `product count exceeds limit for product ${itm.productId}. Count was ${totalInCartForProduct} and spotsLeft is ${stats.spotsLeft}.`,
+          );
 
-    // Use the server-fetched price directly — never trust the client.
-    serverItems.push({
-      productId: itm.productId,
-      count: itm.count,
-      participantId: itm.participantId,
-      price: p.price,
-    });
-  }
+        // Use the server-fetched price directly — never trust the client.
+        serverItems.push({
+          productId: itm.productId,
+          count: itm.count,
+          participantId: itm.participantId,
+          price: p.price,
+        });
+      }
 
-  const order = await createOrder({
-    userId: session.user.id,
-    items: serverItems,
-    postalcode,
-    note,
-  });
+      const order = await createOrder(tx, {
+        userId: session.user.id,
+        items: serverItems,
+        postalcode,
+        note,
+      });
+
+      return order;
+    },
+    { isolationLevel: "Serializable" },
+  );
 
   // Try to send confirmation email
   try {
