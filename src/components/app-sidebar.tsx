@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   LogOut,
   Package,
+  Scale,
   ShieldCheck,
   ShoppingCart,
   User,
@@ -118,6 +119,11 @@ export function AppSidebar() {
       title: "Terminer / Scheman",
       url: "/admin/termin",
       icon: CalendarDays,
+    },
+    {
+      title: "Juridiskt",
+      url: "/admin/legal",
+      icon: Scale,
     },
   ];
 

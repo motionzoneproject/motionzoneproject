@@ -199,3 +199,9 @@ export const adminStyleSchema = z.object({
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });
+
+export const adminLegalPageSchema = z.object({
+  slug: z.string().min(1),
+  title: z.string().min(1, "Titel måste anges."),
+  content: z.string().min(1, "Innehåll måste anges."),
+});

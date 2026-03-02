@@ -598,3 +598,12 @@ model Style {
   imageUrl    String?
   active      Boolean @default(false)
 }
+
+model LegalPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
