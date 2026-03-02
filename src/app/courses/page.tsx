@@ -1,11 +1,4 @@
-import {
-  ArrowUpRight,
-  Book,
-  CalendarDays,
-  Clock,
-  Info,
-  MapPin,
-} from "lucide-react";
+import { Book, CalendarDays, Clock, Info, MapPin } from "lucide-react";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
 import {
@@ -24,18 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import prisma from "@/lib/prisma";
 import { getVeckodag } from "@/lib/tools";
+import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
 
 interface Props {
@@ -111,7 +97,11 @@ export default async function Page({ searchParams }: Props) {
                   termin: true,
                 },
               },
-              teacher: true,
+              teacher: {
+                include: {
+                  teacherProfile: true,
+                },
+              },
             },
           },
         },
@@ -281,37 +271,7 @@ export default async function Page({ searchParams }: Props) {
                                           {`${c.name} ${c.minAge}+ år - ${c.level}`}
                                         </div>
                                         {/* DIALOG FOR COURSE DETAILS */}
-                                        <Dialog>
-                                          <DialogTrigger asChild>
-                                            <span className="flex min-w-20 gap-1 items-center text-xs text-brand hover:underline cursor-pointer">
-                                              Läs mer om kursen
-                                              <ArrowUpRight className="w-3 h-3 shrink-0" />
-                                            </span>
-                                          </DialogTrigger>
-                                          <DialogContent>
-                                            <DialogHeader>
-                                              <DialogTitle>{`${c.name} ${c.minAge}+ år - ${c.level}`}</DialogTitle>
-                                              <DialogDescription>
-                                                {c.description}
-                                              </DialogDescription>
-                                            </DialogHeader>
-                                            {/* Bunch of dialog content that is hard to format without rawdogging divs */}
-                                            <div className="space-y-3 text-sm">
-                                              <div className="space-y-1">
-                                                <p>{`Lärare: ${c.teacher.name}`}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  {`Email: ${c.teacher.email}`}
-                                                </p>
-                                              </div>
-                                              <p>
-                                                {`Målgrupp: ${c.adult ? "Vuxna" : "Barn/Ungdom"}`}
-                                              </p>
-                                              <p>
-                                                {`Åldersgrupp: ${c.minAge}-${c.maxAge} år`}
-                                              </p>
-                                            </div>
-                                          </DialogContent>
-                                        </Dialog>
+                                        <CourseInfoDialog course={c} />
                                       </div>
                                       <p className="text-muted-foreground text-xs">
                                         Antal Tillfällen: {lessonCount}
@@ -353,8 +313,7 @@ export default async function Page({ searchParams }: Props) {
                                                 </p>
                                               )}
                                               <div className="mt-2">
-                                                {" "}
-                                                {`Giltig: ${s.customStartDate ?? s.termin.startDate.toLocaleDateString("sv-SE")} - ${s.customEndDate ?? s.termin.endDate.toLocaleDateString("sv-SE")}`}{" "}
+                                                {`Period: ${(s.customStartDate ?? s.termin.startDate).toLocaleDateString("sv-SE")} - ${(s.customEndDate ?? s.termin.endDate).toLocaleDateString("sv-SE")}`}
                                               </div>
                                             </div>
                                           ))}
