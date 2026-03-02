@@ -10,6 +10,7 @@ import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { LecturesFilter } from "./components/LecturesFilter";
 import { LessonItem } from "./components/LessonItem";
+import { Lov } from "./components/Lov";
 
 interface Props {
   searchParams: Promise<{
@@ -117,6 +118,8 @@ export default async function LecturePage({ searchParams }: Props) {
         teachers={teachers}
         terminer={terminer}
       />
+
+      <Lov courses={courses} terminer={terminer} schemaItems={schemaItems} />
 
       {totalLessons > 0 ? (
         <>

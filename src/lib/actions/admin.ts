@@ -24,6 +24,7 @@ import {
   adminAddCourseSchema,
   adminAddCourseToSchemaSchema,
   adminAddTerminSchema,
+  adminBulkCancelLessonsSchema,
   adminEditEventSchema,
   adminEventSchema,
   adminLessonFormSchema,
@@ -1010,6 +1011,103 @@ export async function editLessonItem(
     return {
       success: true,
       msg: "Lektionen, bokningar och klipp-saldon har uppdaterats.",
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Ett fel uppstod vid uppdatering." };
+  }
+}
+
+/**
+ * Bulk update lessons to cancelled state in a date range and selected courses.
+ * Restores clips and removes existing bookings for newly cancelled lessons.
+ * @auth Admin
+ */
+export async function bulkCancelLessons(
+  formData: z.output<typeof adminBulkCancelLessonsSchema>,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
+    const from = new Date(validated.from);
+    from.setHours(0, 0, 0, 0);
+
+    const to = new Date(validated.to);
+    to.setHours(23, 59, 59, 999);
+
+    const lessons = await prisma.lesson.findMany({
+      where: {
+        startTime: {
+          gte: from,
+          lte: to,
+        },
+        courseId: {
+          in: validated.courseIds,
+        },
+      },
+      select: {
+        id: true,
+        cancelled: true,
+      },
+    });
+
+    if (lessons.length === 0) {
+      return {
+        success: false,
+        msg: "Inga lektioner matchade ditt urval.",
+      };
+    }
+
+    const lessonIds = lessons.map((lesson) => lesson.id);
+    const newlyCancelledLessonIds = lessons
+      .filter((lesson) => !lesson.cancelled)
+      .map((lesson) => lesson.id);
+
+    await prisma.$transaction(async (tx) => {
+      if (newlyCancelledLessonIds.length > 0) {
+        const bookings = await tx.booking.findMany({
+          where: {
+            lessonId: { in: newlyCancelledLessonIds },
+          },
+          select: {
+            id: true,
+            purchaseItemId: true,
+          },
+        });
+
+        for (const booking of bookings) {
+          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+          if (!clipResult.success) {
+            throw new Error(clipResult.msg || "Clip update failed.");
+          }
+        }
+
+        await tx.booking.deleteMany({
+          where: {
+            lessonId: { in: newlyCancelledLessonIds },
+          },
+        });
+      }
+
+      await tx.lesson.updateMany({
+        where: {
+          id: { in: lessonIds },
+        },
+        data: {
+          cancelled: validated.cancelled,
+          message: validated.message,
+        },
+      });
+    });
+
+    revalidatePath("/admin/lectures");
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      msg: `${lessonIds.length} lektioner markerades som installda.`,
     };
   } catch (e) {
     console.error(e);
