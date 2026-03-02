@@ -75,10 +75,7 @@ export function RichTextEditor({
 
   return (
     <div
-      className={cn(
-        "rounded-md border border-input bg-background",
-        className,
-      )}
+      className={cn("rounded-md border border-input bg-background", className)}
     >
       <div className="flex flex-wrap gap-1 border-b border-input p-2">
         <Toggle

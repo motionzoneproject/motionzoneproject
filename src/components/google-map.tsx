@@ -25,9 +25,7 @@ export default function GoogleMap() {
 
             <h2 className="text-4xl md:text-6xl font-light text-foreground leading-tight mb-8">
               Besök vår{" "}
-              <span className="font-serif italic text-brand-light">
-                Studio
-              </span>{" "}
+              <span className="font-serif italic text-brand-light">Studio</span>{" "}
               i Växjö
             </h2>
 

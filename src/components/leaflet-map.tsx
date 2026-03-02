@@ -119,7 +119,9 @@ export default function LeafletMap() {
                 MotionZone Växjö
               </strong>
               <br />
-              <span style={{ color: "var(--muted-foreground)", fontSize: "13px" }}>
+              <span
+                style={{ color: "var(--muted-foreground)", fontSize: "13px" }}
+              >
                 Smedsvängen 70, 352 54 Växjö
               </span>
             </div>

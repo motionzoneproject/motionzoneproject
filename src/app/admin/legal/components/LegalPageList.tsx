@@ -46,9 +46,7 @@ export function LegalPageList({ pages }: LegalPageListProps) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Redigera {editingPage?.title ?? "sida"}
-            </DialogTitle>
+            <DialogTitle>Redigera {editingPage?.title ?? "sida"}</DialogTitle>
           </DialogHeader>
           {editingPage && (
             <LegalPageForm page={editingPage} onSuccess={handleSuccess} />
