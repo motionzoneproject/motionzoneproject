@@ -145,9 +145,6 @@ export default async function Page({ searchParams }: Props) {
             Köp våra
             <span className="font-serif italic text-brand-light"> Kurser</span>
           </h1>
-          <p className="text-muted-foreground">
-            Paket och klippkort kommer inom kort
-          </p>
         </div>
 
         {/* Filter component */}
