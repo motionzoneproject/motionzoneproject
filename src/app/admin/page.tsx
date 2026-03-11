@@ -62,14 +62,14 @@ export default async function Page() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Profilsida</h1>
-        <p className="text-muted-foreground">Välkommen till adminsidan.</p>
+        <h1 className="text-3xl font-bold">Adminpanelen</h1>
+        <p className="text-muted-foreground">Välkommen till adminsidan. </p>
       </div>
 
       <div className="space-y-4">
         <div className="flex justify-between items-baseline">
           <h2 className="text-xl font-semibold">
-            Dina senaste och kommande lektioner
+            Dina senaste och kommande lektioner (en vecka framåt och bakåt)
           </h2>
         </div>
 
