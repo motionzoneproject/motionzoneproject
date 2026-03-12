@@ -10,7 +10,7 @@ import {
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
-type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID";
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -79,9 +79,13 @@ export default async function Page({
 
   const params = await searchParams;
   const raw = (params?.status || "PENDING").toUpperCase();
-  const status: StatusFilter = ["ALL", "PENDING", "APPROVED", "PAID"].includes(
-    raw,
-  )
+  const status: StatusFilter = [
+    "ALL",
+    "PENDING",
+    "APPROVED",
+    "PAID",
+    "CANCELLED",
+  ].includes(raw)
     ? (raw as StatusFilter)
     : "PENDING";
 
