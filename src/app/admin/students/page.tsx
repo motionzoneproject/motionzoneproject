@@ -4,6 +4,14 @@ import { notFound } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type {
+  Course,
+  Participant,
+  Purchase,
+  PurchaseItem,
+  User,
+  UserDetails,
+} from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
@@ -22,7 +30,9 @@ export default async function StudentsPage(props: {
     termin?: string;
     course?: string;
   };
+
   noStore();
+
   const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
 
@@ -38,42 +48,154 @@ export default async function StudentsPage(props: {
       ? resolvedParams.course
       : undefined;
 
-  // Fetch participants and filter purchases by course and term via schemaItems
-  const participants = await prisma.participant.findMany({
-    where: {
-      OR: query
-        ? [
-            { name: { contains: query, mode: "insensitive" } },
-            { email: { contains: query, mode: "insensitive" } },
-          ]
-        : undefined,
-    },
+  // Gammal aproach:
+  // // Fetch participants and filter purchases by course and term via schemaItems
+  // const participants = await prisma.participant.findMany({
+  //   where: {
+  //     OR: query
+  //       ? [
+  //           { name: { contains: query, mode: "insensitive" } },
+  //           { email: { contains: query, mode: "insensitive" } },
+  //         ]
+  //       : undefined,
+  //   },
+  //   include: {
+  //     addedBy: {
+  //       include: { details: true },
+  //     },
+  //     purchases: {
+  //       include: {
+  //         product: true,
+  //         PurchaseItems: {
+  //           include: {
+  //             course: {
+  //               include: {
+  //                 schemaItems: true,
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   orderBy: { name: "asc" },
+  // });
+
+  // Nyt approach, för att få med både user och participants som elever.
+  // Jag behöver hämta purchases, och göra en lista baserat på det istället, för här får vi bara participants inte users.
+
+  const purchasesWithData = await prisma.purchase.findMany({
     include: {
-      addedBy: {
-        include: { details: true },
-      },
-      purchases: {
+      user: {
         include: {
-          product: true,
-          PurchaseItems: {
+          details: true,
+          purchases: {
             include: {
-              course: {
-                include: {
-                  schemaItems: true,
-                },
+              PurchaseItems: {
+                include: { course: { include: { schemaItems: true } } },
               },
             },
           },
         },
       },
+      participant: { include: { addedBy: true } },
     },
-    orderBy: { name: "asc" },
   });
+
+  // För då kan vi visa eleven dels om det är en participant eller en kund.
+  // Om participant: (om participantData inte är null)
+
+  type AddedBy =
+    | {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        email: string;
+        emailVerified: boolean;
+        image: string | null;
+        role: string | null;
+        banned: boolean | null;
+        banReason: string | null;
+        banExpires: Date | null;
+      }
+    | undefined;
+
+  type Student = {
+    user: User;
+    details: UserDetails | null;
+    purchaseData: { purchase: Purchase; purchaseItems: PurchaseItem[] }[];
+    courses: Course[];
+    terminerIds: string[];
+    participantData: {
+      participant: Participant | null;
+      addedBy: AddedBy;
+    } | null;
+  };
+
+  const students: Student[] = [];
+
+  // För att göra detta behöver vi vända på det och bygga en lista med unika "elever", och spara index för just den pur. Sedan köra igenom den och spara den som student.
+
+  const mapStudents = new Map<string, Student>(); // Kan väl spara varje pur.user.id // Eller particiapant.id här, och dess Student som value?
+
+  for (const pur of purchasesWithData) {
+    const purchaseData: {
+      purchase: Purchase;
+      purchaseItems: PurchaseItem[];
+    }[] = [];
+
+    // Vi får gå igenom alla kurser i alla purchaseItems.
+    const courses = new Set<Course>();
+
+    // Vi får gå igenom schemaItems och lägga in alla terminer på det sättet.
+    const terminerIds = new Set<string>();
+
+    for (const pu of pur.user.purchases) {
+      // Fixa purchaseData:
+      purchaseData.push({ purchase: pu, purchaseItems: pu.PurchaseItems });
+
+      // Fixa alla courses:
+      pu.PurchaseItems.forEach((pui) => {
+        courses.add({
+          level: pui.course.level,
+          id: pui.course.id,
+          name: pui.course.name,
+          description: pui.course.description,
+          teacherId: pui.course.teacherId,
+          minAge: pui.course.minAge,
+          maxAge: pui.course.maxAge,
+          adult: pui.course.adult,
+        });
+
+        pui.course.schemaItems.forEach((si) => {
+          terminerIds.add(si.terminId);
+        });
+      });
+    }
+
+    mapStudents.set(pur.participant?.id ?? pur.user.id, {
+      user: pur.user,
+      details: pur.user.details, // Alltid users details? I guess so?
+      purchaseData: purchaseData,
+      courses: Array.from(courses),
+      terminerIds: Array.from(terminerIds),
+      participantData: pur.participant
+        ? {
+            participant: pur.participant,
+            addedBy: pur.participant?.addedBy,
+          }
+        : null,
+    });
+  }
+
+  // Sen ändrar vi på hur vi visar datan..
 
   // Get all terms for filter dropdown
   const terminer = await prisma.termin.findMany({
     orderBy: { startDate: "desc" },
   });
+
   // Get all courses for filter dropdown
   const courses = await prisma.course.findMany({
     orderBy: { name: "asc" },
@@ -128,7 +250,7 @@ export default async function StudentsPage(props: {
       </div>
 
       <div className="grid gap-4">
-        {participants.filter((p) => {
+        {students.filter((p) => {
           // Filter purchases by selected term and course via schemaItems
           const filteredPurchases = p.purchases.filter((pur) =>
             pur.PurchaseItems.some((item) => {
