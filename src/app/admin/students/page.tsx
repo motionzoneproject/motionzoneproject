@@ -476,7 +476,9 @@ export default async function StudentsPage(props: {
                         </span>
                       )}
                       <Link
-                        href={`/admin/orders?q=${encodeURIComponent(displayName)}`}
+                        href={`/admin/orders?status=ALL&q=${encodeURIComponent(
+                          displayName,
+                        )}`}
                         className="text-brand hover:underline"
                       >
                         Visa orderhistorik →
