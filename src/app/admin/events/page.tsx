@@ -35,32 +35,32 @@ export default async function EventsPage() {
   });
 
   return (
-    <div className="p-4 w-full mt-8 gap-4 ml-4">
-      <div className=" flex justify-between mb-6">
-        <h1 className="text-2xl font-bold ml-4 text-center">Events</h1>
-
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">Events</h1>
         <AddEventBtn />
       </div>
-      <div className="w-full mt-2">
-        <Table className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+
+      <div className="mt-2">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-25">Rubrik</TableHead>
-              <TableHead className="w-25">Datum</TableHead>
-              <TableHead className="w-25 text-right">Åtgärder</TableHead>
+              <TableHead>Rubrik</TableHead>
+              <TableHead>Datum</TableHead>
+              <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="space-y-6">
+          <TableBody>
             {events.map((event) => (
               <TableRow key={event.id}>
                 <TableCell className="font-medium">{event.headline}</TableCell>
-                <TableCell className="ml-2">
-                  {event.startDate.toLocaleDateString("sv-SE")}{" "}
+                <TableCell>
+                  {event.startDate.toLocaleDateString("sv-SE")} {" "}
                   {event.endDate &&
                     event.endDate.getTime() > event.startDate.getTime() &&
                     ` - ${event.endDate.toLocaleDateString("sv-SE")}`}
                 </TableCell>
-                <TableCell className="flex gap-2 justify-end">
+                <TableCell className="flex justify-end gap-2">
                   <EditEventBtn event={event} />
                   <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
@@ -68,6 +68,11 @@ export default async function EventsPage() {
             ))}
           </TableBody>
         </Table>
+        {events.length === 0 && (
+          <div className="text-sm text-muted-foreground p-2 italic">
+            Inga events hittades.
+          </div>
+        )}
       </div>
     </div>
   );
