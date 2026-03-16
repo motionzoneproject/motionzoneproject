@@ -10,6 +10,7 @@ import ImageInput from "@/components/ImageInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -78,6 +79,8 @@ export default function NewEventForm() {
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
+  const [hasEndDate, sethasEndDate] = useState<boolean>(false);
+
   return (
     <Card>
       <CardContent>
@@ -126,7 +129,11 @@ export default function NewEventForm() {
                       type="date"
                       {...field}
                       value={formatDateToInput(field.value)}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (!hasEndDate)
+                          form.setValue("endDate", e.target.value);
+                      }}
                     />
                   </FormControl>
 
@@ -140,11 +147,23 @@ export default function NewEventForm() {
               name="endDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slut datum</FormLabel>
+                  <FormLabel>
+                    <Checkbox
+                      checked={hasEndDate}
+                      onCheckedChange={(e) => {
+                        sethasEndDate(!!e);
+                        if (!!e === false)
+                          form.setValue("endDate", form.watch("startDate"));
+                      }}
+                      className="w-7 h-7"
+                    />{" "}
+                    Slutdatum
+                  </FormLabel>
 
                   <FormControl>
                     <Input
                       type="date"
+                      className={!hasEndDate ? "hidden" : ""}
                       {...field}
                       value={formatDateToInput(field.value)}
                       onChange={field.onChange}

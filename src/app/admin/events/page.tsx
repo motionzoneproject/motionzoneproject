@@ -55,10 +55,10 @@ export default async function EventsPage() {
               <TableRow key={event.id}>
                 <TableCell className="font-medium">{event.headline}</TableCell>
                 <TableCell className="ml-2">
-                  {event.startDate.toLocaleString("sv-SE")}{" "}
+                  {event.startDate.toLocaleDateString("sv-SE")}{" "}
                   {event.endDate &&
                     event.endDate.getTime() > event.startDate.getTime() &&
-                    event.endDate.toLocaleString("sv-SE")}
+                    ` - ${event.endDate.toLocaleDateString("sv-SE")}`}
                 </TableCell>
                 <TableCell className="flex gap-2 justify-end">
                   <EditEventBtn event={event} />
