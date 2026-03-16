@@ -35,9 +35,9 @@ export default async function EventsPage() {
   });
 
   return (
-    <div className="p-4 w-full mt-8  gap-4 border-amber-200 border-2 rounded-xl ml-4">
+    <div className="p-4 w-full mt-8 gap-4 ml-4">
       <div className=" flex justify-between mb-6">
-        <h1 className="text-2xl font-bold ml-4 text-center">Kommande events</h1>
+        <h1 className="text-2xl font-bold ml-4 text-center">Events</h1>
 
         <AddEventBtn />
       </div>
@@ -45,12 +45,9 @@ export default async function EventsPage() {
         <Table className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Rubrik</TableHead>
-              <TableHead className="w-[100px]">Startdatum</TableHead>
-              <TableHead className="w-[100px]">Slutdatum</TableHead>
-              <TableHead className="w-[100px]">Bild</TableHead>
-              <TableHead className="w-[100px]">Länk</TableHead>
-              <TableHead className="w-[100px]">Åtgärder</TableHead>
+              <TableHead className="w-25">Rubrik</TableHead>
+              <TableHead className="w-25">Datum</TableHead>
+              <TableHead className="w-25 text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="space-y-6">
@@ -58,19 +55,14 @@ export default async function EventsPage() {
               <TableRow key={event.id}>
                 <TableCell className="font-medium">{event.headline}</TableCell>
                 <TableCell className="ml-2">
-                  {event.startDate.toLocaleString()}
-                </TableCell>
-                <TableCell className="ml-2">
-                  {event.endDate?.toLocaleString()}
-                </TableCell>
-                <TableCell className="ml-2">{event.imageURL}</TableCell>
-                <TableCell className="ml-2">{event.link}</TableCell>
-                <TableCell className="text-right">
-                  {" "}
-                  <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
+                  {event.startDate.toLocaleString("sv-SE")}{" "}
+                  {event.endDate &&
+                    event.endDate.getTime() > event.startDate.getTime() &&
+                    event.endDate.toLocaleString("sv-SE")}
                 </TableCell>
                 <TableCell className="flex gap-2 justify-end">
                   <EditEventBtn event={event} />
+                  <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
               </TableRow>
             ))}
