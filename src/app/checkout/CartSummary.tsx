@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { readCart } from "@/lib/cart";
+import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
 
 export default async function CartSummary() {
@@ -53,7 +54,7 @@ export default async function CartSummary() {
         };
       }
 
-      const unit = parseFloat(String(p.price));
+      const unit = p.price;
       const line = unit * it.qty;
       const stats = await getProductStats(p.id);
       const available = stats.success ? (stats.spotsLeft ?? 0) : 0;
@@ -80,7 +81,7 @@ export default async function CartSummary() {
             <div className="flex-1">
               <p className="font-medium text-foreground">{r.name}</p>
               <p className="text-sm text-muted-foreground">
-                {r.unit.toFixed(0)} kr / st
+                {formatPrice(r.unit)} / st
               </p>
               <p className="text-xs text-muted-foreground">
                 {!r.success
@@ -133,7 +134,7 @@ export default async function CartSummary() {
               </form>
               <div className="w-24 text-right">
                 <p className="font-semibold text-foreground">
-                  {r.line.toFixed(0)} kr
+                  {formatPrice(r.line)}
                 </p>
                 <form
                   action={async () => {
@@ -156,7 +157,7 @@ export default async function CartSummary() {
       <div className="pt-4 border-t border-border flex justify-between items-center">
         <span className="text-muted-foreground">Totalt</span>
         <span className="text-xl font-bold text-foreground">
-          {total.toFixed(0)} kr
+          {formatPrice(total)}
         </span>
       </div>
     </div>

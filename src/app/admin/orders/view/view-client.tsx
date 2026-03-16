@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
+import { formatPrice } from "@/lib/money";
 
 type OrderStatus =
   | "CREATED"
@@ -191,9 +192,7 @@ export default function OrderDetailsClient() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Totalbelopp:</span>
-                <span className="font-bold text-lg">
-                  {total.toFixed(2)} SEK
-                </span>
+                <span className="font-bold text-lg">{formatPrice(total)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Skapad:</span>
@@ -427,12 +426,10 @@ export default function OrderDetailsClient() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {unit.toFixed(2)} SEK
-                  </td>
+                  <td className="px-4 py-3 text-right">{formatPrice(unit)}</td>
                   <td className="px-4 py-3 text-right">{it.count}</td>
                   <td className="px-4 py-3 text-right font-semibold">
-                    {sum.toFixed(2)} SEK
+                    {formatPrice(sum)}
                   </td>
                 </tr>
               );
@@ -444,7 +441,7 @@ export default function OrderDetailsClient() {
                 Totalt att betala
               </td>
               <td className="px-4 py-3 text-right text-lg">
-                {total.toFixed(2)} SEK
+                {formatPrice(total)}
               </td>
             </tr>
           </tfoot>

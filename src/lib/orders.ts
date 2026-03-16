@@ -21,9 +21,8 @@ export async function createOrder(
 
   if (!items || items.length === 0) throw new Error("No items provided");
 
-  // Compute total as decimal string to avoid float issues
+  // All prices are integers in öre — plain integer arithmetic, no rounding needed
   const total = items.reduce((acc, it) => acc + it.count * it.price, 0);
-  const totalStr = String(total);
 
   // Create order + items + initial status event atomically
 
@@ -31,7 +30,7 @@ export async function createOrder(
     data: {
       userId,
       postalcode,
-      totalPrice: Number.parseFloat(totalStr),
+      totalPrice: total,
       // default status is PENDING_PAYMENT per schema
     },
   });

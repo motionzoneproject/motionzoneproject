@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
+import { formatPrice } from "@/lib/money";
 
 type OrderStatus =
   | "CREATED"
@@ -296,7 +297,7 @@ export default function OrdersView({
                     </div>
                   </td>
                   <td className="p-3 font-semibold">
-                    {String(o.totalPrice)} kr
+                    {formatPrice(Number(o.totalPrice))}
                   </td>
                   <td className="p-3">
                     <span

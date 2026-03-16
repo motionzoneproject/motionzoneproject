@@ -38,8 +38,8 @@ model User {
   enrolledCourses Course[]  @relation("StudentCourses") // är elev på dessa kurser.
   bookings        Booking[] @relation("StudentBookings") //är elev på dessa bokningar.
 
-  details       UserDetails? // De vanliga uppgifterna
-  teacherProfile TeacherProfile? 
+  details        UserDetails? // De vanliga uppgifterna
+  teacherProfile TeacherProfile?
 
   addedParticipants Participant[] @relation("AddedParticipants")
   asParticipant     Participant[] @relation("UserAsParticipant")
@@ -141,7 +141,7 @@ model Lesson {
   teacherId String
   teacher   User   @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Restrict) // Hämtas från den Course som den tillhör(som en lärare skapat, och därmed teacherId) när lesson skapas.
 
-  bookings    Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
+  bookings Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
 
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
 
@@ -272,7 +272,7 @@ model Product {
   // useTotalCount Boolean @default(false) // Tagit bort useTotalCount nu när type-logiken är fullt migrerad.
   totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
-  price Float @default(0) // Money
+  price Int @default(0) // Money (stored in öre, i.e. 1/100 SEK)
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases  Purchase[] // För att: Håll koll på kundernas köpta produkt.
@@ -411,7 +411,7 @@ model OrderItem {
   id String @id @default(uuid())
 
   count Int
-  price Float
+  price Int // Stored in öre (1/100 SEK)
 
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -438,7 +438,7 @@ model Order {
 
   orderItems OrderItem[]
 
-  totalPrice Float
+  totalPrice Int // Stored in öre (1/100 SEK)
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem.
   user   User   @relation(fields: [userId], references: [id])
@@ -545,19 +545,18 @@ model Participant {
 }
 
 model TeacherProfile {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   specialty   String
   description String
   imageUrl    String?
-  active      Boolean  @default(true)
+  active      Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("teacher_profile")
 }

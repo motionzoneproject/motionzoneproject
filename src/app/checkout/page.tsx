@@ -33,7 +33,7 @@ export default async function Page() {
         productId: it.productId,
         name: p?.name ?? "Okänd",
         qty: it.qty,
-        price: p ? parseFloat(String(p.price)) : 0,
+        price: p?.price ?? 0,
       };
     });
 

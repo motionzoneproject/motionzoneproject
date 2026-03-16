@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
 import { getVeckodag } from "@/lib/tools";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
@@ -178,7 +179,7 @@ export default async function Page({ searchParams }: Props) {
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
-                          {p.price} kr
+                          {formatPrice(p.price)}
                         </Badge>
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
