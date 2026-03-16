@@ -55,7 +55,7 @@ export default async function EventsPage() {
               <TableRow key={event.id}>
                 <TableCell className="font-medium">{event.headline}</TableCell>
                 <TableCell>
-                  {event.startDate.toLocaleDateString("sv-SE")} {" "}
+                  {event.startDate.toLocaleDateString("sv-SE")}{" "}
                   {event.endDate &&
                     event.endDate.getTime() > event.startDate.getTime() &&
                     ` - ${event.endDate.toLocaleDateString("sv-SE")}`}
