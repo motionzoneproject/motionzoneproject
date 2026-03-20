@@ -12,6 +12,7 @@ type OrderStatus =
   | "AWAITING_APPROVAL"
   | "APPROVED"
   | "PAID"
+  | "COMPLETED"
   | "CANCELLED";
 
 type OrderItemLite = {

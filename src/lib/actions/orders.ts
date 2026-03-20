@@ -20,6 +20,7 @@ export async function updateOrderStatus(
     | "AWAITING_APPROVAL"
     | "PAID"
     | "APPROVED"
+    | "COMPLETED"
     | "CANCELLED",
   note?: string,
 ) {
@@ -32,7 +33,7 @@ export async function updateOrderStatus(
     if (current.status === toStatus) return { success: true };
     if (
       toStatus === "CANCELLED" &&
-      ["APPROVED", "PAID"].includes(current.status)
+      ["APPROVED", "PAID", "COMPLETED"].includes(current.status)
     ) {
       throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
     }
@@ -61,11 +62,23 @@ export async function updateOrderStatus(
 }
 
 export async function approveOrder(orderId: string, note?: string) {
-  return updateOrderStatus(orderId, "APPROVED", note);
+  const current = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { status: true },
+  });
+  if (!current) throw new Error("Order not found");
+  const toStatus = current.status === "PAID" ? "COMPLETED" : "APPROVED";
+  return updateOrderStatus(orderId, toStatus, note);
 }
 
 export async function markOrderPaid(orderId: string, note?: string) {
-  return updateOrderStatus(orderId, "PAID", note);
+  const current = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { status: true },
+  });
+  if (!current) throw new Error("Order not found");
+  const toStatus = current.status === "APPROVED" ? "COMPLETED" : "PAID";
+  return updateOrderStatus(orderId, toStatus, note);
 }
 
 export async function cancelOrder(orderId: string, note?: string) {
@@ -130,7 +143,7 @@ export async function createPurchaseFromOrder(orderId: string) {
     if (!order) throw new Error("Order hittades inte");
 
     // Kontrollera att ordern är i rätt status för att generera köp
-    if (order.status !== "APPROVED" && order.status !== "PAID") {
+    if (!["APPROVED", "PAID", "COMPLETED"].includes(order.status)) {
       throw new Error("Ordern är inte godkänd/betald ännu.");
     }
 

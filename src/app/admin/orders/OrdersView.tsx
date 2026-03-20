@@ -11,6 +11,7 @@ type OrderStatus =
   | "AWAITING_APPROVAL"
   | "APPROVED"
   | "PAID"
+  | "COMPLETED"
   | "CANCELLED";
 
 type OrderLite = {
@@ -60,6 +61,7 @@ export default function OrdersView({
       PENDING: 0,
       APPROVED: 0,
       PAID: 0,
+      COMPLETED: 0,
     };
     for (const o of orders) {
       const st = String(o.status || "PENDING_PAYMENT");
@@ -69,6 +71,8 @@ export default function OrdersView({
         acc.APPROVED += 1;
       } else if (st === "PAID") {
         acc.PAID += 1;
+      } else if (st === "COMPLETED") {
+        acc.COMPLETED += 1;
       }
       acc.ALL += 1;
     }
@@ -114,6 +118,7 @@ export default function OrdersView({
     { id: "PENDING", label: "Väntar" },
     { id: "APPROVED", label: "Godkända" },
     { id: "PAID", label: "Betalda" },
+    { id: "COMPLETED", label: "Klara" },
     { id: "ALL", label: "Alla" },
   ];
 
@@ -129,6 +134,8 @@ export default function OrdersView({
         return "Godkänd";
       case "PAID":
         return "Betald";
+      case "COMPLETED":
+        return "Godkänd & Betald";
       case "CANCELLED":
         return "Avbruten";
       default:
@@ -146,6 +153,8 @@ export default function OrdersView({
         return "bg-emerald-500/10 text-emerald-500";
       case "PAID":
         return "bg-blue-500/10 text-blue-500";
+      case "COMPLETED":
+        return "bg-purple-500/10 text-purple-500";
       case "CANCELLED":
         return "bg-rose-500/10 text-rose-500";
       default:
