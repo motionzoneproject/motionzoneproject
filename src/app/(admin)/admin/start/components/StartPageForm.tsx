@@ -163,109 +163,116 @@ export function StartPageForm({ content }: StartPageFormProps) {
           <CardHeader>
             <CardTitle>Hero</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <FormField
-              control={form.control}
-              name="heroImage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bakgrundsbild</FormLabel>
-                  <FormControl>
-                    <ImageInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      defaultValue={IMAGE_DEFAULTS.heroImage}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left column – background image preview */}
+              <FormField
+                control={form.control}
+                name="heroImage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bakgrundsbild</FormLabel>
+                    <FormControl>
+                      <ImageInput
+                        previewClassName="h-48 w-full object-cover object-top rounded"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        defaultValue={IMAGE_DEFAULTS.heroImage}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="heroLabel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Etikett (liten text ovan rubriken)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Välkommen till Motion Zone"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Right column – all text fields */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="heroLabel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Etikett (liten text ovan rubriken)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Välkommen till Motion Zone"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="heroTitleLine1"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rubrik – del 1 (plain)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Dans är" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="heroTitleAccent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rubrik – accent (kursiv färgad)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Passion" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="heroTitleLine2"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rubrik – del 2 (rad 2)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Och Livet i Rörelse" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="heroTitleLine1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rubrik – del 1</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Dans är" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="heroTitleAccent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rubrik – accent</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Passion" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="heroTitleLine2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rubrik – del 2</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Och Livet i Rörelse" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormDescription>
+                  Visas som:{" "}
+                  <em>
+                    {form.watch("heroTitleLine1")}{" "}
+                    <span className="italic text-brand">
+                      {form.watch("heroTitleAccent")}
+                    </span>{" "}
+                    / {form.watch("heroTitleLine2")}
+                  </em>
+                </FormDescription>
+
+                <FormField
+                  control={form.control}
+                  name="heroSubtext"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Brödtext</FormLabel>
+                      <FormControl>
+                        <Textarea rows={3} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-            <FormDescription>
-              Rubriken visas som:{" "}
-              <em>
-                {form.watch("heroTitleLine1")}{" "}
-                <span className="italic text-brand">
-                  {form.watch("heroTitleAccent")}
-                </span>{" "}
-                / {form.watch("heroTitleLine2")}
-              </em>
-            </FormDescription>
-
-            <FormField
-              control={form.control}
-              name="heroSubtext"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Brödtext</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -313,7 +320,7 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   { n: 3, label: "Kort 3" },
                 ] as const
               ).map(({ n, label }) => (
-                <Card key={n} className="border-dashed">
+                <Card key={n}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{label}</CardTitle>
                   </CardHeader>
@@ -326,7 +333,7 @@ export function StartPageForm({ content }: StartPageFormProps) {
                           <FormLabel>Bild</FormLabel>
                           <FormControl>
                             <ImageInput
-                              compact
+                              previewClassName="h-60 w-full object-cover"
                               value={field.value}
                               onChange={field.onChange}
                               onBlur={field.onBlur}

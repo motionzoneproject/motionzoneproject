@@ -12,7 +12,8 @@ interface ImageInputProps {
   onBlur: () => void;
   value: string | undefined;
   name: string;
-  compact?: boolean;
+  /** Tailwind classes for the preview <Image>. Defaults to "w-[80%] p-2" (centred, auto-sized). */
+  previewClassName?: string;
   defaultValue?: string;
 }
 
@@ -20,7 +21,7 @@ export default function ImageInput({
   onChange,
   onBlur,
   value,
-  compact,
+  previewClassName,
   defaultValue,
 }: ImageInputProps) {
   const [_genMsg, _setgenMsg] = useState("");
@@ -68,9 +69,7 @@ export default function ImageInput({
             src={value ?? ""}
             width={512}
             height={512}
-            className={
-              compact ? "h-28 w-full object-cover rounded" : "w-[80%] p-2"
-            }
+            className={previewClassName ?? "w-[80%] p-2"}
             alt="Preview image"
             unoptimized={value.startsWith("blob:")} // Skippa server-optimering för lokala filer
           ></Image>
