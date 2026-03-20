@@ -12,12 +12,16 @@ interface ImageInputProps {
   onBlur: () => void;
   value: string | undefined;
   name: string;
+  compact?: boolean;
+  defaultValue?: string;
 }
 
 export default function ImageInput({
   onChange,
   onBlur,
   value,
+  compact,
+  defaultValue,
 }: ImageInputProps) {
   const [_genMsg, _setgenMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,9 +35,9 @@ export default function ImageInput({
       inputRef.current.value = "";
     }
 
-    onChange("");
+    onChange(defaultValue ?? "");
     onBlur();
-  }, [onBlur, onChange, value]);
+  }, [onBlur, onChange, value, defaultValue]);
 
   const fileImg = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +68,9 @@ export default function ImageInput({
             src={value ?? ""}
             width={512}
             height={512}
-            className="w-[80%] p-2"
+            className={
+              compact ? "h-28 w-full object-cover rounded" : "w-[80%] p-2"
+            }
             alt="Preview image"
             unoptimized={value.startsWith("blob:")} // Skippa server-optimering för lokala filer
           ></Image>
