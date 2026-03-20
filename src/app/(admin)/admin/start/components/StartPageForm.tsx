@@ -45,19 +45,26 @@ async function resolveImageField(
   current: string,
   original: string,
 ): Promise<{ url: string; oldUrl: string | null }> {
-  if (!current.startsWith("blob:")) {
-    return { url: current, oldUrl: null };
+  // Case 1: user picked a new file — upload blob and replace
+  if (current.startsWith("blob:")) {
+    const res = await fetch(current);
+    const blob = await res.blob();
+    const uploaded = await uploadImageFromBlob(blob);
+    URL.revokeObjectURL(current);
+    // Queue old S3 URL for deletion if it changed
+    const oldUrl =
+      original && original !== uploaded && original.startsWith("http")
+        ? original
+        : null;
+    return { url: uploaded, oldUrl };
   }
-  const res = await fetch(current);
-  const blob = await res.blob();
-  const uploaded = await uploadImageFromBlob(blob);
-  URL.revokeObjectURL(current);
-  // Only mark old URL for deletion if it changed and is an external (S3) URL
+
+  // Case 2: user cleared the image (reset to a local default path) — delete old S3 object
   const oldUrl =
-    original && original !== uploaded && original.startsWith("http")
+    original && original !== current && original.startsWith("http")
       ? original
       : null;
-  return { url: uploaded, oldUrl };
+  return { url: current, oldUrl };
 }
 
 async function removeOldImage(url: string) {
