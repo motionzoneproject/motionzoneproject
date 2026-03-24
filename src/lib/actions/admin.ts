@@ -1841,7 +1841,7 @@ export async function addPhoto(data: {
         url: data.url,
         caption: data.caption ?? null,
         description: data.description ?? null,
-        eventId: data.eventId ?? null,
+        eventId: data.eventId || null,
         isVisible: data.isVisible ?? true,
       },
     });
@@ -1876,7 +1876,7 @@ export async function editPhoto(
         url: data.url,
         caption: data.caption ?? null,
         description: data.description ?? null,
-        eventId: data.eventId ?? null,
+        eventId: data.eventId || null,
         isVisible: data.isVisible ?? true,
       },
     });

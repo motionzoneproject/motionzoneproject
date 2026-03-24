@@ -6,10 +6,7 @@ export const adminPhotoSchema = z.object({
   url: z.string().min(1, "Bild krävs."),
   caption: z.string().optional(),
   description: z.string().optional(),
-  eventId: z
-    .string()
-    .optional()
-    .transform((v) => (v === "" ? undefined : v)),
+  eventId: z.string().optional(),
   isVisible: z.boolean(),
 });
 
