@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { adminUpdateUserDetails } from "@/lib/actions/user-management";
+import { getAdminUserFormDefaults } from "@/lib/admin-user-form-defaults";
 import { AdminEditUserSchema } from "@/validations/userforms";
 
 type FormValues = z.infer<typeof AdminEditUserSchema>;
 
 type User = {
   id: string;
+  name: string;
   details: {
     firstName: string | null;
     lastName: string | null;
@@ -47,27 +49,13 @@ export default function StudentUserEditDialog({ user }: { user: User }) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(AdminEditUserSchema),
-    defaultValues: {
-      firstName: user.details?.firstName ?? "",
-      lastName: user.details?.lastName ?? "",
-      phoneNumber: user.details?.phoneNumber ?? "",
-      address: user.details?.address ?? "",
-      postalCode: user.details?.postalCode ?? "",
-      city: user.details?.city ?? "",
-    },
+    defaultValues: getAdminUserFormDefaults(user),
   });
 
   useEffect(() => {
     if (!isOpen) return;
 
-    form.reset({
-      firstName: user.details?.firstName ?? "",
-      lastName: user.details?.lastName ?? "",
-      phoneNumber: user.details?.phoneNumber ?? "",
-      address: user.details?.address ?? "",
-      postalCode: user.details?.postalCode ?? "",
-      city: user.details?.city ?? "",
-    });
+    form.reset(getAdminUserFormDefaults(user));
   }, [form, isOpen, user]);
 
   async function onSubmit(values: FormValues) {
