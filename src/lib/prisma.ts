@@ -17,8 +17,7 @@ function createPrismaClient() {
 
 function hasCurrentModelDelegates(client: PrismaClient) {
   return Object.values(Prisma.ModelName).every((modelName) => {
-    const delegateName =
-      modelName.charAt(0).toLowerCase() + modelName.slice(1);
+    const delegateName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
 
     return delegateName in client;
   });
