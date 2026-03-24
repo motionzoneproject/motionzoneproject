@@ -1816,6 +1816,7 @@ export async function removeUserFromLesson(
     });
 
     revalidatePath("/admin/lectures");
+    revalidatePath("/admin/students");
 
     return { success: true, msg: "Bokningen har tagits bort." };
   } catch (e) {

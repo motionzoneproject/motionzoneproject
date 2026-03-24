@@ -43,6 +43,7 @@ type OrderLite = {
     | {
         product: { name: string };
         participant?: {
+          id: string;
           name: string;
         } | null;
       }[]
