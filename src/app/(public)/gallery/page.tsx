@@ -1,118 +1,114 @@
 import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { Event, Photo } from "@/generated/prisma/client";
+import prisma from "@/lib/prisma";
+import GalleryCarouselsClient from "./GalleryCarouselsClient";
 
-const galleryItems = [
-  {
-    id: 1,
-    alt: "Danslektion Hip Hop",
-    accentGradient: "from-violet-600 via-brand to-brand-secondary",
-    accentVar: "var(--color-brand)",
-  },
-  {
-    id: 2,
-    alt: "Balett uppträdande",
-    accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
-    accentVar: "var(--color-brand-secondary)",
-  },
-  {
-    id: 3,
-    alt: "Studio miljö",
-    accentGradient: "from-brand-secondary via-purple-500 to-brand",
-    accentVar: "var(--color-brand)",
-  },
-  {
-    id: 4,
-    alt: "Gruppträning",
-    accentGradient: "from-violet-600 via-brand to-brand-secondary",
-    accentVar: "var(--color-brand)",
-  },
-  {
-    id: 5,
-    alt: "Elevuppvisning",
-    accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
-    accentVar: "var(--color-brand-secondary)",
-  },
-  {
-    id: 6,
-    alt: "Instruktör demonstration",
-    accentGradient: "from-brand-secondary via-purple-500 to-brand",
-    accentVar: "var(--color-brand)",
-  },
-];
+export default async function Page() {
+  // Fetch all visible photos and their events
+  const photos = await prisma.photo.findMany({
+    where: { isVisible: true },
+    include: { event: true },
+    orderBy: [{ event: { startDate: "desc" } }, { createdAt: "desc" }],
+  });
 
-export default function Page() {
+  // Group photos by event
+  const eventMap = new Map<string, { event: Event; photos: Photo[] }>();
+  const unlinkedPhotos: Photo[] = [];
+  for (const photo of photos) {
+    if (photo.event) {
+      const eventId = photo.event.id;
+      if (!eventMap.has(eventId)) {
+        eventMap.set(eventId, {
+          event: photo.event as Event,
+          photos: [],
+        });
+      }
+      const bucket = eventMap.get(eventId);
+      if (bucket) {
+        bucket.photos.push(photo as Photo);
+      }
+    } else {
+      unlinkedPhotos.push(photo as Photo);
+    }
+  }
+  const grouped = [...eventMap.values()].map(({ event, photos }) => ({
+    event: {
+      ...event,
+      createdAt:
+        event.createdAt instanceof Date
+          ? event.createdAt.toISOString()
+          : event.createdAt,
+      updatedAt:
+        event.updatedAt instanceof Date
+          ? event.updatedAt.toISOString()
+          : event.updatedAt,
+      startDate:
+        event.startDate instanceof Date
+          ? event.startDate.toISOString()
+          : event.startDate,
+      endDate:
+        event.endDate instanceof Date
+          ? event.endDate?.toISOString()
+          : event.endDate,
+    },
+    photos: photos.map((photo) => ({
+      ...photo,
+      caption: photo.caption ?? undefined,
+      description: photo.description ?? undefined,
+      createdAt:
+        photo.createdAt instanceof Date
+          ? photo.createdAt.toISOString()
+          : photo.createdAt,
+      updatedAt:
+        photo.updatedAt instanceof Date
+          ? photo.updatedAt.toISOString()
+          : photo.updatedAt,
+    })),
+  }));
+
+  const unlinked = unlinkedPhotos.map((photo) => ({
+    ...photo,
+    caption: photo.caption ?? undefined,
+    description: photo.description ?? undefined,
+    createdAt:
+      photo.createdAt instanceof Date
+        ? photo.createdAt.toISOString()
+        : photo.createdAt,
+    updatedAt:
+      photo.updatedAt instanceof Date
+        ? photo.updatedAt.toISOString()
+        : photo.updatedAt,
+  }));
+
   return (
     <main className="bg-background">
       {/* Hero */}
       <section className="py-16 md:py-20 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
             Bild
             <span className="font-serif italic text-brand-light"> Galleri</span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Se bilder från våra lektioner, uppträdanden och studio.
           </p>
         </div>
       </section>
 
-      {/* Gallery Grid */}
-      <section
-        id="galleri"
-        className="py-20 md:py-32 relative overflow-hidden"
-        style={{ background: "var(--background)" }}
-      >
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-brand/5 blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-brand-secondary/5 blur-[120px]" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
-              Bilder från studion
-            </h2>
-            <p className="text-brand-secondary font-bold max-w-xl mx-auto text-lg">
-              Ta en titt in i vår värld
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
-            {galleryItems.map((item) => (
-              <div key={item.id} className="group relative cursor-pointer">
-                <div
-                  className={`absolute -inset-1 bg-linear-to-r ${item.accentGradient} rounded-2xl blur-lg opacity-20 group-hover:opacity-50 transition duration-500`}
-                />
-
-                <div className="relative h-full backdrop-blur-xl bg-card/60 border border-white/10 rounded-2xl shadow-2xl transform transition-all duration-500 group-hover:scale-[1.03] group-hover:-translate-y-2 flex flex-col overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent z-10" />
-
-                  <div className="relative overflow-hidden aspect-square flex items-center justify-center bg-muted">
-                    <span className="text-muted-foreground text-sm z-10 relative">
-                      {item.alt}
-                    </span>
-                    <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent opacity-60" />
-                  </div>
-
-                  <div className="p-6 relative">
-                    <div
-                      className="h-1 rounded-full transition-all duration-500 w-12 group-hover:w-24"
-                      style={{ background: item.accentVar }}
-                    />
-                    <p className="mt-4 text-lg font-bold text-foreground">
-                      {item.alt}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Gallery Carousels by Event */}
+      <section className="py-10 md:py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+            Bilder från studion
+          </h2>
+          <GalleryCarouselsClient grouped={grouped} unlinked={unlinked} />
         </div>
       </section>
 
       {/* Instagram CTA */}
-      <section className="py-16 relative overflow-hidden">
+      <section className="py-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand/10 blur-[120px]" />
         </div>
@@ -128,10 +124,10 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-black mb-3 text-foreground tracking-tight">
+                  <h2 className="text-3xl md:text-4xl font-black mb-2 text-foreground tracking-tight">
                     Följ oss på Instagram
                   </h2>
-                  <p className="text-muted-foreground text-lg mb-8">
+                  <p className="text-muted-foreground text-lg mb-4">
                     Se fler bilder och håll dig uppdaterad om våra aktiviteter.
                   </p>
                 </div>

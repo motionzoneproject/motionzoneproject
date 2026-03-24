@@ -27,7 +27,9 @@
       "Bash(\"src/app/\\(admin\\)/admin/orders/OrdersView.tsx\")",
       "Bash(\"src/app/\\(admin\\)/admin/orders/page.tsx\")",
       "Bash(git ls-tree:*)",
-      "Bash(\"src/app/\\(admin\\)/admin/students/components/StudentsFilter.tsx\")"
+      "Bash(\"src/app/\\(admin\\)/admin/students/components/StudentsFilter.tsx\")",
+      "Bash(ls:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
