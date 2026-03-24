@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -47,14 +49,22 @@ function CountDialogButton({
   title,
   description,
   children,
+  open: openProp,
+  onOpenChange,
 }: {
   count: number;
   title: string;
   description?: string;
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost">
           <EditIcon className="h-4 w-4" />({count}st)
@@ -68,6 +78,13 @@ function CountDialogButton({
           ) : null}
         </DialogHeader>
         {children}
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Stäng
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -188,6 +205,7 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
 function ProductsDialog({ student }: { student: StudentSummary }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
 
   const getClipUsedCount = (purchase: StudentSummary["purchases"][number]) =>
@@ -231,6 +249,7 @@ function ProductsDialog({ student }: { student: StudentSummary }) {
       }
 
       toast.success(result.message);
+      setIsOpen(false);
       router.refresh();
     });
   };
@@ -238,6 +257,8 @@ function ProductsDialog({ student }: { student: StudentSummary }) {
   return (
     <CountDialogButton
       count={student.purchases.length}
+      open={isOpen}
+      onOpenChange={setIsOpen}
       title={`Köpta produkter för ${student.name}`}
       description="Du kan ändra totalt antal klipp eller tillfällen, aldrig under det som redan använts."
     >
@@ -505,6 +526,13 @@ export default function StudentTableClient({
                 </div>
               ))}
             </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Stäng
+                </Button>
+              </DialogClose>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
