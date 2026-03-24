@@ -61,8 +61,8 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
       <h3 className="text-sm font-medium text-muted-foreground">
         Orderhistorik
       </h3>
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="min-w-[640px] w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="border-b">
               <th className="p-3 text-left font-medium">Order ID</th>
