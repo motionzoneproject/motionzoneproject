@@ -1,35 +1,50 @@
 "use client";
 
 import Image from "next/image";
+import type { StartPageContent } from "@/generated/prisma/client";
 
-const features = [
+type FeaturesProps = {
+  content: StartPageContent;
+};
+
+// Design-coupled accent colours stay fixed per card position (not content-driven)
+const cardAccents = [
   {
-    image: "/professionella-instruktörer.png",
-    title: "Professionella instruktörer",
-    description:
-      "Våra erfarna lärare har lång erfarenhet och brinner för att dela sin passion för dans.",
     accentVar: "var(--color-brand)",
     accentGradient: "from-violet-600 via-brand to-brand-secondary",
   },
   {
-    image: "/flexibla-kurstider.png",
-    title: "Flexibla Kurstider",
-    description:
-      "Vi erbjuder kurser på olika tider för att passa ditt schema. Från morgon till kväll, alla dagar.",
     accentVar: "var(--color-brand-secondary)",
     accentGradient: "from-cyan-500 via-brand-secondary to-blue-600",
   },
   {
-    image: "/moderna-lokaler.png",
-    title: "Moderna Lokaler",
-    description:
-      "Vår studio är utrustad med det senaste ljudsystemet och stora speglar för optimal träning.",
     accentVar: "var(--color-brand)",
     accentGradient: "from-brand-secondary via-purple-500 to-brand",
   },
-];
+] as const;
 
-export default function Features() {
+export default function Features({ content }: FeaturesProps) {
+  const features = [
+    {
+      image: content.feature1Image,
+      title: content.feature1Title,
+      description: content.feature1Description,
+      ...cardAccents[0],
+    },
+    {
+      image: content.feature2Image,
+      title: content.feature2Title,
+      description: content.feature2Description,
+      ...cardAccents[1],
+    },
+    {
+      image: content.feature3Image,
+      title: content.feature3Title,
+      description: content.feature3Description,
+      ...cardAccents[2],
+    },
+  ];
+
   return (
     <section
       id="varfor"
@@ -44,11 +59,10 @@ export default function Features() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
-            Varför Motion Zone?
+            {content.featuresTitle}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-            Vi erbjuder en unik dansupplevelse med instruktörer i världsklass
-            och moderna faciliteter
+            {content.featuresSubtext}
           </p>
         </div>
 
