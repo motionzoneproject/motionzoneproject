@@ -2,7 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { useState } from "react";
-import { TeacherForm } from "@/app/admin/omoss/components/teacher-form";
+import { TeacherForm } from "@/app/(admin)/admin/omoss/components/teacher-form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

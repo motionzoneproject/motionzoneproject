@@ -13,7 +13,14 @@
       "Bash(git merge:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git mv:*)",
+      "Bash(for dir:*)",
+      "Bash(do git:*)",
+      "Bash(done)",
+      "Bash(ls \"src/app/\\(admin\\)/admin/\")",
+      "Bash(ls \"src/app/\\(public\\)/\")",
+      "Bash(npm run:*)"
     ]
   }
 }

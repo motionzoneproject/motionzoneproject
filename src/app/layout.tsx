@@ -3,7 +3,6 @@ import "./globals.css";
 import { Lora, Montserrat } from "next/font/google";
 import { headers } from "next/headers";
 import { CookieConsent } from "@/components/CookieConsent";
-import Footer from "@/components/Footer";
 import NavBar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -69,8 +68,7 @@ export default async function RootLayout({
             user={session?.user ?? null}
           >
             <NavBar />
-            <main className="flex flex-col w-full">{children}</main>
-            <Footer />
+            {children}
             <CookieConsent />
             <Toaster richColors position="top-center" />
           </SessionProvider>
