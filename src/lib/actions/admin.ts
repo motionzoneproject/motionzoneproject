@@ -31,6 +31,7 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { sekToOre } from "../money";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
 import { getProductStats, handleClips } from "./purchase-actions";
@@ -1160,7 +1161,7 @@ export async function addNewProduct(
       data: {
         name: validated.name,
         description: validated.description,
-        price: validated.price,
+        price: sekToOre(validated.price),
         maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
         unlimitedCustomers,
         totalCount: validated.clipCount,
@@ -1223,7 +1224,7 @@ export async function editProduct(
       data: {
         name: validated.name,
         description: validated.description,
-        price: validated.price,
+        price: sekToOre(validated.price),
         maxCustomer: maxCustomers,
         unlimitedCustomers,
         totalCount: validated.clipCount,

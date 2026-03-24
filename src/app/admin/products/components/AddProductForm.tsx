@@ -177,7 +177,7 @@ export default function AddProductForm() {
                         <Input
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)

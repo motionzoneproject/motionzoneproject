@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { formatPrice } from "@/lib/money";
 
 type OrderItem = {
   id: string;
@@ -92,7 +93,11 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                       locale: sv,
                     })}
                   </td>
-                  <td className="p-3">{order.totalPrice?.toString()} kr</td>
+                  <td className="p-3">
+                    {order.totalPrice != null
+                      ? formatPrice(Number(order.totalPrice))
+                      : "-"}
+                  </td>
                   <td className="p-3">{getStatusBadge(order.status)}</td>
                   <td className="p-3 text-right">
                     <Dialog>
@@ -165,7 +170,11 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                             <div className="border-t pt-4 flex justify-between font-bold">
                               <span>Totalt</span>
                               <span>
-                                {selectedOrder.totalPrice?.toString()} kr
+                                {selectedOrder.totalPrice != null
+                                  ? formatPrice(
+                                      Number(selectedOrder.totalPrice),
+                                    )
+                                  : "-"}
                               </span>
                             </div>
                           </div>
