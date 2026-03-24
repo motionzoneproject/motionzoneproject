@@ -83,35 +83,46 @@ export async function POST(req: Request) {
 
     const s3Resources = getS3Resources();
     if (!s3Resources) {
+      // Log details server-side only
+      console.error("[UPLOAD] S3 config missing");
       return NextResponse.json(
-        { error: "Saknar S3-konfiguration i miljövariabler" },
+        { error: "Internt serverfel vid uppladdning" },
         { status: 500 },
       );
     }
 
     const { bucket, publicUrl, client } = s3Resources;
+    try {
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: uniqueFileName,
+        ContentType: contentType,
+      });
 
-    const command = new PutObjectCommand({
-      Bucket: bucket,
-      Key: uniqueFileName,
-      ContentType: contentType,
-    });
+      const uploadUrl = await getSignedUrl(client, command, {
+        expiresIn: 60,
+      });
 
-    const uploadUrl = await getSignedUrl(client, command, {
-      expiresIn: 60,
-    });
+      const imageUrl = `${publicUrl}/${uniqueFileName}`;
 
-    const imageUrl = `${publicUrl}/${uniqueFileName}`;
-
-    return NextResponse.json({
-      success: true,
-      uploadUrl,
-      url: imageUrl,
-      key: uniqueFileName,
-      method: "PUT",
-    });
-  } catch (error) {
-    console.error("S3 Upload Error:", error);
+      return NextResponse.json({
+        success: true,
+        uploadUrl,
+        url: imageUrl,
+        key: uniqueFileName,
+        method: "PUT",
+      });
+    } catch (_err) {
+      // Log details server-side only
+      console.error("[UPLOAD] S3 presign error:", _err);
+      return NextResponse.json(
+        { error: "Internt serverfel vid uppladdning" },
+        { status: 500 },
+      );
+    }
+  } catch (_error) {
+    // Log details server-side only
+    console.error("[UPLOAD] Unexpected error:", _error);
     return NextResponse.json(
       { error: "Internt serverfel vid uppladdning" },
       { status: 500 },
