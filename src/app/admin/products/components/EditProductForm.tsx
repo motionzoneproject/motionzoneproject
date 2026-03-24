@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { editProduct } from "@/lib/actions/admin";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { oreToSek } from "@/lib/money";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
 
@@ -74,7 +75,7 @@ export default function EditProductForm({
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: description,
       name: name,
-      price: price,
+      price: oreToSek(price),
       clipCount: clipCount,
       maxCustomers: maxCustomers,
       imageURL: imageURL,
@@ -95,7 +96,7 @@ export default function EditProductForm({
       unlimitedCustomers,
       description,
       name,
-      price,
+      price: oreToSek(price),
       clipCount,
       maxCustomers,
       imageURL,
@@ -262,7 +263,7 @@ export default function EditProductForm({
                         <Input
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           {...field}
                           value={
                             field.value === undefined ? "" : String(field.value)

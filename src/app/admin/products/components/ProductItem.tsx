@@ -2,6 +2,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
 import DeleteProductBtn from "./DelProductBtn";
@@ -30,7 +31,7 @@ export default async function ProductItem({ product }: Props) {
     <TableRow>
       <TableCell className="font-medium">{product.name}</TableCell>
       <TableCell>{productTypeLabel}</TableCell>
-      <TableCell>{product.price} kr</TableCell>
+      <TableCell>{formatPrice(product.price)}</TableCell>
       <TableCell>
         <AddCoursesToProductForm
           count={prodCourse.length}

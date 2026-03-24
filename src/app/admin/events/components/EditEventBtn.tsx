@@ -1,6 +1,6 @@
 "use client";
 
-import { MinusIcon } from "lucide-react";
+import { EditIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ export default function EditEventBtn({ event }: Props) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" className="cursor-pointer">
-          <MinusIcon /> Ändra event
+          <EditIcon />
         </Button>
       </DialogTrigger>
       <DialogContent>

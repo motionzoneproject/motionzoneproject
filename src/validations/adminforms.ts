@@ -130,7 +130,10 @@ export const adminProductSchema = z
     imageURL: z.string().optional(),
     unlimitedCustomers: z.coerce.boolean().optional(),
     maxCustomers: z.coerce.number().int().nonnegative(),
-    price: z.coerce.number().nonnegative("Priset får inte vara negativt"),
+    price: z.coerce
+      .number()
+      .int("Priset måste vara ett heltal i SEK")
+      .nonnegative("Priset får inte vara negativt"),
     clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade det inte.
     clipCount: z.coerce.number().int().nonnegative(),
   })

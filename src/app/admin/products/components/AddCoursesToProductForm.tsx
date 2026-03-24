@@ -70,7 +70,7 @@ export default function AddCoursesToProductForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       productId: productId,
-      lessonsIncluded: 0,
+      lessonsIncluded: 1,
       unlimited: false,
       courseId: "",
     },
@@ -200,15 +200,43 @@ export default function AddCoursesToProductForm({
 
                 <FormField
                   control={form.control}
-                  name="lessonsIncluded"
+                  name="unlimited"
                   render={({ field }) => (
                     <FormItem className={isClip ? "hidden" : ""}>
+                      <FormLabel>Obegränsat antal tillfällen</FormLabel>
+
+                      <FormControl>
+                        <Checkbox
+                          className="w-8 h-8"
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lessonsIncluded"
+                  render={({ field }) => (
+                    <FormItem
+                      className={
+                        isClip || form.watch("unlimited") === true
+                          ? "hidden "
+                          : ""
+                      }
+                    >
                       <FormLabel>Antal tillfällen:</FormLabel>
 
                       <FormControl>
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
                           disabled={isClip || form.watch("unlimited") === true}
                           {...field}
@@ -232,27 +260,6 @@ export default function AddCoursesToProductForm({
                     Antal tillfällen: {clipCount} (klippkort)
                   </div>
                 )}
-
-                <FormField
-                  control={form.control}
-                  name="unlimited"
-                  render={({ field }) => (
-                    <FormItem className={isClip ? "hidden" : ""}>
-                      <FormLabel>Obegränsat antal tillfällen</FormLabel>
-
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value === true}
-                          onCheckedChange={(checked) =>
-                            field.onChange(checked === true)
-                          }
-                        />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <Button variant="ghost" type="submit" className="w-full">
                   {isInProd ? (

@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/money";
 import { getOrderById } from "@/lib/orders";
 
 export default async function Page({
@@ -46,7 +47,7 @@ export default async function Page({
               <span className="text-right">Summa</span>
             </div>
             {order.orderItems.map((it) => {
-              const unit = parseFloat(String(it.price));
+              const unit = it.price;
               const sum = unit * it.count;
               return (
                 <div
@@ -59,10 +60,10 @@ export default async function Page({
                       Deltagare: {it.participant?.name ?? "Du själv"}
                     </span>
                   </span>
-                  <span className="text-right">{unit.toFixed(2)} SEK</span>
+                  <span className="text-right">{formatPrice(unit)}</span>
                   <span className="text-right">{it.count}</span>
                   <span className="text-right font-medium">
-                    {sum.toFixed(2)} SEK
+                    {formatPrice(sum)}
                   </span>
                 </div>
               );
@@ -70,7 +71,7 @@ export default async function Page({
             <div className="grid grid-cols-4 gap-2 p-2 border-t font-semibold">
               <span className="col-span-3 text-right">Totalt</span>
               <span className="text-right">
-                {parseFloat(String(order.totalPrice)).toFixed(2)} SEK
+                {formatPrice(order.totalPrice)}
               </span>
             </div>
           </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
+import { formatPrice } from "@/lib/money";
 
 type OrderStatus =
   | "CREATED"
@@ -62,6 +63,7 @@ export default function OrdersView({
       APPROVED: 0,
       PAID: 0,
       COMPLETED: 0,
+      CANCELLED: 0,
     };
     for (const o of orders) {
       const st = String(o.status || "PENDING_PAYMENT");
@@ -73,6 +75,8 @@ export default function OrdersView({
         acc.PAID += 1;
       } else if (st === "COMPLETED") {
         acc.COMPLETED += 1;
+      } else if (st === "CANCELLED") {
+        acc.CANCELLED += 1;
       }
       acc.ALL += 1;
     }
@@ -119,6 +123,7 @@ export default function OrdersView({
     { id: "APPROVED", label: "Godkända" },
     { id: "PAID", label: "Betalda" },
     { id: "COMPLETED", label: "Klara" },
+    { id: "CANCELLED", label: "Avbrutna" },
     { id: "ALL", label: "Alla" },
   ];
 
@@ -305,7 +310,7 @@ export default function OrdersView({
                     </div>
                   </td>
                   <td className="p-3 font-semibold">
-                    {String(o.totalPrice)} kr
+                    {formatPrice(Number(o.totalPrice))}
                   </td>
                   <td className="p-3">
                     <span

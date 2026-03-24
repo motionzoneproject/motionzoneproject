@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
-import { getVeckodag } from "@/lib/tools";
+import { getCourseName, getVeckodag } from "@/lib/tools";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
 
@@ -145,9 +146,6 @@ export default async function Page({ searchParams }: Props) {
             Köp våra
             <span className="font-serif italic text-brand-light"> Kurser</span>
           </h1>
-          <p className="text-muted-foreground">
-            Paket och klippkort kommer inom kort
-          </p>
         </div>
 
         {/* Filter component */}
@@ -178,7 +176,7 @@ export default async function Page({ searchParams }: Props) {
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
-                          {p.price} kr
+                          {formatPrice(p.price)}
                         </Badge>
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
@@ -255,11 +253,13 @@ export default async function Page({ searchParams }: Props) {
                                 </span>
                                 {productCourses.map((pc) => {
                                   const c = pc.course;
-                                  // For CLIP products, use totalCount; otherwise use lessonsIncluded
+
                                   const lessonCount =
                                     p.type === "CLIP"
-                                      ? p.totalCount
-                                      : pc.lessonsIncluded;
+                                      ? `${String(p.totalCount ?? 0)} (klipp)`
+                                      : pc.unlimited
+                                        ? "Obegränsat"
+                                        : String(pc.lessonsIncluded);
 
                                   return (
                                     <div
@@ -268,9 +268,9 @@ export default async function Page({ searchParams }: Props) {
                                     >
                                       <div className="flex justify-between gap-2 mb-1 items-center">
                                         <div className="font-medium">
-                                          {`${c.name} ${c.minAge}+ år - ${c.level}`}
+                                          {`${getCourseName(c)}`}
                                         </div>
-                                        {/* DIALOG FOR COURSE DETAILS */}
+
                                         <CourseInfoDialog course={c} />
                                       </div>
                                       <p className="text-muted-foreground text-xs">

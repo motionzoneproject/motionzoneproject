@@ -272,7 +272,7 @@ model Product {
   // useTotalCount Boolean @default(false) // Tagit bort useTotalCount nu när type-logiken är fullt migrerad.
   totalCount Int? // Totalt antal tillfällen att boka (om det är ett klippkort)
 
-  price Float @default(0) // Money
+  price Int @default(0) // Money (stored in öre, i.e. 1/100 SEK)
 
   orderItems OrderItem[] // För att: Håll koll på vilka som köpt produkten
   purchases  Purchase[] // För att: Håll koll på kundernas köpta produkt.
@@ -411,7 +411,7 @@ model OrderItem {
   id String @id @default(uuid())
 
   count Int
-  price Float
+  price Int // Stored in öre (1/100 SEK)
 
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -438,7 +438,7 @@ model Order {
 
   orderItems OrderItem[]
 
-  totalPrice Float
+  totalPrice Int // Stored in öre (1/100 SEK)
 
   userId String // Inga anonyma köp kan göras, eftersom bokningar görs som medlem.
   user   User   @relation(fields: [userId], references: [id])

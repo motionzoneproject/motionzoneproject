@@ -2,15 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import Loader from "@/components/Loader";
-// import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -64,7 +64,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
       link: event.link,
       imageURL: event.imageURL,
       startDate: event.startDate,
-      endDate: event.endDate,
+      endDate: event.endDate ?? event.startDate,
     });
   }, [
     isOpen,
@@ -105,6 +105,11 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
   }
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
+
+  const [hasEndDate, sethasEndDate] = useState<boolean>(
+    (event.endDate && event.endDate?.getTime() > event.startDate.getTime()) ??
+      false,
+  );
 
   return (
     <Card>
@@ -167,7 +172,11 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
                       type="date"
                       {...field}
                       value={formatDateToInput(field.value)}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (!hasEndDate)
+                          form.setValue("endDate", e.target.value);
+                      }}
                     />
                   </FormControl>
 
@@ -181,11 +190,23 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
               name="endDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slut datum</FormLabel>
+                  <FormLabel>
+                    <Checkbox
+                      checked={hasEndDate}
+                      onCheckedChange={(e) => {
+                        sethasEndDate(!!e);
+                        if (!!e === false)
+                          form.setValue("endDate", form.watch("startDate"));
+                      }}
+                      className="w-7 h-7"
+                    />{" "}
+                    Slutdatum
+                  </FormLabel>
 
                   <FormControl>
                     <Input
                       type="date"
+                      className={!hasEndDate ? "hidden" : ""}
                       {...field}
                       value={formatDateToInput(field.value)}
                       onChange={field.onChange}

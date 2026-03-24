@@ -1,5 +1,6 @@
 "use server";
 import nodemailer from "nodemailer";
+import { formatPrice } from "./money";
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -59,10 +60,7 @@ export async function generateOrderConfirmationHtml(order: {
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.count
       }</td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.price.toLocaleString(
-        "sv-SE",
-        { style: "currency", currency: "SEK" },
-      )}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatPrice(item.price)}</td>
     </tr>
   `,
     )
@@ -96,10 +94,7 @@ export async function generateOrderConfirmationHtml(order: {
         <tfoot>
           <tr>
             <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold;">Totalt:</td>
-            <td style="padding: 10px; text-align: right; font-weight: bold; color: #ed212d;">${order.totalPrice.toLocaleString(
-              "sv-SE",
-              { style: "currency", currency: "SEK" },
-            )}</td>
+            <td style="padding: 10px; text-align: right; font-weight: bold; color: #ed212d;">${formatPrice(order.totalPrice)}</td>
           </tr>
         </tfoot>
       </table>

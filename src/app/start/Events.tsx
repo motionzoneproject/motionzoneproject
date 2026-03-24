@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -28,6 +28,10 @@ const accentGradients = [
 
 export default function Events({ events }: EventsProps) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
   const nextEvent = () => {
     setCurrentEventIndex((prev) => (prev + 1) % events.length);
@@ -133,16 +137,10 @@ export default function Events({ events }: EventsProps) {
                         style={{ color: accent.accentVar }}
                       />
                       {currentEvent.startDate.toLocaleDateString("sv-SE")}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-foreground">
-                      <Clock
-                        className="w-4 h-4"
-                        style={{ color: accent.accentVar }}
-                      />
-                      {currentEvent.startDate.toLocaleTimeString("sv-SE", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {currentEvent.endDate &&
+                      !isSameDay(currentEvent.endDate, currentEvent.startDate)
+                        ? ` - ${currentEvent.endDate.toLocaleDateString("sv-SE")}`
+                        : ""}
                     </div>
                   </div>
 
