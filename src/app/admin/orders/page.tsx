@@ -10,7 +10,13 @@ import {
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
-type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID" | "COMPLETED" | "CANCELLED";
+type StatusFilter =
+  | "ALL"
+  | "PENDING"
+  | "APPROVED"
+  | "PAID"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
