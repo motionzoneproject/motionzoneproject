@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/money";
 
 type OrderStatus =
@@ -30,6 +31,7 @@ type OrderLite = {
         id?: string;
         product: { name: string };
         participant?: {
+          id: string;
           name: string;
         } | null;
       }[]
@@ -55,6 +57,13 @@ export default function OrdersView({
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
   const searchInput = sp.get("q")?.toLowerCase() || "";
+  const participantId = sp.get("participantId") || "";
+  const clearParticipantHref = useMemo(() => {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("participantId");
+    const query = params.toString();
+    return query ? `/admin/orders?${query}` : "/admin/orders";
+  }, [sp]);
 
   const counts = useMemo(() => {
     const acc: Record<string, number> = {
@@ -115,8 +124,14 @@ export default function OrdersView({
       });
     }
 
+    if (participantId) {
+      result = result.filter((o) =>
+        o.orderItems?.some((oi) => oi.participant?.id === participantId),
+      );
+    }
+
     return result;
-  }, [orders, active, searchInput]);
+  }, [orders, active, searchInput, participantId]);
 
   const tabs = [
     { id: "PENDING", label: "Väntar" },
@@ -190,6 +205,7 @@ export default function OrdersView({
         <div className="flex gap-3 text-sm flex-wrap">
           <form action="/admin/orders" method="GET" className="contents">
             <input type="hidden" name="q" value={searchInput} />
+            <input type="hidden" name="participantId" value={participantId} />
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -210,19 +226,35 @@ export default function OrdersView({
           </form>
         </div>
 
-        <form
-          action="/admin/orders"
-          method="GET"
-          className="relative w-full md:w-64"
-        >
-          <input type="hidden" name="status" value={active} />
-          <input
-            name="q"
-            defaultValue={searchInput}
-            placeholder="Sök kund eller deltagare..."
-            className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand outline-none transition-all"
-          />
-        </form>
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+          {participantId ? (
+            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">
+                  Visar endast participantId:
+                </span>
+                <br />
+                <span className="font-mono text-xs">{participantId}</span>
+              </div>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2">
+                <Link href={clearParticipantHref}>X</Link>
+              </Button>
+            </div>
+          ) : null}
+          <form
+            action="/admin/orders"
+            method="GET"
+            className="relative w-full md:w-64"
+          >
+            <input type="hidden" name="status" value={active} />
+            <input
+              name="q"
+              defaultValue={searchInput}
+              placeholder="Sök kund eller deltagare..."
+              className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand outline-none transition-all"
+            />
+          </form>
+        </div>
       </div>
 
       <div className="border rounded-lg overflow-hidden mt-4">
