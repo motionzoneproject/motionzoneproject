@@ -100,13 +100,13 @@ export default function NavBar() {
             </Link>
           ))}
 
-          <div className="pt-3 border-t border-brand/10 flex items-center justify-between px-4">
+          <div className="space-y-3 pt-3 border-t border-brand/10 px-4">
             <CartIcon showLabel onClick={() => setMenuOpen(false)} />
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
-              <NavBarAuth />
               <ModeToggle />
             </div>
+            <NavBarAuth mobile />
           </div>
         </div>
       )}
