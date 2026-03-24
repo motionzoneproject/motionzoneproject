@@ -1,6 +1,6 @@
-import { StudiosList } from "@/app/admin/omoss/components/StudiosList";
-import { StyleList } from "@/app/admin/omoss/components/StyleList";
-import { TeacherList } from "@/app/admin/omoss/components/teacher-list";
+import { StudiosList } from "@/app/(admin)/admin/omoss/components/StudiosList";
+import { StyleList } from "@/app/(admin)/admin/omoss/components/StyleList";
+import { TeacherList } from "@/app/(admin)/admin/omoss/components/teacher-list";
 import {
   Accordion,
   AccordionContent,
