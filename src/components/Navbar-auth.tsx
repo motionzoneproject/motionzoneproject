@@ -23,12 +23,22 @@ export default function NavBarAuth({ mobile = false }: NavBarAuthProps) {
           mobile && "w-full flex-col items-start gap-2",
         )}
       >
-        <Link
-          href="/user"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className={cn(
+            "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
+            mobile && "w-full justify-start",
+          )}
         >
-          {user.name}
-        </Link>
+          <Link href="/user">
+            <span>Profil &amp; boka</span>
+            <span className="max-w-[12rem] truncate text-xs font-normal text-muted-foreground">
+              {user.name}
+            </span>
+          </Link>
+        </Button>
         <div
           className={cn(
             "flex items-center gap-3",
