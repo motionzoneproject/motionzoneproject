@@ -54,7 +54,7 @@ export function LegalPageList({ pages }: LegalPageListProps) {
         </DialogContent>
       </Dialog>
 
-      <Table>
+      <Table className="min-w-[720px]">
         <TableHeader>
           <TableRow>
             <TableHead>Titel</TableHead>
