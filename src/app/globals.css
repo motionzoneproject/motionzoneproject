@@ -206,3 +206,47 @@ h6 {
   animation: fade-in-left 0.8s ease-out forwards;
   opacity: 0;
 }
+
+.mdxeditor-popup-container.mail-mdx-editor {
+  z-index: 70;
+}
+
+.mdxeditor-popup-container.mail-mdx-editor [data-radix-popper-content-wrapper] {
+  z-index: 71;
+}
+
+.mail-mdx-editor.light-theme,
+.mdxeditor-popup-container.mail-mdx-editor.light-theme {
+  --baseBase: #ffffff;
+  --basePageBg: #ffffff;
+  --baseBgSubtle: #f1f5f9;
+  --baseBg: #dbe4ee;
+  --baseBgHover: #cbd5e1;
+  --baseBgActive: #64748b;
+  --baseLine: #94a3b8;
+  --baseBorder: #64748b;
+  --baseBorderHover: #475569;
+  --baseSolid: #334155;
+  --baseSolidHover: #1e293b;
+  --baseText: #334155;
+  --baseTextContrast: #020617;
+}
+
+.mail-mdx-editor {
+  color: #020617;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable table,
+.mail-mdx-editor .mdxeditor-root-contenteditable table td,
+.mail-mdx-editor .mdxeditor-root-contenteditable table th {
+  border-color: #94a3b8;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable ul > li::marker,
+.mail-mdx-editor .mdxeditor-root-contenteditable ol > li::marker {
+  color: #334155;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable hr {
+  border-color: #94a3b8;
+}

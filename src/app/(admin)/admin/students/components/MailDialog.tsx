@@ -1,7 +1,12 @@
 "use client";
 
 import type { MDXEditorMethods } from "@mdxeditor/editor";
+import "@mdxeditor/editor/style.css";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { MailsIcon } from "lucide-react";
+import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,12 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { SelectedStudent } from "./studentSelection";
-import "@mdxeditor/editor/style.css";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ForwardRefEditor } from "./ForwardRefEditor";
+import type { SelectedStudent } from "./studentSelection";
 
 interface Props {
   selectedStudents: SelectedStudent[];
@@ -41,7 +41,6 @@ export const mailSchema = z.object({
 
 export function MailDialog({ selectedStudents }: Props) {
   const ref = useRef<MDXEditorMethods>(null);
-  const [editorKey, _setEditorKey] = useState<string>(Math.random().toString()); // Lägg till ett state för nyckeln
 
   const form = useForm<z.infer<typeof mailSchema>>({
     resolver: zodResolver(mailSchema),
@@ -67,7 +66,7 @@ export function MailDialog({ selectedStudents }: Props) {
           <MailsIcon /> Maila markerade
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-xl">
+      <DialogContent className="max-h-[90dvh] overflow-visible sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             <MailsIcon />
@@ -77,7 +76,7 @@ export function MailDialog({ selectedStudents }: Props) {
             {selectedStudents.length} mottagare är valda för utskicket.
           </DialogDescription>
         </DialogHeader>
-        <div>
+        <div className="max-h-[65dvh] overflow-y-auto pr-1">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(sendMailSub)}
@@ -102,13 +101,13 @@ export function MailDialog({ selectedStudents }: Props) {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content</FormLabel>
+                    <FormLabel>Innehåll</FormLabel>
                     <FormControl>
                       <ForwardRefEditor
                         markdown={field.value || ""}
-                        {...field}
+                        onBlur={field.onBlur}
+                        onChange={field.onChange}
                         ref={ref}
-                        key={editorKey}
                         placeholder="Write the content using markdown..."
                       />
                     </FormControl>

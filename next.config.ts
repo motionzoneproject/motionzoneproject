@@ -34,7 +34,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  turbopack: {},
+
+  // <-- From MDXEditor docs:
+  turbopack: {}, // Needed to add this too.'
   transpilePackages: ["@mdxeditor/editor"],
   reactStrictMode: true,
   webpack: (config) => {
@@ -44,6 +46,7 @@ const nextConfig: NextConfig = {
     // config.experiments.topLevelAwait = true
     return config;
   },
+  // -->
 };
 
 export default nextConfig;
