@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/s3-request-presigner": "^3.940.0",
     "@hookform/resolvers": "^5.2.2",
+    "@mdxeditor/editor": "^3.53.1",
     "@prisma/adapter-pg": "^7.0.1",
     "@prisma/client": "^7.0.1",
     "@radix-ui/react-accordion": "^1.2.12",
