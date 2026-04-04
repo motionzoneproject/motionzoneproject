@@ -76,7 +76,7 @@ export function AppSidebar() {
       icon: Home,
     },
     {
-      title: "Om oss / Lärare",
+      title: "Om oss & lärarprofiler",
       url: "/admin/omoss",
       icon: UserRoundCog,
     },
@@ -106,7 +106,7 @@ export function AppSidebar() {
       icon: ImageIcon,
     },
     {
-      title: "Elever",
+      title: "Elever & mailutskick",
       url: "/admin/students",
       icon: Users,
     },
@@ -116,7 +116,7 @@ export function AppSidebar() {
       icon: ShieldCheck,
     },
     {
-      title: "Terminer / Scheman",
+      title: "Terminer & Scheman",
       url: "/admin/termin",
       icon: CalendarDays,
     },
