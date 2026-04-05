@@ -44,6 +44,7 @@ export const mailSchema = z.object({
 export function MailDialog({ selectedStudents }: Props) {
   const ref = useRef<MDXEditorMethods>(null);
   const formId = useId();
+  const [open, setOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   const form = useForm<z.infer<typeof mailSchema>>({
@@ -69,6 +70,8 @@ export function MailDialog({ selectedStudents }: Props) {
 
       if (result.success) {
         toast.success(result.msg);
+        form.reset();
+        setOpen(false);
         return;
       }
 
@@ -82,6 +85,8 @@ export function MailDialog({ selectedStudents }: Props) {
         toast.error(result.msg, {
           description: failedEmails || undefined,
         });
+        form.reset();
+        setOpen(false);
         return;
       }
 
@@ -95,7 +100,7 @@ export function MailDialog({ selectedStudents }: Props) {
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           type="button"
