@@ -78,7 +78,7 @@ export default function BanUserDialog({
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90dvh] overflow-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Avblockera {userName}?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -103,7 +103,7 @@ export default function BanUserDialog({
           <Ban className="h-4 w-4 text-destructive" />
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[90dvh] overflow-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Blockera {userName}?</AlertDialogTitle>
           <AlertDialogDescription>

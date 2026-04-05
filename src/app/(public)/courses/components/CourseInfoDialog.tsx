@@ -44,7 +44,7 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
           <ArrowUpRight className="w-3 h-3 shrink-0" />
         </span>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{course.description}</DialogDescription>

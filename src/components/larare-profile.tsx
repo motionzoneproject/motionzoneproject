@@ -54,7 +54,7 @@ const LarareProfile = async () => {
                     <h3 className="font-semibold text-lg">{profile.name}</h3>
                   </div>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90dvh] overflow-auto">
                   <DialogHeader>
                     <DialogTitle>{profile.name}</DialogTitle>
                     <DialogDescription className="text-base mt-2">

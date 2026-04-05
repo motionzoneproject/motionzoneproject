@@ -28,7 +28,7 @@ export default function EditEventBtn({ event }: Props) {
           <EditIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Redigera event</DialogTitle>
           <DialogDescription>
