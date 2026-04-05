@@ -60,22 +60,26 @@ export default function InitializedMDXEditor({
   ];
 
   return (
-    <MDXEditor
+    <div
       className={[
-        "mail-mdx-editor light-theme w-full min-w-0 rounded-md border border-slate-300 bg-white",
+        "w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
-      contentEditableClassName={[
-        "prose max-w-none min-h-48 w-full min-w-0 bg-white px-4 py-3 text-slate-950",
-        contentEditableClassName,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      plugins={[...defaultPlugins, ...(plugins ?? [])]}
-      {...props}
-      ref={editorRef}
-    />
+    >
+      <MDXEditor
+        className="mail-mdx-editor light-theme"
+        contentEditableClassName={[
+          "prose max-w-none min-h-48 w-full min-w-0 bg-white px-4 py-3 text-slate-950",
+          contentEditableClassName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        plugins={[...defaultPlugins, ...(plugins ?? [])]}
+        {...props}
+        ref={editorRef}
+      />
+    </div>
   );
 }

@@ -4,7 +4,7 @@ import type { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MailsIcon } from "lucide-react";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export const mailSchema = z.object({
 
 export function MailDialog({ selectedStudents }: Props) {
   const ref = useRef<MDXEditorMethods>(null);
+  const formId = useId();
 
   const form = useForm<z.infer<typeof mailSchema>>({
     resolver: zodResolver(mailSchema),
@@ -66,12 +67,9 @@ export function MailDialog({ selectedStudents }: Props) {
           <MailsIcon /> Maila markerade elever
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] min-w-0 overflow-x-hidden overflow-y-visible sm:max-w-4xl">
+      <DialogContent className="max-h-[90dvh] min-w-0 overflow-x-hidden overflow-y-visible sm:max-w-28xl">
         <DialogHeader>
-          <DialogTitle>
-            <MailsIcon />
-            Mailutskick
-          </DialogTitle>
+          <DialogTitle>Mailutskick</DialogTitle>
           <DialogDescription>
             {selectedStudents.length}st mottagare är valda för utskicket.
           </DialogDescription>
@@ -79,6 +77,7 @@ export function MailDialog({ selectedStudents }: Props) {
         <div className="min-w-0 max-h-[65dvh] overflow-x-hidden overflow-y-auto pr-1">
           <Form {...form}>
             <form
+              id={formId}
               onSubmit={form.handleSubmit(sendMailSub)}
               className="min-w-0 space-y-3"
             >
@@ -115,17 +114,18 @@ export function MailDialog({ selectedStudents }: Props) {
                   </FormItem>
                 )}
               />
-
-              <Button type="submit">Skicka!</Button>
             </form>
           </Form>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-row justify-between sm:justify-between">
           <DialogClose asChild>
             <Button type="button" variant="outline">
               Stäng
             </Button>
           </DialogClose>
+          <Button type="submit" form={formId}>
+            Skicka!
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -299,6 +299,21 @@ h6 {
   border-color: #94a3b8;
 }
 
+.mail-mdx-editor .mdxeditor-root-contenteditable {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable > * {
+  max-width: 100%;
+}
+
+.mail-mdx-editor [class*="_tableEditor_"] {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 .mail-mdx-editor .mdxeditor-root-contenteditable ul > li::marker,
 .mail-mdx-editor .mdxeditor-root-contenteditable ol > li::marker {
   color: #334155;
