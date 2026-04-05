@@ -17,14 +17,21 @@ const transporter = nodemailer.createTransport({
  * @param to Recipient email address
  * @param subject Email subject
  * @param html HTML content
+ * @param text Plain text fallback
  */
-export async function sendMail(to: string, subject: string, html: string) {
+export async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  text?: string,
+) {
   try {
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || `Motion Zone <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
+      text,
     });
     return { success: true, messageId: info.messageId };
   } catch (error) {
