@@ -61,6 +61,8 @@
 html,
 body {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Light Mode - Default */
@@ -234,6 +236,61 @@ h6 {
 
 .mail-mdx-editor {
   color: #020617;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.mail-mdx-editor > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mail-mdx-editor .mdxeditor-toolbar {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  overflow-x: hidden;
+  row-gap: 0.5rem;
+}
+
+.mail-mdx-editor .mdxeditor-toolbar > * {
+  min-width: 0;
+}
+
+.mail-mdx-editor
+  .mdxeditor-toolbar
+  [data-toolbar-item][aria-haspopup="listbox"] {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mail-mdx-editor
+  .mdxeditor-toolbar
+  [data-toolbar-item][aria-haspopup="listbox"]
+  > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .mail-mdx-editor .mdxeditor-toolbar {
+    align-items: flex-start;
+  }
+
+  .mail-mdx-editor
+    .mdxeditor-toolbar
+    [data-toolbar-item][aria-haspopup="listbox"] {
+    flex: 1 1 8rem;
+  }
+
+  .mail-mdx-editor .mdxeditor-toolbar div[role="separator"] {
+    display: none;
+  }
 }
 
 .mail-mdx-editor .mdxeditor-root-contenteditable table,

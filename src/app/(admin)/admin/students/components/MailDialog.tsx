@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ForwardRefEditor } from "./ForwardRefEditor";
+import { ForwardRefEditor } from "../../../../../components/ui/ForwardRefEditor";
 import type { SelectedStudent } from "./studentSelection";
 
 interface Props {
@@ -63,31 +63,31 @@ export function MailDialog({ selectedStudents }: Props) {
           variant="outline"
           disabled={selectedStudents.length === 0}
         >
-          <MailsIcon /> Maila markerade
+          <MailsIcon /> Maila markerade elever
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-visible sm:max-w-xl">
+      <DialogContent className="max-h-[90dvh] min-w-0 overflow-x-hidden overflow-y-visible sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             <MailsIcon />
             Mailutskick
           </DialogTitle>
           <DialogDescription>
-            {selectedStudents.length} mottagare är valda för utskicket.
+            {selectedStudents.length}st mottagare är valda för utskicket.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[65dvh] overflow-y-auto pr-1">
+        <div className="min-w-0 max-h-[65dvh] overflow-x-hidden overflow-y-auto pr-1">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(sendMailSub)}
-              className="space-y-3"
+              className="min-w-0 space-y-3"
             >
               <FormField
                 control={form.control}
                 name="headline"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rubrik</FormLabel>
+                    <FormLabel>Ämne</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -116,7 +116,7 @@ export function MailDialog({ selectedStudents }: Props) {
                 )}
               />
 
-              <Button type="submit">Send!</Button>
+              <Button type="submit">Skicka!</Button>
             </form>
           </Form>
         </div>

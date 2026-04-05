@@ -62,13 +62,13 @@ export default function InitializedMDXEditor({
   return (
     <MDXEditor
       className={[
-        "mail-mdx-editor light-theme rounded-md border border-slate-300 bg-white",
+        "mail-mdx-editor light-theme w-full min-w-0 rounded-md border border-slate-300 bg-white",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
       contentEditableClassName={[
-        "prose max-w-none min-h-48 bg-white px-4 py-3 text-slate-950",
+        "prose max-w-none min-h-48 w-full min-w-0 bg-white px-4 py-3 text-slate-950",
         contentEditableClassName,
       ]
         .filter(Boolean)
