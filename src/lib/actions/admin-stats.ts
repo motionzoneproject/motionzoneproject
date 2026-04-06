@@ -360,12 +360,12 @@ function buildDailyTimeline(
     orderId: string;
     order: { createdAt: Date };
   }[],
-  bookings: { createdAt: Date }[],
+  bookings: { lesson: { startTime: Date } }[],
 ): StatsTimelinePoint[] {
   const range = getTimelineRange(
     selectedPeriod,
     orderItems.map((item) => item.order.createdAt),
-    bookings.map((booking) => booking.createdAt),
+    bookings.map((booking) => booking.lesson.startTime),
   );
 
   if (!range) {
@@ -401,7 +401,7 @@ function buildDailyTimeline(
   }
 
   for (const booking of bookings) {
-    const key = toDateKey(booking.createdAt);
+    const key = toDateKey(booking.lesson.startTime);
     const existing = timelineMap.get(key);
     if (!existing) continue;
 
@@ -628,6 +628,7 @@ export async function getTerminsStats(
           lesson: {
             select: {
               courseId: true,
+              startTime: true,
             },
           },
           purchaseItem: {

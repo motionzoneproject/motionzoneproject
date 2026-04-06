@@ -306,14 +306,14 @@ export function StatsChart({ timeline, disabled = false }: Props) {
                 strokeWidth={2}
                 dot={false}
               />
-              {/* Bokningar stämmer ej, ev fix. <Line
+              <Line
                 yAxisId="counts"
                 type="monotone"
                 dataKey="bookings"
                 stroke="var(--color-bookings)"
                 strokeWidth={2}
                 dot={false}
-              /> */}
+              />
             </ComposedChart>
           </ChartContainer>
         )}
