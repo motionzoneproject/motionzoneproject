@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { LessonCarousel } from "./components/LessonCarousel";
+import { StatsPage } from "./components/StatsPage";
 
 const lessonsInclude = {
   bookings: true,
@@ -23,13 +24,12 @@ export default async function Page() {
 
   const now = new Date();
 
-  // Fetch all lessons for the user:
   const lessons: LessonWithData[] = await prisma.lesson.findMany({
     where: {
       teacherId: user.id,
       startTime: {
-        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // En vecka bakåt
-        lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // En vecka framåt
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     },
     include: {
@@ -43,15 +43,10 @@ export default async function Page() {
     },
   });
 
-  // Calculate the index of the first future lesson to scroll to
-  // If all are past, scroll to the last one. If all are future, scroll to the first (0).
   const futureLessonIndex = lessons.findIndex(
     (l) => new Date(l.endTime) >= now,
   );
 
-  // If futureLessonIndex is -1 (not found), it means all are in the past.
-  // We might want to show the last few. Let's default to the last one if all are past.
-  // If there are no lessons, it's 0.
   const initialScrollIndex =
     futureLessonIndex === -1 && lessons.length > 0
       ? lessons.length - 1
@@ -80,6 +75,8 @@ export default async function Page() {
           />
         </div>
       </div>
+
+      <StatsPage />
     </div>
   );
 }
