@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,26 +38,45 @@ function formatDate(date: string | null) {
   return date ? new Date(date).toLocaleDateString("sv-SE") : "Ej satt";
 }
 
+function getDefaultDateRange() {
+  const today = new Date();
+
+  const from = new Date(today);
+  from.setDate(today.getDate() - 30);
+
+  const to = new Date(today);
+  to.setDate(today.getDate() + 7);
+
+  const format = (d: Date) => d.toISOString().split("T")[0];
+
+  return {
+    from: format(from),
+    to: format(to),
+  };
+}
+
 export function StatsClient({ terminer, initialStats }: Props) {
+  const defaultRange = getDefaultDateRange();
+
   const [stats, setStats] = useState(initialStats);
   const [selectedTerminId, setSelectedTerminId] = useState("all");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(defaultRange.from);
+  const [toDate, setToDate] = useState(defaultRange.to);
+
   const [isPending, startTransition] = useTransition();
-  const hasMounted = useRef(false);
 
   const fetchStats = useCallback(
-    (nextTerminId: string, nextFrom: string, nextTo: string) => {
+    (terminId: string, from: string, to: string) => {
       startTransition(async () => {
         try {
           const nextStats = await getTerminsStats(
-            nextTerminId === "all" ? null : nextTerminId,
-            nextFrom || null,
-            nextTo || null,
+            terminId === "all" ? null : terminId,
+            from || null,
+            to || null,
           );
 
           setStats(nextStats);
-        } catch (_error) {
+        } catch {
           toast.error("Kunde inte hämta statistik.");
         }
       });
@@ -66,11 +85,6 @@ export function StatsClient({ terminer, initialStats }: Props) {
   );
 
   useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true;
-      return;
-    }
-
     if (selectedTerminId === "all" && Boolean(fromDate) !== Boolean(toDate)) {
       return;
     }
@@ -84,13 +98,18 @@ export function StatsClient({ terminer, initialStats }: Props) {
     if (value !== "all") {
       setFromDate("");
       setToDate("");
+    } else {
+      const range = getDefaultDateRange();
+      setFromDate(range.from);
+      setToDate(range.to);
     }
   };
 
   const handleDateFilterChange = (name: string, value: string) => {
+    setSelectedTerminId("all");
+
     if (name === "from") {
       setFromDate(value);
-      return;
     }
 
     if (name === "to") {
@@ -103,16 +122,21 @@ export function StatsClient({ terminer, initialStats }: Props) {
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Statistik</h2>
+
           <Badge variant="outline">
             {stats.selectedPeriod ? stats.selectedPeriod.name : "Alla terminer"}
           </Badge>
+
           {isPending && (
             <span className="text-sm text-muted-foreground">Uppdaterar...</span>
           )}
         </div>
+
         <p className="text-sm text-muted-foreground">
           {stats.selectedPeriod
-            ? `Period ${formatDate(stats.selectedPeriod.from)} - ${formatDate(stats.selectedPeriod.to)}`
+            ? `Period ${formatDate(stats.selectedPeriod.from)} - ${formatDate(
+                stats.selectedPeriod.to,
+              )}`
             : "Visar samlad statistik för hela verksamheten."}
         </p>
       </div>
@@ -136,6 +160,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
             </CardTitle>
           </CardHeader>
         </Card>
+
         <Card>
           <CardHeader className="gap-1">
             <CardDescription>Intäkter</CardDescription>
@@ -144,6 +169,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
             </CardTitle>
           </CardHeader>
         </Card>
+
         <Card>
           <CardHeader className="gap-1">
             <CardDescription>Aktiva elever</CardDescription>
@@ -152,6 +178,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
             </CardTitle>
           </CardHeader>
         </Card>
+
         <Card>
           <CardHeader className="gap-1">
             <CardDescription>Bokningar</CardDescription>
@@ -173,6 +200,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
               {stats.products.length} produkter.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             {isPending ? (
               <Skeleton className="h-48 w-full" />
@@ -191,21 +219,26 @@ export function StatsClient({ terminer, initialStats }: Props) {
                     <TableHead className="text-right">Platser kvar</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {stats.products.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium whitespace-normal">
                         {product.name}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {product.sold}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {product.reserved}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {formatPrice(product.income)}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {product.unlimitedCustomers
                           ? "Obegränsat"
@@ -227,6 +260,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
               {stats.overview.customerCount} kunder i urvalet.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             {isPending ? (
               <Skeleton className="h-48 w-full" />
@@ -245,23 +279,29 @@ export function StatsClient({ terminer, initialStats }: Props) {
                     <TableHead className="text-right">Produkter</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {stats.courses.map((course) => (
                     <TableRow key={course.id}>
                       <TableCell className="max-w-[260px] whitespace-normal">
                         <div className="font-medium">{course.name}</div>
+
                         <div className="text-xs text-muted-foreground">
                           {formatDate(course.periodStart)} -{" "}
                           {formatDate(course.periodEnd)}
                         </div>
                       </TableCell>
+
                       <TableCell>{course.teacherName}</TableCell>
+
                       <TableCell className="text-right">
                         {course.studentCount}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {course.bookingCount}
                       </TableCell>
+
                       <TableCell className="text-right">
                         {course.linkedProducts}
                       </TableCell>

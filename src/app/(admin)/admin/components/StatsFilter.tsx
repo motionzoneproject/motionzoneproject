@@ -40,9 +40,11 @@ export function StatsFilter({
   return (
     <div className="w-full rounded border-2 p-3">
       <div className="text-xl font-bold">Filter</div>
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label className="text-sm">Termin</Label>
+
           <Select
             value={value}
             onValueChange={onValueChange}
@@ -51,11 +53,15 @@ export function StatsFilter({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Välj termin" />
             </SelectTrigger>
+
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Välj termin</SelectLabel>
+
                 <SelectItem value="all">Alla</SelectItem>
+
                 <SelectSeparator />
+
                 {terminer.map((termin) => (
                   <SelectItem key={termin.id} value={termin.id}>
                     {termin.name}
@@ -69,6 +75,7 @@ export function StatsFilter({
         {value === "all" && (
           <div className="space-y-1">
             <Label className="text-sm">Datum mellan</Label>
+
             <div className={disabled ? "pointer-events-none opacity-60" : ""}>
               <DatePickerWithRange
                 from={from}

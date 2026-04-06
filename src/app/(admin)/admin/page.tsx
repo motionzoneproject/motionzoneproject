@@ -1,3 +1,9 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
@@ -75,7 +81,14 @@ export default async function Page() {
         </div>
       </div>
 
-      <StatsPage />
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Statistik</AccordionTrigger>
+          <AccordionContent>
+            <StatsPage />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
