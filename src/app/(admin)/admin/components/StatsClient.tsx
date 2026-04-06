@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { getTerminsStats, type TerminStats } from "@/lib/actions/admin-stats";
 import { formatPrice } from "@/lib/money";
+import { StatsChart } from "./StatsChart";
 import { StatsFilter } from "./StatsFilter";
 
 type TerminOption = {
@@ -39,22 +40,62 @@ function formatDate(date: string | null) {
 
 export function StatsClient({ terminer, initialStats }: Props) {
   const [stats, setStats] = useState(initialStats);
-  const [selectedTerminId, setSelectedTerminId] = useState(
-    initialStats.selectedPeriod?.id ?? "all",
-  );
+  const [selectedTerminId, setSelectedTerminId] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [isPending, startTransition] = useTransition();
+  const hasMounted = useRef(false);
+
+  const fetchStats = useCallback(
+    (nextTerminId: string, nextFrom: string, nextTo: string) => {
+      startTransition(async () => {
+        try {
+          const nextStats = await getTerminsStats(
+            nextTerminId === "all" ? null : nextTerminId,
+            nextFrom || null,
+            nextTo || null,
+          );
+
+          setStats(nextStats);
+        } catch (_error) {
+          toast.error("Kunde inte hämta statistik.");
+        }
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+
+    if (selectedTerminId === "all" && Boolean(fromDate) !== Boolean(toDate)) {
+      return;
+    }
+
+    fetchStats(selectedTerminId, fromDate, toDate);
+  }, [selectedTerminId, fromDate, toDate, fetchStats]);
 
   const handleTerminChange = (value: string) => {
-    startTransition(async () => {
-      try {
-        const nextTerminId = value === "all" ? null : value;
-        const nextStats = await getTerminsStats(nextTerminId);
-        setSelectedTerminId(value);
-        setStats(nextStats);
-      } catch (_error) {
-        toast.error("Kunde inte hämta statistik.");
-      }
-    });
+    setSelectedTerminId(value);
+
+    if (value !== "all") {
+      setFromDate("");
+      setToDate("");
+    }
+  };
+
+  const handleDateFilterChange = (name: string, value: string) => {
+    if (name === "from") {
+      setFromDate(value);
+      return;
+    }
+
+    if (name === "to") {
+      setToDate(value);
+    }
   };
 
   return (
@@ -79,8 +120,11 @@ export function StatsClient({ terminer, initialStats }: Props) {
       <StatsFilter
         terminer={terminer}
         value={selectedTerminId}
+        from={fromDate}
+        to={toDate}
         disabled={isPending}
         onValueChange={handleTerminChange}
+        onDateFilterChange={handleDateFilterChange}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -117,6 +161,8 @@ export function StatsClient({ terminer, initialStats }: Props) {
           </CardHeader>
         </Card>
       </div>
+
+      <StatsChart timeline={stats.timeline} disabled={isPending} />
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
         <Card className="min-w-0">

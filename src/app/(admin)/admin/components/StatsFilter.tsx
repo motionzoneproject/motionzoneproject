@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePickerWithRange } from "../lectures/components/DatePicker";
 
 type TerminOption = {
   id: string;
@@ -20,15 +21,21 @@ type TerminOption = {
 type Props = {
   terminer: TerminOption[];
   value: string;
+  from?: string | null;
+  to?: string | null;
   disabled?: boolean;
   onValueChange: (value: string) => void;
+  onDateFilterChange: (name: string, value: string) => void;
 };
 
 export function StatsFilter({
   terminer,
   value,
+  from,
+  to,
   disabled = false,
   onValueChange,
+  onDateFilterChange,
 }: Props) {
   return (
     <div className="w-full rounded border-2 p-3">
@@ -58,6 +65,19 @@ export function StatsFilter({
             </SelectContent>
           </Select>
         </div>
+
+        {value === "all" && (
+          <div className="space-y-1">
+            <Label className="text-sm">Datum mellan</Label>
+            <div className={disabled ? "pointer-events-none opacity-60" : ""}>
+              <DatePickerWithRange
+                from={from}
+                to={to}
+                filterSetter={onDateFilterChange}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

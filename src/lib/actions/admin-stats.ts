@@ -15,6 +15,11 @@ type SchemaDateRange = {
   };
 };
 
+type ParsedDateRange = {
+  from: Date;
+  to: Date;
+};
+
 export type StatsPeriod = {
   id: string;
   name: string;
@@ -52,6 +57,13 @@ export type OrderStatsSummary = {
   products: ProductStatsItem[];
 };
 
+export type StatsTimelinePoint = {
+  date: string;
+  income: number;
+  orders: number;
+  bookings: number;
+};
+
 export type TerminStats = {
   selectedPeriod: StatsPeriod | null;
   overview: {
@@ -65,6 +77,7 @@ export type TerminStats = {
   };
   products: ProductStatsItem[];
   courses: CourseStatsItem[];
+  timeline: StatsTimelinePoint[];
 };
 
 function getEffectiveDateRange(items: SchemaDateRange[]) {
@@ -109,6 +122,25 @@ function buildProductWhere(terminId?: string | null): Prisma.ProductWhereInput {
   };
 }
 
+function parseCustomDateRange(
+  from?: string | null,
+  to?: string | null,
+): ParsedDateRange | null {
+  if (!from || !to) return null;
+
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+    return null;
+  }
+
+  fromDate.setHours(0, 0, 0, 0);
+  toDate.setHours(23, 59, 59, 999);
+
+  return { from: fromDate, to: toDate };
+}
+
 function buildCourseWhere(terminId?: string | null): Prisma.CourseWhereInput {
   if (!terminId) return {};
 
@@ -123,12 +155,21 @@ function buildCourseWhere(terminId?: string | null): Prisma.CourseWhereInput {
 
 function buildOrderItemWhere(
   terminId?: string | null,
+  dateRange?: ParsedDateRange | null,
 ): Prisma.OrderItemWhereInput {
   return {
     order: {
       status: {
         in: [...SUCCESSFUL_ORDER_STATUSES],
       },
+      ...(dateRange
+        ? {
+            createdAt: {
+              gte: dateRange.from,
+              lte: dateRange.to,
+            },
+          }
+        : {}),
     },
     ...(terminId ? { product: buildProductWhere(terminId) } : {}),
   };
@@ -136,6 +177,7 @@ function buildOrderItemWhere(
 
 function buildPotentialReservedOrderItemWhere(
   terminId?: string | null,
+  dateRange?: ParsedDateRange | null,
 ): Prisma.OrderItemWhereInput {
   return {
     order: {
@@ -148,6 +190,14 @@ function buildPotentialReservedOrderItemWhere(
           "APPROVED",
         ],
       },
+      ...(dateRange
+        ? {
+            createdAt: {
+              gte: dateRange.from,
+              lte: dateRange.to,
+            },
+          }
+        : {}),
     },
     ...(terminId ? { product: buildProductWhere(terminId) } : {}),
   };
@@ -155,20 +205,40 @@ function buildPotentialReservedOrderItemWhere(
 
 function buildPurchaseWhere(
   terminId?: string | null,
+  dateRange?: ParsedDateRange | null,
 ): Prisma.PurchaseWhereInput {
   return {
     order: {
       status: {
         not: "CANCELLED",
       },
+      ...(dateRange
+        ? {
+            createdAt: {
+              gte: dateRange.from,
+              lte: dateRange.to,
+            },
+          }
+        : {}),
     },
     ...(terminId ? { product: buildProductWhere(terminId) } : {}),
   };
 }
 
-function buildBookingWhere(terminId?: string | null): Prisma.BookingWhereInput {
+function buildBookingWhere(
+  terminId?: string | null,
+  dateRange?: ParsedDateRange | null,
+): Prisma.BookingWhereInput {
   return {
     cancelled: false,
+    ...(dateRange
+      ? {
+          createdAt: {
+            gte: dateRange.from,
+            lte: dateRange.to,
+          },
+        }
+      : {}),
     lesson: {
       cancelled: false,
       ...(terminId ? { terminId } : {}),
@@ -178,7 +248,17 @@ function buildBookingWhere(terminId?: string | null): Prisma.BookingWhereInput {
 
 async function getSelectedPeriod(
   terminId?: string | null,
+  customDateRange?: ParsedDateRange | null,
 ): Promise<StatsPeriod | null> {
+  if (!terminId && customDateRange) {
+    return {
+      id: "custom",
+      name: "Vald period",
+      from: customDateRange.from.toISOString(),
+      to: customDateRange.to.toISOString(),
+    };
+  }
+
   if (!terminId) return null;
 
   const termin = await prisma.termin.findUnique({
@@ -225,9 +305,121 @@ async function getSelectedPeriod(
   };
 }
 
+function doesRangeOverlap(
+  start: Date | null,
+  end: Date | null,
+  dateRange: ParsedDateRange,
+) {
+  if (!start || !end) return false;
+  return start <= dateRange.to && end >= dateRange.from;
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getTimelineRange(
+  selectedPeriod: StatsPeriod | null,
+  orderDates: Date[],
+  bookingDates: Date[],
+) {
+  if (selectedPeriod) {
+    const from = new Date(selectedPeriod.from);
+    from.setHours(0, 0, 0, 0);
+
+    const to = new Date(selectedPeriod.to);
+    to.setHours(0, 0, 0, 0);
+
+    return { from, to };
+  }
+
+  const allDates = [...orderDates, ...bookingDates];
+
+  if (allDates.length === 0) {
+    return null;
+  }
+
+  const from = new Date(Math.min(...allDates.map((date) => date.getTime())));
+  from.setHours(0, 0, 0, 0);
+
+  const to = new Date(Math.max(...allDates.map((date) => date.getTime())));
+  to.setHours(0, 0, 0, 0);
+
+  return { from, to };
+}
+
+function buildDailyTimeline(
+  selectedPeriod: StatsPeriod | null,
+  orderItems: {
+    count: number;
+    price: number;
+    orderId: string;
+    order: { createdAt: Date };
+  }[],
+  bookings: { createdAt: Date }[],
+): StatsTimelinePoint[] {
+  const range = getTimelineRange(
+    selectedPeriod,
+    orderItems.map((item) => item.order.createdAt),
+    bookings.map((booking) => booking.createdAt),
+  );
+
+  if (!range) {
+    return [];
+  }
+
+  const timelineMap = new Map<
+    string,
+    StatsTimelinePoint & { orderIds: Set<string> }
+  >();
+
+  const cursor = new Date(range.from);
+
+  while (cursor <= range.to) {
+    const key = toDateKey(cursor);
+    timelineMap.set(key, {
+      date: key,
+      income: 0,
+      orders: 0,
+      bookings: 0,
+      orderIds: new Set<string>(),
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  for (const item of orderItems) {
+    const key = toDateKey(item.order.createdAt);
+    const existing = timelineMap.get(key);
+    if (!existing) continue;
+
+    existing.income += item.price * item.count;
+    existing.orderIds.add(item.orderId);
+  }
+
+  for (const booking of bookings) {
+    const key = toDateKey(booking.createdAt);
+    const existing = timelineMap.get(key);
+    if (!existing) continue;
+
+    existing.bookings += 1;
+  }
+
+  return Array.from(timelineMap.values()).map(({ orderIds, ...point }) => ({
+    ...point,
+    orders: orderIds.size,
+  }));
+}
+
 export async function getGeneralProductStats(
   terminId?: string | null,
+  from?: string | null,
+  to?: string | null,
 ): Promise<ProductStatsItem[]> {
+  const customDateRange = parseCustomDateRange(from, to);
   const [products, soldPurchases, paidOrderItems, potentialReservedOrderItems] =
     await Promise.all([
       prisma.product.findMany({
@@ -243,13 +435,13 @@ export async function getGeneralProductStats(
         },
       }),
       prisma.purchase.findMany({
-        where: buildPurchaseWhere(terminId),
+        where: buildPurchaseWhere(terminId, customDateRange),
         select: {
           productId: true,
         },
       }),
       prisma.orderItem.findMany({
-        where: buildOrderItemWhere(terminId),
+        where: buildOrderItemWhere(terminId, customDateRange),
         select: {
           productId: true,
           count: true,
@@ -257,7 +449,7 @@ export async function getGeneralProductStats(
         },
       }),
       prisma.orderItem.findMany({
-        where: buildPotentialReservedOrderItemWhere(terminId),
+        where: buildPotentialReservedOrderItemWhere(terminId, customDateRange),
         select: {
           productId: true,
           count: true,
@@ -325,7 +517,17 @@ export async function getGeneralProductStats(
       : Math.max(product.maxCustomer - product.total, 0);
   }
 
-  return Array.from(statsMap.values()).sort((a, b) => {
+  const result = Array.from(statsMap.values());
+
+  const visibleProducts =
+    customDateRange && !terminId
+      ? result.filter(
+          (product) =>
+            product.sold > 0 || product.reserved > 0 || product.income > 0,
+        )
+      : result;
+
+  return visibleProducts.sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total;
     if (b.sold !== a.sold) return b.sold - a.sold;
     if (b.income !== a.income) return b.income - a.income;
@@ -335,11 +537,14 @@ export async function getGeneralProductStats(
 
 export async function getOrderStats(
   terminId?: string | null,
+  from?: string | null,
+  to?: string | null,
 ): Promise<OrderStatsSummary | null> {
+  const customDateRange = parseCustomDateRange(from, to);
   const [products, soldOrderItems] = await Promise.all([
-    getGeneralProductStats(terminId),
+    getGeneralProductStats(terminId, from, to),
     prisma.orderItem.findMany({
-      where: buildOrderItemWhere(terminId),
+      where: buildOrderItemWhere(terminId, customDateRange),
       select: {
         orderId: true,
         order: {
@@ -369,69 +574,88 @@ export async function getOrderStats(
 
 export async function getTerminsStats(
   terminId?: string | null,
+  from?: string | null,
+  to?: string | null,
 ): Promise<TerminStats> {
-  const [selectedPeriod, orderSummary, courses, bookings] = await Promise.all([
-    getSelectedPeriod(terminId),
-    getOrderStats(terminId),
-    prisma.course.findMany({
-      where: buildCourseWhere(terminId),
-      select: {
-        id: true,
-        name: true,
-        minAge: true,
-        maxAge: true,
-        adult: true,
-        level: true,
-        teacher: {
-          select: {
-            name: true,
+  const customDateRange = parseCustomDateRange(from, to);
+  const selectedPeriod = await getSelectedPeriod(terminId, customDateRange);
+
+  const [orderSummary, courses, bookings, timelineOrderItems] =
+    await Promise.all([
+      getOrderStats(terminId, from, to),
+      prisma.course.findMany({
+        where: buildCourseWhere(terminId),
+        select: {
+          id: true,
+          name: true,
+          minAge: true,
+          maxAge: true,
+          adult: true,
+          level: true,
+          teacher: {
+            select: {
+              name: true,
+            },
           },
-        },
-        products: {
-          select: {
-            productId: true,
+          products: {
+            select: {
+              productId: true,
+            },
           },
-        },
-        schemaItems: {
-          where: terminId ? { terminId } : undefined,
-          select: {
-            customStartDate: true,
-            customEndDate: true,
-            termin: {
-              select: {
-                startDate: true,
-                endDate: true,
+          schemaItems: {
+            where: terminId ? { terminId } : undefined,
+            select: {
+              customStartDate: true,
+              customEndDate: true,
+              termin: {
+                select: {
+                  startDate: true,
+                  endDate: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    }),
-    prisma.booking.findMany({
-      where: buildBookingWhere(terminId),
-      select: {
-        id: true,
-        lesson: {
-          select: {
-            courseId: true,
-          },
+        orderBy: {
+          name: "asc",
         },
-        purchaseItem: {
-          select: {
-            purchase: {
-              select: {
-                userId: true,
-                participantId: true,
+      }),
+      prisma.booking.findMany({
+        where: buildBookingWhere(terminId, customDateRange),
+        select: {
+          id: true,
+          createdAt: true,
+          lesson: {
+            select: {
+              courseId: true,
+            },
+          },
+          purchaseItem: {
+            select: {
+              purchase: {
+                select: {
+                  userId: true,
+                  participantId: true,
+                },
               },
             },
           },
         },
-      },
-    }),
-  ]);
+      }),
+      prisma.orderItem.findMany({
+        where: buildOrderItemWhere(terminId, customDateRange),
+        select: {
+          count: true,
+          price: true,
+          orderId: true,
+          order: {
+            select: {
+              createdAt: true,
+            },
+          },
+        },
+      }),
+    ]);
 
   const courseMap = new Map<
     string,
@@ -490,6 +714,25 @@ export async function getTerminsStats(
       return a.name.localeCompare(b.name, "sv");
     });
 
+  const timeline = buildDailyTimeline(
+    selectedPeriod,
+    timelineOrderItems,
+    bookings,
+  );
+
+  const visibleCourseStats =
+    customDateRange && !terminId
+      ? courseStats.filter(
+          (course) =>
+            course.bookingCount > 0 ||
+            doesRangeOverlap(
+              course.periodStart ? new Date(course.periodStart) : null,
+              course.periodEnd ? new Date(course.periodEnd) : null,
+              customDateRange,
+            ),
+        )
+      : courseStats;
+
   return {
     selectedPeriod,
     overview: {
@@ -503,9 +746,10 @@ export async function getTerminsStats(
         ) ?? 0,
       bookingCount: bookings.length,
       activeStudents: activeStudentKeys.size,
-      courseCount: courseStats.length,
+      courseCount: visibleCourseStats.length,
     },
     products: orderSummary?.products ?? [],
-    courses: courseStats,
+    courses: visibleCourseStats,
+    timeline,
   };
 }
