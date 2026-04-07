@@ -38,7 +38,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import VideoInput from "@/components/VideoInput";
-import { addPhoto, deletePhoto, editPhoto } from "@/lib/actions/admin";
 import {
   createGalleryItem,
   deleteGalleryItem,
@@ -46,28 +45,20 @@ import {
   updateGalleryItem,
 } from "@/lib/actions/gallery";
 import { uploadImageFromBlob } from "@/lib/uploads";
-import { adminPhotoSchema } from "@/validations/adminforms";
-
-interface PhotoRecord {
-  id: string;
-  url: string;
-  caption?: string;
-  description?: string;
-  eventId?: string;
-  isVisible: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { adminGalleryItemSchema } from "@/validations/adminforms";
 
 interface GalleryItemRecord {
   id: string;
   type: "IMAGE" | "VIDEO";
   title: string;
+  caption?: string;
   description?: string;
   url: string;
   thumbnailUrl?: string;
   displayOrder: number;
   active: boolean;
+  eventId?: string;
+  eventHeadline?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,7 +70,6 @@ interface EventOption {
 
 type MediaCardItem = {
   id: string;
-  source: "photo" | "gallery-item";
   mediaType: "IMAGE" | "VIDEO";
   title: string;
   description?: string;
@@ -92,33 +82,23 @@ type MediaCardItem = {
   createdAt: string;
 };
 
-type PhotoFormValues = z.infer<typeof adminPhotoSchema>;
+type GalleryFormValues = z.infer<typeof adminGalleryItemSchema>;
 
-type GalleryItemDraft = {
-  title: string;
-  description: string;
-  url: string;
-  displayOrder: number;
-  active: boolean;
-  type: "IMAGE" | "VIDEO";
-};
-
-const emptyGalleryDraft: GalleryItemDraft = {
+const emptyGalleryValues = (type: "IMAGE" | "VIDEO"): GalleryFormValues => ({
+  type,
   title: "",
   description: "",
+  eventId: "",
   url: "",
   displayOrder: 0,
   active: true,
-  type: "VIDEO",
-};
+});
 
 export default function MediaAdmin({
-  photos,
-  galleryItems,
+  items,
   events,
 }: {
-  photos: PhotoRecord[];
-  galleryItems: GalleryItemRecord[];
+  items: GalleryItemRecord[];
   events: EventOption[];
 }) {
   const router = useRouter();
@@ -130,69 +110,93 @@ export default function MediaAdmin({
     "ALL" | "VISIBLE" | "HIDDEN"
   >("ALL");
   const [filterEvent, setFilterEvent] = useState("ALL");
-  const [editingPhoto, setEditingPhoto] = useState<PhotoRecord | null>(null);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
-  const [photoModalKey, setPhotoModalKey] = useState(0);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const [editingGalleryItem, setEditingGalleryItem] =
-    useState<GalleryItemRecord | null>(null);
-  const [galleryDialogOpen, setGalleryDialogOpen] = useState(false);
-  const [galleryBusy, setGalleryBusy] = useState(false);
-  const [galleryDraft, setGalleryDraft] =
-    useState<GalleryItemDraft>(emptyGalleryDraft);
-
-  const photoForm = useForm<PhotoFormValues>({
-    resolver: zodResolver(adminPhotoSchema),
-    defaultValues: {
-      caption: "",
-      description: "",
-      eventId: "",
-      url: "",
-      isVisible: true,
-    },
-  });
-
-  const eventMap = useMemo(
-    () => new Map(events.map((event) => [event.id, event.headline])),
-    [events],
+  const [editingItem, setEditingItem] = useState<GalleryItemRecord | null>(
+    null,
   );
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogKey, setDialogKey] = useState(0);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const form = useForm<GalleryFormValues>({
+    resolver: zodResolver(adminGalleryItemSchema),
+    defaultValues: emptyGalleryValues("IMAGE"),
+  });
+  const currentType = form.watch("type");
+
+  const submitItem = async (values: GalleryFormValues) => {
+    setIsBusy(true);
+    let finalUrl = values.url;
+
+    if (values.type === "IMAGE" && finalUrl.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalUrl);
+        const blob = await res.blob();
+        finalUrl = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(values.url);
+      } catch {
+        toast.error("Uppladdning misslyckades.");
+        setIsBusy(false);
+        return;
+      }
+    }
+
+    const payload = {
+      type: values.type,
+      title: values.title.trim(),
+      caption: values.type === "IMAGE" ? values.title.trim() : undefined,
+      description: values.description || undefined,
+      eventId: values.eventId || undefined,
+      url: finalUrl,
+      displayOrder: values.displayOrder,
+      active: values.active,
+    };
+
+    try {
+      if (editingItem) {
+        await updateGalleryItem(editingItem.id, payload);
+        toast.success("Galleriobjekt uppdaterat.");
+      } else {
+        await createGalleryItem(payload);
+        toast.success(
+          values.type === "IMAGE" ? "Bild skapad." : "Video skapad.",
+        );
+      }
+
+      closeDialog();
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Kunde inte spara galleriobjektet.",
+      );
+    }
+
+    setIsBusy(false);
+  };
 
   const mediaItems = useMemo<MediaCardItem[]>(() => {
-    const normalizedPhotos = photos.map((photo) => ({
-      id: photo.id,
-      source: "photo" as const,
-      mediaType: "IMAGE" as const,
-      title: photo.caption?.trim() || "Bild",
-      description: photo.description,
-      previewUrl: photo.url,
-      assetUrl: photo.url,
-      status: photo.isVisible,
-      eventId: photo.eventId,
-      eventHeadline: photo.eventId ? eventMap.get(photo.eventId) : undefined,
-      createdAt: photo.createdAt,
-    }));
-
-    const normalizedGalleryItems = galleryItems.map((item) => ({
-      id: item.id,
-      source: "gallery-item" as const,
-      mediaType: item.type,
-      title: item.title,
-      description: item.description,
-      previewUrl:
-        item.type === "IMAGE" ? item.url : (item.thumbnailUrl ?? item.url),
-      assetUrl: item.url,
-      status: item.active,
-      displayOrder: item.displayOrder,
-      createdAt: item.createdAt,
-    }));
-
-    return [...normalizedPhotos, ...normalizedGalleryItems].sort(
-      (left, right) =>
-        new Date(right.createdAt).getTime() -
-        new Date(left.createdAt).getTime(),
-    );
-  }, [eventMap, galleryItems, photos]);
+    return items
+      .map((item) => ({
+        id: item.id,
+        mediaType: item.type,
+        title: item.caption?.trim() || item.title,
+        description: item.description,
+        previewUrl:
+          item.type === "IMAGE" ? item.url : (item.thumbnailUrl ?? item.url),
+        assetUrl: item.url,
+        status: item.active,
+        displayOrder: item.displayOrder,
+        eventId: item.eventId,
+        eventHeadline: item.eventHeadline,
+        createdAt: item.createdAt,
+      }))
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime(),
+      );
+  }, [items]);
 
   const filteredMediaItems = useMemo(() => {
     return mediaItems.filter((item) => {
@@ -214,182 +218,35 @@ export default function MediaAdmin({
     });
   }, [filterEvent, filterStatus, filterText, filterType, mediaItems]);
 
-  const openAddPhotoDialog = () => {
-    setEditingPhoto(null);
-    setPhotoPreviewUrl(null);
-    photoForm.reset({
-      caption: "",
-      description: "",
-      eventId: "",
-      url: "",
-      isVisible: true,
-    });
-    setPhotoModalKey((current) => current + 1);
-    setPhotoDialogOpen(true);
+  const openAddDialog = (type: "IMAGE" | "VIDEO") => {
+    setEditingItem(null);
+    setDialogKey((current) => current + 1);
+    form.reset(emptyGalleryValues(type));
+    setDialogOpen(true);
   };
 
-  const openEditPhotoDialog = (photo: PhotoRecord) => {
-    setEditingPhoto(photo);
-    setPhotoPreviewUrl(photo.url);
-    photoForm.reset({
-      caption: photo.caption || "",
-      description: photo.description || "",
-      eventId: photo.eventId || "",
-      url: photo.url,
-      isVisible: photo.isVisible,
-    });
-    setPhotoModalKey((current) => current + 1);
-    setPhotoDialogOpen(true);
-  };
-
-  const closePhotoDialog = () => {
-    setEditingPhoto(null);
-    setPhotoPreviewUrl(null);
-    setPhotoDialogOpen(false);
-    photoForm.reset({
-      caption: "",
-      description: "",
-      eventId: "",
-      url: "",
-      isVisible: true,
-    });
-  };
-
-  const openAddGalleryDialog = () => {
-    setEditingGalleryItem(null);
-    setGalleryDraft(emptyGalleryDraft);
-    setGalleryDialogOpen(true);
-  };
-
-  const openEditGalleryDialog = (item: GalleryItemRecord) => {
-    setEditingGalleryItem(item);
-    setGalleryDraft({
-      title: item.title,
+  const openEditDialog = (item: GalleryItemRecord) => {
+    setEditingItem(item);
+    setDialogKey((current) => current + 1);
+    form.reset({
+      type: item.type,
+      title: item.caption?.trim() || item.title,
       description: item.description || "",
+      eventId: item.eventId || "",
       url: item.url,
       displayOrder: item.displayOrder,
       active: item.active,
-      type: item.type,
     });
-    setGalleryDialogOpen(true);
+    setDialogOpen(true);
   };
 
-  const closeGalleryDialog = () => {
-    setEditingGalleryItem(null);
-    setGalleryDraft(emptyGalleryDraft);
-    setGalleryDialogOpen(false);
+  const closeDialog = () => {
+    setEditingItem(null);
+    form.reset(emptyGalleryValues("IMAGE"));
+    setDialogOpen(false);
   };
 
-  const submitPhoto = async (values: PhotoFormValues) => {
-    setPhotoBusy(true);
-    let finalUrl = values.url;
-
-    if (finalUrl.startsWith("blob:")) {
-      try {
-        const res = await fetch(finalUrl);
-        const blob = await res.blob();
-        finalUrl = await uploadImageFromBlob(blob);
-        URL.revokeObjectURL(values.url);
-      } catch {
-        toast.error("Uppladdning misslyckades.");
-        setPhotoBusy(false);
-        return;
-      }
-    }
-
-    const result = editingPhoto
-      ? await editPhoto(editingPhoto.id, { ...values, url: finalUrl })
-      : await addPhoto({ ...values, url: finalUrl });
-
-    if (result.success) {
-      toast.success(result.msg);
-      closePhotoDialog();
-      router.refresh();
-    } else {
-      toast.error(result.msg);
-    }
-
-    setPhotoBusy(false);
-  };
-
-  const submitGalleryItem = async () => {
-    setGalleryBusy(true);
-
-    if (!galleryDraft.url) {
-      toast.error(
-        galleryDraft.type === "VIDEO"
-          ? "Du måste ladda upp en video."
-          : "Du måste ladda upp en bild.",
-      );
-      setGalleryBusy(false);
-      return;
-    }
-
-    let finalUrl = galleryDraft.url;
-
-    if (galleryDraft.type === "IMAGE" && finalUrl.startsWith("blob:")) {
-      try {
-        const res = await fetch(finalUrl);
-        const blob = await res.blob();
-        finalUrl = await uploadImageFromBlob(blob);
-        URL.revokeObjectURL(galleryDraft.url);
-      } catch {
-        toast.error("Uppladdning av bild misslyckades.");
-        setGalleryBusy(false);
-        return;
-      }
-    }
-
-    try {
-      if (editingGalleryItem) {
-        await updateGalleryItem(editingGalleryItem.id, {
-          title: galleryDraft.title,
-          description: galleryDraft.description || undefined,
-          url: finalUrl,
-          displayOrder: galleryDraft.displayOrder,
-          active: galleryDraft.active,
-        });
-        toast.success("Galleriobjekt uppdaterat.");
-      } else {
-        await createGalleryItem({
-          type: galleryDraft.type,
-          title: galleryDraft.title,
-          description: galleryDraft.description || undefined,
-          url: finalUrl,
-          displayOrder: galleryDraft.displayOrder,
-          active: galleryDraft.active,
-        });
-        toast.success("Galleriobjekt skapat.");
-      }
-
-      closeGalleryDialog();
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Kunde inte spara galleriobjektet.",
-      );
-    }
-
-    setGalleryBusy(false);
-  };
-
-  const handleDeletePhoto = async (photo: PhotoRecord) => {
-    if (!window.confirm("Är du säker på att du vill ta bort denna bild?")) {
-      return;
-    }
-
-    const result = await deletePhoto(photo.id);
-    if (result.success) {
-      toast.success(result.msg);
-      router.refresh();
-    } else {
-      toast.error(result.msg);
-    }
-  };
-
-  const handleDeleteGalleryItem = async (item: GalleryItemRecord) => {
+  const handleDeleteItem = async (item: GalleryItemRecord) => {
     if (
       !window.confirm("Är du säker på att du vill ta bort detta galleriobjekt?")
     ) {
@@ -409,24 +266,7 @@ export default function MediaAdmin({
     }
   };
 
-  const togglePhotoVisibility = async (photo: PhotoRecord) => {
-    const result = await editPhoto(photo.id, {
-      url: photo.url,
-      caption: photo.caption,
-      description: photo.description,
-      eventId: photo.eventId,
-      isVisible: !photo.isVisible,
-    });
-
-    if (result.success) {
-      toast.success(photo.isVisible ? "Bild dold." : "Bild synlig.");
-      router.refresh();
-    } else {
-      toast.error(result.msg);
-    }
-  };
-
-  const toggleGalleryVisibility = async (item: GalleryItemRecord) => {
+  const toggleItemVisibility = async (item: GalleryItemRecord) => {
     try {
       await toggleGalleryItemActive(item.id, !item.active);
       toast.success(
@@ -446,19 +286,22 @@ export default function MediaAdmin({
         <div>
           <h1 className="text-2xl font-bold">Galleri - Mediahantering</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hantera bilder från fotoarkivet och videoobjekt från det nya
-            mediagalleriet på samma ställe.
+            Alla galleriobjekt lagras nu i samma modell med valfri eventkoppling
+            för både bild och video.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button onClick={openAddPhotoDialog} className="cursor-pointer">
+          <Button
+            onClick={() => openAddDialog("IMAGE")}
+            className="cursor-pointer"
+          >
             <Plus className="h-4 w-4" />
             Lägg till bild
           </Button>
           <Button
             variant="outline"
-            onClick={openAddGalleryDialog}
+            onClick={() => openAddDialog("VIDEO")}
             className="cursor-pointer"
           >
             <Plus className="h-4 w-4" />
@@ -550,9 +393,13 @@ export default function MediaAdmin({
       <div className="mb-4 flex flex-wrap gap-2 text-sm text-muted-foreground">
         <span>{filteredMediaItems.length} objekt visas</span>
         <span>•</span>
-        <span>{photos.length} bilder i fotoarkivet</span>
+        <span>
+          {items.filter((item) => item.type === "IMAGE").length} bilder
+        </span>
         <span>•</span>
-        <span>{galleryItems.length} objekt i mediagalleriet</span>
+        <span>
+          {items.filter((item) => item.type === "VIDEO").length} videor
+        </span>
       </div>
 
       {filteredMediaItems.length === 0 ? (
@@ -562,21 +409,11 @@ export default function MediaAdmin({
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredMediaItems.map((item) => {
-            const photo =
-              item.source === "photo"
-                ? (photos.find((candidate) => candidate.id === item.id) ?? null)
-                : null;
             const galleryItem =
-              item.source === "gallery-item"
-                ? (galleryItems.find((candidate) => candidate.id === item.id) ??
-                  null)
-                : null;
+              items.find((candidate) => candidate.id === item.id) ?? null;
 
             return (
-              <Card
-                key={`${item.source}:${item.id}`}
-                className="gap-0 overflow-hidden py-0"
-              >
+              <Card key={item.id} className="gap-0 overflow-hidden py-0">
                 <CardContent className="p-0">
                   <div className="relative h-64 bg-muted/50">
                     {item.mediaType === "VIDEO" ? (
@@ -610,9 +447,6 @@ export default function MediaAdmin({
                           <ImageIcon className="h-3 w-3" />
                         )}
                         {item.mediaType === "VIDEO" ? "Video" : "Bild"}
-                      </Badge>
-                      <Badge variant="outline" className="bg-background/80">
-                        {item.source === "photo" ? "Fotoarkiv" : "Mediagalleri"}
                       </Badge>
                     </div>
                   </div>
@@ -658,8 +492,7 @@ export default function MediaAdmin({
                         variant="outline"
                         className="cursor-pointer"
                         onClick={() => {
-                          if (photo) openEditPhotoDialog(photo);
-                          if (galleryItem) openEditGalleryDialog(galleryItem);
+                          if (galleryItem) openEditDialog(galleryItem);
                         }}
                       >
                         <Pencil className="h-4 w-4" />
@@ -671,9 +504,8 @@ export default function MediaAdmin({
                         variant="outline"
                         className="cursor-pointer"
                         onClick={() => {
-                          if (photo) void togglePhotoVisibility(photo);
                           if (galleryItem)
-                            void toggleGalleryVisibility(galleryItem);
+                            void toggleItemVisibility(galleryItem);
                         }}
                       >
                         {item.status ? (
@@ -689,9 +521,7 @@ export default function MediaAdmin({
                         variant="destructive"
                         className="cursor-pointer"
                         onClick={() => {
-                          if (photo) void handleDeletePhoto(photo);
-                          if (galleryItem)
-                            void handleDeleteGalleryItem(galleryItem);
+                          if (galleryItem) void handleDeleteItem(galleryItem);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -706,109 +536,129 @@ export default function MediaAdmin({
         </div>
       )}
 
-      <Dialog
-        open={photoDialogOpen}
-        onOpenChange={(open) => !open && closePhotoDialog()}
-      >
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingPhoto ? "Redigera bild" : "Lägg till bild"}
+              {editingItem
+                ? currentType === "IMAGE"
+                  ? "Redigera bild"
+                  : "Redigera video"
+                : currentType === "IMAGE"
+                  ? "Lägg till bild"
+                  : "Lägg till video"}
             </DialogTitle>
             <DialogDescription>
-              Bilder fortsätter tills vidare att sparas i fotoarkivet så att
-              event-kopplingen fungerar som idag.
+              All media sparas nu i GalleryItem. Eventfältet är valfritt och kan
+              användas för både bild och video.
             </DialogDescription>
           </DialogHeader>
 
-          <Form {...photoForm}>
+          <Form {...form}>
             <form
-              onSubmit={photoForm.handleSubmit(submitPhoto)}
+              onSubmit={form.handleSubmit(submitItem)}
               className="space-y-4"
             >
               <FormField
-                control={photoForm.control}
+                control={form.control}
                 name="url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bild</FormLabel>
+                    <FormLabel>
+                      {currentType === "IMAGE" ? "Bild" : "Video"}
+                    </FormLabel>
                     <FormControl>
-                      <div>
-                        <ImageInput
-                          key={photoModalKey}
-                          {...field}
-                          onChange={(value: string | undefined) => {
-                            field.onChange(value);
-                            setPhotoPreviewUrl(value ?? null);
-                          }}
-                        />
-                        {editingPhoto && photoPreviewUrl && (
-                          <Image
-                            src={photoPreviewUrl}
-                            alt="Förhandsvisning"
-                            width={800}
-                            height={192}
-                            className="mt-2 h-48 w-full rounded object-cover"
-                          />
-                        )}
-                      </div>
+                      {currentType === "IMAGE" ? (
+                        <ImageInput key={dialogKey} {...field} />
+                      ) : (
+                        <VideoInput key={dialogKey} {...field} />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
-                control={photoForm.control}
-                name="caption"
+                control={form.control}
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rubrik</FormLabel>
+                    <FormLabel>
+                      {currentType === "IMAGE" ? "Rubrik" : "Titel"}
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
-                control={photoForm.control}
+                control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Beskrivning</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea {...field} value={field.value ?? ""} rows={3} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="eventId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                        >
+                          <option value="">Ingen</option>
+                          {events.map((event) => (
+                            <option key={event.id} value={event.id}>
+                              {event.headline}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="displayOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sorteringsordning</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          value={field.value}
+                          onChange={(event) =>
+                            field.onChange(Number(event.target.value || 0))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
-                control={photoForm.control}
-                name="eventId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-                      >
-                        <option value="">Ingen</option>
-                        {events.map((event) => (
-                          <option key={event.id} value={event.id}>
-                            {event.headline}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={photoForm.control}
-                name="isVisible"
+                control={form.control}
+                name="active"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Synlig</FormLabel>
@@ -821,7 +671,7 @@ export default function MediaAdmin({
                             field.onChange(event.target.checked)
                           }
                         />
-                        Visa bilden i publika galleriet
+                        Visa objektet i publika galleriet
                       </label>
                     </FormControl>
                     <FormMessage />
@@ -830,171 +680,21 @@ export default function MediaAdmin({
               />
 
               <div className="flex gap-2">
-                <Button type="submit" disabled={photoBusy}>
-                  {photoBusy
+                <Button type="submit" disabled={isBusy}>
+                  {isBusy
                     ? "Sparar..."
-                    : editingPhoto
-                      ? "Uppdatera bild"
-                      : "Lägg till bild"}
+                    : editingItem
+                      ? "Uppdatera objekt"
+                      : currentType === "IMAGE"
+                        ? "Lägg till bild"
+                        : "Lägg till video"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closePhotoDialog}
-                >
+                <Button type="button" variant="outline" onClick={closeDialog}>
                   Avbryt
                 </Button>
               </div>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={galleryDialogOpen}
-        onOpenChange={(open) => !open && closeGalleryDialog()}
-      >
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingGalleryItem
-                ? "Redigera galleriobjekt"
-                : "Lägg till video"}
-            </DialogTitle>
-            <DialogDescription>
-              Video hanteras via det nya mediagalleriet. Under migreringen
-              ligger de kvar i GalleryItem-tabellen.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label htmlFor="gallery-title" className="text-sm font-medium">
-                Titel
-              </label>
-              <Input
-                id="gallery-title"
-                value={galleryDraft.title}
-                onChange={(event) =>
-                  setGalleryDraft((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="T.ex. Dansgala 2025"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="gallery-description"
-                className="text-sm font-medium"
-              >
-                Beskrivning
-              </label>
-              <Textarea
-                id="gallery-description"
-                value={galleryDraft.description}
-                onChange={(event) =>
-                  setGalleryDraft((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                rows={3}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label
-                  htmlFor="gallery-display-order"
-                  className="text-sm font-medium"
-                >
-                  Sorteringsordning
-                </label>
-                <Input
-                  id="gallery-display-order"
-                  type="number"
-                  value={galleryDraft.displayOrder}
-                  onChange={(event) =>
-                    setGalleryDraft((current) => ({
-                      ...current,
-                      displayOrder: Number(event.target.value || 0),
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-sm font-medium">Synlig</div>
-                <label className="flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={galleryDraft.active}
-                    onChange={(event) =>
-                      setGalleryDraft((current) => ({
-                        ...current,
-                        active: event.target.checked,
-                      }))
-                    }
-                  />
-                  Visa objektet i publika galleriet
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-sm font-medium">
-                {galleryDraft.type === "VIDEO" ? "Video" : "Bild"}
-              </div>
-              {galleryDraft.type === "VIDEO" ? (
-                <VideoInput
-                  name="url"
-                  value={galleryDraft.url || undefined}
-                  onChange={(value) =>
-                    setGalleryDraft((current) => ({
-                      ...current,
-                      url: value ?? "",
-                    }))
-                  }
-                  onBlur={() => {}}
-                />
-              ) : (
-                <ImageInput
-                  name="url"
-                  value={galleryDraft.url || undefined}
-                  onChange={(value) =>
-                    setGalleryDraft((current) => ({
-                      ...current,
-                      url: value ?? "",
-                    }))
-                  }
-                  onBlur={() => {}}
-                />
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => void submitGalleryItem()}
-                disabled={galleryBusy}
-              >
-                {galleryBusy
-                  ? "Sparar..."
-                  : editingGalleryItem
-                    ? "Uppdatera objekt"
-                    : "Lägg till video"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeGalleryDialog}
-              >
-                Avbryt
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
     </div>

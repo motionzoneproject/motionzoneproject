@@ -469,7 +469,8 @@ model Event {
   link        String
   imageURL    String
 
-  photos Photo[]
+  photos       Photo[]
+  galleryItems GalleryItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -585,15 +586,20 @@ model GalleryItem {
   id           String          @id @default(uuid())
   type         GalleryItemType @default(VIDEO)
   title        String
+  caption      String?
   description  String?
   url          String // R2 public URL för videon / bilden
   thumbnailUrl String? // Valfri thumbnail (t.ex. för video)
   displayOrder Int             @default(0)
   active       Boolean         @default(true)
+  eventId      String?
+  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([eventId])
+  @@index([active, displayOrder])
   @@map("gallery_item")
 }
 

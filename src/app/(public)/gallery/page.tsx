@@ -6,68 +6,50 @@ import type { GalleryMediaItem } from "./gallery-types";
 import UnifiedGalleryClient from "./UnifiedGalleryClient";
 
 export default async function Page() {
-  const [photos, galleryItems] = await Promise.all([
-    prisma.photo.findMany({
-      where: { isVisible: true },
-      include: { event: true },
-      orderBy: [{ event: { startDate: "desc" } }, { createdAt: "desc" }],
-    }),
-    prisma.galleryItem.findMany({
-      where: { active: true },
-      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
-    }),
-  ]);
+  const galleryItems = await prisma.galleryItem.findMany({
+    where: { active: true },
+    include: { event: true },
+    orderBy: [
+      { event: { startDate: "desc" } },
+      { displayOrder: "asc" },
+      { createdAt: "desc" },
+    ],
+  });
 
-  const mediaItems: GalleryMediaItem[] = [
-    ...photos.map((photo) => ({
-      clientId: `photo:${photo.id}`,
-      id: photo.id,
-      source: "photo" as const,
-      type: "IMAGE" as const,
-      title: photo.caption?.trim() || photo.event?.headline || "Bild",
-      description: photo.description ?? undefined,
-      url: photo.url,
-      thumbnailUrl: undefined,
-      createdAt: photo.createdAt.toISOString(),
-      updatedAt: photo.updatedAt.toISOString(),
-      sortDate: (photo.event?.startDate ?? photo.createdAt).toISOString(),
-      eventId: photo.event?.id,
-      eventHeadline: photo.event?.headline,
-      eventStartDate: photo.event?.startDate?.toISOString(),
-    })),
-    ...galleryItems.map((item) => ({
-      clientId: `gallery-item:${item.id}`,
+  const mediaItems: GalleryMediaItem[] = galleryItems
+    .map((item) => ({
+      clientId: item.id,
       id: item.id,
-      source: "gallery-item" as const,
       type: item.type,
-      title: item.title,
+      title: item.caption?.trim() || item.title,
       description: item.description ?? undefined,
       url: item.url,
       thumbnailUrl: item.thumbnailUrl ?? undefined,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
-      sortDate: item.createdAt.toISOString(),
+      sortDate: (item.event?.startDate ?? item.createdAt).toISOString(),
       displayOrder: item.displayOrder,
-    })),
-  ].sort((left, right) => {
-    const sortDateDelta =
-      new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
+      eventId: item.event?.id,
+      eventHeadline: item.event?.headline,
+      eventStartDate: item.event?.startDate?.toISOString(),
+    }))
+    .sort((left, right) => {
+      const sortDateDelta =
+        new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
 
-    if (sortDateDelta !== 0) {
-      return sortDateDelta;
-    }
+      if (sortDateDelta !== 0) {
+        return sortDateDelta;
+      }
 
-    if (left.source === "gallery-item" && right.source === "gallery-item") {
       const orderDelta = (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
       if (orderDelta !== 0) {
         return orderDelta;
       }
-    }
 
-    return (
-      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-    );
-  });
+      return (
+        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      );
+    });
 
   return (
     <main className="bg-background">

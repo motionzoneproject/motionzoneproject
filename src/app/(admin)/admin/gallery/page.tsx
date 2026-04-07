@@ -4,12 +4,14 @@ import MediaAdmin from "./MediaAdmin";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const [photos, galleryItems, events] = await Promise.all([
-    prisma.photo.findMany({
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    }),
+  const [galleryItems, events] = await Promise.all([
     prisma.galleryItem.findMany({
-      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
+      include: {
+        event: {
+          select: { id: true, headline: true },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     }),
     prisma.event.findMany({
       orderBy: { startDate: "desc" },
@@ -19,18 +21,13 @@ export default async function Page() {
 
   return (
     <MediaAdmin
-      photos={photos.map((photo) => ({
-        ...photo,
-        caption: photo.caption ?? undefined,
-        description: photo.description ?? undefined,
-        eventId: photo.eventId ?? undefined,
-        createdAt: photo.createdAt.toISOString(),
-        updatedAt: photo.updatedAt.toISOString(),
-      }))}
-      galleryItems={galleryItems.map((item) => ({
+      items={galleryItems.map((item) => ({
         ...item,
+        caption: item.caption ?? undefined,
         description: item.description ?? undefined,
         thumbnailUrl: item.thumbnailUrl ?? undefined,
+        eventId: item.eventId ?? undefined,
+        eventHeadline: item.event?.headline ?? undefined,
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
       }))}

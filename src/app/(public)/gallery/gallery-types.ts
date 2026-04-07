@@ -3,7 +3,6 @@ export type GalleryMediaType = "IMAGE" | "VIDEO";
 export type GalleryMediaItem = {
   clientId: string;
   id: string;
-  source: "photo" | "gallery-item";
   type: GalleryMediaType;
   title: string;
   description?: string;

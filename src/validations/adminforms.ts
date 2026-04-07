@@ -2,12 +2,17 @@ import z from "zod";
 
 import { Weekday } from "@/generated/prisma/enums";
 
-export const adminPhotoSchema = z.object({
-  url: z.string().min(1, "Bild krävs."),
-  caption: z.string().optional(),
+export const adminGalleryItemSchema = z.object({
+  type: z.enum(["IMAGE", "VIDEO"]),
+  title: z.string().min(1, "Titel måste anges."),
+  url: z.string().min(1, "Mediafil krävs."),
   description: z.string().optional(),
   eventId: z.string().optional(),
-  isVisible: z.boolean(),
+  displayOrder: z
+    .number()
+    .int("Sorteringsordning måste vara ett heltal.")
+    .nonnegative("Sorteringsordning får inte vara negativ."),
+  active: z.boolean(),
 });
 
 const TIME_REGEX = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
