@@ -72,8 +72,8 @@ export default async function Page({
         <span>Totalt {totalProducts} produkter</span>
       </div>
 
-      <div className="w-full overflow-x-auto rounded border">
-        <Table>
+      <div className="w-full rounded border">
+        <Table className="min-w-[1040px]">
           <TableHeader>
             <TableRow>
               <TableHead>Produkt</TableHead>

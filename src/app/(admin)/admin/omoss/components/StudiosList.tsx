@@ -86,7 +86,7 @@ export function StudiosList({ studios }: StudiosListProps) {
       </div>
 
       <div className="mt-2">
-        <Table>
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Namn</TableHead>

@@ -44,7 +44,7 @@ export default async function Page({
       </div>
 
       <div className="border rounded-lg w-full mt-2">
-        <Table className="w-full text-sm ">
+        <Table className="min-w-[640px] w-full text-sm">
           <TableHeader>
             <TableRow className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
               <TableHead className="p-3 text-left">Namn</TableHead>

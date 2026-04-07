@@ -94,7 +94,7 @@ export function TeacherList({
       </div>
 
       <div className="mt-2">
-        <Table>
+        <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow>
               <TableHead>Namn</TableHead>
