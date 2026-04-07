@@ -32,6 +32,7 @@ export async function createGalleryItem(data: {
   url: string;
   thumbnailUrl?: string;
   displayOrder?: number;
+  active?: boolean;
 }) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) throw new Error("Unauthorized");
@@ -40,7 +41,7 @@ export async function createGalleryItem(data: {
 
   revalidatePath("/gallery");
   revalidatePath("/video-gallery");
-  revalidatePath("/admin/video-gallery");
+  revalidatePath("/admin/gallery");
 }
 
 export async function updateGalleryItem(
@@ -61,7 +62,7 @@ export async function updateGalleryItem(
 
   revalidatePath("/gallery");
   revalidatePath("/video-gallery");
-  revalidatePath("/admin/video-gallery");
+  revalidatePath("/admin/gallery");
 }
 
 export async function deleteGalleryItem(id: string) {
@@ -103,7 +104,7 @@ export async function deleteGalleryItem(id: string) {
 
   revalidatePath("/gallery");
   revalidatePath("/video-gallery");
-  revalidatePath("/admin/video-gallery");
+  revalidatePath("/admin/gallery");
 }
 
 export async function toggleGalleryItemActive(id: string, active: boolean) {
@@ -114,5 +115,5 @@ export async function toggleGalleryItemActive(id: string, active: boolean) {
 
   revalidatePath("/gallery");
   revalidatePath("/video-gallery");
-  revalidatePath("/admin/video-gallery");
+  revalidatePath("/admin/gallery");
 }
