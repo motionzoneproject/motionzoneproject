@@ -41,15 +41,13 @@ export function StatsFilter({
     <div className="w-full rounded border-2 p-3">
       <div className="text-xl font-bold">Filter</div>
 
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
+      <div className="mt-2">
+        {/* fix: Termin needs to retrieve the data differently by getting all the courses in the schema, and all the orders made with products containing that courses. So we hide the termin from the filter for later. But we could use the same functions, just some function recieving that info and then call the same actions based on first and last order-dates. */}
+
+        <div className="space-y-1 hidden">
           <Label className="text-sm">Termin</Label>
 
-          <Select
-            value={value}
-            onValueChange={onValueChange}
-            disabled={disabled}
-          >
+          <Select value={value} onValueChange={onValueChange} disabled={true}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Välj termin" />
             </SelectTrigger>
@@ -73,10 +71,14 @@ export function StatsFilter({
         </div>
 
         {value === "all" && (
-          <div className="space-y-1">
+          <div className="space-y-1 max-w-fit">
             <Label className="text-sm">Datum mellan</Label>
 
-            <div className={disabled ? "pointer-events-none opacity-60" : ""}>
+            <div
+              className={
+                disabled ? "pointer-events-none opacity-60" : "" + "max-w-fit"
+              }
+            >
               <DatePickerWithRange
                 from={from}
                 to={to}
