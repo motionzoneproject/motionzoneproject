@@ -1,86 +1,73 @@
 import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Event, Photo } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
-import GalleryCarouselsClient from "./GalleryCarouselsClient";
+import type { GalleryMediaItem } from "./gallery-types";
+import UnifiedGalleryClient from "./UnifiedGalleryClient";
 
 export default async function Page() {
-  // Fetch all visible photos and their events
-  const photos = await prisma.photo.findMany({
-    where: { isVisible: true },
-    include: { event: true },
-    orderBy: [{ event: { startDate: "desc" } }, { createdAt: "desc" }],
-  });
+  const [photos, galleryItems] = await Promise.all([
+    prisma.photo.findMany({
+      where: { isVisible: true },
+      include: { event: true },
+      orderBy: [{ event: { startDate: "desc" } }, { createdAt: "desc" }],
+    }),
+    prisma.galleryItem.findMany({
+      where: { active: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
+    }),
+  ]);
 
-  // Group photos by event
-  const eventMap = new Map<string, { event: Event; photos: Photo[] }>();
-  const unlinkedPhotos: Photo[] = [];
-  for (const photo of photos) {
-    if (photo.event) {
-      const eventId = photo.event.id;
-      if (!eventMap.has(eventId)) {
-        eventMap.set(eventId, {
-          event: photo.event as Event,
-          photos: [],
-        });
-      }
-      const bucket = eventMap.get(eventId);
-      if (bucket) {
-        bucket.photos.push(photo as Photo);
-      }
-    } else {
-      unlinkedPhotos.push(photo as Photo);
-    }
-  }
-  const grouped = [...eventMap.values()].map(({ event, photos }) => ({
-    event: {
-      ...event,
-      createdAt:
-        event.createdAt instanceof Date
-          ? event.createdAt.toISOString()
-          : event.createdAt,
-      updatedAt:
-        event.updatedAt instanceof Date
-          ? event.updatedAt.toISOString()
-          : event.updatedAt,
-      startDate:
-        event.startDate instanceof Date
-          ? event.startDate.toISOString()
-          : event.startDate,
-      endDate:
-        event.endDate instanceof Date
-          ? event.endDate?.toISOString()
-          : event.endDate,
-    },
-    photos: photos.map((photo) => ({
-      ...photo,
-      caption: photo.caption ?? undefined,
+  const mediaItems: GalleryMediaItem[] = [
+    ...photos.map((photo) => ({
+      clientId: `photo:${photo.id}`,
+      id: photo.id,
+      source: "photo" as const,
+      type: "IMAGE" as const,
+      title: photo.caption?.trim() || photo.event?.headline || "Bild",
       description: photo.description ?? undefined,
-      createdAt:
-        photo.createdAt instanceof Date
-          ? photo.createdAt.toISOString()
-          : photo.createdAt,
-      updatedAt:
-        photo.updatedAt instanceof Date
-          ? photo.updatedAt.toISOString()
-          : photo.updatedAt,
+      url: photo.url,
+      thumbnailUrl: undefined,
+      createdAt: photo.createdAt.toISOString(),
+      updatedAt: photo.updatedAt.toISOString(),
+      sortDate: (photo.event?.startDate ?? photo.createdAt).toISOString(),
+      eventId: photo.event?.id,
+      eventHeadline: photo.event?.headline,
+      eventStartDate: photo.event?.startDate?.toISOString(),
     })),
-  }));
+    ...galleryItems.map((item) => ({
+      clientId: `gallery-item:${item.id}`,
+      id: item.id,
+      source: "gallery-item" as const,
+      type: item.type,
+      title: item.title,
+      description: item.description ?? undefined,
+      url: item.url,
+      thumbnailUrl: item.thumbnailUrl ?? undefined,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+      sortDate: item.createdAt.toISOString(),
+      displayOrder: item.displayOrder,
+    })),
+  ].sort((left, right) => {
+    const sortDateDelta =
+      new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
 
-  const unlinked = unlinkedPhotos.map((photo) => ({
-    ...photo,
-    caption: photo.caption ?? undefined,
-    description: photo.description ?? undefined,
-    createdAt:
-      photo.createdAt instanceof Date
-        ? photo.createdAt.toISOString()
-        : photo.createdAt,
-    updatedAt:
-      photo.updatedAt instanceof Date
-        ? photo.updatedAt.toISOString()
-        : photo.updatedAt,
-  }));
+    if (sortDateDelta !== 0) {
+      return sortDateDelta;
+    }
+
+    if (left.source === "gallery-item" && right.source === "gallery-item") {
+      const orderDelta = (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
+      if (orderDelta !== 0) {
+        return orderDelta;
+      }
+    }
+
+    return (
+      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+    );
+  });
 
   return (
     <main className="bg-background">
@@ -101,16 +88,16 @@ export default async function Page() {
       <section className="py-10 md:py-12">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
-            Bilder från studion
+            Bilder och video från studion
           </h2>
-          <GalleryCarouselsClient grouped={grouped} unlinked={unlinked} />
+          <UnifiedGalleryClient items={mediaItems} />
         </div>
       </section>
 
       {/* Instagram CTA */}
       <section className="py-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">

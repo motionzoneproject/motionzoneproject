@@ -38,6 +38,7 @@ export async function createGalleryItem(data: {
 
   await prisma.galleryItem.create({ data });
 
+  revalidatePath("/gallery");
   revalidatePath("/video-gallery");
   revalidatePath("/admin/video-gallery");
 }
@@ -58,6 +59,7 @@ export async function updateGalleryItem(
 
   await prisma.galleryItem.update({ where: { id }, data });
 
+  revalidatePath("/gallery");
   revalidatePath("/video-gallery");
   revalidatePath("/admin/video-gallery");
 }
@@ -99,6 +101,7 @@ export async function deleteGalleryItem(id: string) {
 
   await prisma.galleryItem.delete({ where: { id } });
 
+  revalidatePath("/gallery");
   revalidatePath("/video-gallery");
   revalidatePath("/admin/video-gallery");
 }
@@ -109,6 +112,7 @@ export async function toggleGalleryItemActive(id: string, active: boolean) {
 
   await prisma.galleryItem.update({ where: { id }, data: { active } });
 
+  revalidatePath("/gallery");
   revalidatePath("/video-gallery");
   revalidatePath("/admin/video-gallery");
 }
