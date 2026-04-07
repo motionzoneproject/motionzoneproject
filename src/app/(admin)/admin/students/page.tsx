@@ -496,6 +496,7 @@ export default async function Page({
     },
   });
 
+  // fix: den verkar inte få mail på addedBy:
   const allStudents = buildStudentSummaries(purchasesWithData);
 
   const ITEMS_PER_PAGE = 10;
