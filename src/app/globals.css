@@ -61,6 +61,8 @@
 html,
 body {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Light Mode - Default */
@@ -205,4 +207,118 @@ h6 {
 .animate-fade-in-left {
   animation: fade-in-left 0.8s ease-out forwards;
   opacity: 0;
+}
+
+.mdxeditor-popup-container.mail-mdx-editor {
+  z-index: 70;
+}
+
+.mdxeditor-popup-container.mail-mdx-editor [data-radix-popper-content-wrapper] {
+  z-index: 71;
+}
+
+.mail-mdx-editor.light-theme,
+.mdxeditor-popup-container.mail-mdx-editor.light-theme {
+  --baseBase: #ffffff;
+  --basePageBg: #ffffff;
+  --baseBgSubtle: #f1f5f9;
+  --baseBg: #dbe4ee;
+  --baseBgHover: #cbd5e1;
+  --baseBgActive: #64748b;
+  --baseLine: #94a3b8;
+  --baseBorder: #64748b;
+  --baseBorderHover: #475569;
+  --baseSolid: #334155;
+  --baseSolidHover: #1e293b;
+  --baseText: #334155;
+  --baseTextContrast: #020617;
+}
+
+.mail-mdx-editor {
+  color: #020617;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.mail-mdx-editor > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mail-mdx-editor .mdxeditor-toolbar {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  overflow-x: hidden;
+  row-gap: 0.5rem;
+}
+
+.mail-mdx-editor .mdxeditor-toolbar > * {
+  min-width: 0;
+}
+
+.mail-mdx-editor
+  .mdxeditor-toolbar
+  [data-toolbar-item][aria-haspopup="listbox"] {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mail-mdx-editor
+  .mdxeditor-toolbar
+  [data-toolbar-item][aria-haspopup="listbox"]
+  > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .mail-mdx-editor .mdxeditor-toolbar {
+    align-items: flex-start;
+  }
+
+  .mail-mdx-editor
+    .mdxeditor-toolbar
+    [data-toolbar-item][aria-haspopup="listbox"] {
+    flex: 1 1 8rem;
+  }
+
+  .mail-mdx-editor .mdxeditor-toolbar div[role="separator"] {
+    display: none;
+  }
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable table,
+.mail-mdx-editor .mdxeditor-root-contenteditable table td,
+.mail-mdx-editor .mdxeditor-root-contenteditable table th {
+  border-color: #94a3b8;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable > * {
+  max-width: 100%;
+}
+
+.mail-mdx-editor [class*="_tableEditor_"] {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable ul > li::marker,
+.mail-mdx-editor .mdxeditor-root-contenteditable ol > li::marker {
+  color: #334155;
+}
+
+.mail-mdx-editor .mdxeditor-root-contenteditable hr {
+  border-color: #94a3b8;
 }

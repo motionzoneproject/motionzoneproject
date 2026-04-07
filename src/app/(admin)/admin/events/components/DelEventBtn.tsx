@@ -70,7 +70,7 @@ export default function DelEventBtn({ eventId, imageURL }: Props) {
           <span className="sr-only">Ta bort event</span>
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[90dvh] overflow-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Är du säker?</AlertDialogTitle>
           <AlertDialogDescription>Kan ej ångras.</AlertDialogDescription>

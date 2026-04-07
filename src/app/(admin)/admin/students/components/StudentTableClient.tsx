@@ -19,6 +19,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,9 +36,40 @@ import {
 import { removeUserFromLesson } from "@/lib/actions/admin";
 import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
 import type { StudentSummary } from "../page";
+import { MailDialog } from "./MailDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
+import type { SelectedStudent, StudentsSelectedType } from "./studentSelection";
 
 const STORAGE_KEY = "admin-students-selection";
+
+function getStudentEmail(student: StudentSummary) {
+  return (
+    student.participant?.email ??
+    student.participant?.addedBy.email ??
+    student.user.email
+  );
+}
+
+function isSelectedStudent(value: unknown): value is SelectedStudent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<SelectedStudent>;
+  return (
+    typeof candidate.studentKey === "string" &&
+    typeof candidate.name === "string" &&
+    typeof candidate.email === "string"
+  );
+}
+
+function isStudentsSelectedType(value: unknown): value is StudentsSelectedType {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.values(value).every(isSelectedStudent);
+}
 
 function formatDateTime(value: string) {
   const date = new Date(value);
@@ -402,16 +440,21 @@ export default function StudentTableClient({
 }: {
   students: StudentSummary[];
 }) {
-  const [selectedStudents, setSelectedStudents] = useState<
-    Record<string, { studentKey: string; name: string }>
-  >({});
+  const [selectedStudents, setSelectedStudents] =
+    useState<StudentsSelectedType>({});
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return;
 
     try {
-      setSelectedStudents(JSON.parse(stored));
+      const parsed = JSON.parse(stored);
+      if (!isStudentsSelectedType(parsed)) {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      setSelectedStudents(parsed);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -441,6 +484,7 @@ export default function StudentTableClient({
         next[student.studentKey] = {
           studentKey: student.studentKey,
           name: student.name,
+          email: getStudentEmail(student),
         };
       } else {
         delete next[student.studentKey];
@@ -463,8 +507,17 @@ export default function StudentTableClient({
         next[student.studentKey] = {
           studentKey: student.studentKey,
           name: student.name,
+          email: getStudentEmail(student),
         };
       }
+      return next;
+    });
+  };
+
+  const removeSelectedStudent = (studentKey: string) => {
+    setSelectedStudents((current) => {
+      const next = { ...current };
+      delete next[studentKey];
       return next;
     });
   };
@@ -518,12 +571,24 @@ export default function StudentTableClient({
             </DialogHeader>
             <div className="space-y-2">
               {selectedList.map((student) => (
-                <div
-                  key={student.studentKey}
-                  className="rounded border p-3 text-sm"
-                >
-                  {student.name}
-                </div>
+                <Item key={student.studentKey} variant="outline" size="sm">
+                  <ItemContent>
+                    <ItemTitle>{student.name}</ItemTitle>
+                    <ItemDescription>{student.email}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => removeSelectedStudent(student.studentKey)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Ta bort {student.name}</span>
+                    </Button>
+                  </ItemActions>
+                </Item>
               ))}
             </div>
             <DialogFooter>
@@ -535,6 +600,8 @@ export default function StudentTableClient({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <MailDialog selectedStudents={selectedList} />
       </div>
 
       <div className="mt-2">

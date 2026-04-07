@@ -102,7 +102,7 @@ export default function EditParticipantForm({
           <span className="sr-only">Redigera</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Redigera deltagare</DialogTitle>
         </DialogHeader>

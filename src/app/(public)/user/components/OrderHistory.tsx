@@ -109,7 +109,7 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                           Visa detaljer
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
+                      <DialogContent className="max-h-[90dvh] overflow-auto max-w-md">
                         <DialogHeader>
                           <DialogTitle>Orderdetaljer</DialogTitle>
                         </DialogHeader>
