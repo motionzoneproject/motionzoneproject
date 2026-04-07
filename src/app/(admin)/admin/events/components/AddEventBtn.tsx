@@ -20,7 +20,7 @@ export function AddEventBtn() {
           <PlusIcon /> Nytt event
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Lägg till nytt event</DialogTitle>
           <DialogDescription>Fyll i formuläret</DialogDescription>

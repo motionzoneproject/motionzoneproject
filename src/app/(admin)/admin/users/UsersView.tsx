@@ -97,8 +97,8 @@ export default function UsersView({
         </Button>
       </form>
 
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="min-w-[900px] w-full text-sm">
           <thead>
             <tr className="bg-muted/50 text-muted-foreground border-b">
               <th className="p-3 text-left font-medium">Namn</th>

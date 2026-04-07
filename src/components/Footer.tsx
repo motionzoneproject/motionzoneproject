@@ -24,13 +24,13 @@ const legalLinks = [
 
 const Footer = () => {
   return (
-    <footer className="relative border-t border-brand/20 bg-card min-h-[300px]">
+    <footer className="relative border-t border-brand/20 bg-card [background-image:linear-gradient(180deg,rgba(76,173,178,0.08)_0%,rgba(30,41,59,0.18)_38%,rgba(154,89,215,0.05)_100%),radial-gradient(circle_at_top_left,rgba(76,173,178,0.12),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(154,89,215,0.1),transparent_48%)]">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-40 w-96 h-96 rounded-full bg-brand-secondary/5 blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-[calc(3rem+env(safe-area-inset-bottom))] sm:pb-8">
         <div className="grid gap-12 md:grid-cols-4 mb-12">
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center group mb-4">

@@ -34,7 +34,7 @@ export default function DeleteGalleryItemBtn({ id }: { id: string }) {
           {loading ? "Tar bort..." : "Ta bort"}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[90dvh] overflow-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Ta bort video</AlertDialogTitle>
           <AlertDialogDescription>

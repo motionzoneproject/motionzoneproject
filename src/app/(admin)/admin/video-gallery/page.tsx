@@ -31,7 +31,7 @@ export default async function AdminVideoGalleryPage() {
           Inga videor än. Lägg till din första video!
         </p>
       ) : (
-        <Table>
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
               <TableHead>Titel</TableHead>

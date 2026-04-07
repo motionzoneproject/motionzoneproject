@@ -382,71 +382,75 @@ export default function OrderDetailsClient() {
         <div className="bg-muted/50 px-4 py-3 border-b">
           <h2 className="font-semibold">Beställda produkter</h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-muted-foreground border-b bg-muted/20">
-              <th className="px-4 py-2 font-medium">Produkt</th>
-              <th className="px-4 py-2 font-medium text-right">Pris/st</th>
-              <th className="px-4 py-2 font-medium text-right">Antal</th>
-              <th className="px-4 py-2 font-medium text-right">Summa</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {(order.orderItems || []).map((it) => {
-              const unit = Number(it.price ?? 0);
-              const sum = unit * (it.count ?? 0);
-              return (
-                <tr key={it.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-foreground">
-                        {it.product?.name ?? it.productId}
-                      </span>
-                      {it.participant ? (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] bg-brand text-white px-1.5 py-0.5 rounded uppercase font-bold">
-                            Deltagare
-                          </span>
-                          <span className="text-xs text-brand font-semibold">
-                            {it.participant.name}
-                          </span>
-                          {it.participant.allowPhotoVideo ? (
-                            <span title="Foto OK" className="text-xs">
-                              📸
-                            </span>
-                          ) : (
-                            <span title="Inga foton" className="text-xs">
-                              🚫
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic mt-0.5">
-                          Kund själv
+        <div className="overflow-x-auto">
+          <table className="min-w-[640px] w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b bg-muted/20">
+                <th className="px-4 py-2 font-medium">Produkt</th>
+                <th className="px-4 py-2 font-medium text-right">Pris/st</th>
+                <th className="px-4 py-2 font-medium text-right">Antal</th>
+                <th className="px-4 py-2 font-medium text-right">Summa</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {(order.orderItems || []).map((it) => {
+                const unit = Number(it.price ?? 0);
+                const sum = unit * (it.count ?? 0);
+                return (
+                  <tr key={it.id} className="hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">
+                          {it.product?.name ?? it.productId}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">{formatPrice(unit)}</td>
-                  <td className="px-4 py-3 text-right">{it.count}</td>
-                  <td className="px-4 py-3 text-right font-semibold">
-                    {formatPrice(sum)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-muted/50 font-bold">
-              <td colSpan={3} className="px-4 py-3 text-right">
-                Totalt att betala
-              </td>
-              <td className="px-4 py-3 text-right text-lg">
-                {formatPrice(total)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+                        {it.participant ? (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10px] bg-brand text-white px-1.5 py-0.5 rounded uppercase font-bold">
+                              Deltagare
+                            </span>
+                            <span className="text-xs text-brand font-semibold">
+                              {it.participant.name}
+                            </span>
+                            {it.participant.allowPhotoVideo ? (
+                              <span title="Foto OK" className="text-xs">
+                                📸
+                              </span>
+                            ) : (
+                              <span title="Inga foton" className="text-xs">
+                                🚫
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic mt-0.5">
+                            Kund själv
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {formatPrice(unit)}
+                    </td>
+                    <td className="px-4 py-3 text-right">{it.count}</td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {formatPrice(sum)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/50 font-bold">
+                <td colSpan={3} className="px-4 py-3 text-right">
+                  Totalt att betala
+                </td>
+                <td className="px-4 py-3 text-right text-lg">
+                  {formatPrice(total)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
 
       {/* Status History */}

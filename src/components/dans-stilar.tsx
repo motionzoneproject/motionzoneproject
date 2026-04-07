@@ -52,7 +52,7 @@ const DansStilar = ({ styles }: DansStilarProps) => {
                   <h3>{style.name}</h3>
                 </div>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90dvh] overflow-auto">
                 <DialogHeader>
                   <DialogTitle>{style.name}</DialogTitle>
                   <DialogDescription className="text-base mt-2 whitespace-pre-wrap">

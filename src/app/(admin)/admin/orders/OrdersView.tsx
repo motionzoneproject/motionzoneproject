@@ -257,8 +257,8 @@ export default function OrdersView({
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden mt-4">
-        <table className="w-full text-sm">
+      <div className="mt-4 overflow-x-auto rounded-lg border">
+        <table className="min-w-[1100px] w-full text-sm">
           <thead>
             <tr className="bg-muted/50 text-muted-foreground border-b">
               <th className="p-3 text-left font-medium">Order</th>
