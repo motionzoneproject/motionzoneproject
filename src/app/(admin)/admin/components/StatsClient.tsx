@@ -19,7 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getTerminsStats, type TerminStats } from "@/lib/actions/admin-stats";
+import {
+  getTerminsStats,
+  type StatsTimelinePoint,
+  type TerminStats,
+} from "@/lib/actions/admin-stats";
 import { formatPrice } from "@/lib/money";
 import { StatsChart } from "./StatsChart";
 import { StatsFilter } from "./StatsFilter";
@@ -96,6 +100,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
     setSelectedTerminId(value);
 
     if (value !== "all") {
+      // fix: Så datum sätts inte alls.
       setFromDate("");
       setToDate("");
     } else {
@@ -117,6 +122,13 @@ export function StatsClient({ terminer, initialStats }: Props) {
     }
   };
 
+  // För att visa vilka datum som faktiskt visas:
+  function _getActualDataRange(timeline: StatsTimelinePoint[]) {
+    const withData = timeline.filter((p) => p.orders > 0 || p.bookings > 0);
+    if (withData.length === 0) return null;
+    return { from: withData[0].date, to: withData[withData.length - 1].date };
+  }
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -131,14 +143,6 @@ export function StatsClient({ terminer, initialStats }: Props) {
             <span className="text-sm text-muted-foreground">Uppdaterar...</span>
           )}
         </div>
-
-        <p className="text-sm text-muted-foreground">
-          {stats.selectedPeriod
-            ? `Period ${formatDate(stats.selectedPeriod.from)} - ${formatDate(
-                stats.selectedPeriod.to,
-              )}`
-            : "Visar samlad statistik för hela verksamheten."}
-        </p>
       </div>
 
       <StatsFilter
@@ -172,7 +176,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
 
         <Card>
           <CardHeader className="gap-1">
-            <CardDescription>Aktiva elever</CardDescription>
+            <CardDescription>Antal nya elever</CardDescription>
             <CardTitle className="text-3xl">
               {stats.overview.activeStudents}
             </CardTitle>
@@ -196,8 +200,8 @@ export function StatsClient({ terminer, initialStats }: Props) {
           <CardHeader>
             <CardTitle>Produktförsäljning</CardTitle>
             <CardDescription>
-              {stats.overview.soldProducts} skapade produkter fördelat på{" "}
-              {stats.products.length} produkter.
+              {stats.overview.soldProducts} skapade produkter i perioden,
+              fördelat på {stats.products.length} produkter.
             </CardDescription>
           </CardHeader>
 
@@ -216,7 +220,15 @@ export function StatsClient({ terminer, initialStats }: Props) {
                     <TableHead className="text-right">Skapade</TableHead>
                     <TableHead className="text-right">Reserverade</TableHead>
                     <TableHead className="text-right">Intäkt</TableHead>
-                    <TableHead className="text-right">Platser kvar</TableHead>
+                    <TableHead
+                      className={
+                        selectedTerminId === "all"
+                          ? "hidden"
+                          : "" + " text-right"
+                      }
+                    >
+                      Platser kvar (nu)
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -239,9 +251,15 @@ export function StatsClient({ terminer, initialStats }: Props) {
                         {formatPrice(product.income)}
                       </TableCell>
 
-                      <TableCell className="text-right">
+                      <TableCell
+                        className={
+                          selectedTerminId === "all"
+                            ? "hidden"
+                            : "" + " text-right"
+                        }
+                      >
                         {product.unlimitedCustomers
-                          ? "Obegränsat"
+                          ? "∞"
                           : (product.spotsLeft ?? 0)}
                       </TableCell>
                     </TableRow>
@@ -256,8 +274,7 @@ export function StatsClient({ terminer, initialStats }: Props) {
           <CardHeader>
             <CardTitle>Kursöversikt</CardTitle>
             <CardDescription>
-              {stats.overview.courseCount} kurser och{" "}
-              {stats.overview.customerCount} kunder i urvalet.
+              {stats.overview.courseCount} kurser har lektioner i vald period.
             </CardDescription>
           </CardHeader>
 
@@ -273,10 +290,12 @@ export function StatsClient({ terminer, initialStats }: Props) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Kurs</TableHead>
-                    <TableHead>Lärare</TableHead>
-                    <TableHead className="text-right">Elever</TableHead>
-                    <TableHead className="text-right">Bokningar</TableHead>
-                    <TableHead className="text-right">Produkter</TableHead>
+                    <TableHead className="text-right">
+                      Antal nya elever
+                    </TableHead>
+                    <TableHead className="text-right">
+                      Antal bokningar
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -292,18 +311,12 @@ export function StatsClient({ terminer, initialStats }: Props) {
                         </div>
                       </TableCell>
 
-                      <TableCell>{course.teacherName}</TableCell>
-
                       <TableCell className="text-right">
                         {course.studentCount}
                       </TableCell>
 
                       <TableCell className="text-right">
                         {course.bookingCount}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        {course.linkedProducts}
                       </TableCell>
                     </TableRow>
                   ))}

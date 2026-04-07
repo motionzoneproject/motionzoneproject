@@ -44,10 +44,14 @@ export function StatsFilter({
       <div className="mt-2">
         {/* fix: Termin needs to retrieve the data differently by getting all the courses in the schema, and all the orders made with products containing that courses. So we hide the termin from the filter for later. But we could use the same functions, just some function recieving that info and then call the same actions based on first and last order-dates. */}
 
-        <div className="space-y-1 hidden">
+        <div className="space-y-1">
           <Label className="text-sm">Termin</Label>
 
-          <Select value={value} onValueChange={onValueChange} disabled={true}>
+          <Select
+            value={value}
+            onValueChange={onValueChange}
+            disabled={disabled}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Välj termin" />
             </SelectTrigger>

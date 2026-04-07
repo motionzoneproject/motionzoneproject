@@ -107,13 +107,41 @@ function getEffectiveDateRange(items: SchemaDateRange[]) {
 function buildProductWhere(terminId?: string | null): Prisma.ProductWhereInput {
   if (!terminId) return {};
 
+  /* Bättre att hämta från vad som faktiskt är skapat:
+product
+  → purchases
+    → bookings
+      → lesson
+        → terminId
+    */
+
+  //   return {
+  //     courses: {
+  //       some: {
+  //         course: {
+  //           schemaItems: {
+  //             some: {
+  //               terminId,
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   };
+
+  /* En kurs kan ju läggas in på flera terminer. Så därför kan en produkt och en order visas på samma terminer i valet, men kan vara förvirrande och missvisande.  */
+
   return {
-    courses: {
+    purchases: {
       some: {
-        course: {
-          schemaItems: {
-            some: {
-              terminId,
+        PurchaseItems: {
+          some: {
+            bookings: {
+              some: {
+                lesson: {
+                  terminId,
+                },
+              },
             },
           },
         },
@@ -162,7 +190,7 @@ function buildOrderItemWhere(
       status: {
         in: [...SUCCESSFUL_ORDER_STATUSES],
       },
-      ...(dateRange
+      ...(dateRange && !terminId
         ? {
             createdAt: {
               gte: dateRange.from,
@@ -190,7 +218,7 @@ function buildPotentialReservedOrderItemWhere(
           "APPROVED",
         ],
       },
-      ...(dateRange
+      ...(dateRange && !terminId
         ? {
             createdAt: {
               gte: dateRange.from,
@@ -212,7 +240,7 @@ function buildPurchaseWhere(
       status: {
         not: "CANCELLED",
       },
-      ...(dateRange
+      ...(dateRange && !terminId
         ? {
             createdAt: {
               gte: dateRange.from,
@@ -322,11 +350,69 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+// function getTimelineRange(
+//   selectedPeriod: StatsPeriod | null,
+//   orderDates: Date[],
+//   bookingDates: Date[],
+// ) {
+//   if (selectedPeriod) {
+//     const from = new Date(selectedPeriod.from);
+//     from.setHours(0, 0, 0, 0);
+
+//     const to = new Date(selectedPeriod.to);
+//     to.setHours(0, 0, 0, 0);
+
+//     return { from, to };
+//   }
+
+//   const allDates = [...orderDates, ...bookingDates];
+
+//   if (allDates.length === 0) {
+//     return null;
+//   }
+
+//   const from = new Date(Math.min(...allDates.map((date) => date.getTime())));
+//   from.setHours(0, 0, 0, 0);
+
+//   const to = new Date(Math.max(...allDates.map((date) => date.getTime())));
+//   to.setHours(0, 0, 0, 0);
+
+//   return { from, to };
+// }
+
 function getTimelineRange(
   selectedPeriod: StatsPeriod | null,
   orderDates: Date[],
   bookingDates: Date[],
 ) {
+  const allDates = [...orderDates, ...bookingDates];
+
+  // Om det finns faktisk data, använd dess faktiska span
+  if (allDates.length > 0) {
+    const dataFrom = new Date(Math.min(...allDates.map((d) => d.getTime())));
+    dataFrom.setHours(0, 0, 0, 0);
+
+    const dataTo = new Date(Math.max(...allDates.map((d) => d.getTime())));
+    dataTo.setHours(0, 0, 0, 0);
+
+    // Om selectedPeriod finns, utvidga spannet så terminens period alltid visas
+    if (selectedPeriod) {
+      const periodFrom = new Date(selectedPeriod.from);
+      periodFrom.setHours(0, 0, 0, 0);
+
+      const periodTo = new Date(selectedPeriod.to);
+      periodTo.setHours(0, 0, 0, 0);
+
+      return {
+        from: dataFrom < periodFrom ? dataFrom : periodFrom,
+        to: dataTo > periodTo ? dataTo : periodTo,
+      };
+    }
+
+    return { from: dataFrom, to: dataTo };
+  }
+
+  // Ingen data alls — visa åtminstone terminens period om den finns
   if (selectedPeriod) {
     const from = new Date(selectedPeriod.from);
     from.setHours(0, 0, 0, 0);
@@ -337,19 +423,7 @@ function getTimelineRange(
     return { from, to };
   }
 
-  const allDates = [...orderDates, ...bookingDates];
-
-  if (allDates.length === 0) {
-    return null;
-  }
-
-  const from = new Date(Math.min(...allDates.map((date) => date.getTime())));
-  from.setHours(0, 0, 0, 0);
-
-  const to = new Date(Math.max(...allDates.map((date) => date.getTime())));
-  to.setHours(0, 0, 0, 0);
-
-  return { from, to };
+  return null;
 }
 
 function buildDailyTimeline(
@@ -572,17 +646,19 @@ export async function getOrderStats(
   };
 }
 
+// När filter ändras, anropas denna.
 export async function getTerminsStats(
   terminId?: string | null,
   from?: string | null,
   to?: string | null,
 ): Promise<TerminStats> {
   const customDateRange = parseCustomDateRange(from, to);
-  const selectedPeriod = await getSelectedPeriod(terminId, customDateRange);
+  const selectedPeriod = await getSelectedPeriod(terminId, customDateRange); // Intressant
 
   const [orderSummary, courses, bookings, timelineOrderItems] =
     await Promise.all([
       getOrderStats(terminId, from, to),
+
       prisma.course.findMany({
         where: buildCourseWhere(terminId),
         select: {
@@ -622,6 +698,7 @@ export async function getTerminsStats(
       }),
       prisma.booking.findMany({
         where: buildBookingWhere(terminId, customDateRange),
+        orderBy: { lesson: { startTime: "asc" } },
         select: {
           id: true,
           createdAt: true,
