@@ -7,20 +7,24 @@ import { getStyles } from "@/lib/actions/style-actions";
 export default async function About() {
   const [studios, styles] = await Promise.all([getStudios(), getStyles()]);
   const activeStudios = studios.filter((studio) => studio.active);
+  const studioContentMaxWidth = Math.min(
+    activeStudios.length * 500 + Math.max(activeStudios.length - 1, 0) * 24,
+    1152,
+  );
 
   return (
     <main className="bg-background">
       {/* Hero */}
-      <section className="py-16 md:py-20 text-center border-b border-border">
-        <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+      <section className="border-b border-border py-16 text-center md:py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-7xl">
             Om vår
             <span className="font-serif italic text-brand-light">
               {" "}
               Dansstudio
             </span>
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-muted-foreground">
             En plats där rörelse möter gemenskap, kreativitet och passion.
           </p>
         </div>
@@ -30,48 +34,54 @@ export default async function About() {
       <DansStilar styles={styles} />
 
       {/* Studio */}
-      <section className="py-16 bg-muted/50">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-foreground">
+      <section className="bg-muted/50 py-16">
+        <div className="mx-auto max-w-6xl px-6 text-center">
+          <h2 className="mb-4 text-2xl font-bold text-foreground">
             Våra lokaler
           </h2>
           {activeStudios.length === 0 ? (
-            <p className="text-muted-foreground mb-8">
+            <p className="mb-8 text-muted-foreground">
               Information om våra studios kommer snart.
             </p>
           ) : (
-            <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-6">
-              {activeStudios.map((studio) => (
-                <div
-                  key={studio.id}
-                  className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
-                >
-                  {studio.imageUrl && (
-                    <Image
-                      src={studio.imageUrl}
-                      alt={studio.name}
-                      height={220}
-                      width={420}
-                      className="mb-4 h-[220px] w-full rounded-lg object-cover"
-                    />
-                  )}
-                  <h3 className="font-semibold text-lg">{studio.name}</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    {studio.description}
-                  </p>
-                </div>
-              ))}
+            <div
+              className="mx-auto w-full max-w-full"
+              style={{ maxWidth: `${studioContentMaxWidth}px` }}
+            >
+              <div className="flex flex-wrap justify-center gap-6">
+                {activeStudios.map((studio) => (
+                  <div
+                    key={studio.id}
+                    className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
+                  >
+                    {studio.imageUrl && (
+                      <Image
+                        src={studio.imageUrl}
+                        alt={studio.name}
+                        height={220}
+                        width={420}
+                        className="mb-4 h-[220px] w-full rounded-lg object-cover"
+                      />
+                    )}
+                    <h3 className="text-lg font-semibold">{studio.name}</h3>
+                    <p className="mt-2 text-muted-foreground">
+                      {studio.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="relative mt-6 overflow-hidden rounded-2xl border border-brand/30 bg-brand/10 p-7 backdrop-blur-sm">
+                <div className="absolute top-0 left-0 h-full w-1 rounded-l-2xl bg-brand" />
+                <p className="text-xl font-light leading-snug text-white">
+                  Här är alla välkomna –{" "}
+                  <span className="font-serif italic text-brand-light">
+                    oavsett nivå.
+                  </span>
+                </p>
+              </div>
             </div>
           )}
-          <div className="relative border border-brand/30 bg-brand/10 backdrop-blur-sm rounded-2xl p-7 overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-brand rounded-l-2xl" />
-            <p className="text-white text-xl font-light leading-snug">
-              Här är alla välkomna –{" "}
-              <span className="font-serif italic text-brand-light">
-                oavsett nivå.
-              </span>
-            </p>
-          </div>
         </div>
       </section>
     </main>

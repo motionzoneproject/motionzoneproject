@@ -106,7 +106,7 @@ export default function NavBar() {
               <LanguageSwitcher />
               <ModeToggle />
             </div>
-            <NavBarAuth mobile />
+            <NavBarAuth mobile onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>
       )}

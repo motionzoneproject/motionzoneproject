@@ -9,9 +9,13 @@ import { cn } from "@/lib/utils";
 
 interface NavBarAuthProps {
   mobile?: boolean;
+  onNavigate?: () => void;
 }
 
-export default function NavBarAuth({ mobile = false }: NavBarAuthProps) {
+export default function NavBarAuth({
+  mobile = false,
+  onNavigate,
+}: NavBarAuthProps) {
   const { session, user } = useSession();
   const router = useRouter();
 
@@ -23,12 +27,22 @@ export default function NavBarAuth({ mobile = false }: NavBarAuthProps) {
           mobile && "w-full flex-col items-start gap-2",
         )}
       >
-        <Link
-          href="/user"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className={cn(
+            "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
+            mobile && "w-full justify-start",
+          )}
         >
-          {user.name}
-        </Link>
+          <Link href="/user" onClick={onNavigate}>
+            <span>Profil &amp; boka</span>
+            <span className="max-w-[12rem] truncate text-xs font-normal text-muted-foreground">
+              {user.name}
+            </span>
+          </Link>
+        </Button>
         <div
           className={cn(
             "flex items-center gap-3",
@@ -42,13 +56,16 @@ export default function NavBarAuth({ mobile = false }: NavBarAuthProps) {
               variant="outline"
               className={cn(mobile && "justify-center")}
             >
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin" onClick={onNavigate}>
+                Admin
+              </Link>
             </Button>
           )}
           <Button
             variant="ghost"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => {
+              onNavigate?.();
               authClient.signOut({
                 fetchOptions: {
                   onSuccess: () => {
@@ -74,7 +91,9 @@ export default function NavBarAuth({ mobile = false }: NavBarAuthProps) {
         mobile && "w-full justify-center",
       )}
     >
-      <Link href="/signin">Logga in</Link>
+      <Link href="/signin" onClick={onNavigate}>
+        Logga in
+      </Link>
     </Button>
   );
 }
