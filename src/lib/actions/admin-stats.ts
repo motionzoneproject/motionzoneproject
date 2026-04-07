@@ -103,21 +103,16 @@ function getEffectiveDateRange(items: SchemaDateRange[]) {
 
   return { from, to };
 }
-
 function buildProductWhere(terminId?: string | null): Prisma.ProductWhereInput {
   if (!terminId) return {};
 
   return {
-    purchases: {
+    courses: {
       some: {
-        PurchaseItems: {
-          some: {
-            bookings: {
-              some: {
-                lesson: {
-                  terminId,
-                },
-              },
+        course: {
+          schemaItems: {
+            some: {
+              terminId,
             },
           },
         },
@@ -237,9 +232,11 @@ function buildBookingWhere(
     cancelled: false,
     ...(dateRange
       ? {
-          createdAt: {
-            gte: dateRange.from,
-            lte: dateRange.to,
+          lesson: {
+            startTime: {
+              gte: dateRange.from,
+              lte: dateRange.to,
+            },
           },
         }
       : {}),
