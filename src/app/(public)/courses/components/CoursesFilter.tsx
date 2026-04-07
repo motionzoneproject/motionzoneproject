@@ -56,7 +56,6 @@ export function CoursesFilter() {
 
   return (
     <div className="w-full">
-      <div className="text-xl font-bold mb-3">Filter & Sökning</div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* Search Field */}
         <div className="space-y-1">
