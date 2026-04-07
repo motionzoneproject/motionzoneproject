@@ -78,14 +78,21 @@ export async function sendStudentNewsletter(input: {
 
   try {
     const validated = await sendStudentNewsletterSchema.parseAsync(input);
-    const recipients = Array.from(
-      new Map(
-        validated.recipients.map((recipient) => [
-          recipient.email.toLowerCase(),
-          recipient,
-        ]),
-      ).values(),
-    );
+
+    const emailMap = new Map<string, string[]>();
+
+    // fixed: dedup removing emails for particpants. This joins it in the same instead! :)
+
+    for (const recipient of validated.recipients) {
+      const key = recipient.email.toLowerCase();
+      const existing = emailMap.get(key) ?? [];
+      emailMap.set(key, [...existing, recipient.name]);
+    }
+
+    const recipients = Array.from(emailMap.entries()).map(([email, names]) => ({
+      email,
+      name: names.join(", "),
+    }));
 
     const contentHtml = await marked.parse(validated.content);
     const contentText = markdownToTxt(validated.content);
