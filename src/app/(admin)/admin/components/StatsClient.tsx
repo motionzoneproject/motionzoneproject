@@ -19,11 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  getTerminsStats,
-  type StatsTimelinePoint,
-  type TerminStats,
-} from "@/lib/actions/admin-stats";
+import { getTerminsStats, type TerminStats } from "@/lib/actions/admin-stats";
 import { formatPrice } from "@/lib/money";
 import { StatsChart } from "./StatsChart";
 import { StatsFilter } from "./StatsFilter";
@@ -100,7 +96,6 @@ export function StatsClient({ terminer, initialStats }: Props) {
     setSelectedTerminId(value);
 
     if (value !== "all") {
-      // fix: Så datum sätts inte alls.
       setFromDate("");
       setToDate("");
     } else {
@@ -121,13 +116,6 @@ export function StatsClient({ terminer, initialStats }: Props) {
       setToDate(value);
     }
   };
-
-  // För att visa vilka datum som faktiskt visas:
-  function _getActualDataRange(timeline: StatsTimelinePoint[]) {
-    const withData = timeline.filter((p) => p.orders > 0 || p.bookings > 0);
-    if (withData.length === 0) return null;
-    return { from: withData[0].date, to: withData[withData.length - 1].date };
-  }
 
   return (
     <section className="space-y-4">

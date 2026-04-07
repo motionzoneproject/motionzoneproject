@@ -107,30 +107,6 @@ function getEffectiveDateRange(items: SchemaDateRange[]) {
 function buildProductWhere(terminId?: string | null): Prisma.ProductWhereInput {
   if (!terminId) return {};
 
-  /* Bättre att hämta från vad som faktiskt är skapat:
-product
-  → purchases
-    → bookings
-      → lesson
-        → terminId
-    */
-
-  //   return {
-  //     courses: {
-  //       some: {
-  //         course: {
-  //           schemaItems: {
-  //             some: {
-  //               terminId,
-  //             },
-  //           },
-  //         },
-  //       },
-  //     },
-  //   };
-
-  /* En kurs kan ju läggas in på flera terminer. Så därför kan en produkt och en order visas på samma terminer i valet, men kan vara förvirrande och missvisande.  */
-
   return {
     purchases: {
       some: {
@@ -349,36 +325,6 @@ function toDateKey(date: Date) {
 
   return `${year}-${month}-${day}`;
 }
-
-// function getTimelineRange(
-//   selectedPeriod: StatsPeriod | null,
-//   orderDates: Date[],
-//   bookingDates: Date[],
-// ) {
-//   if (selectedPeriod) {
-//     const from = new Date(selectedPeriod.from);
-//     from.setHours(0, 0, 0, 0);
-
-//     const to = new Date(selectedPeriod.to);
-//     to.setHours(0, 0, 0, 0);
-
-//     return { from, to };
-//   }
-
-//   const allDates = [...orderDates, ...bookingDates];
-
-//   if (allDates.length === 0) {
-//     return null;
-//   }
-
-//   const from = new Date(Math.min(...allDates.map((date) => date.getTime())));
-//   from.setHours(0, 0, 0, 0);
-
-//   const to = new Date(Math.max(...allDates.map((date) => date.getTime())));
-//   to.setHours(0, 0, 0, 0);
-
-//   return { from, to };
-// }
 
 function getTimelineRange(
   selectedPeriod: StatsPeriod | null,
