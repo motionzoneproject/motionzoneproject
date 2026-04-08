@@ -85,8 +85,12 @@ export async function sendStudentNewsletter(input: {
 
     for (const recipient of validated.recipients) {
       const key = recipient.email.toLowerCase();
-      const existing = emailMap.get(key) ?? [];
-      emailMap.set(key, [...existing, recipient.name]);
+      let existing = emailMap.get(key);
+      if (!existing) {
+        existing = [];
+        emailMap.set(key, existing);
+      }
+      existing.push(recipient.name);
     }
 
     const recipients = Array.from(emailMap.entries()).map(([email, names]) => ({
