@@ -81,7 +81,7 @@ export async function sendStudentNewsletter(input: {
 
     const emailMap = new Map<string, string[]>();
 
-    // fixed: dedup removing emails for particpants. This joins it in the same instead! :)
+    // Merge duplicate recipient email addresses by combining their names.
 
     for (const recipient of validated.recipients) {
       const key = recipient.email.toLowerCase();
