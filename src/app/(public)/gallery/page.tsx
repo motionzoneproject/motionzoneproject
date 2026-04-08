@@ -1,55 +1,11 @@
 import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import prisma from "@/lib/prisma";
+import { getActiveGalleryItems } from "@/lib/actions/gallery";
 import Gallery from "./Gallery";
-import type { GalleryMediaItem } from "./gallery-types";
 
 export default async function Page() {
-  const galleryItems = await prisma.galleryItem.findMany({
-    where: { active: true },
-    include: { event: true },
-    orderBy: [
-      { event: { startDate: "desc" } },
-      { displayOrder: "asc" },
-      { createdAt: "desc" },
-    ],
-  });
-
-  const mediaItems: GalleryMediaItem[] = galleryItems
-    .map((item) => ({
-      clientId: item.id,
-      id: item.id,
-      type: item.type,
-      title: item.caption?.trim() || item.title,
-      description: item.description ?? undefined,
-      url: item.url,
-      thumbnailUrl: item.thumbnailUrl ?? undefined,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-      sortDate: (item.event?.startDate ?? item.createdAt).toISOString(),
-      displayOrder: item.displayOrder,
-      eventId: item.event?.id,
-      eventHeadline: item.event?.headline,
-      eventStartDate: item.event?.startDate?.toISOString(),
-    }))
-    .sort((left, right) => {
-      const sortDateDelta =
-        new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
-
-      if (sortDateDelta !== 0) {
-        return sortDateDelta;
-      }
-
-      const orderDelta = (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
-      if (orderDelta !== 0) {
-        return orderDelta;
-      }
-
-      return (
-        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-      );
-    });
+  const mediaItems = await getActiveGalleryItems();
 
   return (
     <main className="bg-background">
@@ -69,9 +25,6 @@ export default async function Page() {
       {/* Gallery */}
       <section className="py-10 md:py-12">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
-            Bilder och video från studion
-          </h2>
           <Gallery items={mediaItems} />
         </div>
       </section>

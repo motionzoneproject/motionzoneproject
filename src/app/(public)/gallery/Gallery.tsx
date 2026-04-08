@@ -1,16 +1,14 @@
 "use client";
 
-import { Calendar, Clapperboard, Filter, ImageIcon, Play } from "lucide-react";
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Filter, Play } from "lucide-react";
+import { useMemo, useState } from "react";
+import { MasonryPhotoAlbum } from "react-photo-album";
+import "react-photo-album/masonry.css";
+import Lightbox from "yet-another-react-lightbox";
+import Captions from "yet-another-react-lightbox/plugins/captions";
+import Video from "yet-another-react-lightbox/plugins/video";
+import "yet-another-react-lightbox/plugins/captions.css";
+import "yet-another-react-lightbox/styles.css";
 import {
   Select,
   SelectContent,
@@ -23,22 +21,40 @@ import type { GalleryMediaItem } from "./gallery-types";
 
 type TypeFilter = "ALL" | "IMAGE" | "VIDEO";
 
-function formatDate(date?: string) {
-  if (!date) return "";
-  return new Intl.DateTimeFormat("sv-SE", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(date));
+// Build the YARL slides array from the filtered items list.
+// IMAGE → standard { src, width, height, title, description }
+// VIDEO → Video plugin slide { type: "video", sources, poster, title, description }
+function buildSlides(items: GalleryMediaItem[]) {
+  return items.map((item) => {
+    const w = item.width ?? 1920;
+    const h = item.height ?? 1080;
+    const shared = {
+      title: item.title,
+      description: item.eventHeadline,
+    };
+    if (item.type === "VIDEO") {
+      return {
+        ...shared,
+        type: "video" as const,
+        width: w,
+        height: h,
+        poster: item.thumbnailUrl,
+        sources: [{ src: item.url, type: "video/mp4" }],
+      };
+    }
+    return {
+      ...shared,
+      src: item.url,
+      width: w,
+      height: h,
+    };
+  });
 }
 
 export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [eventFilter, setEventFilter] = useState("ALL");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [imageDimensions, setImageDimensions] = useState<
-    Record<string, { width: number; height: number }>
-  >({});
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const eventOptions = useMemo(() => {
     const uniqueEvents = new Map<
@@ -66,32 +82,40 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
     });
   }, [items]);
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const typeMatches = typeFilter === "ALL" || item.type === typeFilter;
-      const eventMatches =
-        eventFilter === "ALL" || item.eventId === eventFilter;
-      return typeMatches && eventMatches;
-    });
-  }, [eventFilter, items, typeFilter]);
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const typeMatches = typeFilter === "ALL" || item.type === typeFilter;
+        const eventMatches =
+          eventFilter === "ALL" || item.eventId === eventFilter;
+        return typeMatches && eventMatches;
+      }),
+    [eventFilter, items, typeFilter],
+  );
 
-  const selectedItem = selectedId
-    ? (filteredItems.find((item) => item.clientId === selectedId) ?? null)
-    : null;
-  const selectedImageDimensions = selectedItem
-    ? imageDimensions[selectedItem.clientId]
-    : undefined;
+  // react-photo-album expects { src, width, height } — fall back to 16:9 if
+  // dimensions weren't probed (e.g. items imported before this change).
+  const photos = useMemo(
+    () =>
+      filteredItems.map((item) => ({
+        // For videos without a thumbnail we use a 16:9 placeholder src.
+        // The actual video URL must NOT be used here — it's not an image.
+        src: item.type === "IMAGE" ? item.url : (item.thumbnailUrl ?? ""),
+        width: item.width ?? 1920,
+        height: item.height ?? 1080,
+        key: item.id,
+        alt: item.title,
+        // Carry through so the custom renderer can detect thumbnail-less videos
+        isVideoPlaceholder: item.type === "VIDEO" && !item.thumbnailUrl,
+      })),
+    [filteredItems],
+  );
 
-  useEffect(() => {
-    if (selectedId && !selectedItem) {
-      setSelectedId(null);
-    }
-  }, [selectedId, selectedItem]);
-
-  const openItem = (itemId: string) => setSelectedId(itemId);
+  const slides = useMemo(() => buildSlides(filteredItems), [filteredItems]);
 
   return (
     <>
+      {/* Filter bar */}
       <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-border/70 bg-card/70 p-4 shadow-sm md:flex-row md:items-center md:justify-between md:p-5">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
@@ -142,6 +166,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         </div>
       </div>
 
+      {/* Grid */}
       {filteredItems.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/40 px-6 py-16 text-center">
           <p className="text-lg font-medium text-foreground">
@@ -152,224 +177,52 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {filteredItems.map((item) => {
-            const thumbnailSrc =
-              item.type === "IMAGE"
-                ? item.url
-                : (item.thumbnailUrl ?? undefined);
-
-            return (
-              <button
-                key={item.clientId}
-                type="button"
-                onClick={() => openItem(item.clientId)}
-                className="group text-left"
-              >
-                <article className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 transition-transform duration-300 group-hover:-translate-y-1 group-hover:border-foreground/20 group-hover:shadow-xl">
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    {thumbnailSrc ? (
-                      <Image
-                        src={thumbnailSrc}
-                        alt={item.title}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+        <MasonryPhotoAlbum
+          photos={photos}
+          columns={(containerWidth) => {
+            if (containerWidth < 640) return 2;
+            if (containerWidth < 1024) return 3;
+            return 4;
+          }}
+          spacing={16}
+          onClick={({ index }) => setLightboxIndex(index)}
+          render={{
+            image: (props, { photo }) => {
+              if (
+                (photo as typeof photo & { isVideoPlaceholder?: boolean })
+                  .isVideoPlaceholder
+              ) {
+                return (
+                  <div
+                    style={props.style}
+                    className="flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_50%),linear-gradient(180deg,rgba(15,23,42,0.75),rgba(2,6,23,0.97))]"
+                  >
+                    <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm">
+                      <Play
+                        className="h-8 w-8 text-white"
+                        fill="currentColor"
                       />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_45%),linear-gradient(180deg,rgba(15,23,42,0.7),rgba(2,6,23,0.96))]">
-                        <Play
-                          className="h-12 w-12 text-white/80"
-                          fill="currentColor"
-                        />
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-90" />
-                    <div className="absolute left-3 top-3 flex gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="bg-black/55 text-white backdrop-blur-sm"
-                      >
-                        {item.type === "VIDEO" ? (
-                          <Clapperboard className="h-3 w-3" />
-                        ) : (
-                          <ImageIcon className="h-3 w-3" />
-                        )}
-                        {item.type === "VIDEO" ? "Video" : "Bild"}
-                      </Badge>
-                    </div>
-                    {item.type === "VIDEO" && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-                          <Play
-                            className="h-7 w-7 text-white"
-                            fill="currentColor"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                      <div className="text-sm font-semibold md:text-base">
-                        {item.title}
-                      </div>
-                      {item.eventHeadline && (
-                        <div className="mt-1 flex items-center gap-1 text-xs text-white/80">
-                          <Calendar className="h-3 w-3" />
-                          <span>{item.eventHeadline}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </article>
-              </button>
-            );
-          })}
-        </div>
+                );
+              }
+              // biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here
+              return <img alt={props.alt} {...props} />;
+            },
+          }}
+        />
       )}
 
-      <Dialog
-        open={selectedItem !== null}
-        onOpenChange={(open) => !open && setSelectedId(null)}
-      >
-        <DialogContent
-          className="w-auto max-h-[calc(100vh-1rem)] max-w-[min(1500px,calc(100vw-1rem))] overflow-hidden border-none bg-transparent p-0 shadow-none"
-          showCloseButton={false}
-        >
-          <DialogTitle className="sr-only">
-            {selectedItem?.title ?? "Galleriobjekt"}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Förhandsvisning av valt galleriobjekt.
-          </DialogDescription>
-
-          {selectedItem && (
-            <div className="relative flex max-h-[calc(100vh-1rem)] w-fit max-w-[min(1500px,calc(100vw-1rem))] flex-col overflow-hidden rounded-4xl border border-border bg-background text-foreground shadow-2xl">
-              <DialogClose className="absolute right-4 top-4 z-20 rounded-full border border-border/80 bg-background/90 p-2 text-foreground transition hover:bg-accent">
-                <span className="sr-only">Stäng</span>
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
-              </DialogClose>
-
-              <div className="grid max-h-[calc(100vh-1rem)] w-fit max-w-[min(1500px,calc(100vw-1rem))] gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
-                <div className="flex min-h-[45vh] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_45%),linear-gradient(180deg,rgba(15,23,42,0.28),rgba(15,23,42,0.08))] p-4 md:p-6 lg:min-h-[70vh] lg:p-8 overflow-hidden">
-                  {selectedItem.type === "VIDEO" ? (
-                    <div className="w-full max-w-[1100px] overflow-hidden rounded-3xl border border-border/70 bg-black shadow-xl">
-                      <video
-                        src={selectedItem.url}
-                        poster={selectedItem.thumbnailUrl ?? undefined}
-                        controls
-                        playsInline
-                        className="block max-h-[78vh] w-full bg-black"
-                      >
-                        <track kind="captions" />
-                      </video>
-                    </div>
-                  ) : (
-                    <div className="flex max-h-[78vh] w-full max-w-[1200px] items-center justify-center overflow-hidden rounded-3xl border border-border/70 bg-background/70 shadow-xl">
-                      <Image
-                        src={selectedItem.url}
-                        alt={selectedItem.title}
-                        width={selectedImageDimensions?.width ?? 1600}
-                        height={selectedImageDimensions?.height ?? 1100}
-                        sizes="90vw"
-                        className="h-auto max-h-[78vh] w-auto max-w-full object-contain"
-                        priority
-                        onLoad={(event) => {
-                          const imageElement = event.currentTarget;
-                          if (
-                            imageElement.naturalWidth > 0 &&
-                            imageElement.naturalHeight > 0
-                          ) {
-                            setImageDimensions((current) => ({
-                              ...current,
-                              [selectedItem.clientId]: {
-                                width: imageElement.naturalWidth,
-                                height: imageElement.naturalHeight,
-                              },
-                            }));
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <aside className="flex max-h-[calc(100vh-1rem)] min-w-0 flex-col border-t border-border bg-card/70 lg:border-t-0 lg:border-l">
-                  <div className="flex-1 overflow-y-auto px-5 pb-6 pt-16 md:px-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className="rounded-full px-3 py-1"
-                      >
-                        {selectedItem.type === "VIDEO" ? "Video" : "Bild"}
-                      </Badge>
-                      {selectedItem.eventHeadline && (
-                        <Badge
-                          variant="secondary"
-                          className="rounded-full px-3 py-1"
-                        >
-                          {selectedItem.eventHeadline}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <h3 className="mt-4 text-2xl font-semibold leading-tight text-foreground">
-                      {selectedItem.title}
-                    </h3>
-
-                    {selectedItem.description ? (
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
-                        {selectedItem.description}
-                      </p>
-                    ) : (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        Inga fler detaljer finns för det här objektet.
-                      </p>
-                    )}
-
-                    <dl className="mt-6 space-y-4 text-sm text-muted-foreground">
-                      {selectedItem.eventHeadline && (
-                        <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                          <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
-                            Event
-                          </dt>
-                          <dd className="mt-2 text-base font-medium text-foreground">
-                            {selectedItem.eventHeadline}
-                          </dd>
-                        </div>
-                      )}
-
-                      <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                        <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
-                          Datum
-                        </dt>
-                        <dd className="mt-2 text-base font-medium text-foreground">
-                          {formatDate(
-                            selectedItem.eventStartDate ??
-                              selectedItem.createdAt,
-                          )}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Lightbox */}
+      <Lightbox
+        open={lightboxIndex >= 0}
+        close={() => setLightboxIndex(-1)}
+        index={lightboxIndex}
+        slides={slides}
+        plugins={[Video, Captions]}
+        captions={{ descriptionTextAlign: "center", descriptionMaxLines: 2 }}
+        video={{ controls: true, playsInline: true }}
+      />
     </>
   );
 }

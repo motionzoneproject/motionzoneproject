@@ -3,6 +3,7 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import type { GalleryItemType } from "@/generated/prisma/client";
+import { probeImageDimensions } from "@/lib/imageUtils";
 import prisma from "@/lib/prisma";
 import { getS3Resources } from "@/lib/s3";
 import { isAdminRole } from "./admin";
@@ -18,6 +19,8 @@ function normalizeGalleryItemData(data: {
   description?: string;
   url: string;
   thumbnailUrl?: string;
+  width?: number | null;
+  height?: number | null;
   displayOrder?: number;
   active?: boolean;
   eventId?: string;
@@ -33,6 +36,8 @@ function normalizeGalleryItemData(data: {
     description: data.description ?? null,
     url: data.url,
     thumbnailUrl: data.thumbnailUrl ?? null,
+    width: data.width ?? null,
+    height: data.height ?? null,
     displayOrder: data.displayOrder ?? 0,
     active: data.active ?? true,
     eventId: data.eventId || null,
@@ -41,7 +46,7 @@ function normalizeGalleryItemData(data: {
 
 /** Get all active gallery items ordered by displayOrder (public). */
 export async function getActiveGalleryItems() {
-  return prisma.galleryItem.findMany({
+  const items = await prisma.galleryItem.findMany({
     where: { active: true },
     include: { event: true },
     orderBy: [
@@ -50,6 +55,24 @@ export async function getActiveGalleryItems() {
       { createdAt: "desc" },
     ],
   });
+
+  return items.map((item) => ({
+    id: item.id,
+    type: item.type,
+    title: item.caption?.trim() || item.title,
+    description: item.description ?? undefined,
+    url: item.url,
+    thumbnailUrl: item.thumbnailUrl ?? undefined,
+    width: item.width ?? undefined,
+    height: item.height ?? undefined,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    sortDate: (item.event?.startDate ?? item.createdAt).toISOString(),
+    displayOrder: item.displayOrder,
+    eventId: item.event?.id,
+    eventHeadline: item.event?.headline,
+    eventStartDate: item.event?.startDate?.toISOString(),
+  }));
 }
 
 /** Get all gallery items (admin). */
@@ -77,7 +100,21 @@ export async function createGalleryItem(data: {
   const isAdmin = await isAdminRole();
   if (!isAdmin) throw new Error("Unauthorized");
 
-  await prisma.galleryItem.create({ data: normalizeGalleryItemData(data) });
+  let width: number | null = null;
+  let height: number | null = null;
+
+  if (data.type === "IMAGE") {
+    const dims = await probeImageDimensions(data.url);
+    width = dims?.width ?? null;
+    height = dims?.height ?? null;
+  } else {
+    width = 1920;
+    height = 1080;
+  }
+
+  await prisma.galleryItem.create({
+    data: normalizeGalleryItemData({ ...data, width, height }),
+  });
 
   revalidateGalleryPaths();
 }
@@ -104,6 +141,22 @@ export async function updateGalleryItem(
 
   const nextType = data.type ?? existingItem.type;
   const nextTitle = data.title ?? existingItem.title;
+  const nextUrl = data.url ?? existingItem.url;
+  const urlChanged = nextUrl !== existingItem.url;
+
+  let width = existingItem.width;
+  let height = existingItem.height;
+
+  if (urlChanged || width === null || height === null) {
+    if (nextType === "IMAGE") {
+      const dims = await probeImageDimensions(nextUrl);
+      width = dims?.width ?? null;
+      height = dims?.height ?? null;
+    } else {
+      width = 1920;
+      height = 1080;
+    }
+  }
 
   await prisma.galleryItem.update({
     where: { id },
@@ -112,8 +165,10 @@ export async function updateGalleryItem(
       title: nextTitle,
       caption: data.caption ?? existingItem.caption ?? undefined,
       description: data.description ?? existingItem.description ?? undefined,
-      url: data.url ?? existingItem.url,
+      url: nextUrl,
       thumbnailUrl: data.thumbnailUrl ?? existingItem.thumbnailUrl ?? undefined,
+      width,
+      height,
       displayOrder: data.displayOrder ?? existingItem.displayOrder,
       active: data.active ?? existingItem.active,
       eventId: data.eventId ?? existingItem.eventId ?? undefined,

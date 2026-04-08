@@ -90,6 +90,7 @@ const emptyGalleryValues = (type: "IMAGE" | "VIDEO"): GalleryFormValues => ({
   description: "",
   eventId: "",
   url: "",
+  thumbnailUrl: "",
   displayOrder: 0,
   active: true,
 });
@@ -126,6 +127,7 @@ export default function MediaAdmin({
   const submitItem = async (values: GalleryFormValues) => {
     setIsBusy(true);
     let finalUrl = values.url;
+    let finalThumbnailUrl = values.thumbnailUrl || undefined;
 
     if (values.type === "IMAGE" && finalUrl.startsWith("blob:")) {
       try {
@@ -140,6 +142,20 @@ export default function MediaAdmin({
       }
     }
 
+    if (finalThumbnailUrl?.startsWith("blob:")) {
+      try {
+        const res = await fetch(finalThumbnailUrl);
+        const blob = await res.blob();
+        const uploaded = await uploadImageFromBlob(blob);
+        URL.revokeObjectURL(finalThumbnailUrl);
+        finalThumbnailUrl = uploaded;
+      } catch {
+        toast.error("Uppladdning av miniatyrbild misslyckades.");
+        setIsBusy(false);
+        return;
+      }
+    }
+
     const payload = {
       type: values.type,
       title: values.title.trim(),
@@ -147,6 +163,7 @@ export default function MediaAdmin({
       description: values.description || undefined,
       eventId: values.eventId || undefined,
       url: finalUrl,
+      thumbnailUrl: finalThumbnailUrl,
       displayOrder: values.displayOrder,
       active: values.active,
     };
@@ -234,6 +251,7 @@ export default function MediaAdmin({
       description: item.description || "",
       eventId: item.eventId || "",
       url: item.url,
+      thumbnailUrl: item.thumbnailUrl || "",
       displayOrder: item.displayOrder,
       active: item.active,
     });
@@ -571,13 +589,37 @@ export default function MediaAdmin({
                       {currentType === "IMAGE" ? (
                         <ImageInput key={dialogKey} {...field} />
                       ) : (
-                        <VideoInput key={dialogKey} {...field} />
+                        <VideoInput
+                          key={dialogKey}
+                          {...field}
+                          onThumbnail={(url) =>
+                            form.setValue("thumbnailUrl", url)
+                          }
+                        />
                       )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {currentType === "VIDEO" && (
+                <FormField
+                  control={form.control}
+                  name="thumbnailUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Miniatyrbild (auto-genereras, kan ersättas)
+                      </FormLabel>
+                      <FormControl>
+                        <ImageInput key={`thumb-${dialogKey}`} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

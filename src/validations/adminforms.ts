@@ -6,6 +6,7 @@ export const adminGalleryItemSchema = z.object({
   type: z.enum(["IMAGE", "VIDEO"]),
   title: z.string().min(1, "Titel måste anges."),
   url: z.string().min(1, "Mediafil krävs."),
+  thumbnailUrl: z.string().optional(),
   description: z.string().optional(),
   eventId: z.string().optional(),
   displayOrder: z
@@ -13,6 +14,9 @@ export const adminGalleryItemSchema = z.object({
     .int("Sorteringsordning måste vara ett heltal.")
     .nonnegative("Sorteringsordning får inte vara negativ."),
   active: z.boolean(),
+  // Derived server-side at upload time; optional on the form
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
 });
 
 const TIME_REGEX = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
