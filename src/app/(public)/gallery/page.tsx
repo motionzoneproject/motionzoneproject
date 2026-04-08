@@ -10,14 +10,14 @@ export default async function Page() {
   return (
     <main className="bg-background">
       {/* Hero */}
-      <section className="py-16 md:py-20 text-center border-b border-border">
+      <section className="py-16 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
-            Bild
+            Bild & Video
             <span className="font-serif italic text-brand-light"> Galleri</span>
           </h1>
           <p className="text-muted-foreground mb-4">
-            Se bilder från våra lektioner, uppträdanden och studio.
+            Se bilder och videor från våra lektioner, uppträdanden och studio.
           </p>
         </div>
       </section>
