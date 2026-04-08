@@ -32,7 +32,7 @@ export default async function Page() {
       {/* Instagram CTA */}
       <section className="py-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">

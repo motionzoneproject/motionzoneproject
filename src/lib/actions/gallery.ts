@@ -16,14 +16,14 @@ function revalidateGalleryPaths() {
 function normalizeGalleryItemData(data: {
   type: GalleryItemType;
   title: string;
-  description?: string;
+  description?: string | null;
   url: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   width?: number | null;
   height?: number | null;
   displayOrder?: number;
   active?: boolean;
-  eventId?: string;
+  eventId?: string | null;
   caption?: string;
 }) {
   const title = data.title.trim();
@@ -33,9 +33,9 @@ function normalizeGalleryItemData(data: {
     type: data.type,
     title,
     caption,
-    description: data.description ?? null,
+    description: data.description || null,
     url: data.url,
-    thumbnailUrl: data.thumbnailUrl ?? null,
+    thumbnailUrl: data.thumbnailUrl || null,
     width: data.width ?? null,
     height: data.height ?? null,
     displayOrder: data.displayOrder ?? 0,
@@ -44,7 +44,7 @@ function normalizeGalleryItemData(data: {
   };
 }
 
-/** Get all active gallery items ordered by displayOrder (public). */
+/** Get all active gallery items sorted by event start date (desc), then displayOrder (asc), then createdAt (desc) — (public). */
 export async function getActiveGalleryItems() {
   const items = await prisma.galleryItem.findMany({
     where: { active: true },
@@ -89,12 +89,12 @@ export async function getAllGalleryItems() {
 export async function createGalleryItem(data: {
   type: GalleryItemType;
   title: string;
-  description?: string;
+  description?: string | null;
   url: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   displayOrder?: number;
   active?: boolean;
-  eventId?: string;
+  eventId?: string | null;
   caption?: string;
 }) {
   const isAdmin = await isAdminRole();
@@ -125,12 +125,12 @@ export async function updateGalleryItem(
     type: GalleryItemType;
     title: string;
     caption: string;
-    description: string;
+    description: string | null;
     url: string;
-    thumbnailUrl: string;
+    thumbnailUrl: string | null;
     displayOrder: number;
     active: boolean;
-    eventId: string;
+    eventId: string | null;
   }>,
 ) {
   const isAdmin = await isAdminRole();
@@ -164,14 +164,20 @@ export async function updateGalleryItem(
       type: nextType,
       title: nextTitle,
       caption: data.caption ?? existingItem.caption ?? undefined,
-      description: data.description ?? existingItem.description ?? undefined,
+      description:
+        data.description !== undefined
+          ? data.description
+          : existingItem.description,
       url: nextUrl,
-      thumbnailUrl: data.thumbnailUrl ?? existingItem.thumbnailUrl ?? undefined,
+      thumbnailUrl:
+        data.thumbnailUrl !== undefined
+          ? data.thumbnailUrl
+          : existingItem.thumbnailUrl,
       width,
       height,
       displayOrder: data.displayOrder ?? existingItem.displayOrder,
       active: data.active ?? existingItem.active,
-      eventId: data.eventId ?? existingItem.eventId ?? undefined,
+      eventId: data.eventId !== undefined ? data.eventId : existingItem.eventId,
     }),
   });
 
@@ -191,26 +197,33 @@ export async function deleteGalleryItem(id: string) {
     throw new Error("S3 är inte konfigurerad");
   }
 
-  const key = item.url.startsWith(s3.normalizedPublicUrl)
-    ? item.url.slice(s3.normalizedPublicUrl.length).replace(/^\//, "")
-    : null;
+  const extractKey = (url: string) =>
+    url.startsWith(s3.normalizedPublicUrl)
+      ? url.slice(s3.normalizedPublicUrl.length).replace(/^\//, "")
+      : null;
 
-  if (key) {
+  const deleteFromR2 = async (url: string, label: string) => {
+    const key = extractKey(url);
+    if (!key) {
+      console.error(
+        `deleteGalleryItem: ${label} URL "${url}" matchar inte S3_PUBLIC_URL "${s3.normalizedPublicUrl}", hoppade över R2-borttagning`,
+      );
+      return;
+    }
     try {
       await s3.client.send(
-        new DeleteObjectCommand({
-          Bucket: s3.bucket,
-          Key: key,
-        }),
+        new DeleteObjectCommand({ Bucket: s3.bucket, Key: key }),
       );
     } catch (err) {
-      console.error(`R2 delete failed for key "${key}":`, err);
+      console.error(`R2 delete failed for ${label} key "${key}":`, err);
       throw new Error("Kunde inte ta bort filen från lagringen");
     }
-  } else {
-    console.error(
-      `deleteGalleryItem: URL "${item.url}" matchar inte S3_PUBLIC_URL "${s3.normalizedPublicUrl}", hoppade över R2-borttagning`,
-    );
+  };
+
+  await deleteFromR2(item.url, "url");
+
+  if (item.thumbnailUrl) {
+    await deleteFromR2(item.thumbnailUrl, "thumbnailUrl");
   }
 
   await prisma.galleryItem.delete({ where: { id } });

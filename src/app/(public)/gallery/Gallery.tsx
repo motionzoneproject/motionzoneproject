@@ -42,7 +42,16 @@ function buildSlides(items: GalleryMediaItem[]) {
         width: w,
         height: h,
         poster: item.thumbnailUrl,
-        sources: [{ src: item.url, type: "video/mp4" }],
+        sources: [
+          {
+            src: item.url,
+            type: item.url.endsWith(".webm")
+              ? "video/webm"
+              : item.url.endsWith(".mov")
+                ? "video/quicktime"
+                : "video/mp4",
+          },
+        ],
       };
     }
     return {
@@ -212,7 +221,6 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
                   </div>
                 );
               }
-              // biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here
               return (
                 <div
                   style={{
@@ -222,6 +230,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
                     position: "relative",
                   }}
                 >
+                  {/* biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here */}
                   <img
                     alt={props.alt}
                     {...props}

@@ -160,10 +160,10 @@ export default function MediaAdmin({
       type: values.type,
       title: values.title.trim(),
       caption: values.type === "IMAGE" ? values.title.trim() : undefined,
-      description: values.description || undefined,
-      eventId: values.eventId || undefined,
+      description: values.description || null,
+      eventId: values.eventId || null,
       url: finalUrl,
-      thumbnailUrl: finalThumbnailUrl,
+      thumbnailUrl: finalThumbnailUrl || null,
       displayOrder: values.displayOrder,
       active: values.active,
     };
