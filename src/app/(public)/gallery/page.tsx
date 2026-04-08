@@ -2,8 +2,8 @@ import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
+import Gallery from "./Gallery";
 import type { GalleryMediaItem } from "./gallery-types";
-import UnifiedGalleryClient from "./UnifiedGalleryClient";
 
 export default async function Page() {
   const galleryItems = await prisma.galleryItem.findMany({
@@ -66,13 +66,13 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* Gallery Carousels by Event */}
+      {/* Gallery */}
       <section className="py-10 md:py-12">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
             Bilder och video från studion
           </h2>
-          <UnifiedGalleryClient items={mediaItems} />
+          <Gallery items={mediaItems} />
         </div>
       </section>
 

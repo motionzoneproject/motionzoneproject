@@ -32,11 +32,7 @@ function formatDate(date?: string) {
   }).format(new Date(date));
 }
 
-export default function UnifiedGalleryClient({
-  items,
-}: {
-  items: GalleryMediaItem[];
-}) {
+export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [eventFilter, setEventFilter] = useState("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -266,85 +262,109 @@ export default function UnifiedGalleryClient({
                 </svg>
               </DialogClose>
 
-              <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 px-3 py-12 md:px-6">
-                {selectedItem.type === "VIDEO" ? (
-                  <video
-                    src={selectedItem.url}
-                    controls
-                    poster={selectedItem.thumbnailUrl ?? undefined}
-                    preload="metadata"
-                    className="block h-auto max-h-[calc(100vh-14rem)] w-auto max-w-full rounded-2xl bg-black/80 shadow-lg"
-                  >
-                    <track kind="captions" />
-                  </video>
-                ) : (
-                  <Image
-                    src={selectedItem.url}
-                    alt={selectedItem.title}
-                    width={selectedImageDimensions?.width ?? 1600}
-                    height={selectedImageDimensions?.height ?? 1200}
-                    sizes="100vw"
-                    onLoad={(event) => {
-                      const target = event.currentTarget;
-                      if (!target.naturalWidth || !target.naturalHeight) return;
-
-                      setImageDimensions((current) => {
-                        const existing = current[selectedItem.clientId];
-
-                        if (
-                          existing?.width === target.naturalWidth &&
-                          existing?.height === target.naturalHeight
-                        ) {
-                          return current;
-                        }
-
-                        return {
-                          ...current,
-                          [selectedItem.clientId]: {
-                            width: target.naturalWidth,
-                            height: target.naturalHeight,
-                          },
-                        };
-                      });
-                    }}
-                    className="block h-auto max-h-[calc(100vh-14rem)] w-auto max-w-full rounded-2xl object-contain shadow-lg"
-                    priority
-                  />
-                )}
-              </div>
-
-              <div className="max-h-[30vh] overflow-y-auto border-t border-border bg-card/95 px-5 py-4 md:px-8">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="bg-foreground/10 text-foreground"
-                  >
-                    {selectedItem.type === "VIDEO" ? "Video" : "Bild"}
-                  </Badge>
-                  {selectedItem.eventHeadline && (
-                    <Badge
-                      variant="outline"
-                      className="border-border text-foreground/80"
-                    >
-                      {selectedItem.eventHeadline}
-                    </Badge>
+              <div className="grid max-h-[calc(100vh-1rem)] w-fit max-w-[min(1500px,calc(100vw-1rem))] gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="flex min-h-[45vh] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_45%),linear-gradient(180deg,rgba(15,23,42,0.28),rgba(15,23,42,0.08))] p-4 md:p-6 lg:min-h-[70vh] lg:p-8 overflow-hidden">
+                  {selectedItem.type === "VIDEO" ? (
+                    <div className="w-full max-w-[1100px] overflow-hidden rounded-3xl border border-border/70 bg-black shadow-xl">
+                      <video
+                        src={selectedItem.url}
+                        poster={selectedItem.thumbnailUrl ?? undefined}
+                        controls
+                        playsInline
+                        className="block max-h-[78vh] w-full bg-black"
+                      >
+                        <track kind="captions" />
+                      </video>
+                    </div>
+                  ) : (
+                    <div className="flex max-h-[78vh] w-full max-w-[1200px] items-center justify-center overflow-hidden rounded-3xl border border-border/70 bg-background/70 shadow-xl">
+                      <Image
+                        src={selectedItem.url}
+                        alt={selectedItem.title}
+                        width={selectedImageDimensions?.width ?? 1600}
+                        height={selectedImageDimensions?.height ?? 1100}
+                        sizes="90vw"
+                        className="h-auto max-h-[78vh] w-auto max-w-full object-contain"
+                        priority
+                        onLoad={(event) => {
+                          const imageElement = event.currentTarget;
+                          if (
+                            imageElement.naturalWidth > 0 &&
+                            imageElement.naturalHeight > 0
+                          ) {
+                            setImageDimensions((current) => ({
+                              ...current,
+                              [selectedItem.clientId]: {
+                                width: imageElement.naturalWidth,
+                                height: imageElement.naturalHeight,
+                              },
+                            }));
+                          }
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
 
-                <h3 className="text-xl font-semibold md:text-2xl">
-                  {selectedItem.title}
-                </h3>
-                {selectedItem.description && (
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-                    {selectedItem.description}
-                  </p>
-                )}
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground md:text-sm">
-                  {selectedItem.eventStartDate && (
-                    <span>{formatDate(selectedItem.eventStartDate)}</span>
-                  )}
-                  <span>Uppladdad {formatDate(selectedItem.createdAt)}</span>
-                </div>
+                <aside className="flex max-h-[calc(100vh-1rem)] min-w-0 flex-col border-t border-border bg-card/70 lg:border-t-0 lg:border-l">
+                  <div className="flex-1 overflow-y-auto px-5 pb-6 pt-16 md:px-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="rounded-full px-3 py-1"
+                      >
+                        {selectedItem.type === "VIDEO" ? "Video" : "Bild"}
+                      </Badge>
+                      {selectedItem.eventHeadline && (
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full px-3 py-1"
+                        >
+                          {selectedItem.eventHeadline}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <h3 className="mt-4 text-2xl font-semibold leading-tight text-foreground">
+                      {selectedItem.title}
+                    </h3>
+
+                    {selectedItem.description ? (
+                      <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
+                        {selectedItem.description}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        Inga fler detaljer finns för det här objektet.
+                      </p>
+                    )}
+
+                    <dl className="mt-6 space-y-4 text-sm text-muted-foreground">
+                      {selectedItem.eventHeadline && (
+                        <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+                          <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                            Event
+                          </dt>
+                          <dd className="mt-2 text-base font-medium text-foreground">
+                            {selectedItem.eventHeadline}
+                          </dd>
+                        </div>
+                      )}
+
+                      <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+                        <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                          Datum
+                        </dt>
+                        <dd className="mt-2 text-base font-medium text-foreground">
+                          {formatDate(
+                            selectedItem.eventStartDate ??
+                              selectedItem.createdAt,
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </aside>
               </div>
             </div>
           )}

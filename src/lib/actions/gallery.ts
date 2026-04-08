@@ -9,7 +9,6 @@ import { isAdminRole } from "./admin";
 
 function revalidateGalleryPaths() {
   revalidatePath("/gallery");
-  revalidatePath("/video-gallery");
   revalidatePath("/admin/gallery");
 }
 
