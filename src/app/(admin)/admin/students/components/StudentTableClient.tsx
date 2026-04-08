@@ -44,8 +44,8 @@ const STORAGE_KEY = "admin-students-selection";
 
 function getStudentEmail(student: StudentSummary) {
   return (
-    student.participant?.email ??
-    student.participant?.addedBy.email ??
+    student.participant?.email ||
+    student.participant?.addedBy.email ||
     student.user.email
   );
 }
@@ -449,6 +449,7 @@ export default function StudentTableClient({
 
     try {
       const parsed = JSON.parse(stored);
+
       if (!isStudentsSelectedType(parsed)) {
         window.localStorage.removeItem(STORAGE_KEY);
         return;
