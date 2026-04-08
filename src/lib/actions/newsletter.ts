@@ -101,32 +101,40 @@ export async function sendStudentNewsletter(input: {
     const contentHtml = await marked.parse(validated.content);
     const contentText = markdownToTxt(validated.content);
 
-    const results = await Promise.all(
-      recipients.map(async (recipient) => {
-        const html = buildNewsletterHtml(
-          validated.headline,
-          contentHtml,
-          recipient.name,
-        );
-        const text = buildNewsletterText(
-          validated.headline,
-          contentText,
-          recipient.name,
-        );
-        const result = await sendMail(
-          recipient.email,
-          validated.headline,
-          html,
-          text,
-        );
+    // Send in batches of 10 to avoid overwhelming the API (fixes #228)
+    const BATCH_SIZE = 10;
+    const results: { email: string; name: string; success: boolean }[] = [];
 
-        return {
-          email: recipient.email,
-          name: recipient.name,
-          success: result.success,
-        };
-      }),
-    );
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (recipient) => {
+          const html = buildNewsletterHtml(
+            validated.headline,
+            contentHtml,
+            recipient.name,
+          );
+          const text = buildNewsletterText(
+            validated.headline,
+            contentText,
+            recipient.name,
+          );
+          const result = await sendMail(
+            recipient.email,
+            validated.headline,
+            html,
+            text,
+          );
+
+          return {
+            email: recipient.email,
+            name: recipient.name,
+            success: result.success,
+          };
+        }),
+      );
+      results.push(...batchResults);
+    }
 
     const sentCount = results.filter((result) => result.success).length;
     const failed = results.filter((result) => !result.success);
