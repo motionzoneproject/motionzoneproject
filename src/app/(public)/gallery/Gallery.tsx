@@ -28,9 +28,12 @@ function buildSlides(items: GalleryMediaItem[]) {
   return items.map((item) => {
     const w = item.width ?? 1920;
     const h = item.height ?? 1080;
+    const description = [item.description, item.eventHeadline]
+      .filter(Boolean)
+      .join(" · ");
     const shared = {
       title: item.title,
-      description: item.eventHeadline,
+      description: description || undefined,
     };
     if (item.type === "VIDEO") {
       return {
@@ -105,7 +108,8 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         height: item.height ?? 1080,
         key: item.id,
         alt: item.title,
-        // Carry through so the custom renderer can detect thumbnail-less videos
+        // Carry through flags so the custom renderer can style video tiles
+        isVideo: item.type === "VIDEO",
         isVideoPlaceholder: item.type === "VIDEO" && !item.thumbnailUrl,
       })),
     [filteredItems],
@@ -188,13 +192,15 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
           onClick={({ index }) => setLightboxIndex(index)}
           render={{
             image: (props, { photo }) => {
-              if (
-                (photo as typeof photo & { isVideoPlaceholder?: boolean })
-                  .isVideoPlaceholder
-              ) {
+              const p = photo as typeof photo & {
+                isVideo?: boolean;
+                isVideoPlaceholder?: boolean;
+              };
+              const rounded: React.CSSProperties = { borderRadius: "0.5rem" };
+              if (p.isVideoPlaceholder) {
                 return (
                   <div
-                    style={props.style}
+                    style={{ ...props.style, ...rounded }}
                     className="flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_50%),linear-gradient(180deg,rgba(15,23,42,0.75),rgba(2,6,23,0.97))]"
                   >
                     <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm">
@@ -207,7 +213,36 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
                 );
               }
               // biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here
-              return <img alt={props.alt} {...props} />;
+              return (
+                <div
+                  style={{
+                    ...props.style,
+                    ...rounded,
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  <img
+                    alt={props.alt}
+                    {...props}
+                    style={{
+                      ...props.style,
+                      borderRadius: 0,
+                      display: "block",
+                    }}
+                  />
+                  {p.isVideo && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="rounded-full bg-black/60 p-3 backdrop-blur-sm">
+                        <Play
+                          className="h-6 w-6 text-white"
+                          fill="currentColor"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
             },
           }}
         />
@@ -221,7 +256,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         slides={slides}
         plugins={[Video, Captions]}
         captions={{ descriptionTextAlign: "center", descriptionMaxLines: 2 }}
-        video={{ controls: true, playsInline: true }}
+        video={{ controls: true, playsInline: true, autoPlay: true }}
       />
     </>
   );
