@@ -1859,14 +1859,130 @@ export async function toggleTerminActive(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    const termin = await prisma.termin.update({
-      where: { id },
-      data: { active },
+    const result = await prisma.$transaction(async (tx) => {
+      const termin = await tx.termin.update({
+        where: { id },
+        data: { active },
+      });
+
+      if (active) {
+        return {
+          termin,
+          deactivatedCourses: 0,
+          deactivatedProducts: 0,
+        };
+      }
+
+      const linkedCourses = await tx.schemaItem.findMany({
+        where: { terminId: id },
+        select: { courseId: true },
+        distinct: ["courseId"],
+      });
+
+      const linkedCourseIds = linkedCourses.map((item) => item.courseId);
+
+      if (linkedCourseIds.length === 0) {
+        return {
+          termin,
+          deactivatedCourses: 0,
+          deactivatedProducts: 0,
+        };
+      }
+
+      const coursesToDeactivate = await tx.course.findMany({
+        where: {
+          id: { in: linkedCourseIds },
+          active: true,
+          schemaItems: {
+            none: {
+              termin: {
+                active: true,
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      const courseIdsToDeactivate = coursesToDeactivate.map((item) => item.id);
+
+      if (courseIdsToDeactivate.length > 0) {
+        await tx.course.updateMany({
+          where: { id: { in: courseIdsToDeactivate } },
+          data: { active: false },
+        });
+      }
+
+      const linkedProducts = await tx.productOnCourse.findMany({
+        where: { courseId: { in: linkedCourseIds } },
+        select: { productId: true },
+        distinct: ["productId"],
+      });
+
+      const linkedProductIds = linkedProducts.map((item) => item.productId);
+
+      if (linkedProductIds.length === 0) {
+        return {
+          termin,
+          deactivatedCourses: courseIdsToDeactivate.length,
+          deactivatedProducts: 0,
+        };
+      }
+
+      const productsToDeactivate = await tx.product.findMany({
+        where: {
+          id: { in: linkedProductIds },
+          active: true,
+          NOT: {
+            courses: {
+              some: {
+                course: {
+                  active: true,
+                  schemaItems: {
+                    some: {
+                      termin: {
+                        active: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      const productIdsToDeactivate = productsToDeactivate.map(
+        (item) => item.id,
+      );
+
+      if (productIdsToDeactivate.length > 0) {
+        await tx.product.updateMany({
+          where: { id: { in: productIdsToDeactivate } },
+          data: { active: false },
+        });
+      }
+
+      return {
+        termin,
+        deactivatedCourses: courseIdsToDeactivate.length,
+        deactivatedProducts: productIdsToDeactivate.length,
+      };
     });
+
     revalidatePath("/admin/termin");
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin/products");
+    revalidatePath("/courses");
+
+    const cascadeSummary = !active
+      ? ` ${result.deactivatedCourses} kurser och ${result.deactivatedProducts} produkter avaktiverades automatiskt.`
+      : "";
+
     return {
       success: true,
-      msg: `Terminen "${termin.name}" är nu ${active ? "aktiv" : "inaktiv"}.`,
+      msg: `Terminen "${result.termin.name}" är nu ${active ? "aktiv" : "inaktiv"}.${cascadeSummary}`,
     };
   } catch (e) {
     console.error(e);
