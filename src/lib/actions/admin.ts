@@ -54,11 +54,12 @@ export async function isAdminRole(): Promise<boolean> {
  * @returns Promise of Terminer as a list of Termin[].
  * @auth Admin
  */
-export async function getTerminer(): Promise<Termin[]> {
+export async function getTerminer(showInactive = false): Promise<Termin[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const terminer = await prisma.termin.findMany({
+    where: showInactive ? undefined : { active: true },
     orderBy: { startDate: "asc" },
   });
   return terminer;
@@ -99,12 +100,18 @@ export async function getSchemaItems(
  * @returns the found courses as Course[]
  * @auth Admin
  */
-export async function getAllCourses(q: string = ""): Promise<Course[]> {
+export async function getAllCourses(
+  q: string = "",
+  showInactive = false,
+): Promise<Course[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const courses = await prisma.course.findMany({
-    where: { name: { contains: q, mode: "insensitive" } },
+    where: {
+      name: { contains: q, mode: "insensitive" },
+      ...(showInactive ? {} : { active: true }),
+    },
     orderBy: { name: "asc" },
   });
   return courses;
@@ -1134,11 +1141,14 @@ export async function bulkCancelLessons(
  * Gets all products in db.
  * @auth Admin
  */
-export async function getAllProducts(): Promise<Product[]> {
+export async function getAllProducts(showInactive = false): Promise<Product[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
-  const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
+  const products = await prisma.product.findMany({
+    where: showInactive ? undefined : { active: true },
+    orderBy: { name: "asc" },
+  });
 
   return products;
 }
@@ -1836,5 +1846,77 @@ export async function removeUserFromLesson(
   } catch (e) {
     console.error("Fel vid borttagning av bokning:", e);
     return { success: false, msg: "Ett tekniskt fel uppstod." };
+  }
+}
+
+// ─── Active/inactive toggles ───────────────────────────────────────────────
+
+export async function toggleTerminActive(
+  id: string,
+  active: boolean,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const termin = await prisma.termin.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/admin/termin");
+    return {
+      success: true,
+      msg: `Terminen "${termin.name}" är nu ${active ? "aktiv" : "inaktiv"}.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera terminen." };
+  }
+}
+
+export async function toggleCourseActive(
+  id: string,
+  active: boolean,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const course = await prisma.course.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/admin/courses");
+    return {
+      success: true,
+      msg: `Kursen "${course.name}" är nu ${active ? "aktiv" : "inaktiv"}.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera kursen." };
+  }
+}
+
+export async function toggleProductActive(
+  id: string,
+  active: boolean,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const product = await prisma.product.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/admin/products");
+    revalidatePath("/courses");
+    return {
+      success: true,
+      msg: `Produkten "${product.name}" är nu ${active ? "aktiv" : "inaktiv"}.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte uppdatera produkten." };
   }
 }

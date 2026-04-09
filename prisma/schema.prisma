@@ -163,6 +163,8 @@ model Termin {
   startDate DateTime // När startar terminen?
   endDate   DateTime // När slutar den?
 
+  active Boolean @default(true) // Om terminen är aktiv (synlig för kunder)
+
   schemaItems SchemaItem[] // Implicit relation - SchemaItem pekar på Termin
 
   lessons Lesson[] // Vilka tillfällen är kopplade till terminen
@@ -236,6 +238,8 @@ model Course {
   maxAge Int?
   adult  Boolean @default(false)
 
+  active Boolean @default(true) // Om kursen är aktiv (synlig för kunder)
+
   @@index([teacherId])
   // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
   @@map("course")
@@ -281,6 +285,8 @@ model Product {
   unlimitedCustomers Boolean @default(false) // Obegränsat antal köp.
 
   imageURL String?
+
+  active Boolean @default(true) // Om produkten är aktiv (synlig för kunder)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

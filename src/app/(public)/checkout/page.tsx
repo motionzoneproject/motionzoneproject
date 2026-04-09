@@ -21,7 +21,7 @@ export default async function Page() {
   if (hasItems && session) {
     const ids = cart.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, active: true },
       select: { id: true, name: true, price: true },
     });
 

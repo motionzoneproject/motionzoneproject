@@ -2,6 +2,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import { SearchInput } from "@/components/SearchInput";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,9 +19,14 @@ import type { Termin, User } from "@/generated/prisma/client";
 interface Props {
   teachers: User[];
   terminer: Termin[];
+  showInactive: boolean;
 }
 
-export default function CourseFilter({ teachers, terminer }: Props) {
+export default function CourseFilter({
+  teachers,
+  terminer,
+  showInactive,
+}: Props) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -151,6 +157,21 @@ export default function CourseFilter({ teachers, terminer }: Props) {
               </SelectGroup>
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex items-center gap-2 pt-5">
+          <Checkbox
+            id="showInactiveCourses"
+            checked={showInactive}
+            onCheckedChange={(checked) =>
+              setFilter("showInactive", checked ? "yes" : "")
+            }
+          />
+          <label
+            htmlFor="showInactiveCourses"
+            className="text-sm cursor-pointer"
+          >
+            Visa inaktiva kurser
+          </label>
         </div>
       </div>
     </div>

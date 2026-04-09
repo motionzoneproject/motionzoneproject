@@ -16,11 +16,15 @@ export default async function Page({
 }: {
   searchParams: Promise<{ hide?: string }>;
 }) {
-  const terminer = await getTerminer();
+  const terminer = await getTerminer(true);
 
   function isTerminActive(termin: Termin): boolean {
     const today = new Date();
     return today >= termin.startDate && today <= termin.endDate;
+  }
+
+  function isVisible(termin: Termin): boolean {
+    return isTerminActive(termin) && termin.active;
   }
 
   const params = await searchParams;
@@ -53,7 +57,7 @@ export default async function Page({
           </TableHeader>
           <TableBody>
             {terminer
-              .filter((t) => hide !== "yes" || isTerminActive(t))
+              .filter((t) => hide !== "yes" || isVisible(t))
               .map((t) => (
                 <TerminItem termin={t} key={t.id} />
               ))}
@@ -61,8 +65,7 @@ export default async function Page({
         </Table>
       </div>
 
-      {terminer.filter((t) => hide !== "yes" || isTerminActive(t)).length ===
-        0 && (
+      {terminer.filter((t) => hide !== "yes" || isVisible(t)).length === 0 && (
         <div className="text-center py-12 border rounded-lg bg-muted/20">
           <p className="text-muted-foreground">Inga terminer hittades.</p>
         </div>

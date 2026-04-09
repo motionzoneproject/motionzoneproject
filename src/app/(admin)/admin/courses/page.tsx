@@ -20,12 +20,14 @@ export default async function Page({
     teacher?: string;
     termin?: string;
     page?: string;
+    showInactive?: string;
   }>;
 }) {
   const params = await searchParams;
   const query = params.q || "";
   const teacher = params.teacher || "";
   const termin = params.termin || "";
+  const showInactive = params.showInactive === "yes";
 
   const teachers = await prisma.user.findMany({
     where: { role: "admin" },
@@ -36,6 +38,7 @@ export default async function Page({
   });
 
   const where: Prisma.CourseWhereInput = {
+    ...(showInactive ? {} : { active: true }),
     ...(query ? { name: { contains: query, mode: "insensitive" } } : {}),
     ...(teacher ? { teacherId: teacher } : {}),
     ...(termin ? { schemaItems: { some: { terminId: termin } } } : {}),
@@ -64,7 +67,11 @@ export default async function Page({
         <span className="font-bold text-2xl">Kurser</span>
         <AddCourseForm teachers={teachers} />
       </div>
-      <CourseFilter teachers={teachers} terminer={terminer} />
+      <CourseFilter
+        teachers={teachers}
+        terminer={terminer}
+        showInactive={showInactive}
+      />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
         <span>Totalt {totalCourses} kurser</span>

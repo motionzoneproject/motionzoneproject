@@ -1,3 +1,4 @@
+import { EyeOffIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
@@ -7,13 +8,14 @@ import prisma from "@/lib/prisma";
 import AddCoursesToProductForm from "./AddCoursesToProductForm";
 import DeleteProductBtn from "./DelProductBtn";
 import EditProductForm from "./EditProductForm";
+import ToggleProductActiveBtn from "./ToggleProductActiveBtn";
 
 interface Props {
   product: Product;
 }
 
 export default async function ProductItem({ product }: Props) {
-  const allCourses = await getAllCourses();
+  const allCourses = await getAllCourses("", true);
   const productStats = await getProductStats(product.id);
   const prodCourse: ProdCourse[] = await prisma.productOnCourse.findMany({
     where: { productId: product.id },
@@ -28,8 +30,18 @@ export default async function ProductItem({ product }: Props) {
         : "Kurs";
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">{product.name}</TableCell>
+    <TableRow className={!product.active ? "opacity-60" : ""}>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {product.name}
+          {!product.active && (
+            <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+              <EyeOffIcon className="h-3 w-3" />
+              Inaktiv
+            </span>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{productTypeLabel}</TableCell>
       <TableCell>{formatPrice(product.price)}</TableCell>
       <TableCell>
@@ -52,6 +64,10 @@ export default async function ProductItem({ product }: Props) {
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
+          <ToggleProductActiveBtn
+            productId={product.id}
+            active={product.active}
+          />
           <EditProductForm
             imageURL={product.imageURL ?? ""}
             unlimitedCustomers={product.unlimitedCustomers ?? false}
