@@ -1,4 +1,11 @@
-import { Book, CalendarDays, Clock, Info, MapPin } from "lucide-react";
+import {
+  Book,
+  CalendarDays,
+  Clock,
+  InfinityIcon,
+  Info,
+  MapPin,
+} from "lucide-react";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
 import {
@@ -141,17 +148,35 @@ export default async function Page({ searchParams }: Props) {
   return (
     <main className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="text-center py-8 border-b border-border mb-8">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
-            Köp våra
-            <span className="font-serif italic text-brand-light"> Kurser</span>
+        <div className="py-8 border-b border-border mb-8">
+          {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
+            Här köper du tillgång till våra
+            <span className="font-serif italic text-brand-light"> Kurser</span>!
           </h1>
-        </div>
+          <p>
+            I samband med köpet blir du medlem. Du kan även köpa produkter till
+            dina barn, lägg enkelt till deltagare i kundkorgen. Logga sedan
+            enkelt in och boka våra lektioner!
+          </p> */}
 
-        {/* Filter component */}
-        <div className="mb-6">
-          <CoursesFilter />
+          <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+            Köp tillgång till våra
+            <span className="font-serif italic text-brand-light"> kurser</span>
+          </h1>
+          <div className="w-full">
+            <p className="text-muted-foreground">
+              Vid köp blir du samtidigt medlem hos Motion Zone. Du kan även köpa
+              kurser till exempelvis dina barn genom att enkelt lägga till
+              deltagare i kundkorgen. När köpet är klart loggar du in och bokar
+              de lektioner ni vill gå.
+            </p>
+
+            <p className="font-bold mt-6 mb-2">Filter</p>
+            <CoursesFilter />
+          </div>
         </div>
+        {/* Filter component */}
+        <p className="font-bold mt-4">Våra produkter</p>
 
         {totalProducts > 0 ? (
           <>
@@ -163,7 +188,6 @@ export default async function Page({ searchParams }: Props) {
                 {totalProducts} produkter
               </span>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {productsWithData.map((p) => {
                 const productCourses = p.courses;
@@ -184,8 +208,17 @@ export default async function Page({ searchParams }: Props) {
                             variant={
                               p.spotsLeft <= 3 ? "destructive" : "outline"
                             }
+                            className={
+                              p.spotsLeft <= 4
+                                ? "text-red-500"
+                                : "text-green-500"
+                            }
                           >
                             {`${p.spotsLeft} platser kvar`}
+                          </Badge>
+                        ) : p.spotsLeft === Infinity ? (
+                          <Badge variant={"outline"}>
+                            <InfinityIcon className="text-green-500 w-6! h-6! " />
                           </Badge>
                         ) : (
                           <Badge variant={"destructive"}>
@@ -224,10 +257,6 @@ export default async function Page({ searchParams }: Props) {
                             className="text-sm bg-muted p-2 rounded border border-border"
                           >
                             <p className="font-medium">{t.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {t.startDate.toLocaleDateString("sv-SE")} –{" "}
-                              {t.endDate.toLocaleDateString("sv-SE")}
-                            </p>
                           </div>
                         ))}
                       </div>

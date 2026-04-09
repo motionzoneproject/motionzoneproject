@@ -131,6 +131,7 @@ export async function editNewEvent(
       },
     });
     revalidatePath("/admin/events");
+
     return {
       success: true,
       msg: `Event ${editedEvent.headline} uppdaterades.`,
@@ -835,18 +836,31 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
-    const newCourseItem = await prisma.course.update({
-      data: {
-        name: validated.name,
-        minAge: validated.minAge,
-        maxAge: validated.maxAge,
-        level: validated.level,
-        adult: validated.adult,
-        description: validated.description,
-        teacherId: validated.teacherid,
-      },
-      where: { id: id },
+    const newCourseItem = await prisma.$transaction(async (tx) => {
+      const updatedCourse = await tx.course.update({
+        data: {
+          name: validated.name,
+          minAge: validated.minAge,
+          maxAge: validated.maxAge,
+          level: validated.level,
+          adult: validated.adult,
+          description: validated.description,
+          teacherId: validated.teacherid,
+        },
+        where: { id },
+      });
+
+      await tx.lesson.updateMany({
+        where: { courseId: id },
+        data: { teacherId: validated.teacherid },
+      });
+
+      return updatedCourse;
     });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
     return {
       success: true,
       msg: `Kursen ${newCourseItem.name} ändrades.`,
@@ -1822,88 +1836,5 @@ export async function removeUserFromLesson(
   } catch (e) {
     console.error("Fel vid borttagning av bokning:", e);
     return { success: false, msg: "Ett tekniskt fel uppstod." };
-  }
-}
-
-export async function addPhoto(data: {
-  url: string;
-  caption?: string;
-  description?: string;
-  eventId?: string;
-  isVisible?: boolean;
-}) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    await prisma.photo.create({
-      data: {
-        url: data.url,
-        caption: data.caption ?? null,
-        description: data.description ?? null,
-        eventId: data.eventId || null,
-        isVisible: data.isVisible ?? true,
-      },
-    });
-
-    revalidatePath("/admin/gallery");
-    revalidatePath("/gallery");
-
-    return { success: true, msg: "Bild skapad." };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte lägga till bilden." };
-  }
-}
-
-export async function editPhoto(
-  id: string,
-  data: {
-    url: string;
-    caption?: string;
-    description?: string;
-    eventId?: string;
-    isVisible?: boolean;
-  },
-) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    await prisma.photo.update({
-      where: { id },
-      data: {
-        url: data.url,
-        caption: data.caption ?? null,
-        description: data.description ?? null,
-        eventId: data.eventId || null,
-        isVisible: data.isVisible ?? true,
-      },
-    });
-
-    revalidatePath("/admin/gallery");
-    revalidatePath("/gallery");
-
-    return { success: true, msg: "Bild uppdaterad." };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte uppdatera bilden." };
-  }
-}
-
-export async function deletePhoto(id: string) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    await prisma.photo.delete({ where: { id } });
-
-    revalidatePath("/admin/gallery");
-    revalidatePath("/gallery");
-
-    return { success: true, msg: "Bild borttagen." };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte ta bort bilden." };
   }
 }
