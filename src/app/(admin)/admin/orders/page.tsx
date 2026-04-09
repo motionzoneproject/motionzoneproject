@@ -85,7 +85,7 @@ export default async function Page({
   if (!isAdmin) return notFound();
 
   const params = await searchParams;
-  const raw = (params?.status || "PENDING").toUpperCase();
+  const raw = (params?.status || "ALL").toUpperCase();
   const status: StatusFilter = [
     "ALL",
     "PENDING",
@@ -95,7 +95,7 @@ export default async function Page({
     "CANCELLED",
   ].includes(raw)
     ? (raw as StatusFilter)
-    : "PENDING";
+    : "ALL";
 
   const orders = await getOrders("ALL");
 
