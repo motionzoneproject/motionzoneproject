@@ -1,16 +1,11 @@
 "use server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { formatPrice } from "./money";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: process.env.EMAIL_SECURE === "true", // Adjust based on your SMTP provider
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const DEFAULT_FROM =
+  process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
 
 /**
  * Send an email.
@@ -26,14 +21,20 @@ export async function sendMail(
   text?: string,
 ) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || `Motion Zone <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
       to,
       subject,
       html,
       text,
     });
-    return { success: true, messageId: info.messageId };
+
+    if (error) {
+      console.error("Resend error:", error);
+      return { success: false, error };
+    }
+
+    return { success: true, messageId: data?.id };
   } catch (error) {
     console.error("Error sending email:", error);
     return { success: false, error };
@@ -78,7 +79,7 @@ export async function generateOrderConfirmationHtml(order: {
       <h2 style="color: #ed212d; text-align: center;">Orderbekräftelse</h2>
       <p>Hej ${order.user.name || "Kunde"},</p>
       <p>Tack för din beställning hos Motion Zone! Här är dina orderdetaljer:</p>
-      
+
       <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
         <p><strong>Ordernummer:</strong> ${order.id}</p>
         <p><strong>Datum:</strong> ${new Date(
@@ -109,9 +110,9 @@ export async function generateOrderConfirmationHtml(order: {
       <p style="margin-top: 20px;">
         Om du har några frågor om din beställning, är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.
       </p>
-      
+
       <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
-      
+
       <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;" />
       <p style="font-size: 12px; color: #888; text-align: center;">
         Detta är ett automatiskt mejl. Du behöver inte svara på det.
