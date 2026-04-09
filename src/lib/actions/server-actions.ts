@@ -328,7 +328,9 @@ export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
 
 export async function getAllProducts(): Promise<Product[]> {
   try {
-    const products = await prisma.product.findMany();
+    const products = await prisma.product.findMany({
+      where: { active: true },
+    });
 
     return products;
   } catch (e) {

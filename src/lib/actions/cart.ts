@@ -13,6 +13,15 @@ export async function addToCart(params: {
   const { productId, qty = 1, redirectTo } = params;
   if (!productId) throw new Error("productId required");
 
+  // Block adding inactive products to cart
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { active: true },
+  });
+  if (!product || !product.active) {
+    throw new Error("Produkten är inte tillgänglig.");
+  }
+
   const cart = await readCart();
   const existing = cart.items.find((i) => i.productId === productId);
   if (existing) {

@@ -47,6 +47,7 @@ export default async function Page({ searchParams }: Props) {
 
   // Build filters based on search params
   const filters = {
+    active: true as const,
     ...(sp.q
       ? {
           name: {
