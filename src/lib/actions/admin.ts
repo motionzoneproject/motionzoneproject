@@ -131,6 +131,7 @@ export async function editNewEvent(
       },
     });
     revalidatePath("/admin/events");
+
     return {
       success: true,
       msg: `Event ${editedEvent.headline} uppdaterades.`,
@@ -835,18 +836,31 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
-    const newCourseItem = await prisma.course.update({
-      data: {
-        name: validated.name,
-        minAge: validated.minAge,
-        maxAge: validated.maxAge,
-        level: validated.level,
-        adult: validated.adult,
-        description: validated.description,
-        teacherId: validated.teacherid,
-      },
-      where: { id: id },
+    const newCourseItem = await prisma.$transaction(async (tx) => {
+      const updatedCourse = await tx.course.update({
+        data: {
+          name: validated.name,
+          minAge: validated.minAge,
+          maxAge: validated.maxAge,
+          level: validated.level,
+          adult: validated.adult,
+          description: validated.description,
+          teacherId: validated.teacherid,
+        },
+        where: { id },
+      });
+
+      await tx.lesson.updateMany({
+        where: { courseId: id },
+        data: { teacherId: validated.teacherid },
+      });
+
+      return updatedCourse;
     });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin/lectures");
     return {
       success: true,
       msg: `Kursen ${newCourseItem.name} ändrades.`,
