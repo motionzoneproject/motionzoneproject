@@ -1,116 +1,38 @@
 import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Event, Photo } from "@/generated/prisma/client";
-import prisma from "@/lib/prisma";
-import GalleryCarouselsClient from "./GalleryCarouselsClient";
+import { getActiveGalleryItems } from "@/lib/actions/gallery";
+import Gallery from "./Gallery";
 
 export default async function Page() {
-  // Fetch all visible photos and their events
-  const photos = await prisma.photo.findMany({
-    where: { isVisible: true },
-    include: { event: true },
-    orderBy: [{ event: { startDate: "desc" } }, { createdAt: "desc" }],
-  });
-
-  // Group photos by event
-  const eventMap = new Map<string, { event: Event; photos: Photo[] }>();
-  const unlinkedPhotos: Photo[] = [];
-  for (const photo of photos) {
-    if (photo.event) {
-      const eventId = photo.event.id;
-      if (!eventMap.has(eventId)) {
-        eventMap.set(eventId, {
-          event: photo.event as Event,
-          photos: [],
-        });
-      }
-      const bucket = eventMap.get(eventId);
-      if (bucket) {
-        bucket.photos.push(photo as Photo);
-      }
-    } else {
-      unlinkedPhotos.push(photo as Photo);
-    }
-  }
-  const grouped = [...eventMap.values()].map(({ event, photos }) => ({
-    event: {
-      ...event,
-      createdAt:
-        event.createdAt instanceof Date
-          ? event.createdAt.toISOString()
-          : event.createdAt,
-      updatedAt:
-        event.updatedAt instanceof Date
-          ? event.updatedAt.toISOString()
-          : event.updatedAt,
-      startDate:
-        event.startDate instanceof Date
-          ? event.startDate.toISOString()
-          : event.startDate,
-      endDate:
-        event.endDate instanceof Date
-          ? event.endDate?.toISOString()
-          : event.endDate,
-    },
-    photos: photos.map((photo) => ({
-      ...photo,
-      caption: photo.caption ?? undefined,
-      description: photo.description ?? undefined,
-      createdAt:
-        photo.createdAt instanceof Date
-          ? photo.createdAt.toISOString()
-          : photo.createdAt,
-      updatedAt:
-        photo.updatedAt instanceof Date
-          ? photo.updatedAt.toISOString()
-          : photo.updatedAt,
-    })),
-  }));
-
-  const unlinked = unlinkedPhotos.map((photo) => ({
-    ...photo,
-    caption: photo.caption ?? undefined,
-    description: photo.description ?? undefined,
-    createdAt:
-      photo.createdAt instanceof Date
-        ? photo.createdAt.toISOString()
-        : photo.createdAt,
-    updatedAt:
-      photo.updatedAt instanceof Date
-        ? photo.updatedAt.toISOString()
-        : photo.updatedAt,
-  }));
+  const mediaItems = await getActiveGalleryItems();
 
   return (
     <main className="bg-background">
       {/* Hero */}
-      <section className="py-16 md:py-20 text-center border-b border-border">
+      <section className="py-16 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
-            Bild
+            Bild & Video
             <span className="font-serif italic text-brand-light"> Galleri</span>
           </h1>
           <p className="text-muted-foreground mb-4">
-            Se bilder från våra lektioner, uppträdanden och studio.
+            Se bilder och videor från våra lektioner, uppträdanden och studio.
           </p>
         </div>
       </section>
 
-      {/* Gallery Carousels by Event */}
+      {/* Gallery */}
       <section className="py-10 md:py-12">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
-            Bilder från studion
-          </h2>
-          <GalleryCarouselsClient grouped={grouped} unlinked={unlinked} />
+          <Gallery items={mediaItems} />
         </div>
       </section>
 
       {/* Instagram CTA */}
       <section className="py-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">

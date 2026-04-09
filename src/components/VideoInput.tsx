@@ -4,7 +4,11 @@ import { Trash2 } from "lucide-react";
 import { type ChangeEvent, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { deleteUploadedFile, uploadVideoFromBlob } from "@/lib/uploads";
+import {
+  deleteUploadedFile,
+  uploadImageFromBlob,
+  uploadVideoFromBlob,
+} from "@/lib/uploads";
 
 const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
@@ -15,12 +19,63 @@ interface VideoInputProps {
   onBlur: () => void;
   value: string | undefined;
   name: string;
+  /** Called with the R2 URL of the auto-generated thumbnail after upload. */
+  onThumbnail?: (url: string) => void;
+}
+
+/**
+ * Seeks a video element to `seekTime`, waits for the frame, then draws it to a
+ * canvas and returns the result as a JPEG Blob. Falls back to time 0 if the
+ * requested seek time is beyond the video duration.
+ */
+function captureFrame(file: File, seekTime = 1): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    video.addEventListener("loadedmetadata", () => {
+      video.currentTime = Math.min(seekTime, video.duration * 0.1);
+    });
+
+    video.addEventListener("seeked", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Canvas 2D context unavailable"));
+        return;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("canvas.toBlob returned null"));
+        },
+        "image/jpeg",
+        0.85,
+      );
+    });
+
+    video.addEventListener("error", () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Video load error"));
+    });
+
+    video.src = objectUrl;
+  });
 }
 
 export default function VideoInput({
   onChange,
   onBlur,
   value,
+  onThumbnail,
 }: VideoInputProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -67,6 +122,16 @@ export default function VideoInput({
         });
         onChange(url);
         onBlur();
+
+        // Auto-generate thumbnail in the background — don't block or fail the upload
+        if (onThumbnail) {
+          captureFrame(file)
+            .then((blob) => uploadImageFromBlob(blob))
+            .then((thumbUrl) => onThumbnail(thumbUrl))
+            .catch((err) =>
+              console.warn("Thumbnail generation failed (non-fatal):", err),
+            );
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Uppladdning misslyckades",
@@ -76,7 +141,7 @@ export default function VideoInput({
         setUploading(false);
       }
     },
-    [onChange, onBlur],
+    [onChange, onBlur, onThumbnail],
   );
 
   return (
