@@ -131,175 +131,184 @@ export function LecturesFilter({
   }, [searchParams, pathname, replace, validParam]);
 
   return (
-    <div className="w-full rounded border-2 p-3">
-      <div className="text-xl font-bold">Filter</div>
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1">
-          <Label className="text-sm">Lärare</Label>
-          <Select
-            value={
-              params.get("teacher")
-                ? validParam("teacher", params.get("teacher"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("teacher", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj lärare" />
-            </SelectTrigger>
+    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Lärare
+        </Label>
+        <Select
+          value={
+            params.get("teacher")
+              ? validParam("teacher", params.get("teacher"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("teacher", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj lärare" />
+          </SelectTrigger>
 
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj lärare</SelectLabel>
-                <SelectItem value={"all"}>Alla</SelectItem>
-                <SelectSeparator></SelectSeparator>
-                {teachers.map((t) => (
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj lärare</SelectLabel>
+              <SelectItem value={"all"}>Alla</SelectItem>
+              <SelectSeparator></SelectSeparator>
+              {teachers.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Termin
+        </Label>
+        <Select
+          value={
+            params.get("termin")
+              ? validParam("termin", params.get("termin"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("termin", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj termin" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj termin</SelectLabel>
+              <SelectItem value={"all"}>Alla</SelectItem>
+              <SelectSeparator></SelectSeparator>
+              {terminer.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Kurs
+        </Label>
+        <Select
+          value={
+            params.get("course")
+              ? validParam("course", params.get("course"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("course", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj kurs" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj kurs</SelectLabel>
+              <SelectItem value={"all"}>Alla</SelectItem>
+              <SelectSeparator></SelectSeparator>
+              {courses.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {getCourseName(t)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Kurstillfälle
+        </Label>
+        <Select
+          value={
+            params.get("schemaitem")
+              ? validParam("schemaitem", params.get("schemaitem"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("schemaitem", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj kurs" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj kurstillfälle</SelectLabel>
+              <SelectItem value={"all"}>Alla</SelectItem>
+              <SelectSeparator></SelectSeparator>
+              {schemaItems
+                .sort((a, b) => {
+                  if (a.weekday !== b.weekday)
+                    return (
+                      getWeekdayNumber((a.weekday as Weekday) ?? "MONDAY") -
+                      getWeekdayNumber((b.weekday as Weekday) ?? "MONDAY")
+                    );
+
+                  if (a.timeStart.getTime() !== b.timeStart.getTime())
+                    return a.timeStart.getTime() - b.timeStart.getTime();
+
+                  return a.timeEnd.getTime() - b.timeEnd.getTime();
+                })
+                .map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name}
+                    {getVeckodag(t.weekday).slice(0, 3)}{" "}
+                    {t.timeStart.toLocaleTimeString("sv-SE", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    -{" "}
+                    {t.timeEnd.toLocaleTimeString("sv-SE", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    {t.courseId &&
+                      courses.find((c) => c.id === t.courseId) &&
+                      `${getCourseName(courses.find((c) => c.id === t.courseId) as Course)}`}
                   </SelectItem>
                 ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-sm">Termin</Label>
-          <Select
-            value={
-              params.get("termin")
-                ? validParam("termin", params.get("termin"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("termin", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj termin" />
-            </SelectTrigger>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
 
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj termin</SelectLabel>
-                <SelectItem value={"all"}>Alla</SelectItem>
-                <SelectSeparator></SelectSeparator>
-                {terminer.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-sm">Kurs</Label>
-          <Select
-            value={
-              params.get("course")
-                ? validParam("course", params.get("course"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("course", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj kurs" />
-            </SelectTrigger>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Datum mellan
+        </Label>
+        <DatePickerWithRange
+          filterSetter={setFilter}
+          from={params.get("from")}
+          to={params.get("to")}
+        />
+      </div>
 
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj kurs</SelectLabel>
-                <SelectItem value={"all"}>Alla</SelectItem>
-                <SelectSeparator></SelectSeparator>
-                {courses.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {getCourseName(t)}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-sm">Kurstillfälle</Label>
-          <Select
-            value={
-              params.get("schemaitem")
-                ? validParam("schemaitem", params.get("schemaitem"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("schemaitem", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj kurs" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj kurstillfälle</SelectLabel>
-                <SelectItem value={"all"}>Alla</SelectItem>
-                <SelectSeparator></SelectSeparator>
-                {schemaItems
-                  .sort((a, b) => {
-                    if (a.weekday !== b.weekday)
-                      return (
-                        getWeekdayNumber((a.weekday as Weekday) ?? "MONDAY") -
-                        getWeekdayNumber((b.weekday as Weekday) ?? "MONDAY")
-                      );
-
-                    if (a.timeStart.getTime() !== b.timeStart.getTime())
-                      return a.timeStart.getTime() - b.timeStart.getTime();
-
-                    return a.timeEnd.getTime() - b.timeEnd.getTime();
-                  })
-                  .map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {getVeckodag(t.weekday).slice(0, 3)}{" "}
-                      {t.timeStart.toLocaleTimeString("sv-SE", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      -{" "}
-                      {t.timeEnd.toLocaleTimeString("sv-SE", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      {t.courseId &&
-                        courses.find((c) => c.id === t.courseId) &&
-                        `${getCourseName(courses.find((c) => c.id === t.courseId) as Course)}`}
-                    </SelectItem>
-                  ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-sm">Datum mellan</Label>
-          <DatePickerWithRange
-            filterSetter={setFilter}
-            from={params.get("from")}
-            to={params.get("to")}
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Dölj gamla
+        </Label>
+        <div className="flex h-9 items-center">
+          <Checkbox
+            className="h-6 w-6"
+            checked={params.get("hideold") === "true"}
+            onCheckedChange={(checked) => {
+              setFilter("hideold", checked === true ? "true" : "");
+            }}
           />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-sm">Dölj gamla</Label>
-          <div className="flex h-9 items-center">
-            <Checkbox
-              className="h-6 w-6"
-              checked={params.get("hideold") === "true"}
-              onCheckedChange={(checked) => {
-                setFilter("hideold", checked === true ? "true" : "");
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>
