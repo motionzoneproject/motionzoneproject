@@ -108,6 +108,14 @@ export default function VideoInput({
         return;
       }
 
+      if (file.size === 0) {
+        setError(
+          "Filen kunde inte läsas (0 byte). Om filnamnet innehåller å, ä eller ö kan det orsaka problem – prova att byta namn på filen.",
+        );
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
+
       if (file.size > MAX_VIDEO_SIZE) {
         setError("Filen är för stor. Max 100 MB.");
         return;
