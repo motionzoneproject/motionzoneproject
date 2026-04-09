@@ -93,86 +93,86 @@ export default function CourseFilter({
   }, [searchParams, pathname, replace, validParam]);
 
   return (
-    <div className="w-full rounded border-2 p-3">
-      <div className="text-xl font-bold">Filter</div>
-      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1">
-          <Label className="text-sm">Sök</Label>
-          <SearchInput className="w-full" placeholder="Sök kursnamn..." />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-sm">Lärare</Label>
-          <Select
-            value={
-              params.get("teacher")
-                ? validParam("teacher", params.get("teacher"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("teacher", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj lärare" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj lärare</SelectLabel>
-                <SelectItem value="all">Alla</SelectItem>
-                <SelectSeparator />
-                {teachers.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-sm">Termin</Label>
-          <Select
-            value={
-              params.get("termin")
-                ? validParam("termin", params.get("termin"))
-                : "all"
-            }
-            onValueChange={(value) =>
-              setFilter("termin", value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Välj termin" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Välj termin</SelectLabel>
-                <SelectItem value="all">Alla</SelectItem>
-                <SelectSeparator />
-                {terminer.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2 pt-5">
-          <Checkbox
-            id="showInactiveCourses"
-            checked={showInactive}
-            onCheckedChange={(checked) =>
-              setFilter("showInactive", checked ? "yes" : "")
-            }
-          />
-          <label
-            htmlFor="showInactiveCourses"
-            className="text-sm cursor-pointer"
-          >
-            Visa inaktiva kurser
-          </label>
-        </div>
+    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Sök
+        </Label>
+        <SearchInput className="w-full" placeholder="Sök kursnamn..." />
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Lärare
+        </Label>
+        <Select
+          value={
+            params.get("teacher")
+              ? validParam("teacher", params.get("teacher"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("teacher", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj lärare" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj lärare</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              {teachers.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Termin
+        </Label>
+        <Select
+          value={
+            params.get("termin")
+              ? validParam("termin", params.get("termin"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("termin", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj termin" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj termin</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              {terminer.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2 pt-5">
+        <Checkbox
+          id="showInactiveCourses"
+          checked={params.get("showInactive") === "yes"}
+          onCheckedChange={(checked) =>
+            setFilter("showInactive", checked ? "yes" : "")
+          }
+        />
+        <label htmlFor="showInactiveCourses" className="cursor-pointer text-sm">
+          Visa inaktiva kurser
+        </label>
       </div>
     </div>
   );

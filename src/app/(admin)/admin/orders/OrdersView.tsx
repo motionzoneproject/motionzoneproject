@@ -134,12 +134,12 @@ export default function OrdersView({
   }, [orders, active, searchInput, participantId]);
 
   const tabs = [
+    { id: "ALL", label: "Alla" },
     { id: "PENDING", label: "Väntar" },
     { id: "APPROVED", label: "Godkända" },
     { id: "PAID", label: "Betalda" },
     { id: "COMPLETED", label: "Klara" },
     { id: "CANCELLED", label: "Avbrutna" },
-    { id: "ALL", label: "Alla" },
   ];
 
   const getStatusLabel = (status: string) => {

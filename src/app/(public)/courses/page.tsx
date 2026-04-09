@@ -172,7 +172,6 @@ export default async function Page({ searchParams }: Props) {
               de lektioner ni vill gå.
             </p>
 
-            <p className="font-bold mt-6 mb-2">Filter</p>
             <CoursesFilter />
           </div>
         </div>
