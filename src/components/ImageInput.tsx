@@ -24,7 +24,7 @@ export default function ImageInput({
   previewClassName,
   defaultValue,
 }: ImageInputProps) {
-  const [_genMsg, _setgenMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const clearImage = useCallback(() => {
@@ -46,8 +46,19 @@ export default function ImageInput({
       const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
       if (file) {
+        setErrorMsg("");
+
+        if (file.size === 0) {
+          setErrorMsg(
+            "Filen kunde inte läsas (0 byte). Om filnamnet innehåller å, ä eller ö kan det orsaka problem – prova att byta namn på filen.",
+          );
+          if (inputRef.current) inputRef.current.value = "";
+          return;
+        }
+
         if (file.size > MAX_FILE_SIZE) {
-          alert(`Max 5 MB`);
+          setErrorMsg("Filen är för stor. Max 5 MB.");
+          if (inputRef.current) inputRef.current.value = "";
           return;
         }
 
@@ -99,6 +110,9 @@ export default function ImageInput({
             ></Input>
           </div>
         </div>
+        {errorMsg && (
+          <p className="mt-1 text-sm text-destructive">{errorMsg}</p>
+        )}
       </div>
     </div>
   );
