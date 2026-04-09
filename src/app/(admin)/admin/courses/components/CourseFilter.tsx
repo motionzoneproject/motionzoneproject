@@ -19,9 +19,14 @@ import type { Termin, User } from "@/generated/prisma/client";
 interface Props {
   teachers: User[];
   terminer: Termin[];
+  showInactive: boolean;
 }
 
-export default function CourseFilter({ teachers, terminer }: Props) {
+export default function CourseFilter({
+  teachers,
+  terminer,
+  showInactive,
+}: Props) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();

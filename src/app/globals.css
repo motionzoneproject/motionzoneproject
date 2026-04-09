@@ -234,6 +234,23 @@ h6 {
   --baseTextContrast: #020617;
 }
 
+.mail-mdx-editor.dark-theme,
+.mdxeditor-popup-container.mail-mdx-editor.dark-theme {
+  --baseBase: #020617;
+  --basePageBg: #0f172a;
+  --baseBgSubtle: #0f172a;
+  --baseBg: #1e293b;
+  --baseBgHover: #334155;
+  --baseBgActive: #475569;
+  --baseLine: #334155;
+  --baseBorder: #475569;
+  --baseBorderHover: #64748b;
+  --baseSolid: #94a3b8;
+  --baseSolidHover: #cbd5e1;
+  --baseText: #e2e8f0;
+  --baseTextContrast: #f8fafc;
+}
+
 .mail-mdx-editor {
   color: #020617;
   width: 100%;

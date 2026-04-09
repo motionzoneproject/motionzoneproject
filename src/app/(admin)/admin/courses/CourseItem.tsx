@@ -1,4 +1,4 @@
-import { EditIcon, Search } from "lucide-react";
+import { EditIcon, EyeOffIcon, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -6,6 +6,7 @@ import type { Course, User } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
+import ToggleCourseActiveBtn from "./components/ToggleCourseActiveBtn";
 import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
@@ -35,9 +36,17 @@ export default async function CourseItem({
   });
 
   return (
-    <TableRow>
+    <TableRow className={!course.active ? "opacity-60" : ""}>
       <TableCell className="font-medium max-w-[360px] whitespace-normal">
-        {getCourseName(course)}
+        <div className="flex items-center gap-2">
+          {getCourseName(course)}
+          {!course.active && (
+            <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+              <EyeOffIcon className="h-3 w-3" />
+              Inaktiv
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell>{teacherName ?? "Saknas"}</TableCell>
       <TableCell>
@@ -66,6 +75,7 @@ export default async function CourseItem({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end items-center gap-2">
+          <ToggleCourseActiveBtn courseId={course.id} active={course.active} />
           <EditCourseForm teachers={teachers} course={course} />
           <DeleteCourseBtn courseId={course.id} />
         </div>

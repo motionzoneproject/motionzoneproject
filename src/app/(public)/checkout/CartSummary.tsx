@@ -26,7 +26,7 @@ export default async function CartSummary() {
 
   const ids = items.map((i) => i.productId);
   const products = await prisma.product.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, active: true },
     select: {
       id: true,
       name: true,

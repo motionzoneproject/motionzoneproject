@@ -12,11 +12,12 @@ import { isAdminRole } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import AddProductForm from "./components/AddProductForm";
 import ProductItem from "./components/ProductItem";
+import ShowInactiveCheckbox from "./components/ShowInactiveCheckbox";
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; showInactive?: string }>;
 }) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) {
@@ -25,16 +26,20 @@ export default async function Page({
 
   const params = await searchParams;
   const query = params.q || "";
+  const showInactive = params.showInactive === "yes";
 
   // Build filter
-  const where = query
-    ? {
-        name: {
-          contains: query,
-          mode: "insensitive" as const,
-        },
-      }
-    : {};
+  const where = {
+    ...(showInactive ? {} : { active: true }),
+    ...(query
+      ? {
+          name: {
+            contains: query,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+  };
 
   // Pagination
   const ITEMS_PER_PAGE = 10;
@@ -63,6 +68,7 @@ export default async function Page({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <ShowInactiveCheckbox />
           <SearchInput placeholder="Sök produkter..." />
           <AddProductForm />
         </div>
