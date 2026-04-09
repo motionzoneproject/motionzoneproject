@@ -2,6 +2,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import { SearchInput } from "@/components/SearchInput";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -155,6 +156,18 @@ export default function CourseFilter({ teachers, terminer }: Props) {
             </SelectGroup>
           </SelectContent>
         </Select>
+      </div>
+      <div className="flex items-center gap-2 pt-5">
+        <Checkbox
+          id="showInactiveCourses"
+          checked={params.get("showInactive") === "yes"}
+          onCheckedChange={(checked) =>
+            setFilter("showInactive", checked ? "yes" : "")
+          }
+        />
+        <label htmlFor="showInactiveCourses" className="cursor-pointer text-sm">
+          Visa inaktiva kurser
+        </label>
       </div>
     </div>
   );
