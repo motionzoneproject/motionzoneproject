@@ -78,14 +78,25 @@ export async function sendStudentNewsletter(input: {
 
   try {
     const validated = await sendStudentNewsletterSchema.parseAsync(input);
-    const recipients = Array.from(
-      new Map(
-        validated.recipients.map((recipient) => [
-          recipient.email.toLowerCase(),
-          recipient,
-        ]),
-      ).values(),
-    );
+
+    const emailMap = new Map<string, string[]>();
+
+    // Merge duplicate recipient email addresses by combining their names.
+
+    for (const recipient of validated.recipients) {
+      const key = recipient.email.toLowerCase();
+      let existing = emailMap.get(key);
+      if (!existing) {
+        existing = [];
+        emailMap.set(key, existing);
+      }
+      existing.push(recipient.name);
+    }
+
+    const recipients = Array.from(emailMap.entries()).map(([email, names]) => ({
+      email,
+      name: names.join(", "),
+    }));
 
     const contentHtml = await marked.parse(validated.content);
     const contentText = markdownToTxt(validated.content);
