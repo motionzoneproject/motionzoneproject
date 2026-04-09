@@ -22,6 +22,7 @@ import {
   toolbarPlugin,
   UndoRedo,
 } from "@mdxeditor/editor";
+import { useTheme } from "next-themes";
 import type { ForwardedRef } from "react";
 
 export default function InitializedMDXEditor({
@@ -31,9 +32,14 @@ export default function InitializedMDXEditor({
   plugins,
   ...props
 }: { editorRef: ForwardedRef<MDXEditorMethods> | null } & MDXEditorProps) {
+  const { theme } = useTheme();
+
   const defaultPlugins = [
     toolbarPlugin({
-      toolbarClassName: "border-b border-slate-300 bg-slate-100",
+      toolbarClassName:
+        theme === "dark"
+          ? "border-b border-border bg-card"
+          : "border-b border-slate-300 bg-slate-100",
       toolbarContents: () => (
         <>
           <UndoRedo />
@@ -62,16 +68,16 @@ export default function InitializedMDXEditor({
   return (
     <div
       className={[
-        "w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white",
+        "w-full min-w-0 overflow-hidden rounded-md border border-border bg-card",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
       <MDXEditor
-        className="mail-mdx-editor light-theme"
+        className={`mail-mdx-editor ${theme}-theme ${theme === "dark" ? " dark-editor" : ""}`}
         contentEditableClassName={[
-          "prose max-w-none min-h-48 w-full min-w-0 bg-white px-4 py-3 text-slate-950",
+          "prose dark:prose-invert max-w-none min-h-48 w-full min-w-0 bg-card px-4 py-3 text-card-foreground",
           contentEditableClassName,
         ]
           .filter(Boolean)
