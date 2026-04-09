@@ -88,7 +88,7 @@ export default function NavBar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-brand/10 px-4 py-5 space-y-1 bg-background/97">
+        <div className="md:hidden border-t border-brand/10 px-4 py-5 space-y-1 bg-background/97 max-h-[80vh] overflow-y-auto">
           {navLinks.map((link) => (
             <Link
               key={link.href}
