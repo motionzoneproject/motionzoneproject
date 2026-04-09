@@ -161,7 +161,11 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                         {item.participant?.name ?? "Du själv"}
                                       </p>
                                     </div>
-                                    <span>{item.price?.toString()} kr</span>
+                                    <span>
+                                      {item.price != null
+                                        ? formatPrice(Number(item.price))
+                                        : "-"}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
