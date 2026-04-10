@@ -122,8 +122,8 @@ export default function OrdersView({
   const tabs = [
     { id: "ALL", label: "Alla" },
     { id: "PENDING", label: "Väntar" },
-    { id: "APPROVED", label: "Godkända" },
     { id: "PAID", label: "Betalda" },
+    { id: "APPROVED", label: "Godkända" },
     { id: "CANCELLED", label: "Avbrutna" },
   ];
 
