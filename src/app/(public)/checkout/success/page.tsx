@@ -1,6 +1,21 @@
 import { formatPrice } from "@/lib/money";
 import { getOrderById } from "@/lib/orders";
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "PENDING_PAYMENT":
+      return "Inväntar betalning";
+    case "APPROVED":
+      return "Godkänd";
+    case "PAID":
+      return "Betald";
+    case "CANCELLED":
+      return "Avbruten";
+    default:
+      return status;
+  }
+}
+
 export default async function Page({
   searchParams,
 }: {
@@ -28,7 +43,7 @@ export default async function Page({
             <div>
               <span className="text-gray-600">Status:</span>
               <span className="ml-2 font-semibold">
-                {order.status ?? "PENDING_PAYMENT"}
+                {getStatusLabel(order.status ?? "PENDING_PAYMENT")}
               </span>
             </div>
             <div>
