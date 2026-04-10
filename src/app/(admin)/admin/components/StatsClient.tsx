@@ -45,7 +45,7 @@ function getDefaultDateRange() {
   from.setDate(today.getDate() - 30);
 
   const to = new Date(today);
-  to.setDate(today.getDate() + 7);
+  to.setDate(today.getDate() + 30);
 
   const format = (d: Date) => d.toISOString().split("T")[0];
 
@@ -121,8 +121,6 @@ export function StatsClient({ terminer, initialStats }: Props) {
     <section className="space-y-4">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Statistik</h2>
-
           <Badge variant="outline">
             {stats.selectedPeriod ? stats.selectedPeriod.name : "Alla terminer"}
           </Badge>

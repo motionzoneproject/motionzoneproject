@@ -1,3 +1,5 @@
+import { InfoIcon } from "lucide-react";
+import Link from "next/link";
 import {
   Accordion,
   AccordionContent,
@@ -60,10 +62,50 @@ export default async function Page() {
         ? 0
         : futureLessonIndex;
 
+  const ordersPaid = await prisma.order.count({
+    where: {
+      status: "PAID",
+    },
+  });
+  const ordersApp = await prisma.order.count({
+    where: {
+      status: "PENDING_PAYMENT",
+    },
+  });
+
   return (
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Översikt admin</h1>
+      </div>
+
+      <div className="space-y-4">
+        {ordersPaid > 0 && (
+          <div className="flex gap-2 text-xl text-green-500">
+            <div>
+              <InfoIcon />
+            </div>
+            <div>
+              <Link href="/admin/orders?status=PAID">
+                Det ligger <strong>{ordersPaid} st</strong> ordrar som behöver
+                godkännas.
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {ordersApp > 0 && (
+          <div className="flex gap-2 text-xl text-green-500">
+            <div>
+              <InfoIcon />
+            </div>
+            <div>
+              <Link href="/admin/orders?status=PENDING">
+                Det ligger <strong>{ordersPaid} st</strong> obetalda ordrar.
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -83,7 +125,9 @@ export default async function Page() {
 
       <Accordion type="single" collapsible>
         <AccordionItem value="item-1">
-          <AccordionTrigger>Statistik</AccordionTrigger>
+          <AccordionTrigger className="text-xl">
+            Visa statistik
+          </AccordionTrigger>
           <AccordionContent>
             <StatsPage />
           </AccordionContent>
