@@ -1,3 +1,5 @@
+import { InfoIcon } from "lucide-react";
+import Link from "next/link";
 import {
   Accordion,
   AccordionContent,
@@ -60,11 +62,33 @@ export default async function Page() {
         ? 0
         : futureLessonIndex;
 
+  const waitingOrders = await prisma.order.count({
+    where: {
+      OR: [{ status: "PENDING_PAYMENT" }, { status: "AWAITING_APPROVAL" }],
+    },
+  });
+
   return (
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Översikt admin</h1>
       </div>
+
+      {waitingOrders > 0 && (
+        <div className="space-y-4">
+          <div className="flex gap-2 text-xl text-green-500">
+            <div>
+              <InfoIcon />
+            </div>
+            <div>
+              <Link href="/order">
+                Det ligger <strong>{waitingOrders} st</strong> ordrar som
+                behöver godkännas.
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex justify-between items-baseline">
@@ -83,7 +107,9 @@ export default async function Page() {
 
       <Accordion type="single" collapsible>
         <AccordionItem value="item-1">
-          <AccordionTrigger>Statistik</AccordionTrigger>
+          <AccordionTrigger className="text-xl">
+            Visa statistik
+          </AccordionTrigger>
           <AccordionContent>
             <StatsPage />
           </AccordionContent>
