@@ -206,12 +206,10 @@ export default async function Page({ searchParams }: Props) {
                         Number.isFinite(p.spotsLeft) ? (
                           <Badge
                             variant={
-                              p.spotsLeft <= 3 ? "destructive" : "outline"
+                              p.spotsLeft <= 4 ? "destructive" : "outline"
                             }
                             className={
-                              p.spotsLeft <= 4
-                                ? "text-red-500"
-                                : "text-green-500"
+                              p.spotsLeft <= 4 ? "text-white" : "text-green-500"
                             }
                           >
                             {`${p.spotsLeft} platser kvar`}
