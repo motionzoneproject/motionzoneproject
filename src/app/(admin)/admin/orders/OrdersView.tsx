@@ -340,36 +340,40 @@ export default function OrdersView({
                   </td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      {["PENDING_PAYMENT", "PAID"].includes(o.status || "") && (
-                        <form
-                          action={onApprove}
-                          className="flex items-center gap-2"
-                        >
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <SubmitButton
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
-                            pendingText="..."
+                      {active !== "PENDING" &&
+                        ["PENDING_PAYMENT", "PAID"].includes(
+                          o.status || "",
+                        ) && (
+                          <form
+                            action={onApprove}
+                            className="flex items-center gap-2"
                           >
-                            Godkänn
-                          </SubmitButton>
-                        </form>
-                      )}
-                      {["PENDING_PAYMENT", "APPROVED"].includes(
-                        o.status || "",
-                      ) && (
-                        <form
-                          action={onMarkPaid}
-                          className="flex items-center gap-2"
-                        >
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <SubmitButton
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
-                            pendingText="..."
+                            <input type="hidden" name="orderId" value={o.id} />
+                            <SubmitButton
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
+                              pendingText="..."
+                            >
+                              Godkänn
+                            </SubmitButton>
+                          </form>
+                        )}
+                      {active !== "APPROVED" &&
+                        ["PENDING_PAYMENT", "APPROVED"].includes(
+                          o.status || "",
+                        ) && (
+                          <form
+                            action={onMarkPaid}
+                            className="flex items-center gap-2"
                           >
-                            Betald
-                          </SubmitButton>
-                        </form>
-                      )}
+                            <input type="hidden" name="orderId" value={o.id} />
+                            <SubmitButton
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                              pendingText="..."
+                            >
+                              Betald
+                            </SubmitButton>
+                          </form>
+                        )}
                       {["PENDING_PAYMENT"].includes(o.status || "") && (
                         <form
                           action={onCancel}
