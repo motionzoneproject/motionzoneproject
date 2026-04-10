@@ -14,14 +14,7 @@ async function requireAdmin() {
 
 export async function updateOrderStatus(
   orderId: string,
-  toStatus:
-    | "CREATED"
-    | "PENDING_PAYMENT"
-    | "AWAITING_APPROVAL"
-    | "PAID"
-    | "APPROVED"
-    | "COMPLETED"
-    | "CANCELLED",
+  toStatus: "PENDING_PAYMENT" | "PAID" | "APPROVED" | "CANCELLED",
   note?: string,
 ) {
   const adminUserId = await requireAdmin();
@@ -33,7 +26,7 @@ export async function updateOrderStatus(
     if (current.status === toStatus) return { success: true };
     if (
       toStatus === "CANCELLED" &&
-      ["APPROVED", "PAID", "COMPLETED"].includes(current.status)
+      ["APPROVED", "PAID"].includes(current.status)
     ) {
       throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
     }
@@ -62,23 +55,11 @@ export async function updateOrderStatus(
 }
 
 export async function approveOrder(orderId: string, note?: string) {
-  const current = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { status: true },
-  });
-  if (!current) throw new Error("Order not found");
-  const toStatus = current.status === "PAID" ? "COMPLETED" : "APPROVED";
-  return updateOrderStatus(orderId, toStatus, note);
+  return updateOrderStatus(orderId, "APPROVED", note);
 }
 
 export async function markOrderPaid(orderId: string, note?: string) {
-  const current = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { status: true },
-  });
-  if (!current) throw new Error("Order not found");
-  const toStatus = current.status === "APPROVED" ? "COMPLETED" : "PAID";
-  return updateOrderStatus(orderId, toStatus, note);
+  return updateOrderStatus(orderId, "PAID", note);
 }
 
 export async function cancelOrder(orderId: string, note?: string) {
@@ -143,7 +124,7 @@ export async function createPurchaseFromOrder(orderId: string) {
     if (!order) throw new Error("Order hittades inte");
 
     // Kontrollera att ordern är i rätt status för att generera köp
-    if (!["APPROVED", "PAID", "COMPLETED"].includes(order.status)) {
+    if (!["APPROVED", "PAID"].includes(order.status)) {
       throw new Error("Ordern är inte godkänd/betald ännu.");
     }
 

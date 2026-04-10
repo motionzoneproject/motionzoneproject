@@ -7,14 +7,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/money";
 
-type OrderStatus =
-  | "CREATED"
-  | "PENDING_PAYMENT"
-  | "AWAITING_APPROVAL"
-  | "APPROVED"
-  | "PAID"
-  | "COMPLETED"
-  | "CANCELLED";
+type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
 
 type OrderLite = {
   id: string;
@@ -71,19 +64,16 @@ export default function OrdersView({
       PENDING: 0,
       APPROVED: 0,
       PAID: 0,
-      COMPLETED: 0,
       CANCELLED: 0,
     };
     for (const o of orders) {
       const st = String(o.status || "PENDING_PAYMENT");
-      if (["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(st)) {
+      if (st === "PENDING_PAYMENT") {
         acc.PENDING += 1;
       } else if (st === "APPROVED") {
         acc.APPROVED += 1;
       } else if (st === "PAID") {
         acc.PAID += 1;
-      } else if (st === "COMPLETED") {
-        acc.COMPLETED += 1;
       } else if (st === "CANCELLED") {
         acc.CANCELLED += 1;
       }
@@ -96,11 +86,7 @@ export default function OrdersView({
     let result = orders;
 
     if (active === "PENDING") {
-      result = result.filter((o) =>
-        ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
-          String(o.status),
-        ),
-      );
+      result = result.filter((o) => String(o.status) === "PENDING_PAYMENT");
     } else if (active !== "ALL") {
       result = result.filter((o) => String(o.status) === active);
     }
@@ -138,24 +124,17 @@ export default function OrdersView({
     { id: "PENDING", label: "Väntar" },
     { id: "APPROVED", label: "Godkända" },
     { id: "PAID", label: "Betalda" },
-    { id: "COMPLETED", label: "Klara" },
     { id: "CANCELLED", label: "Avbrutna" },
   ];
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "CREATED":
-        return "Skapad";
       case "PENDING_PAYMENT":
         return "Väntar betalning";
-      case "AWAITING_APPROVAL":
-        return "Väntar godkännande";
       case "APPROVED":
         return "Godkänd";
       case "PAID":
         return "Betald";
-      case "COMPLETED":
-        return "Godkänd & Betald";
       case "CANCELLED":
         return "Avbruten";
       default:
@@ -165,16 +144,12 @@ export default function OrdersView({
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case "CREATED":
       case "PENDING_PAYMENT":
-      case "AWAITING_APPROVAL":
         return "bg-amber-500/10 text-amber-500";
       case "APPROVED":
         return "bg-emerald-500/10 text-emerald-500";
       case "PAID":
         return "bg-blue-500/10 text-blue-500";
-      case "COMPLETED":
-        return "bg-purple-500/10 text-purple-500";
       case "CANCELLED":
         return "bg-rose-500/10 text-rose-500";
       default:
@@ -365,12 +340,7 @@ export default function OrdersView({
                   </td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      {[
-                        "CREATED",
-                        "PENDING_PAYMENT",
-                        "AWAITING_APPROVAL",
-                        "PAID",
-                      ].includes(o.status || "") && (
+                      {["PENDING_PAYMENT", "PAID"].includes(o.status || "") && (
                         <form
                           action={onApprove}
                           className="flex items-center gap-2"
@@ -384,12 +354,9 @@ export default function OrdersView({
                           </SubmitButton>
                         </form>
                       )}
-                      {[
-                        "CREATED",
-                        "PENDING_PAYMENT",
-                        "AWAITING_APPROVAL",
-                        "APPROVED",
-                      ].includes(o.status || "") && (
+                      {["PENDING_PAYMENT", "APPROVED"].includes(
+                        o.status || "",
+                      ) && (
                         <form
                           action={onMarkPaid}
                           className="flex items-center gap-2"
@@ -403,11 +370,7 @@ export default function OrdersView({
                           </SubmitButton>
                         </form>
                       )}
-                      {[
-                        "CREATED",
-                        "PENDING_PAYMENT",
-                        "AWAITING_APPROVAL",
-                      ].includes(o.status || "") && (
+                      {["PENDING_PAYMENT"].includes(o.status || "") && (
                         <form
                           action={onCancel}
                           className="flex items-center gap-2"

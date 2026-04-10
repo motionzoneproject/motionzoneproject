@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 
-const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID", "COMPLETED"] as const;
+const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID"] as const;
 
 type SchemaDateRange = {
   customStartDate: Date | null;
@@ -181,13 +181,7 @@ function buildPotentialReservedOrderItemWhere(
   return {
     order: {
       status: {
-        in: [
-          "CREATED",
-          "PENDING_PAYMENT",
-          "AWAITING_APPROVAL",
-          "PAID",
-          "APPROVED",
-        ],
+        in: ["PENDING_PAYMENT", "PAID", "APPROVED"],
       },
       ...(dateRange && !terminId
         ? {

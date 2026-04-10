@@ -10,24 +10,12 @@ import {
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
-type StatusFilter =
-  | "ALL"
-  | "PENDING"
-  | "APPROVED"
-  | "PAID"
-  | "COMPLETED"
-  | "CANCELLED";
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type OrderStatus =
-  | "CREATED"
-  | "PENDING_PAYMENT"
-  | "AWAITING_APPROVAL"
-  | "APPROVED"
-  | "PAID"
-  | "CANCELLED";
+type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
 
 type OrderLite = {
   id: string;
@@ -66,11 +54,7 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
 
   if (!filter || filter === "ALL") return orders;
   if (filter === "PENDING") {
-    return orders.filter((o) =>
-      ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"].includes(
-        String(o.status),
-      ),
-    );
+    return orders.filter((o) => String(o.status) === "PENDING_PAYMENT");
   }
   return orders.filter((o) => String(o.status) === filter);
 }
@@ -91,7 +75,6 @@ export default async function Page({
     "PENDING",
     "APPROVED",
     "PAID",
-    "COMPLETED",
     "CANCELLED",
   ].includes(raw)
     ? (raw as StatusFilter)
