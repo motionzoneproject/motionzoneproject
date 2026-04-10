@@ -7,7 +7,14 @@ import { useEffect, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
 import { formatPrice } from "@/lib/money";
 
-type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
+type OrderStatus =
+  | "CREATED"
+  | "AWAITING_APPROVAL"
+  | "PENDING_PAYMENT"
+  | "APPROVED"
+  | "PAID"
+  | "COMPLETED"
+  | "CANCELLED";
 
 type OrderItemLite = {
   id: string;
