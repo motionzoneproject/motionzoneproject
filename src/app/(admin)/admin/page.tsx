@@ -62,9 +62,14 @@ export default async function Page() {
         ? 0
         : futureLessonIndex;
 
-  const waitingOrders = await prisma.order.count({
+  const ordersPaid = await prisma.order.count({
     where: {
-      OR: [{ status: "PENDING_PAYMENT" }, { status: "AWAITING_APPROVAL" }],
+      status: "PAID",
+    },
+  });
+  const ordersApp = await prisma.order.count({
+    where: {
+      status: "PENDING_PAYMENT",
     },
   });
 
@@ -74,21 +79,34 @@ export default async function Page() {
         <h1 className="text-3xl font-bold">Översikt admin</h1>
       </div>
 
-      {waitingOrders > 0 && (
-        <div className="space-y-4">
+      <div className="space-y-4">
+        {ordersPaid > 0 && (
           <div className="flex gap-2 text-xl text-green-500">
             <div>
               <InfoIcon />
             </div>
             <div>
-              <Link href="/order">
-                Det ligger <strong>{waitingOrders} st</strong> ordrar som
-                behöver godkännas.
+              <Link href="/admin/orders?status=PAID">
+                Det ligger <strong>{ordersPaid} st</strong> ordrar som behöver
+                godkännas.
               </Link>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {ordersApp > 0 && (
+          <div className="flex gap-2 text-xl text-green-500">
+            <div>
+              <InfoIcon />
+            </div>
+            <div>
+              <Link href="/admin/orders?status=PENDING">
+                Det ligger <strong>{ordersPaid} st</strong> obetalda ordrar.
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="space-y-4">
         <div className="flex justify-between items-baseline">
