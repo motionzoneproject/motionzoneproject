@@ -67,6 +67,7 @@ export default async function Page() {
       status: "PAID",
     },
   });
+
   const ordersApp = await prisma.order.count({
     where: {
       status: "PENDING_PAYMENT",
@@ -101,7 +102,7 @@ export default async function Page() {
             </div>
             <div>
               <Link href="/admin/orders?status=PENDING">
-                Det ligger <strong>{ordersPaid} st</strong> obetalda ordrar.
+                Det ligger <strong>{ordersApp} st</strong> obetalda ordrar.
               </Link>
             </div>
           </div>
