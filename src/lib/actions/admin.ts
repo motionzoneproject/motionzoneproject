@@ -1124,7 +1124,8 @@ export async function editLessonItem(
       });
     });
 
-    let mailMsg = "";
+    let mailMsg = "Ingen info.";
+
     if (!currentLesson.cancelled && validated.cancelled) {
       const mailResult = await sendCancelledMail(
         {
@@ -1134,6 +1135,8 @@ export async function editLessonItem(
         },
         mailStudents,
       );
+
+      mailMsg = mailResult.msg;
 
       if (!mailResult.success) {
         mailMsg = ` ${mailResult.msg}`;
