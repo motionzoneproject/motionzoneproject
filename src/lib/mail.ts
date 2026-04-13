@@ -4,10 +4,14 @@ import { Resend } from "resend";
 import type { Course, Lesson } from "@/generated/prisma/client";
 import { formatPrice } from "./money";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
+
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
 
 /**
  * Send an email.
@@ -23,6 +27,13 @@ export async function sendMail(
   text?: string,
 ) {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      const error = new Error("Missing RESEND_API_KEY");
+      console.error(error.message);
+      return { success: false, error };
+    }
+
     const { data, error } = await resend.emails.send({
       from: DEFAULT_FROM,
       to,
