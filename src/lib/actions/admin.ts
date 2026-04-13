@@ -993,7 +993,7 @@ export async function sendCancelledMail(
 ): Promise<{
   success: boolean;
   msg: string;
-  results: { email: string; success: boolean }[];
+  results: { email: string; name: string; success: boolean }[];
 }> {
   const uniqueStudents = Array.from(
     new Map(
@@ -1003,37 +1003,48 @@ export async function sendCancelledMail(
     ).values(),
   );
 
-  const results: { email: string; success: boolean }[] = [];
+  const BATCH_SIZE = 10;
+  const results: { email: string; name: string; success: boolean }[] = [];
 
-  for (const student of uniqueStudents) {
-    const html = await generateBookingCancelledHtml(lesson, student);
-    const subject = `Inställd lektion${
-      lesson.course?.name ? ` - ${lesson.course.name}` : ""
-    }`;
-    const text = `Hej ${student.name}, din bokade lektion${
-      lesson.course?.name ? ` i ${lesson.course.name}` : ""
-    } den ${new Date(lesson.startTime).toLocaleDateString("sv-SE")} kl ${new Date(
-      lesson.startTime,
-    ).toLocaleTimeString("sv-SE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })} har blivit inställd. Ditt tillfälle har återställts.`;
-    const result = await sendMail(student.email, subject, html, text);
+  for (let i = 0; i < uniqueStudents.length; i += BATCH_SIZE) {
+    const batch = uniqueStudents.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (student) => {
+        const html = await generateBookingCancelledHtml(lesson, student);
+        const subject = `Inställd lektion${
+          lesson.course?.name ? ` - ${lesson.course.name}` : ""
+        }`;
+        const text = `Hej ${student.name}, din bokade lektion${
+          lesson.course?.name ? ` i ${lesson.course.name}` : ""
+        } den ${new Date(lesson.startTime).toLocaleDateString("sv-SE")} kl ${new Date(
+          lesson.startTime,
+        ).toLocaleTimeString("sv-SE", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })} har blivit inställd. Ditt tillfälle har återställts.`;
+        const result = await sendMail(student.email, subject, html, text);
 
-    results.push({
-      email: student.email,
-      success: result.success,
-    });
+        return {
+          email: student.email,
+          name: student.name,
+          success: result.success,
+        };
+      }),
+    );
+    results.push(...batchResults);
   }
 
   const sentCount = results.filter((result) => result.success).length;
+  const failed = results.filter((result) => !result.success);
 
   return {
-    success: sentCount === results.length,
+    success: failed.length === 0,
     msg:
       results.length === 0
         ? "Inga mottagare att skicka till."
-        : `Skickade ${sentCount} av ${results.length} mail.`,
+        : failed.length === 0
+          ? `Skickade ${sentCount} mail.`
+          : `Skickade ${sentCount} mail, men ${failed.length} misslyckades.`,
     results,
   };
 }
