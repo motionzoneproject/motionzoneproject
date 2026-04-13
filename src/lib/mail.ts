@@ -1,5 +1,7 @@
 "use server";
+
 import { Resend } from "resend";
+import type { Course, Lesson } from "@/generated/prisma/client";
 import { formatPrice } from "./money";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -125,6 +127,71 @@ export async function generateOrderConfirmationHtml(order: {
       <p style="margin-top: 20px;">
         Om du har några frågor om din beställning, är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.
       </p>
+
+      <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;" />
+      <p style="font-size: 12px; color: #888; text-align: center;">
+        Detta är ett automatiskt mejl. Du behöver inte svara på det.
+      </p>
+    </div>
+  `;
+}
+
+type CancelledLessonMailLesson = Lesson & {
+  course?: Pick<Course, "name"> | null;
+};
+
+type CancelledLessonMailStudent = {
+  name: string;
+  email: string;
+};
+
+/**
+ * Generates an HTML template for a cancelled booking email.
+ * @param lesson The cancelled lesson data
+ * @param student The recipient student data
+ * @returns HTML string
+ */
+export async function generateBookingCancelledHtml(
+  lesson: CancelledLessonMailLesson,
+  student: CancelledLessonMailStudent,
+) {
+  const lessonDate = new Date(lesson.startTime).toLocaleDateString("sv-SE", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const startTime = new Date(lesson.startTime).toLocaleTimeString("sv-SE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const endTime = new Date(lesson.endTime).toLocaleTimeString("sv-SE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const courseName = lesson.course?.name ?? "din kurs";
+
+  return `
+    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+      <h2 style="color: #ed212d; text-align: center;">Inställd lektion</h2>
+      <p>Hej ${student.name || "elev"},</p>
+      <p>Vi vill meddela att en bokad lektion hos Motion Zone har blivit inställd.</p>
+
+      <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+        <p><strong>Kurs:</strong> ${courseName}</p>
+        <p><strong>Datum:</strong> ${lessonDate}</p>
+        <p><strong>Tid:</strong> ${startTime} - ${endTime}</p>
+      </div>
+
+      <p>Ditt tillfälle har återställts, så du förlorar ingen bokning på grund av detta.</p>
+      ${
+        lesson.message
+          ? `<p><strong>Meddelande från oss:</strong><br/>${lesson.message}</p>`
+          : ""
+      }
+      <p>Om du har några frågor är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.</p>
 
       <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
 

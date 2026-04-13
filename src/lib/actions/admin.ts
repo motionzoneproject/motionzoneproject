@@ -31,6 +31,7 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { generateBookingCancelledHtml, sendMail } from "../mail";
 import { sekToOre } from "../money";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
@@ -981,6 +982,62 @@ async function createLessons(
   }
 }
 
+export type MailStudentRecipient = {
+  name: string;
+  email: string;
+};
+
+export async function sendCancelledMail(
+  lesson: Lesson & { course?: { name: string } | null },
+  students: MailStudentRecipient[],
+): Promise<{
+  success: boolean;
+  msg: string;
+  results: { email: string; success: boolean }[];
+}> {
+  const uniqueStudents = Array.from(
+    new Map(
+      students
+        .filter((student) => student.email)
+        .map((student) => [student.email.toLowerCase(), student]),
+    ).values(),
+  );
+
+  const results: { email: string; success: boolean }[] = [];
+
+  for (const student of uniqueStudents) {
+    const html = await generateBookingCancelledHtml(lesson, student);
+    const subject = `Inställd lektion${
+      lesson.course?.name ? ` - ${lesson.course.name}` : ""
+    }`;
+    const text = `Hej ${student.name}, din bokade lektion${
+      lesson.course?.name ? ` i ${lesson.course.name}` : ""
+    } den ${new Date(lesson.startTime).toLocaleDateString("sv-SE")} kl ${new Date(
+      lesson.startTime,
+    ).toLocaleTimeString("sv-SE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })} har blivit inställd. Ditt tillfälle har återställts.`;
+    const result = await sendMail(student.email, subject, html, text);
+
+    results.push({
+      email: student.email,
+      success: result.success,
+    });
+  }
+
+  const sentCount = results.filter((result) => result.success).length;
+
+  return {
+    success: sentCount === results.length,
+    msg:
+      results.length === 0
+        ? "Inga mottagare att skicka till."
+        : `Skickade ${sentCount} av ${results.length} mail.`,
+    results,
+  };
+}
+
 /**
  * Edit a lessonItem and handle clips.
  * @returns Success (boolean) and a message.
@@ -997,10 +1054,12 @@ export async function editLessonItem(
 
     const currentLesson = await prisma.lesson.findUnique({
       where: { id: validated.id },
-      include: { bookings: true },
+      include: { bookings: true, course: { select: { name: true } } },
     });
 
     if (!currentLesson) return { success: false, msg: "Lesson not found." };
+
+    let mailStudents: MailStudentRecipient[] = [];
 
     await prisma.$transaction(async (tx) => {
       if (!currentLesson.cancelled && validated.cancelled) {
@@ -1010,6 +1069,33 @@ export async function editLessonItem(
             throw new Error(clipResult.msg || "Clip update failed.");
           }
         }
+
+        // Hämta emails.
+        const bookingsToMail = await tx.booking.findMany({
+          where: { lessonId: validated.id },
+          select: {
+            purchaseItem: {
+              select: {
+                purchase: {
+                  select: {
+                    participant: { include: { addedBy: true } },
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        mailStudents = bookingsToMail.map((b) => ({
+          name:
+            b.purchaseItem.purchase.participant?.name ||
+            b.purchaseItem.purchase.user.name,
+          email:
+            b.purchaseItem.purchase.participant?.email ||
+            b.purchaseItem.purchase.participant?.addedBy.email ||
+            b.purchaseItem.purchase.user.email,
+        }));
 
         // Ta bort bokningarna när lektionen ställs in.
         await tx.booking.deleteMany({
@@ -1027,12 +1113,28 @@ export async function editLessonItem(
       });
     });
 
+    let mailMsg = "";
+    if (!currentLesson.cancelled && validated.cancelled) {
+      const mailResult = await sendCancelledMail(
+        {
+          ...currentLesson,
+          message: validated.message ?? null,
+          cancelled: validated.cancelled,
+        },
+        mailStudents,
+      );
+
+      if (!mailResult.success) {
+        mailMsg = ` ${mailResult.msg}`;
+      }
+    }
+
     revalidatePath("/admin/lectures");
     revalidatePath("/admin");
 
     return {
       success: true,
-      msg: "Lektionen, bokningar och klipp-saldon har uppdaterats.",
+      msg: `Lektionen, bokningar och klipp-saldon har uppdaterats. ${mailMsg}`,
     };
   } catch (e) {
     console.error(e);
