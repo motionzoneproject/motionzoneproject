@@ -134,9 +134,7 @@ export async function getProductStats(
         order: {
           status: {
             in: [
-              "CREATED",
               "PENDING_PAYMENT",
-              "AWAITING_APPROVAL",
               "PAID",
               "APPROVED", // Så inte CANCELLED räknas med.
             ],

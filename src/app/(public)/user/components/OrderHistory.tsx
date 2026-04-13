@@ -49,8 +49,6 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
         return <Badge variant="outline">Väntar på betalning</Badge>;
       case "APPROVED":
         return <Badge className="bg-blue-500">Godkänd</Badge>;
-      case "CREATED":
-        return <Badge variant="secondary">Skapad</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }

@@ -9,8 +9,8 @@ import { formatPrice } from "@/lib/money";
 
 type OrderStatus =
   | "CREATED"
-  | "PENDING_PAYMENT"
   | "AWAITING_APPROVAL"
+  | "PENDING_PAYMENT"
   | "APPROVED"
   | "PAID"
   | "COMPLETED"
