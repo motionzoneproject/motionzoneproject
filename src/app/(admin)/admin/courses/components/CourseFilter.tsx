@@ -93,7 +93,7 @@ export default function CourseFilter({
   }, [searchParams, pathname, replace, validParam]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-4">
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
           Sök
@@ -162,7 +162,7 @@ export default function CourseFilter({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex items-center gap-2 pt-5">
+      <div className="flex items-center gap-2 sm:pt-5">
         <Checkbox
           id="showInactiveCourses"
           checked={params.get("showInactive") === "yes"}
