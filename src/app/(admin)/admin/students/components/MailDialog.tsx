@@ -1,13 +1,12 @@
 "use client";
 
-import type { MDXEditorMethods } from "@mdxeditor/editor";
-import "@mdxeditor/editor/style.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MailsIcon } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +28,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { sendStudentNewsletter } from "@/lib/actions/newsletter";
-import { ForwardRefEditor } from "../../../../../components/ui/ForwardRefEditor";
 import type { SelectedStudent } from "./studentSelection";
 
 interface Props {
@@ -42,7 +40,6 @@ export const mailSchema = z.object({
 });
 
 export function MailDialog({ selectedStudents }: Props) {
-  const ref = useRef<MDXEditorMethods>(null);
   const formId = useId();
   const [open, setOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -117,7 +114,7 @@ export function MailDialog({ selectedStudents }: Props) {
             {selectedStudents.length}st mottagare är valda för utskicket.
           </DialogDescription>
         </DialogHeader>
-        <div className="min-w-0 max-h-[65dvh] overflow-x-hidden overflow-y-auto pr-1">
+        <div className="min-w-0 max-h-[65dvh] overflow-x-hidden overflow-y-auto pt-1 pr-1">
           <Form {...form}>
             <form
               id={formId}
@@ -145,12 +142,11 @@ export function MailDialog({ selectedStudents }: Props) {
                   <FormItem>
                     <FormLabel>Innehåll</FormLabel>
                     <FormControl>
-                      <ForwardRefEditor
-                        markdown={field.value || ""}
-                        onBlur={field.onBlur}
+                      <RichTextEditor
+                        value={field.value || ""}
                         onChange={field.onChange}
-                        ref={ref}
-                        placeholder="Write the content using markdown..."
+                        placeholder="Skriv innehållet här..."
+                        variant="full"
                       />
                     </FormControl>
                     <FormMessage />
