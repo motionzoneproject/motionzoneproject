@@ -65,6 +65,7 @@ export default async function Page({
   searchParams?: Promise<{ status?: string }>;
 }) {
   noStore();
+
   const isAdmin = await isAdminRole();
   if (!isAdmin) return notFound();
 

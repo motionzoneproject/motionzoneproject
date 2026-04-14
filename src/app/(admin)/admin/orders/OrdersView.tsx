@@ -341,9 +341,7 @@ export default function OrdersView({
                   <td className="p-3">
                     <div className="flex gap-2">
                       {active !== "PENDING" &&
-                        ["PENDING_PAYMENT", "PAID"].includes(
-                          o.status || "",
-                        ) && (
+                        ["PAID"].includes(o.status || "") && (
                           <form
                             action={onApprove}
                             className="flex items-center gap-2"
@@ -358,9 +356,7 @@ export default function OrdersView({
                           </form>
                         )}
                       {active !== "APPROVED" &&
-                        ["PENDING_PAYMENT", "APPROVED"].includes(
-                          o.status || "",
-                        ) && (
+                        ["PENDING_PAYMENT"].includes(o.status || "") && (
                           <form
                             action={onMarkPaid}
                             className="flex items-center gap-2"
