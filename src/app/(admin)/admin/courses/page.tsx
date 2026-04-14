@@ -67,11 +67,7 @@ export default async function Page({
         <span className="font-bold text-2xl">Kurser</span>
         <AddCourseForm teachers={teachers} />
       </div>
-      <CourseFilter
-        teachers={teachers}
-        terminer={terminer}
-        showInactive={showInactive}
-      />
+      <CourseFilter teachers={teachers} terminer={terminer} />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
         <span>Totalt {totalCourses} kurser</span>
