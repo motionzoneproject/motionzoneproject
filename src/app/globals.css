@@ -58,13 +58,6 @@
   --color-brand-secondary-light: #85e4e9;
 }
 
-html,
-body {
-  height: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
 /* Light Mode - Default */
 :root {
   --radius: 0.625rem;
