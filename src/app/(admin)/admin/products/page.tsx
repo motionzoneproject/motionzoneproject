@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ProductType } from "@/generated/prisma/client";
+import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import AddProductForm from "./components/AddProductForm";
@@ -22,6 +22,9 @@ export default async function Page({
     page?: string;
     showInactive?: string;
     type?: string;
+    teacher?: string;
+    termin?: string;
+    course?: string;
   }>;
 }) {
   const isAdmin = await isAdminRole();
@@ -33,9 +36,23 @@ export default async function Page({
   const query = params.q || "";
   const showInactive = params.showInactive === "yes";
   const type = params.type as ProductType | undefined;
+  const teacher = params.teacher || "";
+  const termin = params.termin || "";
+  const course = params.course || "";
+
+  const teachers = await prisma.user.findMany({
+    where: { role: "admin" },
+    orderBy: { name: "asc" },
+  });
+  const terminer = await prisma.termin.findMany({
+    orderBy: { startDate: "desc" },
+  });
+  const courses = await prisma.course.findMany({
+    orderBy: { name: "asc" },
+  });
 
   // Build filter
-  const where = {
+  const where: Prisma.ProductWhereInput = {
     ...(showInactive ? {} : { active: true }),
     ...(query
       ? {
@@ -46,6 +63,19 @@ export default async function Page({
         }
       : {}),
     ...(type ? { type } : {}),
+    ...(course ? { courses: { some: { courseId: course } } } : {}),
+    ...(teacher
+      ? { courses: { some: { course: { teacherId: teacher } } } }
+      : {}),
+    ...(termin
+      ? {
+          courses: {
+            some: {
+              course: { schemaItems: { some: { terminId: termin } } },
+            },
+          },
+        }
+      : {}),
   };
 
   // Pagination
@@ -71,7 +101,11 @@ export default async function Page({
         <span className="font-bold text-2xl">Produkter</span>
         <AddProductForm />
       </div>
-      <ProductFilter />
+      <ProductFilter
+        teachers={teachers}
+        terminer={terminer}
+        courses={courses}
+      />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>Totalt {totalProducts} produkter</span>
