@@ -1,4 +1,4 @@
-import { InfoIcon } from "lucide-react";
+import { HelpCircleIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 import {
   Accordion,
@@ -76,8 +76,14 @@ export default async function Page() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Översikt admin</h1>
+      <div className="flex justify-between">
+        <h1 className="text-3xl font-bold">Översikt</h1>
+        <div className="text-center p-3 border-2 border-blue-500 hover:bg-blue-500 rounded-full">
+          <Link href="admin-manual.pdf" className="text-sm" target="_blank">
+            <HelpCircleIcon className="w-8 h-8 mx-auto" />
+            Manual
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-4">
