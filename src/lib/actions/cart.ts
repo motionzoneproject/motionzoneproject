@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { clearCart, readCart, writeCart } from "@/lib/cart";
 import prisma from "../prisma";
-import { getProductStats } from "./purchase-actions";
+import { getProductSpotsLeft } from "../product-capacity";
 
 export async function addToCart(params: {
   productId: string;
@@ -13,10 +13,14 @@ export async function addToCart(params: {
   const { productId, qty = 1, redirectTo } = params;
   if (!productId) throw new Error("productId required");
 
-  // Block adding inactive products to cart
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { active: true },
+    select: {
+      active: true,
+      maxCustomer: true,
+      unlimitedCustomers: true,
+      countCustomer: true,
+    },
   });
   if (!product || !product.active) {
     throw new Error("Produkten är inte tillgänglig.");
@@ -24,6 +28,12 @@ export async function addToCart(params: {
 
   const cart = await readCart();
   const existing = cart.items.find((i) => i.productId === productId);
+  const nextQty = (existing?.qty ?? 0) + qty;
+
+  if (!product.unlimitedCustomers && getProductSpotsLeft(product) < nextQty) {
+    throw new Error("Produkten har inga lediga platser kvar.");
+  }
+
   if (existing) {
     existing.qty += qty;
   } else {
@@ -42,26 +52,19 @@ export async function updateCart(params: { productId: string; qty: number }) {
   const cart = await readCart();
   const item = cart.items.find((i) => i.productId === productId);
   if (item) {
-    // kontroll av max.
-
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { maxCustomer: true, unlimitedCustomers: true },
+      select: {
+        maxCustomer: true,
+        unlimitedCustomers: true,
+        countCustomer: true,
+      },
     });
 
     let finalQty = qty;
 
-    if (product && !product.unlimitedCustomers && product.maxCustomer > 0) {
-      const stats = await getProductStats(productId);
-      if (
-        stats.success &&
-        typeof stats.spotsLeft === "number" &&
-        Number.isFinite(stats.spotsLeft)
-      ) {
-        finalQty = Math.min(qty, stats.spotsLeft);
-      } else {
-        finalQty = 0;
-      }
+    if (product && !product.unlimitedCustomers) {
+      finalQty = Math.min(qty, getProductSpotsLeft(product));
     }
 
     item.qty = finalQty;
