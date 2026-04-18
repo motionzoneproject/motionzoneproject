@@ -1,4 +1,5 @@
 "use client";
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import { SearchInput } from "@/components/SearchInput";
@@ -14,14 +15,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Termin, User } from "@/generated/prisma/client";
+import type { Course, Termin, User } from "@/generated/prisma/client";
+
+const productTypes = [
+  { value: "COURSE", label: "Kurs" },
+  { value: "PACK", label: "Paket" },
+  { value: "CLIP", label: "Klippkort" },
+] as const;
 
 interface Props {
   teachers: User[];
   terminer: Termin[];
+  courses: Course[];
 }
 
-export default function CourseFilter({ teachers, terminer }: Props) {
+export default function ProductFilter({ teachers, terminer, courses }: Props) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -32,19 +40,20 @@ export default function CourseFilter({ teachers, terminer }: Props) {
   );
 
   const validParam = useCallback(
-    (param: "teacher" | "termin", value?: string | null): string => {
+    (param: "teacher" | "termin" | "course", value?: string | null): string => {
       if (param === "teacher")
         return teachers.find((t) => t.id === value)?.id ?? "all";
-      return terminer.find((t) => t.id === value)?.id ?? "all";
+      if (param === "termin")
+        return terminer.find((t) => t.id === value)?.id ?? "all";
+      return courses.find((c) => c.id === value)?.id ?? "all";
     },
-    [teachers, terminer],
+    [teachers, terminer, courses],
   );
 
   const setFilter = useCallback(
     (name: string, term: string) => {
       const next = new URLSearchParams(searchParams);
 
-      // Check if the filter value is actually changing
       const currentValue = searchParams.get(name);
       const newValue = !term || term === "all" ? null : term;
       const isChanging = currentValue !== newValue;
@@ -55,7 +64,6 @@ export default function CourseFilter({ teachers, terminer }: Props) {
         next.set(name, term);
       }
 
-      // Reset to page 1 only when filter value actually changes
       if (isChanging) {
         next.delete("page");
       }
@@ -71,7 +79,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
-    const sanitize = (key: "teacher" | "termin") => {
+    const sanitize = (key: "teacher" | "termin" | "course") => {
       const value = next.get(key);
       if (!value) return;
       if (validParam(key, value) === "all") {
@@ -81,6 +89,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
 
     sanitize("teacher");
     sanitize("termin");
+    sanitize("course");
 
     if (next.toString() !== searchParams.toString()) {
       replace(`${pathname}?${next.toString()}`);
@@ -88,12 +97,39 @@ export default function CourseFilter({ teachers, terminer }: Props) {
   }, [searchParams, pathname, replace, validParam]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
           Sök
         </Label>
-        <SearchInput className="w-full" placeholder="Sök kursnamn..." />
+        <SearchInput className="w-full" placeholder="Sök produktnamn..." />
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Typ
+        </Label>
+        <Select
+          value={params.get("type") ?? "all"}
+          onValueChange={(value) =>
+            setFilter("type", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj typ" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj typ</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              {productTypes.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -157,16 +193,50 @@ export default function CourseFilter({ teachers, terminer }: Props) {
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Kurs
+        </Label>
+        <Select
+          value={
+            params.get("course")
+              ? validParam("course", params.get("course"))
+              : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("course", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj kurs" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj kurs</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              {courses.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="flex items-center gap-2 sm:pt-5">
         <Checkbox
-          id="showInactiveCourses"
+          id="showInactiveProducts"
           checked={params.get("showInactive") === "yes"}
           onCheckedChange={(checked) =>
             setFilter("showInactive", checked ? "yes" : "")
           }
         />
-        <label htmlFor="showInactiveCourses" className="cursor-pointer text-sm">
-          Visa inaktiva kurser
+        <label
+          htmlFor="showInactiveProducts"
+          className="cursor-pointer text-sm"
+        >
+          Visa inaktiva produkter
         </label>
       </div>
     </div>

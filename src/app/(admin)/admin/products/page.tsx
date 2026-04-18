@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { PaginationBar } from "@/components/PaginationBar";
-import { SearchInput } from "@/components/SearchInput";
 import {
   Table,
   TableBody,
@@ -8,16 +7,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import AddProductForm from "./components/AddProductForm";
+import ProductFilter from "./components/ProductFilter";
 import ProductItem from "./components/ProductItem";
-import ShowInactiveCheckbox from "./components/ShowInactiveCheckbox";
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; showInactive?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    showInactive?: string;
+    type?: string;
+    teacher?: string;
+    termin?: string;
+    course?: string;
+  }>;
 }) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) {
@@ -27,15 +35,44 @@ export default async function Page({
   const params = await searchParams;
   const query = params.q || "";
   const showInactive = params.showInactive === "yes";
+  const type = params.type as ProductType | undefined;
+  const teacher = params.teacher || "";
+  const termin = params.termin || "";
+  const course = params.course || "";
+
+  const teachers = await prisma.user.findMany({
+    where: { role: "admin" },
+    orderBy: { name: "asc" },
+  });
+  const terminer = await prisma.termin.findMany({
+    orderBy: { startDate: "desc" },
+  });
+  const courses = await prisma.course.findMany({
+    orderBy: { name: "asc" },
+  });
 
   // Build filter
-  const where = {
+  const where: Prisma.ProductWhereInput = {
     ...(showInactive ? {} : { active: true }),
     ...(query
       ? {
           name: {
             contains: query,
             mode: "insensitive" as const,
+          },
+        }
+      : {}),
+    ...(type ? { type } : {}),
+    ...(course ? { courses: { some: { courseId: course } } } : {}),
+    ...(teacher
+      ? { courses: { some: { course: { teacherId: teacher } } } }
+      : {}),
+    ...(termin
+      ? {
+          courses: {
+            some: {
+              course: { schemaItems: { some: { terminId: termin } } },
+            },
           },
         }
       : {}),
@@ -59,20 +96,16 @@ export default async function Page({
   });
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Produkter</h1>
-          <p className="text-muted-foreground">
-            Hantera dina produkter och paket.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ShowInactiveCheckbox />
-          <SearchInput placeholder="Sök produkter..." />
-          <AddProductForm />
-        </div>
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-2xl">Produkter</span>
+        <AddProductForm />
       </div>
+      <ProductFilter
+        teachers={teachers}
+        terminer={terminer}
+        courses={courses}
+      />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>Totalt {totalProducts} produkter</span>
