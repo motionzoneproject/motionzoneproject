@@ -1,7 +1,5 @@
 "use server";
 
-import { markdownToTxt } from "markdown-to-txt";
-import { marked } from "marked";
 import { z } from "zod";
 import { sendMail } from "@/lib/mail";
 import { isAdminRole } from "./admin";
@@ -26,6 +24,23 @@ function escapeHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function htmlToPlainText(html: string) {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "- ")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function buildNewsletterHtml(
@@ -98,8 +113,8 @@ export async function sendStudentNewsletter(input: {
       name: names.join(", "),
     }));
 
-    const contentHtml = await marked.parse(validated.content);
-    const contentText = markdownToTxt(validated.content);
+    const contentHtml = validated.content;
+    const contentText = htmlToPlainText(validated.content);
 
     // Send in batches of 10 to avoid overwhelming the API (fixes #228)
     const BATCH_SIZE = 10;
