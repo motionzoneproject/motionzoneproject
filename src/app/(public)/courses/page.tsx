@@ -88,14 +88,86 @@ export default async function Page({ searchParams }: Props) {
   const ITEMS_PER_PAGE = 6;
   const currentPage = Number(sp.page) || 1;
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
+  const productSnapshots = await prisma.product.findMany({
+    where: filters,
+    select: {
+      id: true,
+      maxCustomer: true,
+      unlimitedCustomers: true,
+    },
+    orderBy: getSortOrder(),
+  });
+  const productIds = productSnapshots.map((product) => product.id);
+
+  const [soldCounts, reservedOrderItems] = await Promise.all([
+    prisma.purchase.groupBy({
+      by: ["productId"],
+      where: {
+        productId: { in: productIds },
+        order: { status: { not: "CANCELLED" } },
+      },
+      _count: { productId: true },
+    }),
+    prisma.orderItem.findMany({
+      where: {
+        productId: { in: productIds },
+        order: {
+          status: {
+            in: ["PENDING_PAYMENT", "PAID", "APPROVED"],
+          },
+        },
+      },
+      select: {
+        productId: true,
+        count: true,
+        order: {
+          select: {
+            purchases: {
+              select: {
+                productId: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const soldMap = new Map(
+    soldCounts.map((row) => [row.productId, row._count.productId]),
+  );
+  const reservedMap = new Map<string, number>();
+  for (const item of reservedOrderItems) {
+    const purchaseExistsForProduct = item.order.purchases.some(
+      (purchase) => purchase.productId === item.productId,
+    );
+
+    if (purchaseExistsForProduct) continue;
+
+    reservedMap.set(
+      item.productId,
+      (reservedMap.get(item.productId) ?? 0) + item.count,
+    );
+  }
+  const visibleProductIds = productSnapshots
+    .filter((product) => {
+      if (product.unlimitedCustomers) return true;
+
+      const sold = soldMap.get(product.id) ?? 0;
+      const reserved = reservedMap.get(product.id) ?? 0;
+
+      return sold + reserved < product.maxCustomer;
+    })
+    .map((product) => product.id);
 
   // Get total count for pagination
-  const totalProducts = await prisma.product.count({ where: filters });
+  const totalProducts = visibleProductIds.length;
   const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
+  const pagedProductIds = visibleProductIds.slice(skip, skip + ITEMS_PER_PAGE);
 
   // Fetch paginated products with all needed relations
   const products = await prisma.product.findMany({
-    where: filters,
+    where: { id: { in: pagedProductIds } },
     include: {
       courses: {
         include: {
@@ -116,14 +188,18 @@ export default async function Page({ searchParams }: Props) {
         },
       },
     },
-    skip,
-    take: ITEMS_PER_PAGE,
     orderBy: getSortOrder(),
   });
+  const productsById = new Map(
+    products.map((product) => [product.id, product]),
+  );
+  const pagedProducts = pagedProductIds
+    .map((id) => productsById.get(id))
+    .filter((product) => product !== undefined);
 
   // Calculate all async data before rendering
   const productsWithData = await Promise.all(
-    products.map(async (p) => {
+    pagedProducts.map(async (p) => {
       const stats = await getProductStats(p.id);
 
       // Extract unique schemaItems and terminer from all courses in the product
