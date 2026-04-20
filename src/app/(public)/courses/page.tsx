@@ -25,9 +25,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
-import { getProductSpotsLeft } from "@/lib/product-capacity";
 import { getCourseName, getVeckodag } from "@/lib/tools";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
@@ -88,36 +88,14 @@ export default async function Page({ searchParams }: Props) {
   const ITEMS_PER_PAGE = 6;
   const currentPage = Number(sp.page) || 1;
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
-  const sortedProductSnapshots = await prisma.product.findMany({
-    where: filters,
-    select: {
-      id: true,
-      maxCustomer: true,
-      unlimitedCustomers: true,
-      countCustomer: true,
-    },
-    orderBy: getSortOrder(),
-  });
-  const availableProductIds = sortedProductSnapshots
-    .filter(
-      (product) =>
-        product.unlimitedCustomers || getProductSpotsLeft(product) > 0,
-    )
-    .map((product) => product.id);
 
   // Get total count for pagination
-  const totalProducts = availableProductIds.length;
+  const totalProducts = await prisma.product.count({ where: filters });
   const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
-  const pagedProductIds = availableProductIds.slice(
-    skip,
-    skip + ITEMS_PER_PAGE,
-  );
 
   // Fetch paginated products with all needed relations
   const products = await prisma.product.findMany({
-    where: {
-      id: { in: pagedProductIds },
-    },
+    where: filters,
     include: {
       courses: {
         include: {
@@ -138,34 +116,35 @@ export default async function Page({ searchParams }: Props) {
         },
       },
     },
+    skip,
+    take: ITEMS_PER_PAGE,
     orderBy: getSortOrder(),
   });
-  const productsById = new Map(
-    products.map((product) => [product.id, product]),
-  );
-  const orderedProducts = pagedProductIds
-    .map((id) => productsById.get(id))
-    .filter((product) => product !== undefined);
 
   // Calculate all async data before rendering
-  const productsWithData = orderedProducts.map((p) => {
-    const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
+  const productsWithData = await Promise.all(
+    products.map(async (p) => {
+      const stats = await getProductStats(p.id);
 
-    const terminMap = new Map();
-    schemaItems.forEach((s) => {
-      if (s.termin) {
-        terminMap.set(s.termin.id, s.termin);
-      }
-    });
-    const terminer = Array.from(terminMap.values());
+      // Extract unique schemaItems and terminer from all courses in the product
+      const schemaItems = p.courses.flatMap((pc) => pc.course.schemaItems);
 
-    return {
-      ...p,
-      schemaItems,
-      terminer,
-      spotsLeft: getProductSpotsLeft(p),
-    };
-  });
+      const terminMap = new Map();
+      schemaItems.forEach((s) => {
+        if (s.termin) {
+          terminMap.set(s.termin.id, s.termin);
+        }
+      });
+      const terminer = Array.from(terminMap.values());
+
+      return {
+        ...p,
+        schemaItems,
+        terminer,
+        spotsLeft: stats.spotsLeft,
+      };
+    }),
+  );
 
   return (
     <main className="bg-background">

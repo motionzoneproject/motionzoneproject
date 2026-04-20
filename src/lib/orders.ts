@@ -1,6 +1,5 @@
 import type { PrismaTx } from "./actions/admin";
 import prisma from "./prisma";
-import { getProductSpotsLeft } from "./product-capacity";
 
 export type OrderItemInput = {
   productId: string;
@@ -24,68 +23,6 @@ export async function createOrder(
 
   // All prices are integers in öre — plain integer arithmetic, no rounding needed
   const total = items.reduce((acc, it) => acc + it.count * it.price, 0);
-  const productCounts = new Map<string, number>();
-
-  for (const item of items) {
-    productCounts.set(
-      item.productId,
-      (productCounts.get(item.productId) ?? 0) + item.count,
-    );
-  }
-
-  const productIds = Array.from(productCounts.keys());
-  const products = await tx.product.findMany({
-    where: { id: { in: productIds } },
-    select: {
-      id: true,
-      maxCustomer: true,
-      unlimitedCustomers: true,
-      countCustomer: true,
-    },
-  });
-  const productsById = new Map(
-    products.map((product) => [product.id, product]),
-  );
-
-  for (const [productId, requestedCount] of productCounts) {
-    const product = productsById.get(productId);
-
-    if (!product) {
-      throw new Error(`Product ${productId} was not found. Order cancelled.`);
-    }
-
-    if (getProductSpotsLeft(product) < requestedCount) {
-      throw new Error(
-        `Product count exceeds limit for product ${productId}. Count was ${requestedCount}.`,
-      );
-    }
-
-    if (product.unlimitedCustomers) {
-      await tx.product.update({
-        where: { id: productId },
-        data: { countCustomer: { increment: requestedCount } },
-      });
-      continue;
-    }
-
-    const updated = await tx.product.updateMany({
-      where: {
-        id: productId,
-        countCustomer: {
-          lte: product.maxCustomer - requestedCount,
-        },
-      },
-      data: {
-        countCustomer: { increment: requestedCount },
-      },
-    });
-
-    if (updated.count === 0) {
-      throw new Error(
-        `Product count exceeds limit for product ${productId}. Count was ${requestedCount}.`,
-      );
-    }
-  }
 
   // Create order + items + initial status event atomically
 
