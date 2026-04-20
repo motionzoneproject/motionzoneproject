@@ -52,6 +52,15 @@ export default async function Page({
   });
 
   // Build filter
+  // Build course-relation conditions (must be combined into one `courses.some`)
+  const courseConditions: Prisma.ProductOnCourseWhereInput[] = [];
+  if (course) courseConditions.push({ courseId: course });
+  if (teacher) courseConditions.push({ course: { teacherId: teacher } });
+  if (termin)
+    courseConditions.push({
+      course: { schemaItems: { some: { terminId: termin } } },
+    });
+
   const where: Prisma.ProductWhereInput = {
     ...(showInactive ? {} : { active: true }),
     ...(query
@@ -63,18 +72,8 @@ export default async function Page({
         }
       : {}),
     ...(type ? { type } : {}),
-    ...(course ? { courses: { some: { courseId: course } } } : {}),
-    ...(teacher
-      ? { courses: { some: { course: { teacherId: teacher } } } }
-      : {}),
-    ...(termin
-      ? {
-          courses: {
-            some: {
-              course: { schemaItems: { some: { terminId: termin } } },
-            },
-          },
-        }
+    ...(courseConditions.length > 0
+      ? { courses: { some: { AND: courseConditions } } }
       : {}),
   };
 
