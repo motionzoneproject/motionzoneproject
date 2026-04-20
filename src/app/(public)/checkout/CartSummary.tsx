@@ -4,10 +4,10 @@ export const revalidate = 0;
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
+import { getProductStats } from "@/lib/actions/purchase-actions";
 import { readCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
-import { getProductSpotsLeft } from "@/lib/product-capacity";
 
 export default async function CartSummary() {
   const cart = await readCart();
@@ -33,7 +33,6 @@ export default async function CartSummary() {
       price: true,
       maxCustomer: true,
       unlimitedCustomers: true,
-      countCustomer: true,
     },
   });
 
@@ -57,16 +56,17 @@ export default async function CartSummary() {
 
       const unit = p.price;
       const line = unit * it.qty;
-      const available = getProductSpotsLeft(p);
+      const stats = await getProductStats(p.id);
+      const available = stats.success ? (stats.spotsLeft ?? 0) : 0;
       total += line;
 
       return {
         id: it.productId,
         name: p.name,
         unit,
-        qty: it.qty,
+        qty: stats.success ? it.qty : 0,
         maxCustomer: p.maxCustomer,
-        success: true,
+        success: stats.success,
         available,
         line,
       };

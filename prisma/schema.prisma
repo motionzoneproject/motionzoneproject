@@ -283,7 +283,6 @@ model Product {
 
   maxCustomer        Int     @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
   unlimitedCustomers Boolean @default(false) // Obegränsat antal köp.
-  countCustomer      Int     @default(0) // För att räkna antal köp kontra maxCustomer. Använd spotsLeft från getProductStats.
 
   imageURL String?
 

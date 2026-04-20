@@ -532,17 +532,8 @@ export async function getRemainingSlotsForCourse(
   productId: string,
   maxCustomer: number,
 ) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: {
-      maxCustomer: true,
-      unlimitedCustomers: true,
-      countCustomer: true,
-    },
+  const totalPurchases = await prisma.purchase.count({
+    where: { productId: productId },
   });
-
-  if (!product) return maxCustomer;
-  if (product.unlimitedCustomers) return null;
-
-  return Math.max(product.maxCustomer - product.countCustomer, 0);
+  return maxCustomer - totalPurchases;
 }
