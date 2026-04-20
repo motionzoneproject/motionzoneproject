@@ -1,6 +1,6 @@
 import { Accordion } from "@/components/ui/accordion";
 import type { Course, Termin } from "@/generated/prisma/client";
-import type { SchemaItemWithCourse } from "@/lib/actions/admin";
+import type { SchemaItemWithCourse } from "@/lib/actions/admin-schema";
 import { getWeekdays } from "@/lib/tools";
 import AddCourseToSchemaForm from "./forms/AddCourseToSchemaForm";
 import SchemaDay from "./SchemaDay";

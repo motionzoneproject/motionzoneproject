@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 import { getUsers } from "@/lib/actions/user-management";
 import UsersView from "./UsersView";
 

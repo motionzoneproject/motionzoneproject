@@ -39,7 +39,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course } from "@/generated/prisma/client";
-import { addCourseToProduct, type ProdCourse } from "@/lib/actions/admin";
+import {
+  addCourseToProduct,
+  type ProdCourse,
+} from "@/lib/actions/admin-products";
 import { getCourseName } from "@/lib/tools";
 import { AdminProductCourseItemSchema } from "@/validations/adminforms";
 import DeleteCourseFromProdBtn from "./DelCourseFromProdBtn";

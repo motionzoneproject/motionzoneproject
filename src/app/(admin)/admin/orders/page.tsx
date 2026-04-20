@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 import {
   approveOrder,
   cancelOrder,

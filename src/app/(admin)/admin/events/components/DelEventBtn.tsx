@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { delEvent } from "@/lib/actions/admin";
+import { delEvent } from "@/lib/actions/admin-events";
 
 interface Props {
   eventId: string;

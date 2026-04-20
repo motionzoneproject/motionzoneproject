@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
+import { getAllCourses } from "@/lib/actions/admin-courses";
 import {
-  getAllCourses,
   getSchemaItems,
   type SchemaItemWithCourse,
-} from "@/lib/actions/admin";
+} from "@/lib/actions/admin-schema";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
 import EditTerminForm from "./forms/EditTerminForm";

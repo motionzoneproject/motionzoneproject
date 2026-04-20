@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { editProduct } from "@/lib/actions/admin";
+import { editProduct } from "@/lib/actions/admin-products";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { oreToSek } from "@/lib/money";
 import { uploadImageFromBlob } from "@/lib/uploads";

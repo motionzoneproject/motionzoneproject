@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 import OrderDetailsClient from "./view-client";
 
 export const dynamic = "force-dynamic";

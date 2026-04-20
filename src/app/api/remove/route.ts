@@ -1,7 +1,7 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 import { getS3Resources } from "@/lib/s3";
 
 export async function DELETE(req: Request) {

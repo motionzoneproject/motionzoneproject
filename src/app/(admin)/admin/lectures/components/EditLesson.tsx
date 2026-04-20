@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Lesson } from "@/generated/prisma/client";
-import { editLessonItem } from "@/lib/actions/admin";
+import { editLessonItem } from "@/lib/actions/admin-lessons";
 import { adminLessonFormSchema } from "@/validations/adminforms";
 
 const formSchema = adminLessonFormSchema;

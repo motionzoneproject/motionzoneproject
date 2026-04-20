@@ -4,7 +4,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { toggleCourseActive } from "@/lib/actions/admin";
+import { toggleCourseActive } from "@/lib/actions/admin-courses";
 
 interface Props {
   courseId: string;

@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Course, User } from "@/generated/prisma/client";
-import { editCourse } from "@/lib/actions/admin";
+import { editCourse } from "@/lib/actions/admin-courses";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddCourseSchema;

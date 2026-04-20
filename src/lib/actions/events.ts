@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
-import { isAdminRole } from "./admin";
+import { isAdminRole } from "./admin-shared";
 
 export async function createEvent(formData: FormData) {
   const isAdmin = await isAdminRole();

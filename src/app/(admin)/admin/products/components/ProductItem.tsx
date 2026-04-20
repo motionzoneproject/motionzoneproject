@@ -1,7 +1,8 @@
 import { EyeOffIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
-import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
+import { getAllCourses } from "@/lib/actions/admin-courses";
+import type { ProdCourse } from "@/lib/actions/admin-products";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";

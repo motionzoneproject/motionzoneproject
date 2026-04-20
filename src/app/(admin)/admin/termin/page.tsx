@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
-import { getTerminer } from "@/lib/actions/admin";
+import { getTerminer } from "@/lib/actions/admin-termins";
 import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";

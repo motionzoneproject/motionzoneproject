@@ -17,7 +17,7 @@ import type {
   PurchaseItem,
   User,
 } from "@/generated/prisma/client";
-import { removeUserFromLesson } from "@/lib/actions/admin";
+import { removeUserFromLesson } from "@/lib/actions/admin-bookings";
 
 export function AttendeceItem({
   booking,

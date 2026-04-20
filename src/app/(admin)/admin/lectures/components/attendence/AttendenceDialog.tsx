@@ -14,7 +14,7 @@ import {
   getBookings,
   getUsersWithPurchasedProductsWithCourseInIt,
   type StudentWithPurchaseItemsWithCourse,
-} from "@/lib/actions/admin";
+} from "@/lib/actions/admin-bookings";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import { AttendenceForm } from "./AttendenceForm";
 

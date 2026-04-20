@@ -5,7 +5,10 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { type ProdCourse, removeCourseInProduct } from "@/lib/actions/admin";
+import {
+  type ProdCourse,
+  removeCourseInProduct,
+} from "@/lib/actions/admin-products";
 
 interface Props {
   pc: ProdCourse;

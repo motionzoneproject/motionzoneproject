@@ -5,7 +5,7 @@
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { delSchemaItem } from "@/lib/actions/admin";
+import { delSchemaItem } from "@/lib/actions/admin-schema";
 
 interface Props {
   itemId: string;

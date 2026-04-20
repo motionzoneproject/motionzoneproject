@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
-import { editCourseInSchema } from "@/lib/actions/admin";
+import { editCourseInSchema } from "@/lib/actions/admin-schema";
 import { formatDateToInput } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";

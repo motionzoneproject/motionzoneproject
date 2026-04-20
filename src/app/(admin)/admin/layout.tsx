@@ -5,7 +5,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 
 export default async function RootLayout({
   children,

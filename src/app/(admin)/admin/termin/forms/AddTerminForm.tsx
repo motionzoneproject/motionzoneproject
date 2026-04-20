@@ -29,7 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { addNewTermin } from "@/lib/actions/admin";
+import { addNewTermin } from "@/lib/actions/admin-termins";
 import { formatDateToInput } from "@/lib/date-utils";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 

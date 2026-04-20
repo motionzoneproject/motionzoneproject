@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Course, Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
-import type { SchemaItemWithCourse } from "@/lib/actions/admin";
+import type { SchemaItemWithCourse } from "@/lib/actions/admin-schema";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";

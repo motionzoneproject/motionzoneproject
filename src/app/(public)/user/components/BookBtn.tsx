@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addUserInLesson } from "@/lib/actions/admin";
+import { addUserInLesson } from "@/lib/actions/admin-bookings";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import type { UserPurchaseWithProduct } from "@/lib/actions/server-actions";
 import { useSession } from "@/lib/session-provider";

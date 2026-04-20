@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
-import { bulkCancelLessons } from "@/lib/actions/admin";
+import { bulkCancelLessons } from "@/lib/actions/admin-lessons";
 import { formatDateToInput } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
 import { adminBulkCancelLessonsSchema } from "@/validations/adminforms";

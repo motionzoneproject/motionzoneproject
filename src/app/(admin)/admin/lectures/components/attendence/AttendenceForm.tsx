@@ -36,7 +36,7 @@ import {
   addUserInLesson,
   type BookingWithUserAndParticipant,
   type StudentWithPurchaseItemsWithCourse,
-} from "@/lib/actions/admin";
+} from "@/lib/actions/admin-bookings";
 import {
   calcRemainingCount,
   showRemaining,

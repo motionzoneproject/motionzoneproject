@@ -1,4 +1,4 @@
-import type { PrismaTx } from "./actions/admin";
+import type { PrismaTx } from "./actions/admin-shared";
 import prisma from "./prisma";
 
 export type OrderItemInput = {

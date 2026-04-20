@@ -5,7 +5,7 @@ import type z from "zod";
 import type { AdminEditUserSchema } from "@/validations/userforms";
 import { auth } from "../auth";
 import prisma from "../prisma";
-import { isAdminRole } from "./admin";
+import { isAdminRole } from "./admin-shared";
 
 const nullIfEmpty = (value: string) => {
   const trimmed = value.trim();

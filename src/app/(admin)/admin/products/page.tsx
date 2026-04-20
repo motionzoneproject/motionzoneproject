@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminRole } from "@/lib/actions/admin-shared";
 import prisma from "@/lib/prisma";
 import AddProductForm from "./components/AddProductForm";
 import ProductItem from "./components/ProductItem";

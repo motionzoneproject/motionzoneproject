@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Event } from "@/generated/prisma/client";
-import { editNewEvent } from "@/lib/actions/admin";
+import { editNewEvent } from "@/lib/actions/admin-events";
 import { formatDateToInput } from "@/lib/date-utils";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEditEventSchema } from "@/validations/adminforms";

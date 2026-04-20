@@ -6,7 +6,7 @@ import type { GalleryItemType } from "@/generated/prisma/client";
 import { probeImageDimensions } from "@/lib/imageUtils";
 import prisma from "@/lib/prisma";
 import { getS3Resources } from "@/lib/s3";
-import { isAdminRole } from "./admin";
+import { isAdminRole } from "./admin-shared";
 
 function revalidateGalleryPaths() {
   revalidatePath("/gallery");

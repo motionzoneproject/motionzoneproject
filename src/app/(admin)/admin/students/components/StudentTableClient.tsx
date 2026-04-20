@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { removeUserFromLesson } from "@/lib/actions/admin";
+import { removeUserFromLesson } from "@/lib/actions/admin-bookings";
 import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
 import type { StudentSummary } from "../page";
 import { MailDialog } from "./MailDialog";

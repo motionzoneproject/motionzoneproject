@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Termin } from "@/generated/prisma/client";
-import { checkTerminDateChange, editTermin } from "@/lib/actions/admin";
+import { checkTerminDateChange, editTermin } from "@/lib/actions/admin-termins";
 import { formatDateToInput } from "@/lib/date-utils";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 

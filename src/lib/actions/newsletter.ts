@@ -4,7 +4,7 @@ import { markdownToTxt } from "markdown-to-txt";
 import { marked } from "marked";
 import { z } from "zod";
 import { sendMail } from "@/lib/mail";
-import { isAdminRole } from "./admin";
+import { isAdminRole } from "./admin-shared";
 
 const recipientSchema = z.object({
   name: z.string().trim().min(1).max(200),
