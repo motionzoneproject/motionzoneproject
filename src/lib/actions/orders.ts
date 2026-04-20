@@ -1,8 +1,42 @@
 "use server";
 
+import type { Prisma } from "@/generated/prisma/client";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
+
+async function releaseProductCapacityForOrder(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+) {
+  const orderItems = await tx.orderItem.findMany({
+    where: { orderId },
+    select: { productId: true, count: true },
+  });
+
+  const productCounts = new Map<string, number>();
+
+  for (const item of orderItems) {
+    productCounts.set(
+      item.productId,
+      (productCounts.get(item.productId) ?? 0) + item.count,
+    );
+  }
+
+  for (const [productId, count] of productCounts) {
+    await tx.product.updateMany({
+      where: {
+        id: productId,
+        countCustomer: {
+          gte: count,
+        },
+      },
+      data: {
+        countCustomer: { decrement: count },
+      },
+    });
+  }
+}
 
 async function requireAdmin() {
   const session = await getSessionData();
@@ -35,6 +69,10 @@ export async function updateOrderStatus(
       where: { id: orderId },
       data: { status: toStatus },
     });
+
+    if (toStatus === "CANCELLED") {
+      await releaseProductCapacityForOrder(tx, orderId);
+    }
 
     await tx.orderStatusEvent.create({
       data: {
