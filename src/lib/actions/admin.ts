@@ -437,11 +437,13 @@ export async function addCoursetoSchema(
   msg: string;
 }> {
   const isAdmin = await isAdminRole();
+
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
     const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
 
+    // Hämta kursnamn
     const getCourse = await prisma.course.findUnique({
       where: { id: validated.courseId },
     });
@@ -459,12 +461,18 @@ export async function addCoursetoSchema(
         ? new Date(validated.customEndDate)
         : termin.endDate;
 
+      // Hur blir det med skiften till sommartid? Det verkar inte vara något problem när lektioner skapas.
+
+      // Dock verkar det sparas rätt, dvs vi hade 11:30 - 12:30 i schemat.
+
+      console.log("So this will be stored: ", JSON.stringify(validated));
+
       const newSchemaItem = await tx.schemaItem.create({
         data: {
           terminId,
           place: validated.place,
           courseId: validated.courseId,
-          timeStart: formToDbDate(validated.timeStart),
+          timeStart: formToDbDate(validated.timeStart), // Det kan bero på denna funktion.
           timeEnd: formToDbDate(validated.timeEnd),
           customStartDate: finalStartDate,
           customEndDate: finalEndDate,
@@ -472,6 +480,8 @@ export async function addCoursetoSchema(
         },
         include: { course: true, termin: true },
       });
+
+      console.log("Creating lessons now..");
 
       const lessons = await createLessons(newSchemaItem.id, tx);
 
@@ -930,6 +940,14 @@ async function createLessons(
     const endHours = schemaItm.timeEnd.getHours();
     const endMinutes = schemaItm.timeEnd.getMinutes();
 
+    console.log("Ok, so this we got for lesson:");
+    console.log(`currentDate:${currentDate}`);
+    console.log(`currentDate:${currentDate}`);
+    console.log(`startHours:${startHours}`);
+    console.log(`startMinutes:${startMinutes}`);
+    console.log(`endHours:${endHours}`);
+    console.log(`endMinutes:${endMinutes}`);
+
     /// Så nu loopar vi igenom alla targetdays inom den perioden:
 
     while (currentDate <= endDate) {
@@ -938,12 +956,18 @@ async function createLessons(
       // Jämför veckodag (getDay() returnerar 0-6)
       if (currentDate.getDay() === targetDay) {
         // Skapa startTime: Kombinera matchande datum med tidskomponenten
+
+        // fix: Tror felet ligger här någonstans.
+
         const combinedStartTime = new Date(currentDate.getTime());
         combinedStartTime.setHours(startHours, startMinutes, 0, 0); // Sätt tid, nollställ sek/ms
 
         // Skapa endTime: Kombinera matchande datum med tidskomponenten
         const combinedEndTime = new Date(currentDate.getTime());
         combinedEndTime.setHours(endHours, endMinutes, 0, 0);
+
+        console.log(`combinedStartTime:${combinedStartTime}`);
+        console.log(`combinedEndTime:${combinedEndTime}`);
 
         lessonsToCreate.push({
           startTime: combinedStartTime,
