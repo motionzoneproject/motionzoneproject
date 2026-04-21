@@ -165,12 +165,7 @@ export default async function Page() {
                           });
 
                           const isLow =
-                            Number.isFinite(remaining) && remaining <= 1;
-
-                          const totalForDisplay =
-                            pi.purchase.type === "CLIP"
-                              ? pi.purchase.totalCount
-                              : pi.lessonsIncluded;
+                            Number.isFinite(remaining) && remaining <= 3;
 
                           const piBookings = bookings.filter(
                             (b) => b.purchaseItemId === pi.id,
@@ -243,24 +238,16 @@ export default async function Page() {
 
                               <div className="text-right">
                                 <span
-                                  className={`text-lg font-bold ${
+                                  className={`font-bold ${
                                     isLow ? "text-destructive" : ""
                                   }`}
                                 >
-                                  {remaining === Infinity ? "∞" : remaining}
+                                  {remaining === Infinity ? "∞" : remaining}{" "}
+                                  klipp kvar{" "}
+                                  {pi.purchase.type === "CLIP"
+                                    ? "(totalt)"
+                                    : ""}
                                 </span>
-
-                                {remaining !== Infinity &&
-                                  totalForDisplay != null && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {" "}
-                                      / {totalForDisplay}
-                                    </span>
-                                  )}
-
-                                <p className="text-xs text-muted-foreground">
-                                  Lektioner
-                                </p>
                               </div>
                             </div>
                           );
