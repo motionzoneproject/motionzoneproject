@@ -1,6 +1,7 @@
 "use client";
 
 import { PlusIcon } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,8 +14,10 @@ import {
 import NewEventForm from "./NewEventForm";
 
 export function AddEventBtn() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" className="cursor-pointer">
           <PlusIcon /> Nytt event
@@ -25,7 +28,7 @@ export function AddEventBtn() {
           <DialogTitle>Lägg till nytt event</DialogTitle>
           <DialogDescription>Fyll i formuläret</DialogDescription>
         </DialogHeader>
-        <NewEventForm />
+        <NewEventForm onSuccess={() => setIsOpen(false)} />
       </DialogContent>
     </Dialog>
   );

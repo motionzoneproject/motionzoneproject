@@ -69,6 +69,7 @@ export const adminEventSchema = z.object({
   description: z.string().min(1, "Beskrivning måste anges."),
   link: z.string().optional(),
   imageURL: z.string().optional(),
+  showOnStartpage: z.boolean(),
   startDate: z.coerce.date("Ogiltigt datum"),
   endDate: z.coerce.date("Ogiltigt datum").optional(),
 });
@@ -79,6 +80,7 @@ export const adminEditEventSchema = z.object({
   description: z.string().min(1, "Beskrivning måste anges."),
   link: z.string().optional(),
   imageURL: z.string().optional(),
+  showOnStartpage: z.boolean(),
   startDate: z.coerce.date("Ogiltigt datum"),
   endDate: z.coerce.date("Ogiltigt datum").optional(),
 });
