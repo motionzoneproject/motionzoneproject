@@ -1,4 +1,4 @@
-import { Clock, Users } from "lucide-react";
+import { Calendar, Clock, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import {
@@ -29,6 +29,7 @@ import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
+import { DelBookBtn } from "./components/DelBookBtn";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditPwForm } from "./components/EditPwForm";
 import OrderHistory from "./components/OrderHistory";
@@ -151,92 +152,102 @@ export default async function Page() {
                       </div>
                     </AccordionTrigger>
 
+                    {/* ok */}
+
                     <AccordionContent className="border-t pt-4 pb-2">
                       <div className="space-y-3">
                         {group.items.map((pi) => {
                           const courseName = pi.course.name;
+
                           const remaining = calcRemainingCount({
                             purchase: pi.purchase,
                             purchaseItem: pi,
                           });
+
                           const isLow =
-                            Number.isFinite(remaining) && remaining <= 1;
-                          const totalForDisplay =
-                            pi.purchase.type === "CLIP"
-                              ? pi.purchase.totalCount
-                              : pi.lessonsIncluded;
+                            Number.isFinite(remaining) && remaining <= 3;
+
+                          const piBookings = bookings.filter(
+                            (b) => b.purchaseItemId === pi.id,
+                          );
 
                           return (
                             <div
                               key={pi.id}
-                              className="flex items-start justify-between bg-muted p-3 rounded border"
+                              className="bg-muted p-4 rounded-xl border space-y-3"
                             >
-                              <div className="space-y-1">
-                                <p className="font-medium text-sm">
-                                  {courseName}
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {courseName}
+                                  </p>
+
+                                  {pi.purchase.participant &&
+                                    pi.purchase.participant.name !==
+                                      user?.name && (
+                                      <p className="text-[10px] text-brand font-medium">
+                                        Deltagare:{" "}
+                                        {pi.purchase.participant.name}
+                                      </p>
+                                    )}
+                                </div>
+
+                                <AutobookBtn purchaseItemId={pi.id} />
+                              </div>
+
+                              <div>
+                                <p className="text-muted-foreground text-xs mb-2">
+                                  Dina bokningar
                                 </p>
-                                {pi.purchase.participant &&
-                                  pi.purchase.participant.name !==
-                                    user?.name && (
-                                    <p className="text-[10px] text-brand font-medium">
-                                      Deltagare: {pi.purchase.participant.name}
-                                    </p>
-                                  )}
-                                <p className="text-muted-foreground text-xs">
-                                  Dina bokningar:
-                                </p>
-                                {bookings.filter(
-                                  (b) => b.purchaseItemId === pi.id,
-                                ).length > 0 ? (
-                                  <ul className="space-y-1 mt-1">
-                                    {bookings
-                                      .filter((b) => b.purchaseItemId === pi.id)
-                                      .map((b) => (
-                                        <li
-                                          key={b.id}
-                                          className="text-xs bg-background p-2 rounded"
-                                        >
-                                          {new Date(
-                                            b.lesson.startTime,
-                                          ).toLocaleDateString("sv-SE", {
-                                            day: "numeric",
-                                            month: "short",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                          {b.lesson.cancelled && (
-                                            <span className="text-destructive ml-1">
-                                              (inställd)
-                                            </span>
-                                          )}
-                                        </li>
-                                      ))}
-                                  </ul>
+
+                                {piBookings.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {piBookings.map((b) => (
+                                      <div
+                                        key={b.id}
+                                        className="flex items-center justify-between w-full p-3 rounded-lg bg-background border"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <Calendar className="w-4 h-4 text-muted-foreground" />
+
+                                          <p className="text-sm">
+                                            {new Date(
+                                              b.lesson.startTime,
+                                            ).toLocaleDateString("sv-SE", {
+                                              day: "numeric",
+                                              month: "short",
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </p>
+                                        </div>
+
+                                        <DelBookBtn
+                                          pId={b.purchaseItemId}
+                                          lId={b.lessonId}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
                                 ) : (
                                   <p className="text-xs text-muted-foreground italic">
                                     Inga bokningar gjorda än.
                                   </p>
                                 )}
                               </div>
-                              <AutobookBtn purchaseItemId={pi.id} />
+
                               <div className="text-right">
                                 <span
-                                  className={`text-lg font-bold ${
+                                  className={`font-bold ${
                                     isLow ? "text-destructive" : ""
                                   }`}
                                 >
-                                  {remaining === Infinity ? "∞" : remaining}
+                                  {remaining === Infinity ? "∞" : remaining}{" "}
+                                  klipp kvar{" "}
+                                  {pi.purchase.type === "CLIP"
+                                    ? "(totalt)"
+                                    : ""}
                                 </span>
-                                {remaining !== Infinity &&
-                                  totalForDisplay != null && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {" "}
-                                      / {totalForDisplay}
-                                    </span>
-                                  )}
-                                <p className="text-xs text-muted-foreground">
-                                  Lektioner
-                                </p>
                               </div>
                             </div>
                           );
