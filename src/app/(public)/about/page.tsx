@@ -75,7 +75,7 @@ export default async function About() {
 
           <div className="relative mt-6 overflow-hidden rounded-2xl border border-brand/30 bg-brand/10 p-7 backdrop-blur-sm">
             <div className="absolute top-0 left-0 h-full w-1 rounded-l-2xl bg-brand" />
-            <p className="text-xl font-light leading-snug text-foreground">
+            <p className="text-xl  leading-snug text-foreground">
               Här är alla välkomna –{" "}
               <span className="font-serif italic text-brand-light">
                 oavsett nivå.
