@@ -16,14 +16,14 @@ export default async function RootLayout({
   if (!isAdmin) return notFound();
 
   return (
-    <SidebarProvider className="relative !min-h-0">
+    <SidebarProvider className="relative flex-1 !min-h-0">
       <AppSidebar />
-      <SidebarInset className="min-w-0">
+      <SidebarInset className="min-h-0 min-w-0">
         <div className="flex items-center gap-2 px-2 py-1">
           <SidebarTrigger className="size-9" />
           <h2 className="text-sm font-semibold tracking-wide">Adminpanelen</h2>
         </div>
-        <div className="min-h-[33vh]">{children}</div>
+        <div className="min-h-[33vh] flex-1">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
