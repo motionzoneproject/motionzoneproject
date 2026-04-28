@@ -1,6 +1,7 @@
 "use client";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import type { StartPageContent } from "@/generated/prisma/client";
 
 type HeroProps = {
@@ -51,12 +52,9 @@ export default function Hero({ content }: HeroProps) {
           </p>
 
           <div className="flex flex-wrap gap-5 items-center animate-fade-in-left [animation-delay:600ms]">
-            <Link
-              href="/courses"
-              className="px-8 py-3.5 bg-brand text-white font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-brand/20"
-            >
-              Se Våra Kurser
-            </Link>
+            <Button asChild variant="cta">
+              <Link href="/courses">Se Våra Kurser</Link>
+            </Button>
 
             <Link
               href="/about"

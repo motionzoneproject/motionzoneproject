@@ -61,10 +61,7 @@ export default async function Page() {
                   </p>
                 </div>
 
-                <Button
-                  asChild
-                  className="px-8 py-4 bg-foreground text-background font-bold rounded-full hover:scale-105 transition-transform duration-300"
-                >
+                <Button asChild variant="cta">
                   <Link
                     href="https://instagram.com/motionzonevaxjo"
                     target="_blank"
