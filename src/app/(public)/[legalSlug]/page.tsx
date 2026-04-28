@@ -1,3 +1,4 @@
+import DOMPurify from "isomorphic-dompurify";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLegalPageBySlug } from "@/lib/actions/legal-actions";
@@ -48,8 +49,8 @@ export default async function LegalPage({ params }: Props) {
       </p>
       <div
         className="prose dark:prose-invert max-w-none"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-controlled content from TipTap editor
-        dangerouslySetInnerHTML={{ __html: page.content }}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(page.content) }}
       />
     </div>
   );
