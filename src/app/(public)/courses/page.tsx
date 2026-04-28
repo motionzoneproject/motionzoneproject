@@ -243,7 +243,7 @@ export default async function Page({ searchParams }: Props) {
             enkelt in och boka våra lektioner!
           </p> */}
 
-          <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
             Köp tillgång till våra
             <span className="font-serif italic text-brand-light"> kurser</span>
           </h1>

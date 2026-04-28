@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const quickLinks = [
   { name: "Hem", href: "/" },
@@ -140,13 +141,12 @@ const Footer = () => {
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               Skapa ett konto och boka din första kurs idag!
             </p>
-            <Link
-              href="/signup"
-              className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-brand hover:bg-brand-light transition-all duration-300 hover:scale-105"
-            >
-              Skapa konto
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
-            </Link>
+            <Button asChild variant="cta" className="group">
+              <Link href="/signup">
+                Skapa konto
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+              </Link>
+            </Button>
           </div>
         </div>
 
