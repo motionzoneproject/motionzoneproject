@@ -45,7 +45,7 @@ export default function Events({ events }: EventsProps) {
     return (
       <section
         id="events"
-        className="py-16 md:py-24 relative overflow-hidden"
+        className="py-20 md:py-32 relative overflow-hidden"
         style={{ background: "var(--background)" }}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8 text-center relative z-10">
@@ -66,7 +66,7 @@ export default function Events({ events }: EventsProps) {
   return (
     <section
       id="events"
-      className="py-16 md:py-24 relative overflow-hidden"
+      className="py-20 md:py-32 relative overflow-hidden"
       style={{ background: "var(--background)" }}
     >
       <div className="absolute inset-0 pointer-events-none">

@@ -22,7 +22,7 @@ export default async function About() {
   return (
     <div className="bg-background">
       {/* Hero */}
-      <section className="border-b border-border py-16 text-center md:py-20">
+      <section className="border-b border-border py-20 text-center md:py-32">
         <div className="mx-auto max-w-7xl px-6">
           <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-7xl">
             Om vår
@@ -41,7 +41,7 @@ export default async function About() {
       <DansStilar styles={styles} />
 
       {/* Studio */}
-      <section className="bg-muted/50 py-16">
+      <section className="bg-muted/50 py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <h2 className="mb-4 text-4xl md:text-5xl font-black text-foreground">
             Våra lokaler
