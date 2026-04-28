@@ -46,10 +46,65 @@ export default function BookingCal({
         .map((b) => new Date(b.lesson.startTime)),
     [bookings],
   );
-  const availableDays = useMemo(
-    () => lessons.map((l) => new Date(l.startTime)),
-    [lessons],
-  );
+
+  const availableDays = useMemo(() => {
+    const now = Date.now();
+    return lessons
+      .filter((lesson) => {
+        if (lesson.cancelled || lesson.startTime.getTime() < now) return false;
+
+        const lessonPurchaseItems = purschaseItems.filter(
+          (itm) => itm.courseId === lesson.courseId,
+        );
+
+        const bookingsOnLesson = bookings.filter(
+          (b) => b.lessonId === lesson.id && !b.cancelled,
+        );
+
+        const bookedParticipantIds = new Set<string>();
+        let ownerAlreadyBooked = false;
+
+        for (const b of bookingsOnLesson) {
+          const bookingPurchaseItem = lessonPurchaseItems.find(
+            (itm) => itm.id === b.purchaseItemId,
+          );
+
+          if (!bookingPurchaseItem) continue;
+
+          const participantId = bookingPurchaseItem?.purchase.participant?.id;
+
+          if (participantId) {
+            bookedParticipantIds.add(participantId);
+          } else {
+            ownerAlreadyBooked = true;
+          }
+        }
+
+        // Finns det NÅGOT som går att boka?
+        for (const itm of lessonPurchaseItems) {
+          const remaining = calcRemainingCount({
+            purchase: itm.purchase,
+            purchaseItem: itm,
+          });
+
+          if (!hasRemainingCount(remaining)) continue;
+
+          const participantId = itm.purchase.participant?.id;
+
+          if (participantId) {
+            if (bookedParticipantIds.has(participantId)) continue;
+          } else {
+            if (ownerAlreadyBooked) continue;
+          }
+
+          return true; // 🔥 minst en bokningsbar plats
+        }
+
+        return false;
+      })
+      .map((l) => new Date(l.startTime));
+  }, [lessons, purschaseItems, bookings]);
+
   const cancelledDays = useMemo(
     () => lessons.filter((l) => l.cancelled).map((l) => new Date(l.startTime)),
     [lessons],
@@ -189,11 +244,18 @@ export default function BookingCal({
                 // Nu kan vi avgöra:
                 const hasAnyBooking = bookingsOnLesson.length > 0;
                 const canBookMore = availablePurchaseItems.length > 0;
+                const isPastLesson = lesson.startTime.getTime() < now;
+                const shouldShowLesson =
+                  lesson.cancelled ||
+                  hasAnyBooking ||
+                  (!isPastLesson && canBookMore);
 
                 // För att hämta data att visa:
                 const purchaseItemById = new Map(
                   lessonPurchaseItems.map((itm) => [itm.id, itm]),
                 );
+
+                if (!shouldShowLesson) return null;
 
                 return (
                   <div
@@ -281,14 +343,14 @@ export default function BookingCal({
                           />
                         )}
                         {/* {hasAnyBooking && (
-                          <Button
-                            variant={"destructive"}
-                            onClick={async () => await delBooking(lesson.id)}
-                            disabled={lesson.startTime.getTime() < now}
-                          >
-                            Avboka
-                          </Button>
-                        )} */}
+                        <Button
+                          variant={"destructive"}
+                          onClick={async () => await delBooking(lesson.id)}
+                          disabled={lesson.startTime.getTime() < now}
+                        >
+                          Avboka
+                        </Button>
+                      )} */}
                       </div>
                     )}
                   </div>
