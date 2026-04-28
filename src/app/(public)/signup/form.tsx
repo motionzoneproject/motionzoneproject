@@ -104,11 +104,12 @@ export default function SignUpForm() {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Förnamn</FormLabel>
+                    <FormLabel required>Förnamn</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Förnamn"
                         autoComplete="given-name"
+                        aria-required="true"
                         {...field}
                       />
                     </FormControl>
@@ -121,11 +122,12 @@ export default function SignUpForm() {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Efternamn</FormLabel>
+                    <FormLabel required>Efternamn</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Efternamn"
                         autoComplete="family-name"
+                        aria-required="true"
                         {...field}
                       />
                     </FormControl>
@@ -139,12 +141,13 @@ export default function SignUpForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-post</FormLabel>
+                  <FormLabel required>E-post</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
                       placeholder="din@epost.se"
                       autoComplete="email"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>
@@ -157,11 +160,12 @@ export default function SignUpForm() {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Telefonnummer</FormLabel>
+                  <FormLabel required>Telefonnummer</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="070-123 45 67"
                       autoComplete="tel"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>
@@ -174,11 +178,12 @@ export default function SignUpForm() {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Gatuadress</FormLabel>
+                  <FormLabel required>Gatuadress</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Gatuadress"
                       autoComplete="street-address"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>
@@ -192,11 +197,12 @@ export default function SignUpForm() {
                 name="postalCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Postnummer</FormLabel>
+                    <FormLabel required>Postnummer</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="123 45"
                         autoComplete="postal-code"
+                        aria-required="true"
                         {...field}
                       />
                     </FormControl>
@@ -209,11 +215,12 @@ export default function SignUpForm() {
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ort</FormLabel>
+                    <FormLabel required>Ort</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Ort"
                         autoComplete="address-level2"
+                        aria-required="true"
                         {...field}
                       />
                     </FormControl>
@@ -227,9 +234,9 @@ export default function SignUpForm() {
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Födelsedatum</FormLabel>
+                  <FormLabel required>Födelsedatum</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" aria-required="true" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -259,12 +266,13 @@ export default function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lösenord</FormLabel>
+                  <FormLabel required>Lösenord</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       placeholder="********"
                       autoComplete="new-password"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>
@@ -277,12 +285,13 @@ export default function SignUpForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bekräfta lösenord</FormLabel>
+                  <FormLabel required>Bekräfta lösenord</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       placeholder="********"
                       autoComplete="new-password"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>

@@ -1,6 +1,7 @@
 import { PaginationBar } from "@/components/PaginationBar";
 import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
+import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import StudentsFilter from "./components/StudentsFilter";
 import StudentTableClient from "./components/StudentTableClient";
@@ -286,6 +287,7 @@ export default async function Page({
     product?: string;
   }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const query = params.q || "";
   const teacher = params.teacher || "";

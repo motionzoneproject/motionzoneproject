@@ -72,7 +72,9 @@
   --secondary: #f1f5f9;
   --secondary-foreground: #1a1a2e;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* Darkened from #64748b (slate-500) to slate-600 to clear the
+     WCAG AA 4.5:1 contrast threshold on the #fafafa background. */
+  --muted-foreground: #475569;
   --accent: #4cadb2;
   --accent-foreground: #1a1a2e;
   --destructive: #dc2626;
@@ -200,4 +202,24 @@ h6 {
 .animate-fade-in-left {
   animation: fade-in-left 0.8s ease-out forwards;
   opacity: 0;
+}
+
+/* WCAG 2.3.3 — respect users who opt out of motion. Collapse every
+   animation/transition to near-zero so vestibular-disorder users
+   aren't subjected to the hero pan, fade-ins, hover scales, etc.
+   !important is required here to override Tailwind/third-party
+   animation utilities. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind transition-* utilities */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override smooth-scroll utilities */
+    scroll-behavior: auto !important;
+  }
 }

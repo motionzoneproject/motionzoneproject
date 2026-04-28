@@ -107,7 +107,7 @@ export default function Events({ events }: EventsProps) {
                   <div className="relative overflow-hidden h-52">
                     <Image
                       src={currentEvent.imageURL}
-                      alt="Event Bild"
+                      alt={currentEvent.headline}
                       width={500}
                       height={300}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"

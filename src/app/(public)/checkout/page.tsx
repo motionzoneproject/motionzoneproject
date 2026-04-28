@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,12 @@ import { readCart } from "@/lib/cart";
 import prisma from "@/lib/prisma";
 import CartSummary from "./CartSummary";
 import CheckoutForm from "./CheckoutForm";
+
+export const metadata: Metadata = {
+  title: "Varukorg & Köp",
+  description: "Granska din beställning och slutför köpet.",
+  robots: { index: false, follow: false },
+};
 
 export default async function Page() {
   const session = await getSessionData();
@@ -56,7 +63,7 @@ export default async function Page() {
   }
 
   return (
-    <main className="flex-1 bg-background py-12">
+    <div className="flex-1 bg-background py-12">
       <div className="max-w-2xl mx-auto px-4 space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">Varukorg</h1>
@@ -116,6 +123,6 @@ export default async function Page() {
             </Card>
           ))}
       </div>
-    </main>
+    </div>
   );
 }

@@ -17,6 +17,22 @@ export const auth = betterAuth({
     "https://dev.motionzoneworld.com",
     "https://motionzoneworld.com",
   ],
+  // Throttle credential and password-reset endpoints so a single IP
+  // can't brute-force them. The defaults (100/min) stay for everything
+  // else; the customRules below tighten the high-risk paths.
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60, max: 5 },
+      "/forget-password": { window: 300, max: 3 },
+      "/reset-password": { window: 300, max: 5 },
+      "/change-password": { window: 60, max: 5 },
+      "/change-email": { window: 60, max: 5 },
+    },
+  },
   plugins: [adminPlugin()],
   user: {
     additionalFields: {

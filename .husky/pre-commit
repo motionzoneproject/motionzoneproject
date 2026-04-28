@@ -1,8 +1,19 @@
 #!/usr/bin/env sh
 
-# Run Biome format
+# Run Biome format and re-stage any originally-staged files it
+# touched. Without the re-stage, the formatter would silently leave
+# the working tree dirty while the commit captured the unformatted
+# version, and CI would fail on `biome check`. We only re-add files
+# that were already staged so unrelated working-tree changes don't
+# slip into the commit.
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
 echo "Running Biome format..."
 npm run format
+
+if [ -n "$STAGED" ]; then
+  echo "$STAGED" | xargs git add
+fi
 
 # Run Biome lint check
 echo "Running Biome lint check..."

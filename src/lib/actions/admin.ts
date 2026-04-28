@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import type z from "zod";
 import type {
   Booking,
@@ -48,6 +49,15 @@ export async function isAdminRole(): Promise<boolean> {
   const sessiondata = await getSessionData();
 
   return sessiondata?.user.role === "admin";
+}
+
+/**
+ * Page-level admin guard. Call from a server component to abort
+ * rendering with a 404 if the caller isn't an admin. Use this in
+ * addition to the layout-level check for defense-in-depth.
+ */
+export async function requireAdmin(): Promise<void> {
+  if (!(await isAdminRole())) notFound();
 }
 
 /**

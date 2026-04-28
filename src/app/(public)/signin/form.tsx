@@ -83,12 +83,13 @@ export default function SignInForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-post</FormLabel>
+                  <FormLabel required>E-post</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
                       placeholder="din@epost.se"
                       autoComplete="email"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>
@@ -101,12 +102,13 @@ export default function SignInForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lösenord</FormLabel>
+                  <FormLabel required>Lösenord</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       placeholder="********"
                       autoComplete="current-password"
+                      aria-required="true"
                       {...field}
                     />
                   </FormControl>

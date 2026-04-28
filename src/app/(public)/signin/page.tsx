@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SignInForm from "./form";
 
+export const metadata: Metadata = {
+  title: "Logga in",
+  description: "Logga in på ditt MotionZone-konto för att hantera bokningar.",
+  robots: { index: false, follow: false },
+};
+
 export default function SignInPage() {
   return (
-    <main className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
+    <div className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -23,6 +30,6 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
-    </main>
+    </div>
   );
 }

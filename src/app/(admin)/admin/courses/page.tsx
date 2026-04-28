@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Prisma } from "@/generated/prisma/client";
+import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import CourseItem from "./CourseItem";
 import CourseFilter from "./components/CourseFilter";
@@ -23,6 +24,7 @@ export default async function Page({
     showInactive?: string;
   }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const query = params.q || "";
   const teacher = params.teacher || "";

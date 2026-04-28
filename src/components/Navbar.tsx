@@ -4,11 +4,13 @@ import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CartIcon from "./CartIcon";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
+
+const MOBILE_MENU_ID = "mobile-nav-menu";
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,6 +21,15 @@ export default function NavBar() {
     { href: "/about", label: "Om oss" },
     { href: "/gallery", label: "Galleri" },
   ];
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   return (
     <header className="w-full sticky top-0 z-50 border-b border-brand/10 bg-background/85 backdrop-blur-xl">
@@ -80,7 +91,9 @@ export default function NavBar() {
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
           className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center border border-brand/20 text-foreground hover:border-brand/50 hover:bg-brand/5 transition-all duration-200"
-          aria-label="Öppna meny"
+          aria-label={menuOpen ? "Stäng meny" : "Öppna meny"}
+          aria-expanded={menuOpen}
+          aria-controls={MOBILE_MENU_ID}
         >
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -88,7 +101,10 @@ export default function NavBar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-brand/10 px-4 py-5 space-y-1 bg-background/97 max-h-[80vh] overflow-y-auto">
+        <div
+          id={MOBILE_MENU_ID}
+          className="md:hidden border-t border-brand/10 px-4 py-5 space-y-1 bg-background/97 max-h-[80vh] overflow-y-auto"
+        >
           {navLinks.map((link) => (
             <Link
               key={link.href}

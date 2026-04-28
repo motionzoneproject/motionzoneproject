@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SignUpForm from "./form";
 
+export const metadata: Metadata = {
+  title: "Skapa konto",
+  description:
+    "Skapa ett konto hos MotionZone Växjö för att boka kurser och lektioner.",
+  robots: { index: false, follow: false },
+};
+
 export default function SignUpPage() {
   return (
-    <main className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
+    <div className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -23,6 +31,6 @@ export default function SignUpPage() {
           </Link>
         </p>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,9 +1,11 @@
+import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import MediaAdmin from "./MediaAdmin";
 
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
+  await requireAdmin();
   const [galleryItems, events] = await Promise.all([
     prisma.galleryItem.findMany({
       include: {

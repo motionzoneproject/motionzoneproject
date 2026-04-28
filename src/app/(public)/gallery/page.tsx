@@ -1,14 +1,21 @@
 import { Instagram } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getActiveGalleryItems } from "@/lib/actions/gallery";
 import Gallery from "./Gallery";
 
+export const metadata: Metadata = {
+  title: "Bild & Videogalleri",
+  description:
+    "Bilder och videor från MotionZone Växjös event, uppvisningar och vardagsträning.",
+};
+
 export default async function Page() {
   const mediaItems = await getActiveGalleryItems();
 
   return (
-    <main className="bg-background">
+    <div className="bg-background">
       {/* Hero */}
       <section className="py-16 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
@@ -71,6 +78,6 @@ export default async function Page() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
