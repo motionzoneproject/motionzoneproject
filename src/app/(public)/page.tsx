@@ -1,4 +1,4 @@
-import GoogleMap from "@/components/google-map";
+import StudioLocation from "@/components/studio-location";
 import { getStartPageContent } from "@/lib/actions/start-page-actions";
 import prisma from "@/lib/prisma";
 import Events from "./start/Events";
@@ -28,7 +28,7 @@ export default async function Page() {
       <Hero content={startPageContent} />
       <Features content={startPageContent} />
       <Events events={events} />
-      <GoogleMap />
+      <StudioLocation />
     </div>
   );
 }

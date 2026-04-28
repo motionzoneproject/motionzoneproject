@@ -8,7 +8,7 @@ const LeafletMap = dynamic(() => import("./leaflet-map"), {
   loading: () => <div className="h-full w-full bg-muted animate-pulse" />,
 });
 
-export default function GoogleMap() {
+export default function StudioLocation() {
   return (
     <section className="relative overflow-hidden w-full py-24">
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand/10 blur-[120px] rounded-full pointer-events-none" />
