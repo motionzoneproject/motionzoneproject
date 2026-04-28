@@ -203,3 +203,17 @@ h6 {
   animation: fade-in-left 0.8s ease-out forwards;
   opacity: 0;
 }
+
+/* WCAG 2.3.3 — respect users who opt out of motion. Collapse every
+   animation/transition to near-zero so vestibular-disorder users
+   aren't subjected to the hero pan, fade-ins, hover scales, etc. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
