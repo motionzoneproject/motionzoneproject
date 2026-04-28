@@ -84,8 +84,11 @@ export default async function Page() {
             <div className="flex justify-between items-start">
               <div>
                 <CardTitle>{user?.name} - Profilsida</CardTitle>
-                <CardDescription>
-                  Boka lektioner och hantera dina köpta produkter.
+                <CardDescription className="mt-2">
+                  Här kan du hantera dina bokningar genom att välja ett datum i
+                  kalendern och tryck på boka eller avboka. Har du lagt till
+                  deltagare bokar du åt dem här också. Längre ned ser du dina
+                  ordrar och dina uppgifter med mera.
                 </CardDescription>
               </div>
               {userDetails && (

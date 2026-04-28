@@ -70,6 +70,7 @@ export default async function Page() {
           <CardHeader>
             <CardTitle>Dina produkter</CardTitle>
           </CardHeader>
+
           <CardContent>
             <CartSummary />
           </CardContent>
