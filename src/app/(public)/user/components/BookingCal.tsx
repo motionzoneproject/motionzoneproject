@@ -47,9 +47,8 @@ export default function BookingCal({
     [bookings],
   );
 
-  const now = Date.now();
-
   const availableDays = useMemo(() => {
+    const now = Date.now();
     return lessons
       .filter((lesson) => {
         if (lesson.cancelled || lesson.startTime.getTime() < now) return false;
@@ -104,7 +103,7 @@ export default function BookingCal({
         return false;
       })
       .map((l) => new Date(l.startTime));
-  }, [lessons, purschaseItems, bookings, now]);
+  }, [lessons, purschaseItems, bookings]);
 
   const cancelledDays = useMemo(
     () => lessons.filter((l) => l.cancelled).map((l) => new Date(l.startTime)),
@@ -118,6 +117,8 @@ export default function BookingCal({
       (l) => l.startTime.toDateString() === date.toDateString(),
     );
   }, [date, lessons]);
+
+  const now = Date.now();
 
   return (
     <div className="flex flex-col gap-6 md:flex-row">
@@ -355,7 +356,11 @@ export default function BookingCal({
                     </div>
                   );
                 })
-              : ""}
+              : (
+                  <p className="text-muted-foreground">
+                    Inga lektioner planerade denna dag.
+                  </p>
+                )}
           </CardContent>
         </Card>
       </div>
