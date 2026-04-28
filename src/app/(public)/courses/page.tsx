@@ -278,7 +278,7 @@ export default async function Page({ searchParams }: Props) {
                 return (
                   <Card
                     key={p.id}
-                    className="flex flex-col h-full hover:border-brand/50 transition-colors"
+                    className="flex flex-col h-full rounded-xl border border-border/70 hover:border-brand/50 hover:shadow-lg hover:shadow-brand/5 hover:-translate-y-0.5 transition-all duration-300"
                   >
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
