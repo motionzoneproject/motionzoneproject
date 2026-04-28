@@ -42,26 +42,38 @@ export async function createCheckout(params: {
         const p = await tx.product.findUnique({
           where: { id: itm.productId },
         });
-        if (!p)
+        if (!p) {
+          console.error("Checkout: product not found", {
+            productId: itm.productId,
+          });
           throw new Error(
-            `Product ${itm.productId} was not found. Order cancelled.`,
+            "En produkt i varukorgen är inte längre tillgänglig.",
           );
+        }
 
         const stats = await getProductStats(p.id, tx);
 
-        if (!stats.success)
-          throw new Error(
-            `Could not get stats for product ${itm.productId}. Order cancelled.`,
-          );
+        if (!stats.success) {
+          console.error("Checkout: failed to get product stats", {
+            productId: itm.productId,
+          });
+          throw new Error("Kunde inte verifiera tillgänglighet just nu.");
+        }
 
         if (
           typeof stats.spotsLeft === "number" &&
           Number.isFinite(stats.spotsLeft) &&
           itm.count > stats.spotsLeft
-        )
+        ) {
+          console.error("Checkout: count exceeds spotsLeft", {
+            productId: itm.productId,
+            count: itm.count,
+            spotsLeft: stats.spotsLeft,
+          });
           throw new Error(
-            `Product count exceeds limit for product ${itm.productId}. Count was ${itm.count} and spotsLeft is ${stats.spotsLeft}.`,
+            `Det finns inte tillräckligt med platser kvar för "${p.name}".`,
           );
+        }
 
         // Vi behöver kolla totalt också.
         pCountTotal.set(
@@ -74,10 +86,16 @@ export async function createCheckout(params: {
           typeof stats.spotsLeft === "number" &&
           Number.isFinite(stats.spotsLeft) &&
           totalInCartForProduct > stats.spotsLeft
-        )
+        ) {
+          console.error("Checkout: cart total exceeds spotsLeft", {
+            productId: itm.productId,
+            totalInCartForProduct,
+            spotsLeft: stats.spotsLeft,
+          });
           throw new Error(
-            `product count exceeds limit for product ${itm.productId}. Count was ${totalInCartForProduct} and spotsLeft is ${stats.spotsLeft}.`,
+            `Det finns inte tillräckligt med platser kvar för "${p.name}".`,
           );
+        }
 
         // Use the server-fetched price directly — never trust the client.
         serverItems.push({
