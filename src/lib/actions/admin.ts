@@ -134,11 +134,13 @@ export async function editNewEvent(
         description: validated.description,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
+        showOnStartpage: validated.showOnStartpage,
         startDate: new Date(validated.startDate),
         endDate: validated.endDate ? new Date(validated.endDate) : null,
       },
     });
     revalidatePath("/admin/events");
+    revalidatePath("/");
 
     return {
       success: true,
@@ -164,10 +166,13 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
         description: validated.description,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
+        showOnStartpage: validated.showOnStartpage,
         startDate: new Date(validated.startDate),
         endDate: validated.endDate ? new Date(validated.endDate) : null,
       },
     });
+    revalidatePath("/admin/events");
+    revalidatePath("/");
     return {
       success: true,
       msg: `Event ${newEvent.headline} skapades.`,
@@ -2150,5 +2155,32 @@ export async function toggleProductActive(
   } catch (e) {
     console.error(e);
     return { success: false, msg: "Kunde inte uppdatera produkten." };
+  }
+}
+
+export async function toggleEventStartpageVisibility(
+  id: string,
+  showOnStartpage: boolean,
+): Promise<{ success: boolean; msg: string }> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, msg: "No permission." };
+
+  try {
+    const event = await prisma.event.update({
+      where: { id },
+      data: { showOnStartpage },
+    });
+    revalidatePath("/admin/events");
+    revalidatePath("/");
+    return {
+      success: true,
+      msg: `Eventet "${event.headline}" visas nu ${showOnStartpage ? "" : "inte "}på startsidan.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      success: false,
+      msg: "Kunde inte uppdatera eventets synlighet på startsidan.",
+    };
   }
 }

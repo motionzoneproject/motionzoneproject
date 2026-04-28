@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -47,6 +48,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
       description: event.description,
       link: event.link,
       imageURL: event.imageURL,
+      showOnStartpage: event.showOnStartpage,
       startDate: event.startDate,
       endDate: event.endDate,
     },
@@ -63,6 +65,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
       description: event.description,
       link: event.link,
       imageURL: event.imageURL,
+      showOnStartpage: event.showOnStartpage,
       startDate: event.startDate,
       endDate: event.endDate ?? event.startDate,
     });
@@ -74,6 +77,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
     event.description,
     event.link,
     event.imageURL,
+    event.showOnStartpage,
     event.startDate,
     event.endDate,
   ]);
@@ -97,6 +101,7 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
     const res = await editNewEvent({ ...values, imageURL: finalImageURL });
     if (res.success) {
       toast.success(res.msg);
+      form.reset(values);
       onSuccess?.();
       router.refresh();
     } else {
@@ -155,6 +160,29 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showOnStartpage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visa på startsidan</FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked === true)
+                      }
+                      className="w-6 h-6"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Endast markerade och aktuella event visas på startsidan.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

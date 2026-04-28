@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,7 +32,11 @@ const formSchema = adminEventSchema;
 type FormInput = z.input<typeof adminEventSchema>;
 type FormOutput = z.output<typeof adminEventSchema>;
 
-export default function NewEventForm() {
+interface Props {
+  onSuccess?: () => void;
+}
+
+export default function NewEventForm({ onSuccess }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,18 +44,13 @@ export default function NewEventForm() {
       description: "",
       link: "",
       imageURL: "",
+      showOnStartpage: false,
       startDate: "",
       endDate: "",
     },
   });
 
   const router = useRouter();
-
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) form.reset();
-  }, [isOpen, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let finalImageURL = values.imageURL ?? "";
@@ -70,7 +70,8 @@ export default function NewEventForm() {
     const res = await addNewEvent({ ...values, imageURL: finalImageURL });
     if (res.success) {
       toast.success(res.msg);
-      setIsOpen(false);
+      form.reset();
+      onSuccess?.();
       router.refresh();
     } else {
       toast.error(res.msg);
@@ -112,6 +113,29 @@ export default function NewEventForm() {
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showOnStartpage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visa på startsidan</FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked === true)
+                      }
+                      className="w-6 h-6"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Endast markerade och aktuella event visas på startsidan.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

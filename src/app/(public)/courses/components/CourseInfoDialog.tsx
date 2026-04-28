@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { getCourseName } from "@/lib/tools";
 
 type CourseForDialog = {
   name: string;
@@ -34,7 +35,7 @@ interface CourseInfoDialogProps {
 }
 
 export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
-  const title = `${course.name}${course.minAge != null ? ` ${course.minAge}+ år` : ""}${course.level ? ` - ${course.level}` : ""}`;
+  const title = getCourseName(course);
 
   return (
     <Dialog>

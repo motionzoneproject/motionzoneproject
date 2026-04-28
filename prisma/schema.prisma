@@ -475,6 +475,8 @@ model Event {
   link        String
   imageURL    String
 
+  showOnStartpage        Boolean @default(false)
+
   photos       Photo[]
   galleryItems GalleryItem[]
 

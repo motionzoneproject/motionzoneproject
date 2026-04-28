@@ -10,24 +10,7 @@ import prisma from "@/lib/prisma";
 import { AddEventBtn } from "./components/AddEventBtn";
 import DelEventBtn from "./components/DelEventBtn";
 import EditEventBtn from "./components/EditEventBtn";
-
-/*
-
-Skapa lägg till och edit formulär:
-
-1. Skapa zod-schema för skapa i validations/adminforms.ts
-
-2. Skapa addBtn och formulär (useForm med zodResolver, defaultValues, onSubmit som anropar action) i components/NewEventForm.tsx och components/AddEventBtn.tsx
-
-3. Skapa server-action i lib/actions/admin.ts som validerar med zod och uppdaterar databasen.
-
-4. Skapa zod-schema för edit i validations/adminforms.ts (om det skiljer sig från skapa med id!)
-
-5. Skapa editBtn och formulär (useForm med zodResolver, defaultValues, onSubmit som anropar action) i components/EditEventForm.tsx och components/EditEventBtn.tsx
-
-6. Skapa server-action i lib/actions/admin.ts som validerar med zod och uppdaterar databasen.
-
-*/
+import ToggleEventStartpageBtn from "./components/ToggleEventStartpageBtn";
 
 export default async function EventsPage() {
   const events = await prisma.event.findMany({
@@ -61,6 +44,10 @@ export default async function EventsPage() {
                     ` - ${event.endDate.toLocaleDateString("sv-SE")}`}
                 </TableCell>
                 <TableCell className="flex justify-end gap-2">
+                  <ToggleEventStartpageBtn
+                    eventId={event.id}
+                    showOnStartpage={event.showOnStartpage}
+                  />
                   <EditEventBtn event={event} />
                   <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
