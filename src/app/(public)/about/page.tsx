@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
 import LarareProfile from "@/components/larare-profile";
 import { getStudios } from "@/lib/actions/studio-actions";
 import { getStyles } from "@/lib/actions/style-actions";
+
+export const metadata: Metadata = {
+  title: "Om oss",
+  description:
+    "Lär känna MotionZone Växjö — våra studios, dansstilar och lärare.",
+};
 
 export default async function About() {
   const [studios, styles] = await Promise.all([getStudios(), getStyles()]);

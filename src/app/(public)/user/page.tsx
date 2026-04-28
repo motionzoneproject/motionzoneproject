@@ -1,4 +1,5 @@
 import { Calendar, Clock, Users } from "lucide-react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import {
@@ -34,6 +35,12 @@ import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditPwForm } from "./components/EditPwForm";
 import OrderHistory from "./components/OrderHistory";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
+
+export const metadata: Metadata = {
+  title: "Min sida",
+  description: "Hantera dina bokningar, ordrar och kontouppgifter.",
+  robots: { index: false, follow: false },
+};
 
 export default async function Page() {
   const sessionData = await getSessionData();

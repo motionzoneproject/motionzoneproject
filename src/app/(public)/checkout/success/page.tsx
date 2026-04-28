@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { formatPrice } from "@/lib/money";
 import { getOrderById } from "@/lib/orders";
+
+export const metadata: Metadata = {
+  title: "Tack för din beställning",
+  robots: { index: false, follow: false },
+};
 
 function getStatusLabel(status: string) {
   switch (status) {

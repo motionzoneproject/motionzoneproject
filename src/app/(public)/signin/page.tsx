@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SignInForm from "./form";
+
+export const metadata: Metadata = {
+  title: "Logga in",
+  description: "Logga in på ditt MotionZone-konto för att hantera bokningar.",
+  robots: { index: false, follow: false },
+};
 
 export default function SignInPage() {
   return (

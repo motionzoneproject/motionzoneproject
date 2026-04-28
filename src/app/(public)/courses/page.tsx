@@ -6,6 +6,7 @@ import {
   Info,
   MapPin,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
 import {
@@ -41,6 +42,12 @@ interface Props {
     sort?: string;
   }>;
 }
+
+export const metadata: Metadata = {
+  title: "Våra kurser",
+  description:
+    "Bläddra och boka MotionZone Växjös danskurser för barn, ungdomar och vuxna.",
+};
 
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;

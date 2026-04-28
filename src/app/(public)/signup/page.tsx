@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SignUpForm from "./form";
+
+export const metadata: Metadata = {
+  title: "Skapa konto",
+  description:
+    "Skapa ett konto hos MotionZone Växjö för att boka kurser och lektioner.",
+  robots: { index: false, follow: false },
+};
 
 export default function SignUpPage() {
   return (
