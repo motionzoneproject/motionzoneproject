@@ -169,8 +169,8 @@ export default function CheckoutForm({
         <CardDescription className="mb-2">
           Här kan du också välja om en produkt är till dig eller t.ex en
           familjemedlem genom att lägga till deltagare. Bokningar för dig och
-          dina deltagare sker sedan på profilsidan. Om du köper en kurs så
-          bokas du automatiskt på kommande lektioner från dagens datum så långt
+          dina deltagare sker sedan på profilsidan. Om du köper en kurs så bokas
+          du automatiskt på kommande lektioner från dagens datum så långt
           klippen räcker.
         </CardDescription>
         <form onSubmit={handleSubmit} className="space-y-6">
