@@ -30,7 +30,7 @@ export default async function EventsPage() {
             <TableRow>
               <TableHead>Rubrik</TableHead>
               <TableHead>Datum</TableHead>
-              <TableHead className="text-right">Åtgarder</TableHead>
+              <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

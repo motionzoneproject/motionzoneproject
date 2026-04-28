@@ -41,7 +41,7 @@ export default function ToggleEventStartpageBtn({
       variant="ghost"
       size="icon"
       onClick={handleToggle}
-      title={showOnStartpage ? "Dolj pa startsidan" : "Visa pa startsidan"}
+      title={showOnStartpage ? "Dölj på startsidan" : "Visa på startsidan"}
     >
       {showOnStartpage ? (
         <EyeIcon className="h-4 w-4" />
@@ -50,8 +50,8 @@ export default function ToggleEventStartpageBtn({
       )}
       <span className="sr-only">
         {showOnStartpage
-          ? "Dolj event pa startsidan"
-          : "Visa event pa startsidan"}
+          ? "Dölj event på startsidan"
+          : "Visa event på startsidan"}
       </span>
     </Button>
   );
