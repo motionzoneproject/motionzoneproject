@@ -38,14 +38,10 @@ const markerIcon = new L.DivIcon({
   popupAnchor: [0, -36],
 });
 
-// CARTO Voyager renders proper colored streets and readable labels —
-// the previous `light_all` is meant as a quiet underlay for data overlays
-// and reads as washed-out when the map IS the focus. `dark_all` stays
-// for dark mode; we lift its contrast via the CSS filter below.
 const DARK_TILES =
   "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const LIGHT_TILES =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
@@ -70,16 +66,6 @@ export default function LeafletMap() {
   return (
     <>
       <style>{`
-        /* Lift map legibility — light tiles get a small contrast nudge,
-           dark tiles need more help because CARTO dark_all is faint by
-           design. Filter targets the tile pane only so the marker /
-           popup / attribution stay un-modified. */
-        .leaflet-tile {
-          filter: contrast(1.08) saturate(1.05);
-        }
-        .dark .leaflet-tile {
-          filter: brightness(1.18) contrast(1.22);
-        }
         .leaflet-popup-content-wrapper {
           background: var(--card);
           color: var(--card-foreground);
