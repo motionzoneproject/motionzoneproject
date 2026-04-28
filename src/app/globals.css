@@ -206,14 +206,20 @@ h6 {
 
 /* WCAG 2.3.3 — respect users who opt out of motion. Collapse every
    animation/transition to near-zero so vestibular-disorder users
-   aren't subjected to the hero pan, fade-ins, hover scales, etc. */
+   aren't subjected to the hero pan, fade-ins, hover scales, etc.
+   !important is required here to override Tailwind/third-party
+   animation utilities. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
     animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind transition-* utilities */
     transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override smooth-scroll utilities */
     scroll-behavior: auto !important;
   }
 }
