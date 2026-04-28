@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import type { GalleryMediaItem } from "./gallery-types";
 
 type TypeFilter = "ALL" | "IMAGE" | "VIDEO";
@@ -141,27 +140,19 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="inline-flex rounded-full border border-border bg-background p-1">
-            {[
-              { value: "ALL", label: "Alla" },
-              { value: "IMAGE", label: "Bilder" },
-              { value: "VIDEO", label: "Video" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setTypeFilter(option.value as TypeFilter)}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  typeFilter === option.value
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+          >
+            <SelectTrigger className="w-full min-w-40 bg-background sm:w-40">
+              <SelectValue placeholder="Alla" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Alla</SelectItem>
+              <SelectItem value="IMAGE">Bilder</SelectItem>
+              <SelectItem value="VIDEO">Video</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select value={eventFilter} onValueChange={setEventFilter}>
             <SelectTrigger className="w-full min-w-55 bg-background sm:w-55">
