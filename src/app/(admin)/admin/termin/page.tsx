@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
-import { getTerminer } from "@/lib/actions/admin";
+import { getTerminer, requireAdmin } from "@/lib/actions/admin";
 import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";
@@ -16,6 +16,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ hide?: string }>;
 }) {
+  await requireAdmin();
   const terminer = await getTerminer(true);
 
   function isTerminActive(termin: Termin): boolean {

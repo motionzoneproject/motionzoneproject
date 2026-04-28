@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
+import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { LecturesFilter } from "./components/LecturesFilter";
 import { LessonItem } from "./components/LessonItem";
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default async function LecturePage({ searchParams }: Props) {
+  await requireAdmin();
   const sp = await searchParams;
 
   const getTerminer = async (): Promise<Termin[]> => {

@@ -1,7 +1,9 @@
+import { requireAdmin } from "@/lib/actions/admin";
 import { getLegalPages } from "@/lib/actions/legal-actions";
 import { LegalPageList } from "./components/LegalPageList";
 
 export default async function Page() {
+  await requireAdmin();
   const pages = await getLegalPages();
 
   return (

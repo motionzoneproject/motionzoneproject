@@ -1,7 +1,9 @@
+import { requireAdmin } from "@/lib/actions/admin";
 import { getStartPageContent } from "@/lib/actions/start-page-actions";
 import { StartPageForm } from "./components/StartPageForm";
 
 export default async function Page() {
+  await requireAdmin();
   const content = await getStartPageContent();
 
   return (

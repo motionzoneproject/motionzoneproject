@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
 import { AddEventBtn } from "./components/AddEventBtn";
 import DelEventBtn from "./components/DelEventBtn";
@@ -13,6 +14,7 @@ import EditEventBtn from "./components/EditEventBtn";
 import ToggleEventStartpageBtn from "./components/ToggleEventStartpageBtn";
 
 export default async function EventsPage() {
+  await requireAdmin();
   const events = await prisma.event.findMany({
     orderBy: { startDate: "asc" },
   });

@@ -7,11 +7,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { requireAdmin } from "@/lib/actions/admin";
 import { getStudios } from "@/lib/actions/studio-actions";
 import { getStyles } from "@/lib/actions/style-actions";
 import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 
 export default async function Page() {
+  await requireAdmin();
   const [studios, teachers, teacherUsers, styles] = await Promise.all([
     getStudios(),
     getTeachers(),
