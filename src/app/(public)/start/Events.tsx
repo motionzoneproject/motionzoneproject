@@ -48,7 +48,7 @@ export default function Events({ events }: EventsProps) {
         className="py-20 md:py-32 relative overflow-hidden"
         style={{ background: "var(--background)" }}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center relative z-10">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             Kommande Event
           </h2>
@@ -74,7 +74,7 @@ export default function Events({ events }: EventsProps) {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-brand-secondary/5 blur-[120px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             Kommande Event
