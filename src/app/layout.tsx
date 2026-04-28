@@ -67,6 +67,12 @@ export default async function RootLayout({
             session={session?.session ?? null}
             user={session?.user ?? null}
           >
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring focus:outline-none"
+            >
+              Hoppa till huvudinnehållet
+            </a>
             <NavBar />
             {children}
             <CookieConsent />

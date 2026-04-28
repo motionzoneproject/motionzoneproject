@@ -23,7 +23,9 @@ export default async function RootLayout({
           <SidebarTrigger className="size-9" />
           <h2 className="text-sm font-semibold tracking-wide">Adminpanelen</h2>
         </div>
-        <div className="min-h-[33vh] flex-1">{children}</div>
+        <main id="main-content" className="min-h-[33vh] flex-1">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );
