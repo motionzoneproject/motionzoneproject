@@ -13,7 +13,7 @@ export default async function About() {
   );
 
   return (
-    <main className="bg-background">
+    <div className="bg-background">
       {/* Hero */}
       <section className="border-b border-border py-16 text-center md:py-20">
         <div className="mx-auto max-w-7xl px-6">
@@ -84,6 +84,6 @@ export default async function About() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -8,7 +8,7 @@ export default async function Page() {
   const mediaItems = await getActiveGalleryItems();
 
   return (
-    <main className="bg-background">
+    <div className="bg-background">
       {/* Hero */}
       <section className="py-16 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
@@ -71,6 +71,6 @@ export default async function Page() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

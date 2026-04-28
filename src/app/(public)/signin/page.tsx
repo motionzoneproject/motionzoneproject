@@ -3,7 +3,7 @@ import SignInForm from "./form";
 
 export default function SignInPage() {
   return (
-    <main className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
+    <div className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -23,6 +23,6 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
-    </main>
+    </div>
   );
 }

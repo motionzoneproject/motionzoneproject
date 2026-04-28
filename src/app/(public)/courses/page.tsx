@@ -223,7 +223,7 @@ export default async function Page({ searchParams }: Props) {
   );
 
   return (
-    <main className="bg-background">
+    <div className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="py-8 border-b border-border mb-8">
           {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
@@ -472,6 +472,6 @@ export default async function Page({ searchParams }: Props) {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
