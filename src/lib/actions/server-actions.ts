@@ -519,6 +519,10 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
       return created;
     });
 
+    if (bookings.length > 0) {
+      revalidatePath("/user");
+    }
+
     return bookings;
   } catch (e) {
     console.error("Kunde inte autoboka lektioner", e);
