@@ -72,7 +72,9 @@
   --secondary: #f1f5f9;
   --secondary-foreground: #1a1a2e;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* Darkened from #64748b (slate-500) to slate-600 to clear the
+     WCAG AA 4.5:1 contrast threshold on the #fafafa background. */
+  --muted-foreground: #475569;
   --accent: #4cadb2;
   --accent-foreground: #1a1a2e;
   --destructive: #dc2626;
