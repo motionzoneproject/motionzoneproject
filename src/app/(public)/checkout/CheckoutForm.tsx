@@ -166,14 +166,12 @@ export default function CheckoutForm({
         <CardTitle>Slutför köp & Deltagare</CardTitle>
       </CardHeader>
       <CardContent>
-        <CardDescription>
-          <p className="text-sm text-muted-foreground mb-2">
-            Här kan du också välja om en produkt är till dig eller t.ex en
-            familjemedlem genom att lägga till deltagare. Bokingar för dig och
-            dina deltagare sker sedan på profilsidan. Om du köper en kurs så
-            bokas du automatiskt på kommande lektioner från dagens datum så
-            långt klippen räcker.
-          </p>
+        <CardDescription className="mb-2">
+          Här kan du också välja om en produkt är till dig eller t.ex en
+          familjemedlem genom att lägga till deltagare. Bokningar för dig och
+          dina deltagare sker sedan på profilsidan. Om du köper en kurs så
+          bokas du automatiskt på kommande lektioner från dagens datum så långt
+          klippen räcker.
         </CardDescription>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
