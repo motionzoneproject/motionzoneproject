@@ -43,7 +43,7 @@ export default async function About() {
       {/* Studio */}
       <section className="bg-muted/50 py-16">
         <div className="mx-auto max-w-6xl px-6 text-center">
-          <h2 className="mb-4 text-2xl font-bold text-foreground">
+          <h2 className="mb-4 text-4xl md:text-5xl font-black text-foreground">
             Våra lokaler
           </h2>
           {activeStudios.length === 0 ? (
