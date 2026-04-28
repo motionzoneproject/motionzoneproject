@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,6 +166,15 @@ export default function CheckoutForm({
         <CardTitle>Slutför köp & Deltagare</CardTitle>
       </CardHeader>
       <CardContent>
+        <CardDescription>
+          <p className="text-sm text-muted-foreground mb-2">
+            Här kan du också välja om en produkt är till dig eller t.ex en
+            familjemedlem genom att lägga till deltagare. Bokingar för dig och
+            dina deltagare sker sedan på profilsidan. Om du köper en kurs så
+            bokas du automatiskt på kommande lektioner från dagens datum så
+            långt klippen räcker.
+          </p>
+        </CardDescription>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
