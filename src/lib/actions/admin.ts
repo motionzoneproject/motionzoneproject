@@ -865,11 +865,13 @@ export async function editCourse(
       const updatedCourse = await tx.course.update({
         data: {
           name: validated.name,
+          name2: validated.name2,
           minAge: validated.minAge,
           maxAge: validated.maxAge,
           level: validated.level,
           adult: validated.adult,
           description: validated.description,
+          description2: validated.description2,
           teacherId: validated.teacherid,
         },
         where: { id },

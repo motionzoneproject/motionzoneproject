@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,7 +58,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: course.name,
+      name2: course.name2 ?? "",
       description: course.description,
+      description2: course.description2 ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
@@ -75,7 +78,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
     form.reset({
       name: course.name,
+      name2: course.name2 ?? "",
       description: course.description,
+      description2: course.description2 ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
@@ -86,7 +91,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
     isOpen,
     form,
     course.name,
+    course.name2,
     course.description,
+    course.description2,
     course.minAge,
     course.maxAge,
     course.level,
@@ -110,6 +117,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
   const maxAgeValue = form.watch("maxAge");
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
+  const [formLang, setFormLang] = useState("sv");
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -127,6 +135,14 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e)}
+              />
+            </div>
+
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -136,8 +152,26 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Kursnamn</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Course name</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -150,8 +184,28 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   control={form.control}
                   name="description"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
                       <FormLabel>Beskrivning av kursen</FormLabel>
+
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Course description</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
