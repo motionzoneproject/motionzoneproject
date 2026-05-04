@@ -41,7 +41,14 @@ export default async function Page({
 
   const where: Prisma.CourseWhereInput = {
     ...(showInactive ? {} : { active: true }),
-    ...(query ? { name: { contains: query, mode: "insensitive" } } : {}),
+    ...(query
+      ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { name2: { contains: query, mode: "insensitive" } },
+          ],
+        }
+      : {}),
     ...(teacher ? { teacherId: teacher } : {}),
     ...(termin ? { schemaItems: { some: { terminId: termin } } } : {}),
   };

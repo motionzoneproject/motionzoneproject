@@ -120,7 +120,14 @@ export async function getAllCourses(
 
   const courses = await prisma.course.findMany({
     where: {
-      name: { contains: q, mode: "insensitive" },
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { name2: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       ...(showInactive ? {} : { active: true }),
     },
     orderBy: { name: "asc" },
