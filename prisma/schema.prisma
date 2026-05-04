@@ -65,7 +65,10 @@ model UserDetails {
   postalCode      String?
   city            String?
   dateOfBirth     DateTime?
+
   bio             String?
+  bio2            String?
+
   allowPhotoVideo Boolean   @default(false)
 
   @@map("user_details")
@@ -129,6 +132,7 @@ model Lesson {
   endTime   DateTime // Ska innehålla båda dag och tid. 
 
   message   String? // Om läraren har något meddelande om tillfället.
+  message2  String?
   cancelled Boolean @default(false) // Om läraren har ställt in.
 
   // Här är det ju bokat via en viss termin och kurs, så därför har vi detta:
@@ -159,6 +163,7 @@ model Termin {
   id String @id @default(uuid())
 
   name String
+  name2 String?
 
   startDate DateTime // När startar terminen?
   endDate   DateTime // När slutar den?
@@ -200,6 +205,7 @@ model SchemaItem {
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   place String?
+  place2 String?
 
   Lessons Lesson[]
 
@@ -211,8 +217,12 @@ model SchemaItem {
 // En lärare lägger till en kurs.
 model Course {
   id          String @id @default(uuid())
+
   name        String
+  name2       String?
+
   description String
+  description2 String?
 
   products ProductOnCourse[]
 
@@ -233,6 +243,7 @@ model Course {
   // Detta är om man bara ska kunna ha en kurs på en termin.
 
   level String?
+  level2 String?
 
   minAge Int?
   maxAge Int?
@@ -241,19 +252,8 @@ model Course {
   active Boolean @default(true) // Om kursen är aktiv (synlig för kunder)
 
   @@index([teacherId])
-  // @@index([terminId]) // Endast om vi ska låsa kurs till endast 1 termin.
   @@map("course")
 }
-
-// Så här finns informationen om vilken/vilka kurser man kan boka med produkten, och i vilken termin (om specificerat). 
-// Vi skulle kunna utifrån detta räkna med kod för att få fram hur många bokningar en användare har kvar, men smartare
-// att se detta som en mall, och när väl köpt så skapar vi en Purchase, med purcaseItems som speglar produkterna och hanterar
-// om bokningar gjorts etc. Så varje bokning borde också vara kopplad till en purchaseItem!
-
-// Hur vi gör med max antal platser på en kurs egentligen? Ska man kunna ha fler elever än antal platser?
-// Det får lärarna själva ha koll på, de kan ju se hur ofta de blir fullbokade om de behöver lägga till tillfällen eller inaktivera produkterna så inga fler kan köpa t.ex.
-
-//Men om lärarna vill vara schyssta och låta en kund få med sig kurstillfällen till nästa period, då kanske vi bara kan antingen göra ett rabattsystem (kanske vi borde ändå?), eller kanske göra så admin kan ändra expiresAt (om kursen fortsätter en annan termin)
 
 enum ProductType {
   COURSE // En specifik kurs (t.ex. "Yoga måndagar")
@@ -265,7 +265,10 @@ model Product {
   id String @id @default(uuid())
 
   name        String
+  name2       String?
+
   description String
+  description2 String?
 
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
 
@@ -352,17 +355,7 @@ model Purchase {
 
   PurchaseItems PurchaseItem[] // Kurserna och deras tillfällen
 
-  // useTotalCount Boolean // Om true, har man totalt antal tillfällen att boka, inte specifikt för kurs. (klippkortstyle)
-  // totalCount Int // Totalt antal tillfällen att boka (om man använder den metoden)
-
-  // Denna info finns i product. Kanske enkelt att bara checka där med:
-  //   const purchase = await prisma.purchase.findUnique({
-  //   where: { id: purchaseId },
-  //   include: { product: true }
-  // });
-
-  type           ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  // useTotalCount   Boolean   @default(false) // Tagit bort useTotalCount nu när type-logiken är migrerad.
+  type           ProductType @default(COURSE) 
   totalCount     Int? // Ursprungliga antalet (för klippkort)
   remainingCount Int? // Aktuellt saldo för klippkortet
 
@@ -391,22 +384,17 @@ model PurchaseItem {
   courseId String
   course   Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
-  // terminId String
-  // termin Termin @relation(fields: [terminId], references: [id], onDelete: Cascade)
-  // Denna info finns i purschase.
-
-  type            ProductType @default(COURSE) // (förberedelse för kommande fix) För antingen klippkort (CLIP), ett paket med flera kurser (PACK) eller för kurs (COURSE). Kommande fix, nu är det if satser på useTotalCount istället.
-  lessonsIncluded Int // 0 om klippkort, precis som produkt. Men inför kommande fix är inte logiken baserad på detta utan TYPE.
+  type            ProductType @default(COURSE) 
+  lessonsIncluded Int 
   remainingCount  Int
 
-  unlimited Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
+  unlimited Boolean @default(false)
 
   bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // @@index([terminId])
   @@unique([purchaseId, courseId])
   @@index([purchaseId])
   @@index([courseId])
@@ -471,7 +459,11 @@ model Event {
   endDate   DateTime? // När slutar den? (datum), optional ifall det bara är en dag.
 
   headline    String
+  headline2   String?
+
   description String
+  description2 String?
+
   link        String
   imageURL    String
 
@@ -487,8 +479,13 @@ model Event {
 model Photo {
   id          String   @id @default(uuid())
   url         String
+
   caption     String?
+  caption2    String?
+
   description String?
+  description2  String?
+
   eventId     String?
   event       Event?   @relation(fields: [eventId], references: [id])
   isVisible   Boolean  @default(true)
@@ -529,20 +526,6 @@ model OrderStatusEvent {
   @@map("order_status_event")
 }
 
-// // Varukorg? Använda cookies?
-// model Basket {
-//   id String @id @default(uuid())
-
-// }
-
-// model BasketItem {
-//   id String @id @default(uuid())
-// }
-
-// // Denna är under diskussion hur vi ska göra med
-// model Gallery {
-
-// }
 
 model Participant {
   id              String  @id @default(uuid())
@@ -571,8 +554,13 @@ model Participant {
 model TeacherProfile {
   id          String  @id @default(uuid())
   name        String
+
   specialty   String
+  specialty2   String?
+
   description String
+  description2 String?
+
   imageUrl    String?
   active      Boolean @default(true)
 
@@ -593,9 +581,16 @@ enum GalleryItemType {
 model GalleryItem {
   id           String          @id @default(uuid())
   type         GalleryItemType @default(VIDEO)
+
   title        String
+  title2       String?
+
   caption      String?
+  caption2     String?
+
   description  String?
+  description2 String?
+
   url          String // R2 public URL för videon / bilden
   thumbnailUrl String? // Valfri thumbnail (t.ex. för video)
   width        Int? // Bildbredd i pixlar (probed vid uppladdning; 1920 för video)
@@ -616,24 +611,30 @@ model GalleryItem {
 model Studio {
   id          String  @id @default(uuid())
   name        String
+  name2       String?
   description String
+  description2 String?
   imageUrl    String?
   active      Boolean @default(false)
 }
 
 model Style {
-  id          String  @id @default(uuid())
-  name        String
-  description String
-  imageUrl    String?
-  active      Boolean @default(false)
+  id           String  @id @default(uuid())
+  name         String
+  name2        String?
+  description  String
+  description2 String?
+  imageUrl     String?
+  active       Boolean @default(false)
 }
 
 model LegalPage {
   id        String   @id @default(cuid())
   slug      String   @unique
   title     String
+  title2    String?
   content   String   @default("")
+  content2  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -642,26 +643,55 @@ model StartPageContent {
   id String @id @default("singleton")
 
   // Hero
-  heroImage       String @default("/hero.png")
-  heroLabel       String @default("Välkommen till Motion Zone")
-  heroTitleLine1  String @default("Dans är")
-  heroTitleAccent String @default("Passion")
-  heroTitleLine2  String @default("Och Livet i Rörelse")
-  heroSubtext     String @default("Upplev dansen på ett helt nytt sätt. Vår studio erbjuder kurser för alla åldrar och nivåer med professionella instruktörer.")
+  heroImage         String @default("/hero.png")
+ 
+  heroLabel         String @default("Välkommen till Motion Zone")
+  heroLabel2        String? @default("Welcome to Motion Zone")
+  
+  heroTitleLine1    String @default("Dans är")
+  heroTitleLine1_2  String? @default("Dance is")
+  
+  heroTitleAccent   String @default("Passion")
+  heroTitleAccent2  String? @default("Passion")
+  
+  heroTitleLine2    String @default("Och Livet i Rörelse")
+  heroTitleLine2_2  String? @default("Och Livet i Rörelse")
+  
+  heroSubtext       String @default("Upplev dansen på ett helt nytt sätt. Vår studio erbjuder kurser för alla åldrar och nivåer med professionella instruktörer.")
+  heroSubtext2      String? @default("Discover dance in a new way. Our studio offers courses for all ages and levels with professional instructors.")
+
   // Features section header
   featuresTitle   String @default("Varför Motion Zone?")
+  featuresTitle2   String? @default("Why Motion Zone?")
+  
   featuresSubtext String @default("Vi erbjuder en unik dansupplevelse med instruktörer i världsklass och moderna faciliteter")
+  featuresSubtext2 String? @default("We offers an unique dance experience with world class intstructors and modern facilities")
+
 
   // Feature cards (fixed 3)
   feature1Image       String @default("/professionella-instruktörer.png")
+
   feature1Title       String @default("Professionella instruktörer")
+  feature1Title2      String? @default("Professional instructors")
+  
   feature1Description String @default("Våra erfarna lärare har lång erfarenhet och brinner för att dela sin passion för dans.")
+  feature1Description2 String? @default("Our teachers has a long experience and great passion for dancing.")
+  
   feature2Image       String @default("/flexibla-kurstider.png")
+  
   feature2Title       String @default("Flexibla Kurstider")
+  feature2Title2      String? @default("Flexible lessontimes")
+  
   feature2Description String @default("Vi erbjuder kurser på olika tider för att passa ditt schema. Från morgon till kväll, alla dagar.")
+  feature2Description2 String? @default("We have courses in all different times to suite your schedule. From morning to night, all days.") // Det här stämmer ju inte dock, så be kunden skriva egna detta är ju bara exempel. Gäller alla fält här.
+
   feature3Image       String @default("/moderna-lokaler.png")
+
   feature3Title       String @default("Moderna Lokaler")
+  feature3Title2      String? @default("Modern studios")
+
   feature3Description String @default("Vår studio är utrustad med det senaste ljudsystemet och stora speglar för optimal träning.")
+  feature3Description2 String? @default("Our studio is equiped with the latest soundsystem and big mirrors for optimal training.")
 
   updatedAt DateTime @updatedAt
 }
