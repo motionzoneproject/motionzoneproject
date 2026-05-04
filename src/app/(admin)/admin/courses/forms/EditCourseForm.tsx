@@ -155,7 +155,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "" : "hidden"}`}
                     >
-                      <FormLabel>Kursnamn</FormLabel>
+                      <FormLabel>Kursnamn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -171,7 +171,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
                     >
-                      <FormLabel>Course name</FormLabel>
+                      <FormLabel>Course name ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -187,7 +187,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "" : "hidden"}`}
                     >
-                      <FormLabel>Beskrivning av kursen</FormLabel>
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
@@ -205,7 +205,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
                     >
-                      <FormLabel>Course description</FormLabel>
+                      <FormLabel>Description ({formLang})</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
