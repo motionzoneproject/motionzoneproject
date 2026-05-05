@@ -149,7 +149,7 @@ export default function AddCourseForm({ teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
                     >
-                      <FormLabel>Course name ({formLang})</FormLabel>
+                      <FormLabel>Kursnamn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -183,7 +183,7 @@ export default function AddCourseForm({ teachers }: Props) {
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
                     >
-                      <FormLabel>Description ({formLang})</FormLabel>
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
