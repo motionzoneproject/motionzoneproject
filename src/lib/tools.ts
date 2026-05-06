@@ -27,9 +27,11 @@ export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
           course.maxAge && course.maxAge > 0
             ? `–${course.maxAge} år` // Använder tankstreck (–) och lägger till " år" här
             : "+ år" // Lägger till "+ år" om maxAge saknas
-        }${course.adult ? ` / Vuxen` : ""}`
+        }${course.adult ? (lang === "sv" ? ` / Vuxen` : ` / Adult`) : ""}`
       : course.adult
-        ? "Vuxen" // Om minAge saknas, men adult är true
+        ? lang === "sv"
+          ? "Vuxen"
+          : "Adult" // Om minAge saknas, men adult är true
         : ""; // Om varken minAge eller adult är true
   const levelInfo =
     lang === "sv"
