@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,7 +42,9 @@ export default function NewEventForm({ onSuccess }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       headline: "",
+      headline2: "",
       description: "",
+      description2: "",
       link: "",
       imageURL: "",
       showOnStartpage: false,
@@ -82,9 +85,19 @@ export default function NewEventForm({ onSuccess }: Props) {
 
   const [hasEndDate, sethasEndDate] = useState<boolean>(false);
 
+  const [formLang, setFormLang] = useState("sv");
+
   return (
     <Card>
       <CardContent>
+        <div className="p2 text-sm">
+          Formulärspråk:{" "}
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e)}
+          />
+        </div>
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -94,8 +107,22 @@ export default function NewEventForm({ onSuccess }: Props) {
               control={form.control}
               name="headline"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Namn</FormLabel>
+                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                  <FormLabel>Rubrik ({formLang})</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="headline2"
+              render={({ field }) => (
+                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                  <FormLabel>Rubrik2 ({formLang})</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -108,8 +135,22 @@ export default function NewEventForm({ onSuccess }: Props) {
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Beskrivning</FormLabel>
+                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                  <FormLabel>Beskrivning ({formLang})</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description2"
+              render={({ field }) => (
+                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                  <FormLabel>Beskrivning2 ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>

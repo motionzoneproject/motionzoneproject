@@ -66,7 +66,9 @@ export const adminAddCourseToSchemaSchema = z
 
 export const adminEventSchema = z.object({
   headline: z.string().min(1, "Namn måste anges."),
+  headline2: z.string(),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description2: z.string(),
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),
@@ -77,7 +79,9 @@ export const adminEventSchema = z.object({
 export const adminEditEventSchema = z.object({
   id: z.string().min(1),
   headline: z.string().min(1, "Namn måste anges."),
+  headline2: z.string(),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description2: z.string(),
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),

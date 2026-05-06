@@ -148,7 +148,9 @@ export async function editNewEvent(
       where: { id: validated.id },
       data: {
         headline: validated.headline,
+        headline2: validated.headline2,
         description: validated.description,
+        description2: validated.description2,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -180,7 +182,9 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
     const newEvent = await prisma.event.create({
       data: {
         headline: validated.headline,
+        headline2: validated.headline2,
         description: validated.description,
+        description2: validated.description2,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
