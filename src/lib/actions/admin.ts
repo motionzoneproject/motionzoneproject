@@ -1053,7 +1053,7 @@ export async function sendCancelledMail(
         ).toLocaleTimeString("sv-SE", {
           hour: "2-digit",
           minute: "2-digit",
-        })} har blivit inställd. Ditt tillfälle har återställts.`;
+        })} har blivit inställd. Ditt tillfälle har återställts. `;
         const result = await sendMail(student.email, subject, html, text);
 
         return {
@@ -1151,6 +1151,7 @@ export async function editLessonItem(
         where: { id: validated.id },
         data: {
           message: validated.message,
+          message2: validated.message2,
           cancelled: validated.cancelled,
         },
       });
@@ -1163,6 +1164,7 @@ export async function editLessonItem(
         {
           ...currentLesson,
           message: validated.message ?? null,
+          message2: validated.message2 ?? null,
           cancelled: validated.cancelled,
         },
         mailStudents,

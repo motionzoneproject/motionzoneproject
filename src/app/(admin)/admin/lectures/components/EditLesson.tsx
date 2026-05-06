@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +44,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
+      message2: lesson.message2 ?? "",
     },
   });
 
@@ -56,8 +58,16 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
+      message2: lesson.message2 ?? "",
     });
-  }, [isOpen, form, lesson.cancelled, lesson.id, lesson.message]);
+  }, [
+    isOpen,
+    form,
+    lesson.cancelled,
+    lesson.id,
+    lesson.message,
+    lesson.message2,
+  ]);
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
@@ -75,6 +85,8 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
     }
   }
 
+  const [formLang, setFormLang] = useState<string>("sv");
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
@@ -89,6 +101,14 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
           <DialogDescription></DialogDescription>
         </DialogHeader>
 
+        <div className="p2 text-sm">
+          Formulärspråk:{" "}
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e)}
+          />
+        </div>
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -98,8 +118,22 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
               control={form.control}
               name="message"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Meddelande</FormLabel>
+                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                  <FormLabel>Meddelande ({formLang})</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="message2"
+              render={({ field }) => (
+                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                  <FormLabel>Meddelande ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>

@@ -135,6 +135,7 @@ export const adminAddCourseSchema = z.object({
 export const adminLessonFormSchema = z.object({
   id: z.string().min(1),
   message: z.string().optional(),
+  message2: z.string().optional(),
   cancelled: z.coerce.boolean().optional(),
 });
 

@@ -199,7 +199,7 @@ export async function generateBookingCancelledHtml(
       <p>Ditt tillfälle har återställts, så du förlorar ingen bokning på grund av detta.</p>
       ${
         lesson.message
-          ? `<p><strong>Meddelande från oss:</strong><br/>${lesson.message}</p>`
+          ? `<p><strong>Meddelande från oss:</strong><br/>${lesson.message} <br/><br/> ${lesson.message2}</p>`
           : ""
       }
       <p>Om du har några frågor är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.</p>

@@ -9,6 +9,7 @@ import type {
   Termin,
 } from "@/generated/prisma/client";
 import prisma from "../prisma";
+import { getCourseName } from "../tools";
 import { handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
@@ -286,24 +287,22 @@ export async function delBooking(
   }
 }
 
-export async function getFullCourseNameFromId(id: string) {
+export async function getFullCourseNameFromId(
+  id: string,
+  lang: "sv" | "en" = "sv",
+) {
   const course = await prisma.course.findUnique({ where: { id } });
 
-  if (!course) return null;
+  if (!course) {
+    throw new Error(
+      "No course was found calling getFullCourseNameFromId with id " +
+        id +
+        " and lang " +
+        lang,
+    );
+  }
 
-  const ageRange =
-    course.minAge && course.minAge > 0
-      ? `${course.minAge}${
-          course.maxAge && course.maxAge > 0
-            ? `–${course.maxAge} år` // Använder tankstreck (–) och lägger till " år" här
-            : "+ år" // Lägger till "+ år" om maxAge saknas
-        }${course.adult ? ` / Vuxen` : ""}`
-      : course.adult
-        ? "Vuxen" // Om minAge saknas, men adult är true
-        : ""; // Om varken minAge eller adult är true
-  const levelInfo = course.level && ` - ${course.level}`;
-
-  return `${course.name} ${ageRange} ${levelInfo}`;
+  return getCourseName(course, lang);
 }
 
 export async function getAllCoursesInProduct(pid: string): Promise<Course[]> {
