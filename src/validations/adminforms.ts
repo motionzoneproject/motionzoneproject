@@ -235,7 +235,9 @@ export const adminStyleSchema = z.object({
 export const adminLegalPageSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1, "Titel måste anges."),
+  title2: z.string().min(1, "Titel måste anges."),
   content: z.string().min(1, "Innehåll måste anges."),
+  content2: z.string().min(1, "Innehåll måste anges."),
 });
 
 export const adminStartPageSchema = z.object({
