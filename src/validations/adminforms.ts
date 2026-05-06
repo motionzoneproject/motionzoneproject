@@ -119,6 +119,7 @@ export const adminAddCourseSchema = z.object({
   description: z.string(),
   description2: z.string(),
   level: z.string().optional(),
+  level2: z.string().optional(),
   minAge: z.coerce
     .number()
     .int("Ålder måste vara ett heltal.")

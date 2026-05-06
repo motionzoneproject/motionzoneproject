@@ -327,17 +327,13 @@ export default function MediaAdmin({
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Galleri - Mediahantering</h1>
-          <div className="mt-3 text-sm">
+          <div className="mt-3 text-sm w-fit">
             Formulärspråk:{" "}
             <LanguageSwitcherInput
               value={formLang ?? "sv"}
               setValue={(value) => setFormLang(value)}
             />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Alla galleriobjekt lagras nu i samma modell med valfri eventkoppling
-            för både bild och video.
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-3">

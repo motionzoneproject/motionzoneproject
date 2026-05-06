@@ -35,9 +35,10 @@ type FormOutput = z.output<typeof adminEventSchema>;
 
 interface Props {
   onSuccess?: () => void;
+  initialLang?: string;
 }
 
-export default function NewEventForm({ onSuccess }: Props) {
+export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -85,7 +86,7 @@ export default function NewEventForm({ onSuccess }: Props) {
 
   const [hasEndDate, sethasEndDate] = useState<boolean>(false);
 
-  const [formLang, setFormLang] = useState("sv");
+  const [formLang, setFormLang] = useState(initialLang);
 
   return (
     <Card>

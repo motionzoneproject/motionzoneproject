@@ -84,6 +84,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
+      level2: course.level2 ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
     });
@@ -99,6 +100,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
     course.level,
     course.adult,
     course.teacherId,
+    course.level2,
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -310,8 +312,28 @@ export default function EditCourseForm({ course, teachers }: Props) {
                   control={form.control}
                   name="level"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nivå:</FormLabel>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Nivå ({formLang})</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="level2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Nivå ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

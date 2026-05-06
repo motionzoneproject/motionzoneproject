@@ -51,9 +51,10 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   teachers: User[];
+  initialLang?: string;
 }
 
-export default function AddCourseForm({ teachers }: Props) {
+export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
   const { user } = useSession();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -61,9 +62,11 @@ export default function AddCourseForm({ teachers }: Props) {
       name: "",
       name2: "",
       description: "",
+      description2: "",
       minAge: "",
       maxAge: "",
       level: "",
+      level2: "",
       adult: false,
       teacherid: user?.id,
     },
@@ -95,7 +98,13 @@ export default function AddCourseForm({ teachers }: Props) {
   const maxAgeValue = form.watch("maxAge");
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
 
-  const [formLang, setFormLang] = useState("sv");
+  const [formLang, setFormLang] = useState(initialLang);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormLang(initialLang);
+    }
+  }, [initialLang, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -288,8 +297,28 @@ export default function AddCourseForm({ teachers }: Props) {
                   control={form.control}
                   name="level"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nivå:</FormLabel>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Nivå ({formLang})</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="level2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Nivå ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

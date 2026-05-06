@@ -38,9 +38,15 @@ interface Props {
   event: Event;
   isOpen: boolean;
   onSuccess?: () => void;
+  initialLang?: string;
 }
 
-export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
+export default function EditEventForm({
+  event,
+  isOpen,
+  onSuccess,
+  initialLang = "sv",
+}: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -123,7 +129,13 @@ export default function EditEventForm({ event, isOpen, onSuccess }: Props) {
       false,
   );
 
-  const [formLang, setFormLang] = useState("sv");
+  const [formLang, setFormLang] = useState(initialLang);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormLang(initialLang);
+    }
+  }, [initialLang, isOpen]);
 
   return (
     <Card>
