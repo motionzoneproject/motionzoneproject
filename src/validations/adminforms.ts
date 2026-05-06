@@ -4,9 +4,11 @@ import { Weekday } from "@/generated/prisma/enums";
 
 export const adminGalleryItemSchema = z.object({
   type: z.enum(["IMAGE", "VIDEO"]),
+  title2: z.string(),
   title: z.string().min(1, "Titel måste anges."),
   url: z.string().min(1, "Mediafil krävs."),
   thumbnailUrl: z.string().optional(),
+  description2: z.string(),
   description: z.string().optional(),
   eventId: z.string().optional(),
   displayOrder: z

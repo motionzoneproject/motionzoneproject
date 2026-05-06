@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,14 +52,18 @@ interface GalleryItemRecord {
   id: string;
   type: "IMAGE" | "VIDEO";
   title: string;
+  title2?: string;
   caption?: string;
+  caption2?: string;
   description?: string;
+  description2?: string;
   url: string;
   thumbnailUrl?: string;
   displayOrder: number;
   active: boolean;
   eventId?: string;
   eventHeadline?: string;
+  eventHeadline2?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,18 +71,22 @@ interface GalleryItemRecord {
 interface EventOption {
   id: string;
   headline: string;
+  headline2?: string;
 }
 
 type MediaCardItem = {
   id: string;
   mediaType: "IMAGE" | "VIDEO";
   title: string;
+  title2?: string;
   description?: string;
+  description2?: string;
   previewUrl: string;
   assetUrl: string;
   status: boolean;
   eventId?: string;
   eventHeadline?: string;
+  eventHeadline2?: string;
   displayOrder?: number;
   createdAt: string;
 };
@@ -87,7 +96,9 @@ type GalleryFormValues = z.infer<typeof adminGalleryItemSchema>;
 const emptyGalleryValues = (type: "IMAGE" | "VIDEO"): GalleryFormValues => ({
   type,
   title: "",
+  title2: "",
   description: "",
+  description2: "",
   eventId: "",
   url: "",
   thumbnailUrl: "",
@@ -117,6 +128,7 @@ export default function MediaAdmin({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
+  const [formLang, setFormLang] = useState("sv");
 
   const form = useForm<GalleryFormValues>({
     resolver: zodResolver(adminGalleryItemSchema),
@@ -159,8 +171,12 @@ export default function MediaAdmin({
     const payload = {
       type: values.type,
       title: values.title.trim(),
+      title2: values.title2.trim() || null,
       caption: values.type === "IMAGE" ? values.title.trim() : undefined,
+      caption2:
+        values.type === "IMAGE" ? values.title2.trim() || null : undefined,
       description: values.description || null,
+      description2: values.description2 || null,
       eventId: values.eventId || null,
       url: finalUrl,
       thumbnailUrl: finalThumbnailUrl || null,
@@ -198,7 +214,9 @@ export default function MediaAdmin({
         id: item.id,
         mediaType: item.type,
         title: item.caption?.trim() || item.title,
+        title2: item.caption2?.trim() || item.title2,
         description: item.description,
+        description2: item.description2,
         previewUrl:
           item.type === "IMAGE" ? item.url : (item.thumbnailUrl ?? item.url),
         assetUrl: item.url,
@@ -206,6 +224,7 @@ export default function MediaAdmin({
         displayOrder: item.displayOrder,
         eventId: item.eventId,
         eventHeadline: item.eventHeadline,
+        eventHeadline2: item.eventHeadline2,
         createdAt: item.createdAt,
       }))
       .sort(
@@ -221,8 +240,11 @@ export default function MediaAdmin({
       const textMatches =
         !search ||
         item.title.toLowerCase().includes(search) ||
+        item.title2?.toLowerCase().includes(search) ||
         item.description?.toLowerCase().includes(search) ||
-        item.eventHeadline?.toLowerCase().includes(search);
+        item.description2?.toLowerCase().includes(search) ||
+        item.eventHeadline?.toLowerCase().includes(search) ||
+        item.eventHeadline2?.toLowerCase().includes(search);
 
       const typeMatches = filterType === "ALL" || item.mediaType === filterType;
       const statusMatches =
@@ -248,7 +270,9 @@ export default function MediaAdmin({
     form.reset({
       type: item.type,
       title: item.caption?.trim() || item.title,
+      title2: item.caption2?.trim() || item.title2 || "",
       description: item.description || "",
+      description2: item.description2 || "",
       eventId: item.eventId || "",
       url: item.url,
       thumbnailUrl: item.thumbnailUrl || "",
@@ -303,6 +327,13 @@ export default function MediaAdmin({
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Galleri - Mediahantering</h1>
+          <div className="mt-3 text-sm">
+            Formulärspråk:{" "}
+            <LanguageSwitcherInput
+              value={formLang ?? "sv"}
+              setValue={(value) => setFormLang(value)}
+            />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Alla galleriobjekt lagras nu i samma modell med valfri eventkoppling
             för både bild och video.
@@ -401,7 +432,9 @@ export default function MediaAdmin({
             <option value="ALL">Alla</option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>
-                {event.headline}
+                {formLang === "en"
+                  ? event.headline2?.trim() || event.headline
+                  : event.headline}
               </option>
             ))}
           </select>
@@ -475,17 +508,27 @@ export default function MediaAdmin({
                         {item.status ? "Synlig" : "Dold"}
                       </Badge>
                       {item.eventHeadline && (
-                        <Badge variant="outline">{item.eventHeadline}</Badge>
+                        <Badge variant="outline">
+                          {formLang === "en"
+                            ? item.eventHeadline2 || item.eventHeadline
+                            : item.eventHeadline}
+                        </Badge>
                       )}
                     </div>
 
                     <div>
                       <h2 className="text-lg font-semibold leading-tight">
-                        {item.title}
+                        {formLang === "en"
+                          ? item.title2 || item.title
+                          : item.title}
                       </h2>
-                      {item.description && (
+                      {(formLang === "en"
+                        ? item.description2 || item.description
+                        : item.description) && (
                         <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                          {item.description}
+                          {formLang === "en"
+                            ? item.description2 || item.description
+                            : item.description}
                         </p>
                       )}
                     </div>
@@ -572,6 +615,14 @@ export default function MediaAdmin({
             </DialogDescription>
           </DialogHeader>
 
+          <div className="text-sm">
+            Formulärspråk:{" "}
+            <LanguageSwitcherInput
+              value={formLang ?? "sv"}
+              setValue={(value) => setFormLang(value)}
+            />
+          </div>
+
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(submitItem)}
@@ -625,9 +676,27 @@ export default function MediaAdmin({
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className={formLang === "sv" ? "" : "hidden"}>
                     <FormLabel>
-                      {currentType === "IMAGE" ? "Rubrik" : "Titel"}
+                      {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
+                      )
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="title2"
+                render={({ field }) => (
+                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                    <FormLabel>
+                      {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
+                      )
                     </FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value ?? ""} />
@@ -641,8 +710,22 @@ export default function MediaAdmin({
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beskrivning</FormLabel>
+                  <FormItem className={formLang === "sv" ? "" : "hidden"}>
+                    <FormLabel>Beskrivning ({formLang})</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} value={field.value ?? ""} rows={3} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description2"
+                render={({ field }) => (
+                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                    <FormLabel>Beskrivning ({formLang})</FormLabel>
                     <FormControl>
                       <Textarea {...field} value={field.value ?? ""} rows={3} />
                     </FormControl>
@@ -666,7 +749,9 @@ export default function MediaAdmin({
                           <option value="">Ingen</option>
                           {events.map((event) => (
                             <option key={event.id} value={event.id}>
-                              {event.headline}
+                              {formLang === "en"
+                                ? event.headline2?.trim() || event.headline
+                                : event.headline}
                             </option>
                           ))}
                         </select>
