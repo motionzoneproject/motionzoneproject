@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,9 +31,14 @@ import { adminStyleSchema } from "@/validations/adminforms";
 type StylesFormProps = {
   style?: Style;
   onSuccess?: () => void;
+  initialLang?: "sv" | "en";
 };
 
-export function StylesForm({ style, onSuccess }: StylesFormProps) {
+export function StylesForm({
+  style,
+  onSuccess,
+  initialLang = "sv",
+}: StylesFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -40,11 +46,15 @@ export function StylesForm({ style, onSuccess }: StylesFormProps) {
     resolver: zodResolver(adminStyleSchema),
     defaultValues: {
       name: style?.name ?? "",
+      name2: style?.name2 ?? "",
       description: style?.description ?? "",
+      description2: style?.description2 ?? "",
       imageUrl: style?.imageUrl ?? "",
       active: style?.active ?? true,
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof adminStyleSchema>) {
     setIsPending(true);
@@ -113,91 +123,132 @@ export function StylesForm({ style, onSuccess }: StylesFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Namn</FormLabel>
-              <FormControl>
-                <Input placeholder="t.ex. Street Jazz" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <div>
+      <div className="p2 text-sm my-2">
+        Formulärspråk:{" "}
+        <LanguageSwitcherInput
+          value={formLang ?? "sv"}
+          setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
         />
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                <FormLabel>Namn ({formLang})</FormLabel>
+                <FormControl>
+                  <Input placeholder="t.ex. Studio 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Beskrivning</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Beskriv dansstilen..."
-                  className="min-h-[120px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="name2"
+            render={({ field }) => (
+              <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                <FormLabel>Namn ({formLang})</FormLabel>
+                <FormControl>
+                  <Input placeholder="t.ex. Studio 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bild</FormLabel>
-              <FormControl>
-                <ImageInput {...field} value={field.value || ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                <FormLabel>Beskrivning ({formLang})</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Beskriv stilen..."
+                    className="min-h-[120px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="active"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
-              <FormControl>
-                <Checkbox
-                  checked={field.value ?? false}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Visa</FormLabel>
-                <FormDescription>
-                  Om avmarkerad visas inte dansstilen på "Om oss"-sidan.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="description2"
+            render={({ field }) => (
+              <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                <FormLabel>Beskrivning ({formLang})</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Beskriv stilen..."
+                    className="min-h-[120px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button
-          variant="ghost"
-          type="submit"
-          className="w-full"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <Loader />
-          ) : style ? (
-            <Save className="h-4 w-4" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {isPending ? "Sparar..." : style ? "Spara" : "Skapa"}
-        </Button>
-      </form>
-    </Form>
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bild</FormLabel>
+                <FormControl>
+                  <ImageInput {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="active"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Visa</FormLabel>
+                  <FormDescription>
+                    Om avmarkerad visas inte dansstilen på "Om oss"-sidan.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <Button
+            variant="ghost"
+            type="submit"
+            className="w-full"
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader />
+            ) : style ? (
+              <Save className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {isPending ? "Sparar..." : style ? "Spara" : "Skapa"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

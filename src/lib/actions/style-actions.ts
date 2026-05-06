@@ -12,12 +12,18 @@ async function isAdminRole(): Promise<boolean> {
   return sessiondata?.user.role === "admin";
 }
 
-export async function getStyles(): Promise<Style[]> {
-  return prisma.style.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
+export async function getStyles(lang: "sv" | "en" = "sv"): Promise<Style[]> {
+  return lang === "sv"
+    ? prisma.style.findMany({
+        orderBy: {
+          name: "asc",
+        },
+      })
+    : prisma.style.findMany({
+        orderBy: {
+          name2: "asc",
+        },
+      });
 }
 
 export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
@@ -31,6 +37,8 @@ export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
       data: {
         name: validated.name,
         description: validated.description,
+        name2: validated.name2,
+        description2: validated.description2,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -61,6 +69,8 @@ export async function updateStyle(
       data: {
         name: validated.name,
         description: validated.description,
+        name2: validated.name2,
+        description2: validated.description2,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },

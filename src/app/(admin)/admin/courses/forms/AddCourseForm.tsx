@@ -51,7 +51,7 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   teachers: User[];
-  initialLang?: string;
+  initialLang?: "sv" | "en";
 }
 
 export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
@@ -126,7 +126,7 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
               Formulärspråk:{" "}
               <LanguageSwitcherInput
                 value={formLang ?? "sv"}
-                setValue={(e) => setFormLang(e)}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
               />
             </div>
 
