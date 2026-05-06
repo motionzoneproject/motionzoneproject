@@ -155,7 +155,9 @@ export const adminBulkCancelLessonsSchema = z
 export const adminProductSchema = z
   .object({
     name: z.string().min(1),
+    name2: z.string().min(1),
     description: z.string(),
+    description2: z.string(),
     imageURL: z.string().optional(),
     unlimitedCustomers: z.coerce.boolean().optional(),
     maxCustomers: z.coerce.number().int().nonnegative(),

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -56,6 +57,7 @@ interface Props {
   productCourses: ProdCourse[];
   allCourses: Course[];
   count: number;
+  initialLang: "sv" | "en";
 }
 
 export default function AddCoursesToProductForm({
@@ -65,6 +67,7 @@ export default function AddCoursesToProductForm({
   productCourses,
   allCourses,
   count,
+  initialLang = "sv",
 }: Props) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -75,6 +78,7 @@ export default function AddCoursesToProductForm({
       courseId: "",
     },
   });
+  const [formLang, setFormLang] = useState(initialLang);
 
   const router = useRouter();
 
@@ -139,6 +143,13 @@ export default function AddCoursesToProductForm({
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -185,7 +196,7 @@ export default function AddCoursesToProductForm({
                               <SelectLabel>Välj kurs</SelectLabel>
                               {allCourses.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
-                                  {getCourseName(c)}
+                                  {getCourseName(c, formLang)}
                                 </SelectItem>
                               ))}
                             </SelectGroup>

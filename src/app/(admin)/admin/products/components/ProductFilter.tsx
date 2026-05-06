@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, Termin, User } from "@/generated/prisma/client";
+import { getCourseName } from "@/lib/tools";
 
 const productTypes = [
   { value: "COURSE", label: "Kurs" },
@@ -27,9 +28,15 @@ interface Props {
   teachers: User[];
   terminer: Termin[];
   courses: Course[];
+  lang: "sv" | "en";
 }
 
-export default function ProductFilter({ teachers, terminer, courses }: Props) {
+export default function ProductFilter({
+  teachers,
+  terminer,
+  courses,
+  lang,
+}: Props) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -186,7 +193,7 @@ export default function ProductFilter({ teachers, terminer, courses }: Props) {
               <SelectSeparator />
               {terminer.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {t.name}
+                  {(lang === "en" ? t.name2 : t.name) ?? "Unknown"}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -217,7 +224,7 @@ export default function ProductFilter({ teachers, terminer, courses }: Props) {
               <SelectSeparator />
               {courses.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.name}
+                  {getCourseName(c, lang)}
                 </SelectItem>
               ))}
             </SelectGroup>

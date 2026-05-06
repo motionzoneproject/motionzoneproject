@@ -1335,6 +1335,8 @@ export async function addNewProduct(
       data: {
         name: validated.name,
         description: validated.description,
+        name2: validated.name2,
+        description2: validated.description2,
         price: sekToOre(validated.price),
         maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
         unlimitedCustomers,
@@ -1398,6 +1400,8 @@ export async function editProduct(
       data: {
         name: validated.name,
         description: validated.description,
+        name2: validated.name2,
+        description2: validated.description2,
         price: sekToOre(validated.price),
         maxCustomer: maxCustomers,
         unlimitedCustomers,

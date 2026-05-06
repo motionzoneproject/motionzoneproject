@@ -11,6 +11,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,19 +43,22 @@ import { adminProductSchema } from "@/validations/adminforms";
 
 const formSchema = adminProductSchema;
 
-type CourseFormInput = z.input<typeof formSchema>;
-type CourseFormOutput = z.output<typeof formSchema>;
+type EditProductFormInput = z.input<typeof formSchema>;
+type EditProductFormOutput = z.output<typeof formSchema>;
 
 interface Props {
   productId: string;
   clipcard: boolean;
   unlimitedCustomers: boolean;
   description: string;
+  description2: string;
   name: string;
+  name2: string;
   price: number;
   clipCount: number;
   maxCustomers: number;
   imageURL: string;
+  initialLang?: "sv" | "en";
 }
 
 export default function EditProductForm({
@@ -63,11 +68,14 @@ export default function EditProductForm({
   unlimitedCustomers,
   description,
   name,
+  description2,
+  name2,
   price,
   imageURL,
   maxCustomers,
+  initialLang = "sv",
 }: Props) {
-  const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
+  const form = useForm<EditProductFormInput, unknown, EditProductFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: clipcard,
@@ -75,6 +83,8 @@ export default function EditProductForm({
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: description,
       name: name,
+      description2: description2 ?? "",
+      name2: name2 ?? "",
       price: oreToSek(price),
       clipCount: clipCount,
       maxCustomers: maxCustomers,
@@ -85,7 +95,7 @@ export default function EditProductForm({
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   // Reset för att gammal data annars visas.
   useEffect(() => {
@@ -96,6 +106,8 @@ export default function EditProductForm({
       unlimitedCustomers,
       description,
       name,
+      description2,
+      name2,
       price: oreToSek(price),
       clipCount,
       maxCustomers,
@@ -108,11 +120,15 @@ export default function EditProductForm({
     unlimitedCustomers,
     description,
     name,
+    description2,
+    name2,
     price,
     clipCount,
     maxCustomers,
     imageURL,
   ]);
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const oldImageUrl = imageURL;
@@ -201,6 +217,13 @@ export default function EditProductForm({
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -210,10 +233,28 @@ export default function EditProductForm({
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Namn ({formLang})</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Namnge produkten" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Namn ({formLang})</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Namnge produkten" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -224,13 +265,37 @@ export default function EditProductForm({
                   control={form.control}
                   name="description"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Beskrivning av produkten</FormLabel>
-
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
                       <FormControl>
-                        <Textarea {...field} />
+                        <Textarea
+                          placeholder="Beskriv produkten..."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
+                <FormField
+                  control={form.control}
+                  name="description2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Beskriv produkten..."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -382,10 +447,14 @@ export default function EditProductForm({
                   )}
                 />
 
-                <Button variant="ghost" type="submit" className="w-full">
-                  <Save className="h-4 w-4" />
-                  Spara
-                </Button>
+                {isBusy ? (
+                  <Loader />
+                ) : (
+                  <Button variant="ghost" type="submit" className="w-full">
+                    <Save className="h-4 w-4" />
+                    Spara
+                  </Button>
+                )}
               </form>
             </Form>
           </CardContent>

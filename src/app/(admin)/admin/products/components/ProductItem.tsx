@@ -12,9 +12,10 @@ import ToggleProductActiveBtn from "./ToggleProductActiveBtn";
 
 interface Props {
   product: Product;
+  lang: "sv" | "en";
 }
 
-export default async function ProductItem({ product }: Props) {
+export default async function ProductItem({ product, lang }: Props) {
   const allCourses = await getAllCourses("", true);
   const productStats = await getProductStats(product.id);
   const prodCourse: ProdCourse[] = await prisma.productOnCourse.findMany({
@@ -33,7 +34,7 @@ export default async function ProductItem({ product }: Props) {
     <TableRow className={!product.active ? "opacity-60" : ""}>
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
-          {product.name}
+          {lang === "en" ? product.name2 : product.name}
           {!product.active && (
             <span className="inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />
@@ -46,6 +47,7 @@ export default async function ProductItem({ product }: Props) {
       <TableCell>{formatPrice(product.price)}</TableCell>
       <TableCell>
         <AddCoursesToProductForm
+          initialLang={lang}
           count={prodCourse.length}
           allCourses={allCourses}
           productId={product.id}
@@ -77,6 +79,8 @@ export default async function ProductItem({ product }: Props) {
             clipcard={product.type === "CLIP"}
             description={product.description}
             name={product.name}
+            description2={product.description2 ?? ""}
+            name2={product.name2 ?? ""}
             price={product.price}
           />
           <DeleteProductBtn
