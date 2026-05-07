@@ -29,7 +29,7 @@ export const adminAddCourseToSchemaSchema = z
     courseId: z.string().min(1),
 
     place: z.string().optional(),
-
+    place2: z.string().optional(),
     timeStart: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
@@ -94,6 +94,7 @@ export const adminEditEventSchema = z.object({
 export const adminAddTerminSchema = z
   .object({
     name: z.string().min(1, "Namn måste anges."),
+    name2: z.string().min(1, "Namn måste anges."),
 
     startDate: z.coerce.date("Ogiltigt datum"),
 

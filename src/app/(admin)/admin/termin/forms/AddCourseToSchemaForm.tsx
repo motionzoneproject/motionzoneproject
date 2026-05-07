@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,14 +58,20 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
+  initialLang?: "sv" | "en";
 }
 
-export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
+export default function AddCourseToSchemaForm({
+  termin,
+  allCourses,
+  initialLang = "sv",
+}: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: "",
       place: "",
+      place2: "",
       customEndDate: termin.endDate.toISOString().split("T")[0],
       customStartDate: termin.startDate.toISOString().split("T")[0],
       day: "MONDAY",
@@ -72,6 +79,8 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
       timeEnd: "02:00",
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   const terminStartValue = termin.startDate.toISOString().split("T")[0];
   const terminEndValue = termin.endDate.toISOString().split("T")[0];
@@ -130,10 +139,20 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Nytt kurstillfälle i {termin.name}.</CardTitle>
+            <CardTitle>
+              Nytt kurstillfälle i{" "}
+              {formLang === "en" ? termin.name2 : termin.name}.
+            </CardTitle>
             <CardDescription></CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -162,7 +181,7 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
                             <SelectLabel>Välj kurs</SelectLabel>
                             {allCourses.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {getCourseName(c)}
+                                {getCourseName(c, formLang)}
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -196,7 +215,7 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
                             <SelectLabel>Välj dag</SelectLabel>
                             {weekdays.map((c) => (
                               <SelectItem key={c} value={c}>
-                                {getVeckodag(c)}
+                                {getVeckodag(c, formLang)}
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -359,8 +378,27 @@ export default function AddCourseToSchemaForm({ termin, allCourses }: Props) {
                   control={form.control}
                   name="place"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plats</FormLabel>
+                    <FormItem
+                      className={`${formLang === "sv" ? "" : "hidden"}`}
+                    >
+                      <FormLabel>Plats ({formLang})</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="place2"
+                  render={({ field }) => (
+                    <FormItem
+                      className={`${formLang === "sv" ? "hidden" : ""}`}
+                    >
+                      <FormLabel>Plats ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

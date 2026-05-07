@@ -222,11 +222,7 @@ export async function addNewTermin(
     const validated = await adminAddTerminSchema.parseAsync(formData);
 
     const newSchemaItem = await prisma.termin.create({
-      data: {
-        name: validated.name,
-        startDate: new Date(validated.startDate),
-        endDate: new Date(validated.endDate),
-      },
+      data: validated, // Provar :)
     });
     return {
       success: true,
@@ -288,11 +284,7 @@ export async function editTermin(
       // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
-        data: {
-          name: validated.name,
-          startDate: newStartDate,
-          endDate: newEndDate,
-        },
+        data: validated,
       });
 
       // 2. Hämta alla schemaItems för att synka lektioner
@@ -489,6 +481,7 @@ export async function addCoursetoSchema(
         data: {
           terminId,
           place: validated.place,
+          place2: validated.place2,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -558,6 +551,7 @@ export async function editCourseInSchema(
         data: {
           terminId,
           place: validated.place,
+          place2: validated.place2,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),

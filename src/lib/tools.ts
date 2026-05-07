@@ -52,22 +52,22 @@ export function getWeekdays() {
   return [...WEEKDAYS];
 }
 
-export const getVeckodag = (day: Weekday) => {
+export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") => {
   switch (day) {
     case "MONDAY":
-      return "Måndag";
+      return lang === "sv" ? "Måndag" : "Monday";
     case "TUESDAY":
-      return "Tisdag";
+      return lang === "sv" ? "Tisdag" : "Tuesday";
     case "WEDNESDAY":
-      return "Onsdag";
+      return lang === "sv" ? "Onsdag" : "Wednedsay";
     case "THURSDAY":
-      return "Torsdag";
+      return lang === "sv" ? "Torsdag" : "Thursday";
     case "FRIDAY":
-      return "Fredag";
+      return lang === "sv" ? "Fredag" : "Friday";
     case "SATURDAY":
-      return "Lördag";
+      return lang === "sv" ? "Lördag" : "Saturday";
     case "SUNDAY":
-      return "Söndag";
+      return lang === "sv" ? "Söndag" : "Sunday";
     default:
       return day; // Returnerar originalsträngen om ingen matchning hittas
   }

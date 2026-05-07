@@ -19,6 +19,7 @@ interface Props {
   weekday: Weekday;
   termin: Termin;
   allCourses: Course[];
+  lang: "sv" | "en";
 }
 
 export default function SchemaDay({
@@ -26,6 +27,7 @@ export default function SchemaDay({
   weekday,
   termin,
   allCourses,
+  lang = "sv",
 }: Props) {
   if (schemaItems.filter((itm) => itm.weekday === weekday).length === 0)
     return null;
@@ -37,7 +39,7 @@ export default function SchemaDay({
       <AccordionTrigger className="rounded-md px-3 py-2 hover:bg-muted/40">
         <div className="flex w-full items-center justify-between pr-2">
           <div className="text-left">
-            <p className="font-semibold">{getVeckodag(weekday)}</p>
+            <p className="font-semibold">{getVeckodag(weekday, lang)}</p>
             <p className="text-xs text-muted-foreground">
               {schemaItems.filter((itm) => itm.weekday === weekday).length}st{" "}
               kurstillfällen
@@ -73,10 +75,11 @@ export default function SchemaDay({
                     </span>
                   </div>
                   <div className="text-base font-semibold">
-                    {getCourseName(itm.course)}
+                    {getCourseName(itm.course, lang)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Plats: {itm.place || "Ej angiven"}
+                    Plats:{" "}
+                    {lang === "en" ? itm.place2 : itm.place || "Ej angiven"}
                   </div>
                   <Link
                     href={`/admin/lectures?schemaitem=${itm.id}&termin=${itm.terminId}&course=${itm.courseId}`}
