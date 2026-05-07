@@ -269,4 +269,22 @@ export const adminStartPageSchema = z.object({
   feature3Image: z.string().min(1, "Bild måste anges."),
   feature3Title: z.string().min(1, "Titel måste anges."),
   feature3Description: z.string().min(1, "Beskrivning måste anges."),
+
+  // en:
+
+  heroLabel2: z.string().min(1, "Etikett måste anges."),
+  heroTitleLine1_2: z.string().min(1, "Rubrik rad 1 måste anges."),
+  heroTitleAccent2: z.string().min(1, "Accenttext måste anges."),
+  heroTitleLine2_2: z.string().min(1, "Rubrik rad 2 måste anges."),
+  heroSubtext2: z.string().min(1, "Brödtext måste anges."),
+  // Features header
+  featuresTitle2: z.string().min(1, "Titel måste anges."),
+  featuresSubtext2: z.string().min(1, "Underrubrik måste anges."),
+  // Feature card
+  feature1Title2: z.string().min(1, "Titel måste anges."),
+  feature1Description2: z.string().min(1, "Beskrivning måste anges."),
+  feature2Title2: z.string().min(1, "Titel måste anges."),
+  feature2Description2: z.string().min(1, "Beskrivning måste anges."),
+  feature3Title2: z.string().min(1, "Titel måste anges."),
+  feature3Description2: z.string().min(1, "Beskrivning måste anges."),
 });

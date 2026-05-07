@@ -29,6 +29,7 @@ import { adminStartPageSchema } from "@/validations/adminforms";
 
 type StartPageFormProps = {
   content: StartPageContent;
+  lang: "sv" | "en";
 };
 
 type FormValues = z.infer<typeof adminStartPageSchema>;
@@ -94,7 +95,7 @@ const IMAGE_DEFAULTS = {
   feature3Image: "/moderna-lokaler.png",
 } as const;
 
-export function StartPageForm({ content }: StartPageFormProps) {
+export function StartPageForm({ content, lang }: StartPageFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -102,22 +103,35 @@ export function StartPageForm({ content }: StartPageFormProps) {
     resolver: zodResolver(adminStartPageSchema),
     defaultValues: {
       heroImage: content.heroImage,
-      heroLabel: content.heroLabel,
-      heroTitleLine1: content.heroTitleLine1,
-      heroTitleAccent: content.heroTitleAccent,
-      heroTitleLine2: content.heroTitleLine2,
-      heroSubtext: content.heroSubtext,
-      featuresTitle: content.featuresTitle,
-      featuresSubtext: content.featuresSubtext,
+      heroLabel: content.heroLabel ?? "",
+      heroLabel2: content.heroLabel2 ?? "",
+      heroTitleLine1: content.heroTitleLine1 ?? "",
+      heroTitleLine1_2: content.heroTitleLine1_2 ?? "",
+      heroTitleAccent: content.heroTitleAccent ?? "",
+      heroTitleAccent2: content.heroTitleAccent2 ?? "",
+      heroTitleLine2: content.heroTitleLine2 ?? "",
+      heroTitleLine2_2: content.heroTitleLine2_2 ?? "",
+      heroSubtext: content.heroSubtext ?? "",
+      heroSubtext2: content.heroSubtext2 ?? "",
+      featuresTitle: content.featuresTitle ?? "",
+      featuresTitle2: content.featuresTitle2 ?? "",
+      featuresSubtext: content.featuresSubtext ?? "",
+      featuresSubtext2: content.featuresSubtext2 ?? "",
       feature1Image: content.feature1Image,
-      feature1Title: content.feature1Title,
-      feature1Description: content.feature1Description,
+      feature1Title: content.feature1Title ?? "",
+      feature1Title2: content.feature1Title2 ?? "",
+      feature1Description: content.feature1Description ?? "",
+      feature1Description2: content.feature1Description2 ?? "",
       feature2Image: content.feature2Image,
-      feature2Title: content.feature2Title,
-      feature2Description: content.feature2Description,
+      feature2Title: content.feature2Title ?? "",
+      feature2Title2: content.feature2Title2 ?? "",
+      feature2Description: content.feature2Description ?? "",
+      feature2Description2: content.feature2Description2 ?? "",
       feature3Image: content.feature3Image,
-      feature3Title: content.feature3Title,
-      feature3Description: content.feature3Description,
+      feature3Title: content.feature3Title ?? "",
+      feature3Title2: content.feature3Title2 ?? "",
+      feature3Description: content.feature3Description ?? "",
+      feature3Description2: content.feature3Description2 ?? "",
     },
   });
 
@@ -145,6 +159,7 @@ export function StartPageForm({ content }: StartPageFormProps) {
       }
 
       const result = await updateStartPageContent(resolved);
+      console.log(JSON.stringify(result));
 
       if (result.success) {
         // Best-effort cleanup of replaced S3 images
@@ -173,6 +188,9 @@ export function StartPageForm({ content }: StartPageFormProps) {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left column – background image preview */}
+
+              {/* do this so i get some space */}
+
               <FormField
                 control={form.control}
                 name="heroImage"
@@ -200,8 +218,28 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   control={form.control}
                   name="heroLabel"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Etikett (liten text ovan rubriken)</FormLabel>
+                    <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                      <FormLabel>
+                        Etikett (liten text ovan rubriken) ({lang})
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Välkommen till Motion Zone"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="heroLabel2"
+                  render={({ field }) => (
+                    <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                      <FormLabel>
+                        Etikett (liten text ovan rubriken) ({lang}){" "}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Välkommen till Motion Zone"
@@ -213,13 +251,17 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   )}
                 />
 
+                {/*  */}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/*  */}
+
                   <FormField
                     control={form.control}
                     name="heroTitleLine1"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rubrik – del 1</FormLabel>
+                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                        <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Dans är" {...field} />
                         </FormControl>
@@ -229,10 +271,26 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   />
                   <FormField
                     control={form.control}
+                    name="heroTitleLine1_2"
+                    render={({ field }) => (
+                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                        <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Dans är" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/*  */}
+
+                  <FormField
+                    control={form.control}
                     name="heroTitleAccent"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rubrik – accent</FormLabel>
+                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                        <FormLabel>Rubrik – accent ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Passion" {...field} />
                         </FormControl>
@@ -242,10 +300,39 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   />
                   <FormField
                     control={form.control}
+                    name="heroTitleAccent2"
+                    render={({ field }) => (
+                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                        <FormLabel>Rubrik – accent ({lang})</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Passion" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/*  */}
+
+                  <FormField
+                    control={form.control}
                     name="heroTitleLine2"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rubrik – del 2</FormLabel>
+                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                        <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Och Livet i Rörelse" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="heroTitleLine2_2"
+                    render={({ field }) => (
+                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                        <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Och Livet i Rörelse" {...field} />
                         </FormControl>
@@ -254,6 +341,9 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     )}
                   />
                 </div>
+
+                {/*  */}
+
                 <FormDescription>
                   Visas som:{" "}
                   <em>
@@ -265,12 +355,14 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   </em>
                 </FormDescription>
 
+                {/*  */}
+
                 <FormField
                   control={form.control}
                   name="heroSubtext"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Brödtext</FormLabel>
+                    <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                      <FormLabel>Brödtext ({lang})</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>
@@ -278,24 +370,42 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="heroSubtext2"
+                  render={({ field }) => (
+                    <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                      <FormLabel>Brödtext ({lang})</FormLabel>
+                      <FormControl>
+                        <Textarea rows={3} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/*  */}
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* ── Features ──────────────────────────────────────────────────── */}
+
         <Card>
           <CardHeader>
             <CardTitle>Features-sektion</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/*  */}
+
               <FormField
                 control={form.control}
                 name="featuresTitle"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sektionens titel</FormLabel>
+                  <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                    <FormLabel>Sektionens titel ({lang})</FormLabel>
                     <FormControl>
                       <Input placeholder="Varför Motion Zone?" {...field} />
                     </FormControl>
@@ -305,10 +415,26 @@ export function StartPageForm({ content }: StartPageFormProps) {
               />
               <FormField
                 control={form.control}
+                name="featuresTitle2"
+                render={({ field }) => (
+                  <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                    <FormLabel>Sektionens titel ({lang})</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Varför Motion Zone?" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/*  */}
+
+              <FormField
+                control={form.control}
                 name="featuresSubtext"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sektionens underrubrik</FormLabel>
+                  <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
+                    <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -316,6 +442,21 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="featuresSubtext2"
+                render={({ field }) => (
+                  <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                    <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/*  */}
             </div>
 
             {/* Feature cards – horizontal grid on wider screens */}
@@ -332,6 +473,8 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     <CardTitle className="text-base">{label}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/*  */}
+
                     <FormField
                       control={form.control}
                       name={`feature${n}Image`}
@@ -352,12 +495,17 @@ export function StartPageForm({ content }: StartPageFormProps) {
                         </FormItem>
                       )}
                     />
+
+                    {/*  */}
+
                     <FormField
                       control={form.control}
                       name={`feature${n}Title`}
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Titel</FormLabel>
+                        <FormItem
+                          className={`${lang === "sv" ? "" : "hidden"}`}
+                        >
+                          <FormLabel>Titel ({lang})</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -367,10 +515,30 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     />
                     <FormField
                       control={form.control}
+                      name={`feature${n}Title2`}
+                      render={({ field }) => (
+                        <FormItem
+                          className={`${lang === "sv" ? "hidden" : ""}`}
+                        >
+                          <FormLabel>Titel ({lang})</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/*  */}
+
+                    <FormField
+                      control={form.control}
                       name={`feature${n}Description`}
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Beskrivning</FormLabel>
+                        <FormItem
+                          className={`${lang === "sv" ? "" : "hidden"}`}
+                        >
+                          <FormLabel>Beskrivning ({lang})</FormLabel>
                           <FormControl>
                             <Textarea rows={2} {...field} />
                           </FormControl>
@@ -378,6 +546,24 @@ export function StartPageForm({ content }: StartPageFormProps) {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name={`feature${n}Description2`}
+                      render={({ field }) => (
+                        <FormItem
+                          className={`${lang === "sv" ? "hidden" : ""}`}
+                        >
+                          <FormLabel>Beskrivning ({lang})</FormLabel>
+                          <FormControl>
+                            <Textarea rows={2} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/*  */}
                   </CardContent>
                 </Card>
               ))}
