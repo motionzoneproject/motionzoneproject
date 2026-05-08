@@ -124,7 +124,7 @@ export async function getAllCourses(
         ? {
             OR: [
               { name: { contains: q, mode: "insensitive" } },
-              { name2: { contains: q, mode: "insensitive" } },
+              { name_en: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
