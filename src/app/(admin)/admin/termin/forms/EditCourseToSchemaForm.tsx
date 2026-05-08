@@ -75,7 +75,7 @@ export default function EditCourseToSchemaForm({
     defaultValues: {
       courseId: schemaItem.courseId,
       place: schemaItem.place ?? "",
-      place2: schemaItem.place2 ?? "",
+      place_en: schemaItem.place_en ?? "",
       customEndDate:
         schemaItem.customEndDate?.toISOString().split("T")[0] ??
         termin.endDate.toISOString().split("T")[0],
@@ -121,7 +121,7 @@ export default function EditCourseToSchemaForm({
       form.reset({
         courseId: schemaItem.courseId,
         place: schemaItem.place ?? "",
-        place2: schemaItem.place2 ?? "",
+        place_en: schemaItem.place_en ?? "",
         customEndDate:
           schemaItem.customEndDate?.toISOString().split("T")[0] ??
           termin.endDate.toISOString().split("T")[0],
@@ -155,7 +155,7 @@ export default function EditCourseToSchemaForm({
     termin.startDate,
     schemaItem.courseId,
     schemaItem.place,
-    schemaItem.place2,
+    schemaItem.place_en,
     schemaItem.timeEnd,
     schemaItem.timeStart,
     schemaItem.weekday,
@@ -448,7 +448,7 @@ export default function EditCourseToSchemaForm({
                 />
                 <FormField
                   control={form.control}
-                  name="place2"
+                  name="place_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

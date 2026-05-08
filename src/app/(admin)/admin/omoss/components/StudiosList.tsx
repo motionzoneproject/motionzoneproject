@@ -99,7 +99,7 @@ export function StudiosList({ studios, lang }: StudiosListProps) {
             {studios.map((studio) => (
               <TableRow key={studio.id}>
                 <TableCell className="font-medium">
-                  {lang === "en" ? studio.name2 : studio.name}
+                  {lang === "en" ? studio.name_en : studio.name}
                 </TableCell>
                 <TableCell>
                   {studio.active ? (

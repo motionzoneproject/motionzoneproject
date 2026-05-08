@@ -43,7 +43,7 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
     <TableRow className="align-top">
       <TableCell className="p-3">
         <div className="font-semibold">
-          {lang === "en" ? termin.name2 : termin.name}{" "}
+          {lang === "en" ? termin.name_en : termin.name}{" "}
           {!termin.active && (
             <span className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />
@@ -81,7 +81,7 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
             <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {lang === "en" ? termin.name2 : termin.name}
+                  {lang === "en" ? termin.name_en : termin.name}
                   <br />
                   veckoschema
                 </DialogTitle>

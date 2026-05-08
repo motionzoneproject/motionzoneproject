@@ -16,9 +16,9 @@ function revalidateGalleryPaths() {
 function normalizeGalleryItemData(data: {
   type: GalleryItemType;
   title: string;
-  title2?: string | null;
+  title_en?: string | null;
   description?: string | null;
-  description2?: string | null;
+  description_en?: string | null;
   url: string;
   thumbnailUrl?: string | null;
   width?: number | null;
@@ -27,22 +27,22 @@ function normalizeGalleryItemData(data: {
   active?: boolean;
   eventId?: string | null;
   caption?: string;
-  caption2?: string | null;
+  caption_en?: string | null;
 }) {
   const title = data.title.trim();
-  const title2 = data.title2?.trim() || null;
+  const title_en = data.title_en?.trim() || null;
   const caption = data.type === "IMAGE" ? data.caption?.trim() || title : null;
-  const caption2 =
-    data.type === "IMAGE" ? data.caption2?.trim() || title2 : null;
+  const caption_en =
+    data.type === "IMAGE" ? data.caption_en?.trim() || title_en : null;
 
   return {
     type: data.type,
     title,
-    title2,
+    title_en,
     caption,
-    caption2,
+    caption_en,
     description: data.description || null,
-    description2: data.description2 || null,
+    description_en: data.description_en || null,
     url: data.url,
     thumbnailUrl: data.thumbnailUrl || null,
     width: data.width ?? null,
@@ -69,9 +69,9 @@ export async function getActiveGalleryItems() {
     id: item.id,
     type: item.type,
     title: item.caption?.trim() || item.title,
-    title2: item.caption2?.trim() || item.title2 || undefined,
+    title_en: item.caption_en?.trim() || item.title_en || undefined,
     description: item.description ?? undefined,
-    description2: item.description2 ?? undefined,
+    description_en: item.description_en ?? undefined,
     url: item.url,
     thumbnailUrl: item.thumbnailUrl ?? undefined,
     width: item.width ?? undefined,
@@ -82,7 +82,7 @@ export async function getActiveGalleryItems() {
     displayOrder: item.displayOrder,
     eventId: item.event?.id,
     eventHeadline: item.event?.headline,
-    eventHeadline2: item.event?.headline2 ?? undefined,
+    eventHeadline_en: item.event?.headline_en ?? undefined,
     eventStartDate: item.event?.startDate?.toISOString(),
   }));
 }
@@ -101,16 +101,16 @@ export async function getAllGalleryItems() {
 export async function createGalleryItem(data: {
   type: GalleryItemType;
   title: string;
-  title2?: string | null;
+  title_en?: string | null;
   description?: string | null;
-  description2?: string | null;
+  description_en?: string | null;
   url: string;
   thumbnailUrl?: string | null;
   displayOrder?: number;
   active?: boolean;
   eventId?: string | null;
   caption?: string;
-  caption2?: string | null;
+  caption_en?: string | null;
 }) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) throw new Error("Unauthorized");
@@ -139,11 +139,11 @@ export async function updateGalleryItem(
   data: Partial<{
     type: GalleryItemType;
     title: string;
-    title2: string | null;
+    title_en: string | null;
     caption: string;
-    caption2: string | null;
+    caption_en: string | null;
     description: string | null;
-    description2: string | null;
+    description_en: string | null;
     url: string;
     thumbnailUrl: string | null;
     displayOrder: number;
@@ -159,7 +159,7 @@ export async function updateGalleryItem(
 
   const nextType = data.type ?? existingItem.type;
   const nextTitle = data.title ?? existingItem.title;
-  const nextTitle2 = data.title2 ?? existingItem.title2 ?? undefined;
+  const nextTitle_en = data.title_en ?? existingItem.title_en ?? undefined;
   const nextUrl = data.url ?? existingItem.url;
   const urlChanged = nextUrl !== existingItem.url;
 
@@ -182,17 +182,17 @@ export async function updateGalleryItem(
     data: normalizeGalleryItemData({
       type: nextType,
       title: nextTitle,
-      title2: nextTitle2,
+      title_en: nextTitle_en,
       caption: data.caption ?? existingItem.caption ?? undefined,
-      caption2: data.caption2 ?? existingItem.caption2 ?? undefined,
+      caption_en: data.caption_en ?? existingItem.caption_en ?? undefined,
       description:
         data.description !== undefined
           ? data.description
           : existingItem.description,
-      description2:
-        data.description2 !== undefined
-          ? data.description2
-          : existingItem.description2,
+      description_en:
+        data.description_en !== undefined
+          ? data.description_en
+          : existingItem.description_en,
       url: nextUrl,
       thumbnailUrl:
         data.thumbnailUrl !== undefined

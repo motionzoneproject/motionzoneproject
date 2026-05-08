@@ -52,18 +52,18 @@ interface GalleryItemRecord {
   id: string;
   type: "IMAGE" | "VIDEO";
   title: string;
-  title2?: string;
+  title_en?: string;
   caption?: string;
-  caption2?: string;
+  caption_en?: string;
   description?: string;
-  description2?: string;
+  description_en?: string;
   url: string;
   thumbnailUrl?: string;
   displayOrder: number;
   active: boolean;
   eventId?: string;
   eventHeadline?: string;
-  eventHeadline2?: string;
+  eventHeadline_en?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,22 +71,22 @@ interface GalleryItemRecord {
 interface EventOption {
   id: string;
   headline: string;
-  headline2?: string;
+  headline_en?: string;
 }
 
 type MediaCardItem = {
   id: string;
   mediaType: "IMAGE" | "VIDEO";
   title: string;
-  title2?: string;
+  title_en?: string;
   description?: string;
-  description2?: string;
+  description_en?: string;
   previewUrl: string;
   assetUrl: string;
   status: boolean;
   eventId?: string;
   eventHeadline?: string;
-  eventHeadline2?: string;
+  eventHeadline_en?: string;
   displayOrder?: number;
   createdAt: string;
 };
@@ -96,9 +96,9 @@ type GalleryFormValues = z.infer<typeof adminGalleryItemSchema>;
 const emptyGalleryValues = (type: "IMAGE" | "VIDEO"): GalleryFormValues => ({
   type,
   title: "",
-  title2: "",
+  title_en: "",
   description: "",
-  description2: "",
+  description_en: "",
   eventId: "",
   url: "",
   thumbnailUrl: "",
@@ -171,12 +171,12 @@ export default function MediaAdmin({
     const payload = {
       type: values.type,
       title: values.title.trim(),
-      title2: values.title2.trim() || null,
+      title_en: values.title_en.trim() || null,
       caption: values.type === "IMAGE" ? values.title.trim() : undefined,
-      caption2:
-        values.type === "IMAGE" ? values.title2.trim() || null : undefined,
+      caption_en:
+        values.type === "IMAGE" ? values.title_en.trim() || null : undefined,
       description: values.description || null,
-      description2: values.description2 || null,
+      description_en: values.description_en || null,
       eventId: values.eventId || null,
       url: finalUrl,
       thumbnailUrl: finalThumbnailUrl || null,
@@ -214,9 +214,9 @@ export default function MediaAdmin({
         id: item.id,
         mediaType: item.type,
         title: item.caption?.trim() || item.title,
-        title2: item.caption2?.trim() || item.title2,
+        title_en: item.caption_en?.trim() || item.title_en,
         description: item.description,
-        description2: item.description2,
+        description_en: item.description_en,
         previewUrl:
           item.type === "IMAGE" ? item.url : (item.thumbnailUrl ?? item.url),
         assetUrl: item.url,
@@ -224,7 +224,7 @@ export default function MediaAdmin({
         displayOrder: item.displayOrder,
         eventId: item.eventId,
         eventHeadline: item.eventHeadline,
-        eventHeadline2: item.eventHeadline2,
+        eventHeadline_en: item.eventHeadline_en,
         createdAt: item.createdAt,
       }))
       .sort(
@@ -240,11 +240,11 @@ export default function MediaAdmin({
       const textMatches =
         !search ||
         item.title.toLowerCase().includes(search) ||
-        item.title2?.toLowerCase().includes(search) ||
+        item.title_en?.toLowerCase().includes(search) ||
         item.description?.toLowerCase().includes(search) ||
-        item.description2?.toLowerCase().includes(search) ||
+        item.description_en?.toLowerCase().includes(search) ||
         item.eventHeadline?.toLowerCase().includes(search) ||
-        item.eventHeadline2?.toLowerCase().includes(search);
+        item.eventHeadline_en?.toLowerCase().includes(search);
 
       const typeMatches = filterType === "ALL" || item.mediaType === filterType;
       const statusMatches =
@@ -270,9 +270,9 @@ export default function MediaAdmin({
     form.reset({
       type: item.type,
       title: item.caption?.trim() || item.title,
-      title2: item.caption2?.trim() || item.title2 || "",
+      title_en: item.caption_en?.trim() || item.title_en || "",
       description: item.description || "",
-      description2: item.description2 || "",
+      description_en: item.description_en || "",
       eventId: item.eventId || "",
       url: item.url,
       thumbnailUrl: item.thumbnailUrl || "",
@@ -429,7 +429,7 @@ export default function MediaAdmin({
             {events.map((event) => (
               <option key={event.id} value={event.id}>
                 {formLang === "en"
-                  ? event.headline2?.trim() || event.headline
+                  ? event.headline_en?.trim() || event.headline
                   : event.headline}
               </option>
             ))}
@@ -506,7 +506,7 @@ export default function MediaAdmin({
                       {item.eventHeadline && (
                         <Badge variant="outline">
                           {formLang === "en"
-                            ? item.eventHeadline2 || item.eventHeadline
+                            ? item.eventHeadline_en || item.eventHeadline
                             : item.eventHeadline}
                         </Badge>
                       )}
@@ -515,15 +515,15 @@ export default function MediaAdmin({
                     <div>
                       <h2 className="text-lg font-semibold leading-tight">
                         {formLang === "en"
-                          ? item.title2 || item.title
+                          ? item.title_en || item.title
                           : item.title}
                       </h2>
                       {(formLang === "en"
-                        ? item.description2 || item.description
+                        ? item.description_en || item.description
                         : item.description) && (
                         <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
                           {formLang === "en"
-                            ? item.description2 || item.description
+                            ? item.description_en || item.description
                             : item.description}
                         </p>
                       )}
@@ -687,7 +687,7 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name="title2"
+                name="title_en"
                 render={({ field }) => (
                   <FormItem className={formLang === "sv" ? "hidden" : ""}>
                     <FormLabel>
@@ -718,7 +718,7 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name="description2"
+                name="description_en"
                 render={({ field }) => (
                   <FormItem className={formLang === "sv" ? "hidden" : ""}>
                     <FormLabel>Beskrivning ({formLang})</FormLabel>
@@ -746,7 +746,7 @@ export default function MediaAdmin({
                           {events.map((event) => (
                             <option key={event.id} value={event.id}>
                               {formLang === "en"
-                                ? event.headline2?.trim() || event.headline
+                                ? event.headline_en?.trim() || event.headline
                                 : event.headline}
                             </option>
                           ))}

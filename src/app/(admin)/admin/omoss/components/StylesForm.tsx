@@ -46,9 +46,9 @@ export function StylesForm({
     resolver: zodResolver(adminStyleSchema),
     defaultValues: {
       name: style?.name ?? "",
-      name2: style?.name2 ?? "",
+      name_en: style?.name_en ?? "",
       description: style?.description ?? "",
-      description2: style?.description2 ?? "",
+      description_en: style?.description_en ?? "",
       imageUrl: style?.imageUrl ?? "",
       active: style?.active ?? true,
     },
@@ -149,7 +149,7 @@ export function StylesForm({
 
           <FormField
             control={form.control}
-            name="name2"
+            name="name_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Namn ({formLang})</FormLabel>
@@ -181,7 +181,7 @@ export function StylesForm({
 
           <FormField
             control={form.control}
-            name="description2"
+            name="description_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Beskrivning ({formLang})</FormLabel>

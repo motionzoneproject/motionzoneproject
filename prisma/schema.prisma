@@ -307,7 +307,7 @@ model ProductOnCourse {
 
   lessonsIncluded Int //Hur många lektioner av denna kurs ingår i produkten? (fix: 0 om klippkort gammal logik)
   // type ProductType @default(COURSE) // Används inte.
-  unlimited       Boolean @default(false) // fix: Lagt till denna för obegränsad tillgång till viss kurs.
+  unlimited       Boolean @default(false) 
 
   @@id([courseId, productId])
   @@map("product_on_course")
@@ -652,30 +652,30 @@ model StartPageContent {
   heroTitleLine1_en  String? @default("Dance is")
   
   heroTitleAccent   String @default("Passion")
-  heroTitleAccent_e  String? @default("Passion")
+  heroTitleAccent_en  String? @default("Passion")
   
   heroTitleLine2    String @default("Och Livet i Rörelse")
   heroTitleLine2_en  String? @default("Och Livet i Rörelse")
   
   heroSubtext       String @default("Upplev dansen på ett helt nytt sätt. Vår studio erbjuder kurser för alla åldrar och nivåer med professionella instruktörer.")
-  heroSubtext_e      String? @default("Discover dance in a new way. Our studio offers courses for all ages and levels with professional instructors.")
+  heroSubtext_en      String? @default("Discover dance in a new way. Our studio offers courses for all ages and levels with professional instructors.")
 
   // Features section header
   featuresTitle   String @default("Varför Motion Zone?")
-  featuresTitle_e   String? @default("Why Motion Zone?")
+  featuresTitle_en   String? @default("Why Motion Zone?")
   
   featuresSubtext String @default("Vi erbjuder en unik dansupplevelse med instruktörer i världsklass och moderna faciliteter")
-  featuresSubtext_e String? @default("We offers an unique dance experience with world class intstructors and modern facilities")
+  featuresSubtext_en String? @default("We offers an unique dance experience with world class intstructors and modern facilities")
 
 
   // Feature cards (fixed 3)
   feature1Image       String @default("/professionella-instruktörer.png")
 
   feature1Title       String @default("Professionella instruktörer")
-  feature1Title_e      String? @default("Professional instructors")
+  feature1Title_en      String? @default("Professional instructors")
   
   feature1Description String @default("Våra erfarna lärare har lång erfarenhet och brinner för att dela sin passion för dans.")
-  feature1Description_e String? @default("Our teachers has a long experience and great passion for dancing.")
+  feature1Description_en String? @default("Our teachers has a long experience and great passion for dancing.")
   
   feature2Image       String @default("/flexibla-kurstider.png")
   

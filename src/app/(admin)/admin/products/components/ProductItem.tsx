@@ -34,7 +34,7 @@ export default async function ProductItem({ product, lang }: Props) {
     <TableRow className={!product.active ? "opacity-60" : ""}>
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
-          {lang === "en" ? product.name2 : product.name}
+          {lang === "en" ? product.name_en : product.name}
           {!product.active && (
             <span className="inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />
@@ -79,8 +79,8 @@ export default async function ProductItem({ product, lang }: Props) {
             clipcard={product.type === "CLIP"}
             description={product.description}
             name={product.name}
-            description2={product.description2 ?? ""}
-            name2={product.name2 ?? ""}
+            description_en={product.description_en ?? ""}
+            name_en={product.name_en ?? ""}
             price={product.price}
           />
           <DeleteProductBtn

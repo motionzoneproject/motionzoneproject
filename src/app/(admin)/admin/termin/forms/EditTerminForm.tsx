@@ -50,7 +50,7 @@ export default function EditTerminForm({ termin, initialLang = "sv" }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: termin.name ?? "",
-      name2: termin.name2 ?? "",
+      name_en: termin.name_en ?? "",
       startDate: termin.startDate ?? "",
       endDate: termin.endDate ?? "",
     },
@@ -65,7 +65,7 @@ export default function EditTerminForm({ termin, initialLang = "sv" }: Props) {
 
     form.reset({
       name: termin.name,
-      name2: termin.name2 ?? "",
+      name_en: termin.name_en ?? "",
       startDate: termin.startDate,
       endDate: termin.endDate,
     });
@@ -75,7 +75,7 @@ export default function EditTerminForm({ termin, initialLang = "sv" }: Props) {
     termin.name,
     termin.startDate,
     termin.endDate,
-    termin.name2,
+    termin.name_en,
   ]);
 
   const [formLang, setFormLang] = useState(initialLang);
@@ -157,7 +157,7 @@ export default function EditTerminForm({ termin, initialLang = "sv" }: Props) {
                 />{" "}
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

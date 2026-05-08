@@ -48,7 +48,7 @@ export default function AddTerminForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      name2: "",
+      name_en: "",
       startDate: "",
       endDate: "",
     },
@@ -128,7 +128,7 @@ export default function AddTerminForm({
                 />
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

@@ -148,9 +148,9 @@ export async function editNewEvent(
       where: { id: validated.id },
       data: {
         headline: validated.headline,
-        headline2: validated.headline2,
+        headline_en: validated.headline_en,
         description: validated.description,
-        description2: validated.description2,
+        description_en: validated.description_en,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -182,9 +182,9 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
     const newEvent = await prisma.event.create({
       data: {
         headline: validated.headline,
-        headline2: validated.headline2,
+        headline_en: validated.headline_en,
         description: validated.description,
-        description2: validated.description2,
+        description_en: validated.description_en,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -284,7 +284,7 @@ export async function editTermin(
       // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
-        data: validated,
+        data: validated, // Såhär borde vi göra på alla ställen där det går. I framtiden.
       });
 
       // 2. Hämta alla schemaItems för att synka lektioner
@@ -481,7 +481,7 @@ export async function addCoursetoSchema(
         data: {
           terminId,
           place: validated.place,
-          place2: validated.place2,
+          place_en: validated.place_en,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -551,7 +551,7 @@ export async function editCourseInSchema(
         data: {
           terminId,
           place: validated.place,
-          place2: validated.place2,
+          place_en: validated.place_en,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -822,14 +822,14 @@ export async function addNewCourse(
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
-        name2: validated.name2,
+        name_en: validated.name_en,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
-        level2: validated.level2,
+        level_en: validated.level_en,
         adult: validated.adult,
         description: validated.description,
-        description2: validated.description2,
+        description_en: validated.description_en,
         teacherId: validated.teacherid,
       },
     });
@@ -871,14 +871,14 @@ export async function editCourse(
       const updatedCourse = await tx.course.update({
         data: {
           name: validated.name,
-          name2: validated.name2,
+          name_en: validated.name_en,
           minAge: validated.minAge,
           maxAge: validated.maxAge,
           level: validated.level,
-          level2: validated.level2,
+          level_en: validated.level_en,
           adult: validated.adult,
           description: validated.description,
-          description2: validated.description2,
+          description_en: validated.description_en,
           teacherId: validated.teacherid,
         },
         where: { id },
@@ -1145,7 +1145,7 @@ export async function editLessonItem(
         where: { id: validated.id },
         data: {
           message: validated.message,
-          message2: validated.message2,
+          message_en: validated.message_en,
           cancelled: validated.cancelled,
         },
       });
@@ -1158,7 +1158,7 @@ export async function editLessonItem(
         {
           ...currentLesson,
           message: validated.message ?? null,
-          message2: validated.message2 ?? null,
+          message_en: validated.message_en ?? null,
           cancelled: validated.cancelled,
         },
         mailStudents,
@@ -1264,6 +1264,7 @@ export async function bulkCancelLessons(
         data: {
           cancelled: validated.cancelled,
           message: validated.message,
+          message_en: validated.message_en,
         },
       });
     });
@@ -1329,8 +1330,8 @@ export async function addNewProduct(
       data: {
         name: validated.name,
         description: validated.description,
-        name2: validated.name2,
-        description2: validated.description2,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         price: sekToOre(validated.price),
         maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
         unlimitedCustomers,
@@ -1394,8 +1395,8 @@ export async function editProduct(
       data: {
         name: validated.name,
         description: validated.description,
-        name2: validated.name2,
-        description2: validated.description2,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         price: sekToOre(validated.price),
         maxCustomer: maxCustomers,
         unlimitedCustomers,

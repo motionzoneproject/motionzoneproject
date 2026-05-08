@@ -39,26 +39,26 @@ const defaults: Omit<StartPageContent, "updatedAt"> = {
 
   // en:
 
-  heroLabel2: "Welcome to Motion Zone",
-  heroTitleLine1_2: "Dans is",
-  heroTitleAccent2: "Passion",
-  heroTitleLine2_2: "And life in motion",
-  heroSubtext2:
+  heroLabel_en: "Welcome to Motion Zone",
+  heroTitleLine1_en: "Dans is",
+  heroTitleAccent_en: "Passion",
+  heroTitleLine2_en: "And life in motion",
+  heroSubtext_en:
     "Experience dance in a whole new way. We have courses for all ages and levels with proffessional instructors.",
-  featuresTitle2: "Why Motion Zone?",
-  featuresSubtext2:
+  featuresTitle_en: "Why Motion Zone?",
+  featuresSubtext_en:
     "We offer an unique experience with instructors in worldclass and modern facitilities",
 
-  feature1Title2: "Professionell instructors",
-  feature1Description2:
+  feature1Title_en: "Professionell instructors",
+  feature1Description_en:
     "Our teachers have a long experience and has a great passion to share it.",
 
-  feature2Title2: "Flexible times",
-  feature2Description2:
+  feature2Title_en: "Flexible times",
+  feature2Description_en:
     "We have courses all week at different times to suit your schedule", // Detta stämmer ju inte riktigt, men det får kunden ändra till något som de tycker passar kanske.
 
-  feature3Title2: "Modern studios",
-  feature3Description2: "Our studios have great sound for music and mirrors.",
+  feature3Title_en: "Modern studios",
+  feature3Description_en: "Our studios have great sound for music and mirrors.",
 };
 
 export async function getStartPageContent(): Promise<StartPageContent> {

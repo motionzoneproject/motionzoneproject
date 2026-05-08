@@ -21,7 +21,7 @@ export async function getStudios(lang: "sv" | "en" = "sv"): Promise<Studio[]> {
       })
     : prisma.studio.findMany({
         orderBy: {
-          name2: "asc",
+          name_en: "asc",
         },
       });
 }
@@ -38,9 +38,9 @@ export async function createStudio(
     await prisma.studio.create({
       data: {
         name: validated.name,
-        name2: validated.name2,
+        name_en: validated.name_en,
         description: validated.description,
-        description2: validated.description2,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -70,9 +70,9 @@ export async function updateStudio(
       where: { id },
       data: {
         name: validated.name,
-        name2: validated.name2,
+        name_en: validated.name_en,
         description: validated.description,
-        description2: validated.description2,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },

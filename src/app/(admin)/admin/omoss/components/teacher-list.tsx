@@ -114,7 +114,7 @@ export function TeacherList({
                 <TableRow key={profile.id}>
                   <TableCell className="font-medium">{profile.name}</TableCell>
                   <TableCell>
-                    {lang === "en" ? profile.specialty2 : profile.specialty}
+                    {lang === "en" ? profile.specialty_en : profile.specialty}
                   </TableCell>
                   <TableCell>
                     {profile.active ? (

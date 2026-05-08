@@ -58,9 +58,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: course.name,
-      name2: course.name2 ?? "",
+      name_en: course.name_en ?? "",
       description: course.description,
-      description2: course.description2 ?? "",
+      description_en: course.description_en ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
@@ -78,13 +78,13 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
     form.reset({
       name: course.name,
-      name2: course.name2 ?? "",
+      name_en: course.name_en ?? "",
       description: course.description,
-      description2: course.description2 ?? "",
+      description_en: course.description_en ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
-      level2: course.level2 ?? "",
+      level_en: course.level_en ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
     });
@@ -92,15 +92,15 @@ export default function EditCourseForm({ course, teachers }: Props) {
     isOpen,
     form,
     course.name,
-    course.name2,
+    course.name_en,
     course.description,
-    course.description2,
+    course.description_en,
     course.minAge,
     course.maxAge,
     course.level,
     course.adult,
     course.teacherId,
-    course.level2,
+    course.level_en,
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -168,7 +168,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -202,7 +202,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="description2"
+                  name="description_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -328,7 +328,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="level2"
+                  name="level_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

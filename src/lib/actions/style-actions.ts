@@ -21,7 +21,7 @@ export async function getStyles(lang: "sv" | "en" = "sv"): Promise<Style[]> {
       })
     : prisma.style.findMany({
         orderBy: {
-          name2: "asc",
+          name_en: "asc",
         },
       });
 }
@@ -37,8 +37,8 @@ export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
       data: {
         name: validated.name,
         description: validated.description,
-        name2: validated.name2,
-        description2: validated.description2,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -69,8 +69,8 @@ export async function updateStyle(
       data: {
         name: validated.name,
         description: validated.description,
-        name2: validated.name2,
-        description2: validated.description2,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },

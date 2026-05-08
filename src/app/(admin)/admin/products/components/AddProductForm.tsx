@@ -52,10 +52,10 @@ export default function AddProductForm({
     defaultValues: {
       clipcard: false,
       description: "",
-      description2: "",
+      description_en: "",
       imageURL: "",
       name: "",
-      name2: "",
+      name_en: "",
       price: 0,
       clipCount: 0,
       unlimitedCustomers: true,
@@ -155,7 +155,7 @@ export default function AddProductForm({
 
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -191,7 +191,7 @@ export default function AddProductForm({
 
                 <FormField
                   control={form.control}
-                  name="description2"
+                  name="description_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

@@ -43,9 +43,9 @@ export function LegalPageForm({
     defaultValues: {
       slug: page.slug,
       title: page.title,
-      title2: page.title2 ?? "",
+      title_en: page.title_en ?? "",
       content: page.content,
-      content2: page.content2 ?? "",
+      content_en: page.content_en ?? "",
     },
   });
 
@@ -102,7 +102,7 @@ export function LegalPageForm({
 
           <FormField
             control={form.control}
-            name="title2"
+            name="title_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Titel ({formLang})</FormLabel>
@@ -134,7 +134,7 @@ export function LegalPageForm({
 
           <FormField
             control={form.control}
-            name="content2"
+            name="content_en"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Innehåll ({formLang})</FormLabel>

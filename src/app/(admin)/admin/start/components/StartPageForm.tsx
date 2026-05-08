@@ -104,34 +104,34 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
     defaultValues: {
       heroImage: content.heroImage,
       heroLabel: content.heroLabel ?? "",
-      heroLabel2: content.heroLabel2 ?? "",
+      heroLabel_en: content.heroLabel_en ?? "",
       heroTitleLine1: content.heroTitleLine1 ?? "",
-      heroTitleLine1_2: content.heroTitleLine1_2 ?? "",
+      heroTitleLine1_en: content.heroTitleLine1_en ?? "",
       heroTitleAccent: content.heroTitleAccent ?? "",
-      heroTitleAccent2: content.heroTitleAccent2 ?? "",
+      heroTitleAccent_en: content.heroTitleAccent_en ?? "",
       heroTitleLine2: content.heroTitleLine2 ?? "",
-      heroTitleLine2_2: content.heroTitleLine2_2 ?? "",
+      heroTitleLine2_en: content.heroTitleLine2_en ?? "",
       heroSubtext: content.heroSubtext ?? "",
-      heroSubtext2: content.heroSubtext2 ?? "",
+      heroSubtext_en: content.heroSubtext_en ?? "",
       featuresTitle: content.featuresTitle ?? "",
-      featuresTitle2: content.featuresTitle2 ?? "",
+      featuresTitle_en: content.featuresTitle_en ?? "",
       featuresSubtext: content.featuresSubtext ?? "",
-      featuresSubtext2: content.featuresSubtext2 ?? "",
+      featuresSubtext_en: content.featuresSubtext_en ?? "",
       feature1Image: content.feature1Image,
       feature1Title: content.feature1Title ?? "",
-      feature1Title2: content.feature1Title2 ?? "",
+      feature1Title_en: content.feature1Title_en ?? "",
       feature1Description: content.feature1Description ?? "",
-      feature1Description2: content.feature1Description2 ?? "",
+      feature1Description_en: content.feature1Description_en ?? "",
       feature2Image: content.feature2Image,
       feature2Title: content.feature2Title ?? "",
-      feature2Title2: content.feature2Title2 ?? "",
+      feature2Title_en: content.feature2Title_en ?? "",
       feature2Description: content.feature2Description ?? "",
-      feature2Description2: content.feature2Description2 ?? "",
+      feature2Description_en: content.feature2Description_en ?? "",
       feature3Image: content.feature3Image,
       feature3Title: content.feature3Title ?? "",
-      feature3Title2: content.feature3Title2 ?? "",
+      feature3Title_en: content.feature3Title_en ?? "",
       feature3Description: content.feature3Description ?? "",
-      feature3Description2: content.feature3Description2 ?? "",
+      feature3Description_en: content.feature3Description_en ?? "",
     },
   });
 
@@ -234,7 +234,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                 />
                 <FormField
                   control={form.control}
-                  name="heroLabel2"
+                  name="heroLabel_en"
                   render={({ field }) => (
                     <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                       <FormLabel>
@@ -271,7 +271,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="heroTitleLine1_2"
+                    name="heroTitleLine1_en"
                     render={({ field }) => (
                       <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                         <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
@@ -300,7 +300,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="heroTitleAccent2"
+                    name="heroTitleAccent_en"
                     render={({ field }) => (
                       <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                         <FormLabel>Rubrik – accent ({lang})</FormLabel>
@@ -329,7 +329,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="heroTitleLine2_2"
+                    name="heroTitleLine2_en"
                     render={({ field }) => (
                       <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                         <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
@@ -372,7 +372,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                 />
                 <FormField
                   control={form.control}
-                  name="heroSubtext2"
+                  name="heroSubtext_en"
                   render={({ field }) => (
                     <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                       <FormLabel>Brödtext ({lang})</FormLabel>
@@ -415,7 +415,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
               />
               <FormField
                 control={form.control}
-                name="featuresTitle2"
+                name="featuresTitle_en"
                 render={({ field }) => (
                   <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                     <FormLabel>Sektionens titel ({lang})</FormLabel>
@@ -444,7 +444,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
               />
               <FormField
                 control={form.control}
-                name="featuresSubtext2"
+                name="featuresSubtext_en"
                 render={({ field }) => (
                   <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
                     <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
@@ -515,7 +515,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     />
                     <FormField
                       control={form.control}
-                      name={`feature${n}Title2`}
+                      name={`feature${n}Title_en`}
                       render={({ field }) => (
                         <FormItem
                           className={`${lang === "sv" ? "hidden" : ""}`}
@@ -549,7 +549,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                     <FormField
                       control={form.control}
-                      name={`feature${n}Description2`}
+                      name={`feature${n}Description_en`}
                       render={({ field }) => (
                         <FormItem
                           className={`${lang === "sv" ? "hidden" : ""}`}

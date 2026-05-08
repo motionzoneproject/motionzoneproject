@@ -159,7 +159,7 @@ export default function CourseFilter({
               <SelectSeparator />
               {terminer.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {lang === "en" ? t.name2 || t.name : t.name}
+                  {lang === "en" ? t.name_en || t.name : t.name}
                 </SelectItem>
               ))}
             </SelectGroup>

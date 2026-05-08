@@ -79,7 +79,7 @@ export default function SchemaDay({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Plats:{" "}
-                    {lang === "en" ? itm.place2 : itm.place || "Ej angiven"}
+                    {lang === "en" ? itm.place_en : itm.place || "Ej angiven"}
                   </div>
                   <Link
                     href={`/admin/lectures?schemaitem=${itm.id}&termin=${itm.terminId}&course=${itm.courseId}`}

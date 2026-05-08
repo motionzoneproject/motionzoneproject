@@ -60,13 +60,13 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      name2: "",
+      name_en: "",
       description: "",
-      description2: "",
+      description_en: "",
       minAge: "",
       maxAge: "",
       level: "",
-      level2: "",
+      level_en: "",
       adult: false,
       teacherid: user?.id,
     },
@@ -153,7 +153,7 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -187,7 +187,7 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="description2"
+                  name="description_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -313,7 +313,7 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="level2"
+                  name="level_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

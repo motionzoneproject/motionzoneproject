@@ -64,9 +64,9 @@ export function TeacherForm({
       userId: teacher?.id || "",
       name: teacher?.name || "",
       specialty: profile?.specialty || "",
-      specialty2: profile?.specialty2 || "",
+      specialty_en: profile?.specialty_en || "",
       description: profile?.description || "",
-      description2: profile?.description2 || "",
+      description_en: profile?.description_en || "",
       imageUrl: profile?.imageUrl || "",
       active: profile?.active ?? true,
     },
@@ -221,7 +221,7 @@ export function TeacherForm({
 
           <FormField
             control={form.control}
-            name="specialty2"
+            name="specialty_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Specialitet ({formLang})</FormLabel>
@@ -261,7 +261,7 @@ export function TeacherForm({
 
           <FormField
             control={form.control}
-            name="description2"
+            name="description_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Beskrivning ({formLang})</FormLabel>

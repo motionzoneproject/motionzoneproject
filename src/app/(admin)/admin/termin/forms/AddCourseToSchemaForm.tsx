@@ -71,7 +71,7 @@ export default function AddCourseToSchemaForm({
     defaultValues: {
       courseId: "",
       place: "",
-      place2: "",
+      place_en: "",
       customEndDate: termin.endDate.toISOString().split("T")[0],
       customStartDate: termin.startDate.toISOString().split("T")[0],
       day: "MONDAY",
@@ -141,7 +141,7 @@ export default function AddCourseToSchemaForm({
           <CardHeader>
             <CardTitle>
               Nytt kurstillfälle i{" "}
-              {formLang === "en" ? termin.name2 : termin.name}.
+              {formLang === "en" ? termin.name_en : termin.name}.
             </CardTitle>
             <CardDescription></CardDescription>
           </CardHeader>
@@ -393,7 +393,7 @@ export default function AddCourseToSchemaForm({
                 />
                 <FormField
                   control={form.control}
-                  name="place2"
+                  name="place_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

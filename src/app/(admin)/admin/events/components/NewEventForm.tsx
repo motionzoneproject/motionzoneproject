@@ -43,9 +43,9 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       headline: "",
-      headline2: "",
+      headline_en: "",
       description: "",
-      description2: "",
+      description_en: "",
       link: "",
       imageURL: "",
       showOnStartpage: false,
@@ -120,10 +120,10 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
 
             <FormField
               control={form.control}
-              name="headline2"
+              name="headline_en"
               render={({ field }) => (
                 <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                  <FormLabel>Rubrik2 ({formLang})</FormLabel>
+                  <FormLabel>Rubrik ({formLang})</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -148,10 +148,10 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
 
             <FormField
               control={form.control}
-              name="description2"
+              name="description_en"
               render={({ field }) => (
                 <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                  <FormLabel>Beskrivning2 ({formLang})</FormLabel>
+                  <FormLabel>Beskrivning ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>

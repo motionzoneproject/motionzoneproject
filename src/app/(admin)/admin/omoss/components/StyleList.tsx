@@ -99,7 +99,7 @@ export function StyleList({ styles, lang }: StyleListProps) {
             {styles.map((style) => (
               <TableRow key={style.id}>
                 <TableCell className="font-medium">
-                  {lang === "en" ? style.name2 : style.name}
+                  {lang === "en" ? style.name_en : style.name}
                 </TableCell>
                 <TableCell>
                   {style.active ? (

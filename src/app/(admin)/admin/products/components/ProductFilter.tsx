@@ -193,7 +193,7 @@ export default function ProductFilter({
               <SelectSeparator />
               {terminer.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {(lang === "en" ? t.name2 : t.name) ?? "Unknown"}
+                  {(lang === "en" ? t.name_en : t.name) ?? "Unknown"}
                 </SelectItem>
               ))}
             </SelectGroup>

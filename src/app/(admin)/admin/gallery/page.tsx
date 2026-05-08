@@ -10,14 +10,14 @@ export default async function Page() {
     prisma.galleryItem.findMany({
       include: {
         event: {
-          select: { id: true, headline: true, headline2: true },
+          select: { id: true, headline: true, headline_en: true },
         },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     }),
     prisma.event.findMany({
       orderBy: { startDate: "desc" },
-      select: { id: true, headline: true, headline2: true },
+      select: { id: true, headline: true, headline_en: true },
     }),
   ]);
 
@@ -25,21 +25,21 @@ export default async function Page() {
     <MediaAdmin
       items={galleryItems.map((item) => ({
         ...item,
-        title2: item.title2 ?? undefined,
+        title_en: item.title_en ?? undefined,
         caption: item.caption ?? undefined,
-        caption2: item.caption2 ?? undefined,
+        caption_en: item.caption_en ?? undefined,
         description: item.description ?? undefined,
-        description2: item.description2 ?? undefined,
+        description_en: item.description_en ?? undefined,
         thumbnailUrl: item.thumbnailUrl ?? undefined,
         eventId: item.eventId ?? undefined,
         eventHeadline: item.event?.headline ?? undefined,
-        eventHeadline2: item.event?.headline2 ?? undefined,
+        eventHeadline_en: item.event?.headline_en ?? undefined,
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
       }))}
       events={events.map((event) => ({
         ...event,
-        headline2: event.headline2 ?? undefined,
+        headline_en: event.headline_en ?? undefined,
       }))}
     />
   );

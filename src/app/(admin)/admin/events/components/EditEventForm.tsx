@@ -52,9 +52,9 @@ export default function EditEventForm({
     defaultValues: {
       id: event.id,
       headline: event.headline,
-      headline2: event.headline2 ?? "",
+      headline_en: event.headline_en ?? "",
       description: event.description,
-      description2: event.description2 ?? "",
+      description_en: event.description_en ?? "",
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
@@ -71,9 +71,9 @@ export default function EditEventForm({
     form.reset({
       id: event.id,
       headline: event.headline,
-      headline2: event.headline2 ?? "",
+      headline_en: event.headline_en ?? "",
       description: event.description,
-      description2: event.description2 ?? "",
+      description_en: event.description_en ?? "",
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
@@ -91,8 +91,8 @@ export default function EditEventForm({
     event.showOnStartpage,
     event.startDate,
     event.endDate,
-    event.description2,
-    event.headline2,
+    event.description_en,
+    event.headline_en,
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -182,10 +182,10 @@ export default function EditEventForm({
 
             <FormField
               control={form.control}
-              name="headline2"
+              name="headline_en"
               render={({ field }) => (
                 <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                  <FormLabel>Rubrik2 ({formLang})</FormLabel>
+                  <FormLabel>Rubrik ({formLang})</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -210,10 +210,10 @@ export default function EditEventForm({
 
             <FormField
               control={form.control}
-              name="description2"
+              name="description_en"
               render={({ field }) => (
                 <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                  <FormLabel>Beskrivning2 ({formLang})</FormLabel>
+                  <FormLabel>Beskrivning ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>

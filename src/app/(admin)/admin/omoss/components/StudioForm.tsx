@@ -46,9 +46,9 @@ export function StudioForm({
     resolver: zodResolver(adminStudioSchema),
     defaultValues: {
       name: studio?.name ?? "",
-      name2: studio?.name2 ?? "",
+      name_en: studio?.name_en ?? "",
       description: studio?.description ?? "",
-      description2: studio?.description2 ?? "",
+      description_en: studio?.description_en ?? "",
       imageUrl: studio?.imageUrl ?? "",
       active: studio?.active ?? true,
     },
@@ -149,7 +149,7 @@ export function StudioForm({
 
           <FormField
             control={form.control}
-            name="name2"
+            name="name_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Namn ({formLang})</FormLabel>
@@ -181,7 +181,7 @@ export function StudioForm({
 
           <FormField
             control={form.control}
-            name="description2"
+            name="description_en"
             render={({ field }) => (
               <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                 <FormLabel>Beskrivning ({formLang})</FormLabel>

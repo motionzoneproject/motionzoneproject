@@ -48,7 +48,7 @@ export default async function Page({
       ? {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
-            { name2: { contains: query, mode: "insensitive" } },
+            { name_en: { contains: query, mode: "insensitive" } },
           ],
         }
       : {}),

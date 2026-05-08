@@ -44,7 +44,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
-      message2: lesson.message2 ?? "",
+      message_en: lesson.message_en ?? "",
     },
   });
 
@@ -58,7 +58,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
-      message2: lesson.message2 ?? "",
+      message_en: lesson.message_en ?? "",
     });
   }, [
     isOpen,
@@ -66,7 +66,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
     lesson.cancelled,
     lesson.id,
     lesson.message,
-    lesson.message2,
+    lesson.message_en,
   ]);
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
@@ -130,7 +130,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
 
             <FormField
               control={form.control}
-              name="message2"
+              name="message_en"
               render={({ field }) => (
                 <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
                   <FormLabel>Meddelande ({formLang})</FormLabel>
@@ -167,7 +167,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
               name="id"
               render={({ field }) => (
                 <FormItem className="hidden">
-                  <FormLabel>Meddelande</FormLabel>
+                  <FormLabel>id</FormLabel>
                   <FormControl>
                     <Input {...field} type="hidden" />
                   </FormControl>

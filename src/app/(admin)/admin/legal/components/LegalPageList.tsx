@@ -68,7 +68,7 @@ export function LegalPageList({ pages, lang }: LegalPageListProps) {
           {pages.map((page) => (
             <TableRow key={page.id}>
               <TableCell className="font-medium">
-                {lang === "en" ? page.title2 : page.title}
+                {lang === "en" ? page.title_en : page.title}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 /{page.slug}

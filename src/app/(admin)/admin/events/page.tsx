@@ -52,7 +52,7 @@ export default async function EventsPage({
               <TableRow key={event.id}>
                 <TableCell className="font-medium">
                   {lang === "en"
-                    ? event.headline2 || event.headline
+                    ? event.headline_en || event.headline
                     : event.headline}
                 </TableCell>
                 <TableCell>

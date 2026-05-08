@@ -76,7 +76,7 @@ export default async function Page({
               },
             },
             {
-              name2: {
+              name_en: {
                 contains: query,
                 mode: "insensitive" as const,
               },

@@ -6,7 +6,6 @@ import type {
   Course,
   Prisma,
   Product,
-  Termin,
 } from "@/generated/prisma/client";
 import prisma from "../prisma";
 import { getCourseName } from "../tools";
@@ -338,99 +337,102 @@ export async function getAllProducts(): Promise<Product[]> {
   }
 }
 
-export async function getProductTermin(pid: string): Promise<Termin[]> {
-  try {
-    // 1. Hämta produkten och gå djupt ner i relationerna på en gång
-    const product = await prisma.product.findUnique({
-      where: { id: pid },
-      include: {
-        courses: {
-          include: {
-            course: {
-              include: {
-                schemaItems: {
-                  include: {
-                    termin: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+// Denna används ej:
+// export async function getProductTermin(pid: string): Promise<Termin[]> {
+//   try {
+//     // 1. Hämta produkten och gå djupt ner i relationerna på en gång
+//     const product = await prisma.product.findUnique({
+//       where: { id: pid },
+//       include: {
+//         courses: {
+//           include: {
+//             course: {
+//               include: {
+//                 schemaItems: {
+//                   include: {
+//                     termin: true,
+//                   },
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
 
-    if (!product) return [];
+//     if (!product) return [];
 
-    // 2. Extrahera alla unika terminer med hjälp av en Map (för att undvika dubbletter)
-    const terminMap = new Map<string, Termin>();
+//     // 2. Extrahera alla unika terminer med hjälp av en Map (för att undvika dubbletter)
+//     const terminMap = new Map<string, Termin>();
 
-    product.courses.forEach((pc) => {
-      pc.course.schemaItems.forEach((si) => {
-        if (si.termin) {
-          terminMap.set(si.termin.id, si.termin);
-        }
-      });
-    });
+//     product.courses.forEach((pc) => {
+//       pc.course.schemaItems.forEach((si) => {
+//         if (si.termin) {
+//           terminMap.set(si.termin.id, si.termin);
+//         }
+//       });
+//     });
 
-    // Returnera som en array
-    return Array.from(terminMap.values());
-  } catch (e) {
-    console.error("Fel vid hämtning av terminer för produkt:", e);
-    return [];
-  }
-}
+//     // Returnera som en array
+//     return Array.from(terminMap.values());
+//   } catch (e) {
+//     console.error("Fel vid hämtning av terminer för produkt:", e);
+//     return [];
+//   }
+// }
 
-export async function getProductSchema(pid: string) {
-  try {
-    const schemaItems = await prisma.schemaItem.findMany({
-      where: {
-        course: {
-          products: {
-            some: {
-              productId: pid,
-            },
-          },
-        },
-      },
-      orderBy: {
-        weekday: "asc", // Eller vad som passar din sortering
-      },
-    });
+// fix: Denna används ej.
+// export async function getProductSchema(pid: string) {
+//   try {
+//     const schemaItems = await prisma.schemaItem.findMany({
+//       where: {
+//         course: {
+//           products: {
+//             some: {
+//               productId: pid,
+//             },
+//           },
+//         },
+//       },
+//       orderBy: {
+//         weekday: "asc", // Eller vad som passar din sortering
+//       },
+//     });
 
-    return schemaItems;
-  } catch (e) {
-    console.error("Fel vid hämtning av schema för produkt:", e);
-    return [];
-  }
-}
+//     return schemaItems;
+//   } catch (e) {
+//     console.error("Fel vid hämtning av schema för produkt:", e);
+//     return [];
+//   }
+// }
 
-export async function getCourseCountInProduct(
-  productId: string,
-  courseId: string,
-): Promise<number> {
-  try {
-    // fix: ej för klippkort än.
+// // Denna används ej, kommenterar ut den sålänge får vi se om någon saknar den.
+// export async function getCourseCountInProduct(
+//   productId: string,
+//   courseId: string,
+// ): Promise<number> {
+//   try {
+//     // fix: ej för klippkort än.
 
-    // Vi letar i kopplingstabellen mellan produkt och kurs
-    const relation = await prisma.productOnCourse.findUnique({
-      where: {
-        courseId_productId: {
-          productId: productId,
-          courseId: courseId,
-        },
-      },
-      select: {
-        lessonsIncluded: true,
-      },
-    });
+//     // Vi letar i kopplingstabellen mellan produkt och kurs
+//     const relation = await prisma.productOnCourse.findUnique({
+//       where: {
+//         courseId_productId: {
+//           productId: productId,
+//           courseId: courseId,
+//         },
+//       },
+//       select: {
+//         lessonsIncluded: true,
+//       },
+//     });
 
-    return relation?.lessonsIncluded ?? 0;
-  } catch (e) {
-    console.error("Fel vid hämtning av bokningsgräns:", e);
-    return 0;
-  }
-}
+//     return relation?.lessonsIncluded ?? 0;
+//   } catch (e) {
+//     console.error("Fel vid hämtning av bokningsgräns:", e);
+//     return 0;
+//   }
+// }
 
 export async function autobook(purchaseItemId: string): Promise<Booking[]> {
   const sessionData = await getSessionData();

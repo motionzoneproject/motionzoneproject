@@ -51,9 +51,9 @@ interface Props {
   clipcard: boolean;
   unlimitedCustomers: boolean;
   description: string;
-  description2: string;
+  description_en: string;
   name: string;
-  name2: string;
+  name_en: string;
   price: number;
   clipCount: number;
   maxCustomers: number;
@@ -68,8 +68,8 @@ export default function EditProductForm({
   unlimitedCustomers,
   description,
   name,
-  description2,
-  name2,
+  description_en,
+  name_en,
   price,
   imageURL,
   maxCustomers,
@@ -83,8 +83,8 @@ export default function EditProductForm({
       // courses: [], // Ifall vi ska ha ett och samma formulär sen.
       description: description,
       name: name,
-      description2: description2 ?? "",
-      name2: name2 ?? "",
+      description_en: description_en ?? "",
+      name_en: name_en ?? "",
       price: oreToSek(price),
       clipCount: clipCount,
       maxCustomers: maxCustomers,
@@ -106,8 +106,8 @@ export default function EditProductForm({
       unlimitedCustomers,
       description,
       name,
-      description2,
-      name2,
+      description_en,
+      name_en,
       price: oreToSek(price),
       clipCount,
       maxCustomers,
@@ -120,8 +120,8 @@ export default function EditProductForm({
     unlimitedCustomers,
     description,
     name,
-    description2,
-    name2,
+    description_en,
+    name_en,
     price,
     clipCount,
     maxCustomers,
@@ -247,7 +247,7 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
-                  name="name2"
+                  name="name_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}
@@ -283,7 +283,7 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
-                  name="description2"
+                  name="description_en"
                   render={({ field }) => (
                     <FormItem
                       className={`${formLang === "sv" ? "hidden" : ""}`}

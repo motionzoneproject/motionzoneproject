@@ -39,16 +39,16 @@ export async function updateLegalPage(
       where: { slug: validated.slug },
       update: {
         title: validated.title,
-        title2: validated.title2,
+        title_en: validated.title_en,
         content: validated.content,
-        content2: validated.content2,
+        content_en: validated.content_en,
       },
       create: {
         slug: validated.slug,
         title: validated.title,
-        title2: validated.title2,
+        title_en: validated.title_en,
         content: validated.content,
-        content2: validated.content2,
+        content_en: validated.content_en,
       },
     });
 

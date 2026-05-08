@@ -294,7 +294,7 @@ export default function AddCoursesToProductForm({
                 className="w-full p-2 flex justify-between"
               >
                 <div>
-                  {getCourseName(pc.course)}
+                  {getCourseName(pc.course, formLang)}
                   {!isClip && (
                     <span>
                       Antal tillfällen:{" "}
