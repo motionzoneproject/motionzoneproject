@@ -22,9 +22,9 @@ export default async function About() {
   return (
     <div className="bg-background">
       {/* Hero */}
-      <section className="border-b border-border py-20 text-center md:py-32">
+      <section className="border-b border-border py-10 text-center md:py-14">
         <div className="mx-auto max-w-7xl px-6">
-          <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-7xl">
+          <h1 className="mb-3 animate-fade-in-left text-4xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-5xl">
             Om vår
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -41,7 +41,7 @@ export default async function About() {
       <DansStilar styles={styles} />
 
       {/* Studio */}
-      <section className="bg-muted/50 py-20 md:py-32">
+      <section className="bg-muted/50 py-12 md:py-16">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <h2 className="mb-4 text-4xl md:text-5xl font-black text-foreground">
             Våra lokaler
@@ -59,7 +59,7 @@ export default async function About() {
                 {activeStudios.map((studio) => (
                   <div
                     key={studio.id}
-                    className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
+                    className="flex w-125 max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
                   >
                     {studio.imageUrl && (
                       <Image
@@ -67,7 +67,7 @@ export default async function About() {
                         alt={studio.name}
                         height={220}
                         width={420}
-                        className="mb-4 h-[220px] w-full rounded-lg object-cover"
+                        className="mb-4 h-55 w-full rounded-lg object-cover"
                       />
                     )}
                     <h3 className="text-lg font-semibold">{studio.name}</h3>

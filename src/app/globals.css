@@ -13,8 +13,10 @@
   /* Base theme tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -23,137 +25,171 @@
   /* shadcn/ui tokens */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+
   --color-destructive: var(--destructive);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* MotionZone Brand Colors - work in both themes */
-  --color-brand: #9a59d7;
-  --color-brand-light: #b981ee;
-  --color-brand-secondary: #4cadb2;
-  --color-brand-secondary-light: #85e4e9;
+  /* MotionZone Brand Colors */
+  --color-brand: #8f5ccf;
+  --color-brand-light: #b38ae5;
+
+  --color-brand-secondary: #5aa6b8;
+  --color-brand-secondary-light: #8ed2df;
 }
 
-/* Light Mode - Default */
+/* LIGHT MODE */
+
 :root {
-  --radius: 0.625rem;
-  --background: #eef1f6;
-  --foreground: #1a1a2e;
-  --card: #eef1f6;
-  --card-foreground: #1a1a2e;
-  --popover: #eef1f6;
-  --popover-foreground: #1a1a2e;
-  --primary: #9a59d7;
-  --primary-foreground: #eef1f6;
-  --secondary: #eef1f6;
-  --secondary-foreground: #1a1a2e;
-  --muted: #eef1f6;
-  /* Darkened from #64748b (slate-500) to slate-600 to clear the
-     WCAG AA 4.5:1 contrast threshold on the #eef1f6 background. */
-  --muted-foreground: #475569;
-  --accent: #4cadb2;
-  --accent-foreground: #1a1a2e;
+  --radius: 0.75rem;
+
+  /* Base */
+  --background: #dfe2ee;
+  --foreground: #232538;
+
+  /* Surface Hierarchy */
+  --card: #e7ebf4;
+  --card-foreground: #232538;
+
+  --popover: #f0f3fa;
+  --popover-foreground: #232538;
+
+  /* Brand */
+  --primary: #8f5ccf;
+  --primary-foreground: #faf9fd;
+
+  --secondary: #d2d9e7;
+  --secondary-foreground: #2c3145;
+
+  --accent: #5aa6b8;
+  --accent-foreground: #1f2937;
+
+  /* Muted */
+  --muted: #cfd6e3;
+  --muted-foreground: #5d667c;
+
+  /* States */
   --destructive: #dc2626;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #9a59d7;
-  --chart-1: #9a59d7;
-  --chart-2: #4cadb2;
-  --chart-3: #8b5cf6;
-  --chart-4: #06b6d4;
-  --chart-5: #22c55e;
-  --sidebar: #eef1f6;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #9a59d7;
-  --sidebar-primary-foreground: #eef1f6;
-  --sidebar-accent: #eef1f6;
-  --sidebar-accent-foreground: #1a1a2e;
-  --sidebar-border: #eef1f6;
-  --sidebar-ring: #9a59d7;
+
+  /* Inputs / Borders */
+  --border: #bcc6d8;
+  --input: #c9d2df;
+  --ring: #8f5ccf;
+
+  /* Charts */
+  --chart-1: #8f5ccf;
+  --chart-2: #5aa6b8;
+  --chart-3: #7d6ce0;
+  --chart-4: #64b8c7;
+  --chart-5: #5dbb7a;
+
+  /* Sidebar */
+  --sidebar: #d8ddea;
+  --sidebar-foreground: #232538;
+
+  --sidebar-primary: #8f5ccf;
+  --sidebar-primary-foreground: #faf9fd;
+
+  --sidebar-accent: #cfd6e3;
+  --sidebar-accent-foreground: #232538;
+
+  --sidebar-border: #bcc6d8;
+  --sidebar-ring: #8f5ccf;
 }
 
-/* Dark Mode */
+/*DARK MODE */
+
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-  --primary: #9a59d7;
+  /* Base */
+  --background: #121826;
+  --foreground: #f3f5fb;
+
+  /* Surface Hierarchy */
+  --card: #1b2333;
+  --card-foreground: #f3f5fb;
+
+  --popover: #222b3d;
+  --popover-foreground: #f3f5fb;
+
+  /* Brand */
+  --primary: #9c6be0;
   --primary-foreground: #ffffff;
-  --secondary: #334155;
-  --secondary-foreground: #f8fafc;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: #4cadb2;
-  --accent-foreground: #1a1a2e;
+
+  --secondary: #2b3548;
+  --secondary-foreground: #edf2f7;
+
+  --accent: #5aa6b8;
+  --accent-foreground: #0f172a;
+
+  /* Muted */
+  --muted: #283244;
+  --muted-foreground: #93a0b8;
+
+  /* States */
   --destructive: #ef4444;
-  --border: #334155;
-  --input: #334155;
-  --ring: #9a59d7;
-  --chart-1: #9a59d7;
-  --chart-2: #4cadb2;
-  --chart-3: #a78bfa;
-  --chart-4: #22d3ee;
-  --chart-5: #4ade80;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #9a59d7;
-  --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #334155;
-  --sidebar-ring: #9a59d7;
+
+  /* Inputs / Borders */
+  --border: #313d52;
+  --input: #2d384c;
+  --ring: #9c6be0;
+
+  /* Charts */
+  --chart-1: #9c6be0;
+  --chart-2: #5aa6b8;
+  --chart-3: #b197fc;
+  --chart-4: #78cad6;
+  --chart-5: #69cf87;
+
+  /* Sidebar */
+  --sidebar: #161d2d;
+  --sidebar-foreground: #f3f5fb;
+
+  --sidebar-primary: #9c6be0;
+  --sidebar-primary-foreground: #ffffff;
+
+  --sidebar-accent: #283244;
+  --sidebar-accent-foreground: #f3f5fb;
+
+  --sidebar-border: #313d52;
+  --sidebar-ring: #9c6be0;
 }
 
-@layer base {
-  :root {
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-  }
-
-  .dark {
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.439 0 0);
-  }
-}
+/* BASE LAYER */
 
 @layer base {
   * {
@@ -163,28 +199,30 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  :root {
+    font-family: var(--font-montserrat), system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-lora), serif;
+  }
 }
 
-:root {
-  font-family: var(--font-montserrat), system-ui, sans-serif;
-}
+/* HERO ANIMATIONS */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-lora), serif;
-}
-
-/* Hero animations */
 @keyframes subtlePan {
   0% {
     transform: scale(1);
   }
+
   100% {
-    transform: scale(1.1);
+    transform: scale(1.08);
   }
 }
 
@@ -193,6 +231,7 @@ h6 {
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -204,22 +243,17 @@ h6 {
   opacity: 0;
 }
 
-/* WCAG 2.3.3 — respect users who opt out of motion. Collapse every
-   animation/transition to near-zero so vestibular-disorder users
-   aren't subjected to the hero pan, fade-ins, hover scales, etc.
-   !important is required here to override Tailwind/third-party
-   animation utilities. */
+/* ACCESSIBILITY — REDUCED MOTION*/
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
     animation-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
     animation-iteration-count: 1 !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind transition-* utilities */
+
     transition-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override smooth-scroll utilities */
+
     scroll-behavior: auto !important;
   }
 }

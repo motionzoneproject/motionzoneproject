@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import "react-photo-album/masonry.css";
@@ -128,46 +128,37 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
   return (
     <>
       {/* Filter bar */}
-      <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-border/70 bg-card/70 p-4 shadow-sm md:flex-row md:items-center md:justify-between md:p-5">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
-            <Filter className="h-4 w-4" />
-            Filtrera galleriet
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {filteredItems.length} av {items.length} objekt visas.
-          </p>
-        </div>
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {filteredItems.length}/{items.length} objekt
+        </span>
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+        >
+          <SelectTrigger className="h-8 w-auto min-w-28 rounded-full border-border/60 bg-card text-sm px-3">
+            <SelectValue placeholder="Alla" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Alla</SelectItem>
+            <SelectItem value="IMAGE">Bilder</SelectItem>
+            <SelectItem value="VIDEO">Video</SelectItem>
+          </SelectContent>
+        </Select>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Select
-            value={typeFilter}
-            onValueChange={(v) => setTypeFilter(v as TypeFilter)}
-          >
-            <SelectTrigger className="w-full min-w-40 bg-background sm:w-40">
-              <SelectValue placeholder="Alla" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Alla</SelectItem>
-              <SelectItem value="IMAGE">Bilder</SelectItem>
-              <SelectItem value="VIDEO">Video</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={eventFilter} onValueChange={setEventFilter}>
-            <SelectTrigger className="w-full min-w-55 bg-background sm:w-55">
-              <SelectValue placeholder="Alla event" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Alla event</SelectItem>
-              {eventOptions.map((eventOption) => (
-                <SelectItem key={eventOption.id} value={eventOption.id}>
-                  {eventOption.headline}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={eventFilter} onValueChange={setEventFilter}>
+          <SelectTrigger className="h-8 w-auto min-w-36 rounded-full border-border/60 bg-card text-sm px-3">
+            <SelectValue placeholder="Alla event" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Alla event</SelectItem>
+            {eventOptions.map((eventOption) => (
+              <SelectItem key={eventOption.id} value={eventOption.id}>
+                {eventOption.headline}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Grid */}

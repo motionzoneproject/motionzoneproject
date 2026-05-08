@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -232,7 +231,7 @@ export default async function Page({ searchParams }: Props) {
   return (
     <div className="bg-background">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="py-8 border-b border-border mb-8">
+        <div className="py-5 border-b border-border mb-6">
           {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
             Här köper du tillgång till våra
             <span className="font-serif italic text-brand-light"> Kurser</span>!
@@ -243,7 +242,7 @@ export default async function Page({ searchParams }: Props) {
             enkelt in och boka våra lektioner!
           </p> */}
 
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             Köp tillgång till våra
             <span className="font-serif italic text-brand-light"> kurser</span>
           </h1>
@@ -278,13 +277,30 @@ export default async function Page({ searchParams }: Props) {
                 return (
                   <Card
                     key={p.id}
-                    className="flex flex-col h-full rounded-xl border border-border/70 hover:border-brand/50 hover:shadow-lg hover:shadow-brand/5 hover:-translate-y-0.5 transition-all duration-300"
+                    className="group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
                   >
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge className="font-bold text-lg bg-brand text-white border-0">
+                    {/* Image header */}
+                    <div className="relative h-48 overflow-hidden shrink-0">
+                      {p.imageURL ? (
+                        <Image
+                          src={p.imageURL}
+                          alt={p.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-linear-to-br from-brand/20 via-brand-secondary/10 to-brand/5" />
+                      )}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Price */}
+                      <div className="absolute bottom-3 left-4">
+                        <span className="text-white text-2xl font-bold drop-shadow-sm">
                           {formatPrice(p.price)}
-                        </Badge>
+                        </span>
+                      </div>
+                      {/* Spots badge */}
+                      <div className="absolute top-3 right-3">
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
                           <Badge
@@ -292,41 +308,47 @@ export default async function Page({ searchParams }: Props) {
                               p.spotsLeft <= 4 ? "destructive" : "outline"
                             }
                             className={
-                              p.spotsLeft <= 4 ? "text-white" : "text-green-500"
+                              p.spotsLeft <= 4
+                                ? "text-white backdrop-blur-sm"
+                                : "backdrop-blur-sm bg-black/40 text-green-400 border-green-500/50"
                             }
                           >
                             {`${p.spotsLeft} platser kvar`}
                           </Badge>
                         ) : p.spotsLeft === Infinity ? (
-                          <Badge variant={"outline"}>
-                            <InfinityIcon className="text-green-500 w-6! h-6! " />
+                          <Badge
+                            variant="outline"
+                            className="backdrop-blur-sm bg-black/40 border-green-500/50"
+                          >
+                            <InfinityIcon className="text-green-400 w-4 h-4" />
                           </Badge>
                         ) : (
-                          <Badge variant={"destructive"}>
+                          <Badge variant="destructive">
                             <Info /> Osäkert
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-lg">{p.name}</CardTitle>
-                      <CardDescription className="whitespace-pre-line">
-                        Produkttyp:{" "}
-                        {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
-                      </CardDescription>
+                    </div>
+
+                    <CardHeader className="pb-2 pt-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-medium"
+                        >
+                          {p.type === "CLIP"
+                            ? "Klippkort"
+                            : p.type === "PACK"
+                              ? "Paket"
+                              : "Kurs"}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-xl leading-tight font-semibold">
+                        {p.name}
+                      </CardTitle>
                     </CardHeader>
 
                     <CardContent className="flex-1 space-y-4">
-                      {p.imageURL && (
-                        <div className="overflow-hidden max-h-64 rounded-md">
-                          <Image
-                            src={p.imageURL}
-                            alt={p.name}
-                            width={800}
-                            height={600}
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="w-full h-auto"
-                          />
-                        </div>
-                      )}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <CalendarDays className="w-3 h-3" />
@@ -335,7 +357,7 @@ export default async function Page({ searchParams }: Props) {
                         {p.terminer.map((t) => (
                           <div
                             key={t.id}
-                            className="text-sm bg-muted p-2 rounded border border-border"
+                            className="text-sm bg-muted/60 px-3 py-1.5 rounded-lg border border-border/60"
                           >
                             <p className="font-medium">{t.name}</p>
                           </div>
@@ -374,7 +396,7 @@ export default async function Page({ searchParams }: Props) {
                                   return (
                                     <div
                                       key={c.id}
-                                      className="bg-muted rounded mb-2 p-2 border border-border"
+                                      className="bg-muted rounded-lg mb-2 p-2 border border-border"
                                     >
                                       <div className="flex justify-between gap-2 mb-1 items-center">
                                         <div className="font-medium">
@@ -452,7 +474,7 @@ export default async function Page({ searchParams }: Props) {
                         <Button
                           type="submit"
                           disabled={p.spotsLeft === 0}
-                          className="w-full bg-brand hover:bg-brand-light text-white font-medium"
+                          className="w-full bg-brand hover:bg-brand-light text-white font-medium transition-colors duration-200"
                         >
                           Köp nu →
                         </Button>

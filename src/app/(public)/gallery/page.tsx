@@ -17,9 +17,9 @@ export default async function Page() {
   return (
     <div className="bg-background">
       {/* Hero */}
-      <section className="py-16 text-center border-b border-border">
+      <section className="py-8 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             Bild & Video
             <span className="font-serif italic text-brand-light"> Galleri</span>
           </h1>
@@ -30,7 +30,7 @@ export default async function Page() {
       </section>
 
       {/* Gallery */}
-      <section className="py-10 md:py-12">
+      <section className="py-6 md:py-8">
         <div className="max-w-7xl mx-auto px-6">
           <Gallery items={mediaItems} />
         </div>
@@ -39,7 +39,7 @@ export default async function Page() {
       {/* Instagram CTA */}
       <section className="py-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">

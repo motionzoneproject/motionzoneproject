@@ -48,7 +48,7 @@ export default function Features({ content }: FeaturesProps) {
   return (
     <section
       id="varfor"
-      className="py-20 md:py-32 relative overflow-hidden"
+      className="py-14 md:py-20 relative overflow-hidden"
       style={{ background: "var(--background)" }}
     >
       <div className="absolute inset-0 pointer-events-none">
@@ -57,7 +57,7 @@ export default function Features({ content }: FeaturesProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             {content.featuresTitle}
           </h2>
