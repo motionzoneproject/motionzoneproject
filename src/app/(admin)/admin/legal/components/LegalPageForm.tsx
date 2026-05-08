@@ -88,9 +88,10 @@ export function LegalPageForm({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="title"
+            name={formLang === "en" ? "title_en" : "title"}
+            key={`title-${formLang}`}
             render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+              <FormItem>
                 <FormLabel>Titel ({formLang})</FormLabel>
                 <FormControl>
                   <Input placeholder="t.ex. Integritetspolicy" {...field} />
@@ -102,43 +103,12 @@ export function LegalPageForm({
 
           <FormField
             control={form.control}
-            name="title_en"
-            render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                <FormLabel>Titel ({formLang})</FormLabel>
-                <FormControl>
-                  <Input placeholder="t.ex. Integritetspolicy" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="content"
-            render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
-                <FormLabel>Innehåll ({formLang})</FormLabel>
-                <FormControl>
-                  <RichTextEditor
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Skriv sidans innehåll..."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="content_en"
+            name={formLang === "en" ? "content_en" : "content"}
+            key={`content-${formLang}`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Innehåll ({formLang})</FormLabel>
-                <FormControl className={`${formLang === "sv" ? "hidden" : ""}`}>
+                <FormControl>
                   <RichTextEditor
                     value={field.value}
                     onChange={field.onChange}

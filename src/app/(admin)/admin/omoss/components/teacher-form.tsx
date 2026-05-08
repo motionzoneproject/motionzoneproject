@@ -200,9 +200,10 @@ export function TeacherForm({
 
           <FormField
             control={form.control}
-            name="specialty"
+            name={formLang === "en" ? "specialty_en" : "specialty"}
+            key={`specialty-${formLang}`}
             render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+              <FormItem>
                 <FormLabel>Specialitet ({formLang})</FormLabel>
                 <FormControl>
                   <Input
@@ -221,49 +222,10 @@ export function TeacherForm({
 
           <FormField
             control={form.control}
-            name="specialty_en"
+            name={formLang === "en" ? "description_en" : "description"}
+            key={`description-${formLang}`}
             render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                <FormLabel>Specialitet ({formLang})</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="t.ex. Balett & Modern dans"
-                    {...field}
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Kort beskrivning av vad läraren undervisar i.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
-                <FormLabel>Beskrivning ({formLang})</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Längre beskrivning om läraren..."
-                    className="min-h-[120px]"
-                    {...field}
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description_en"
-            render={({ field }) => (
-              <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+              <FormItem>
                 <FormLabel>Beskrivning ({formLang})</FormLabel>
                 <FormControl>
                   <Textarea

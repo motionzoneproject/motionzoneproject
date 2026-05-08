@@ -189,23 +189,10 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
 
             <FormField
               control={form.control}
-              name="message"
+              name={formLang === "en" ? "message_en" : "message"}
+              key={`message-${formLang}`}
               render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
-                  <FormLabel>Meddelande ({formLang})</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="message_en"
-              render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                <FormItem>
                   <FormLabel>Meddelande ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />

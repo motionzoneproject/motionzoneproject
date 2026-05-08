@@ -216,27 +216,10 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
               <div className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="heroLabel"
+                  name={lang === "en" ? "heroLabel_en" : "heroLabel"}
+                  key={`heroLabel-${lang}`}
                   render={({ field }) => (
-                    <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                      <FormLabel>
-                        Etikett (liten text ovan rubriken) ({lang})
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Välkommen till Motion Zone"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="heroLabel_en"
-                  render={({ field }) => (
-                    <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                    <FormItem>
                       <FormLabel>
                         Etikett (liten text ovan rubriken) ({lang}){" "}
                       </FormLabel>
@@ -258,22 +241,12 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="heroTitleLine1"
+                    name={
+                      lang === "en" ? "heroTitleLine1_en" : "heroTitleLine1"
+                    }
+                    key={`heroTitleLine1-${lang}`}
                     render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                        <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Dans är" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="heroTitleLine1_en"
-                    render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                      <FormItem>
                         <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Dans är" {...field} />
@@ -287,22 +260,12 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="heroTitleAccent"
+                    name={
+                      lang === "en" ? "heroTitleAccent_en" : "heroTitleAccent"
+                    }
+                    key={`heroTitleAccent-${lang}`}
                     render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                        <FormLabel>Rubrik – accent ({lang})</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Passion" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="heroTitleAccent_en"
-                    render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                      <FormItem>
                         <FormLabel>Rubrik – accent ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Passion" {...field} />
@@ -316,22 +279,12 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="heroTitleLine2"
+                    name={
+                      lang === "en" ? "heroTitleLine2_en" : "heroTitleLine2"
+                    }
+                    key={`heroTitleLine2-${lang}`}
                     render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                        <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Och Livet i Rörelse" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="heroTitleLine2_en"
-                    render={({ field }) => (
-                      <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                      <FormItem>
                         <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Och Livet i Rörelse" {...field} />
@@ -359,22 +312,10 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="heroSubtext"
+                  name={lang === "en" ? "heroSubtext_en" : "heroSubtext"}
+                  key={`heroSubtext-${lang}`}
                   render={({ field }) => (
-                    <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                      <FormLabel>Brödtext ({lang})</FormLabel>
-                      <FormControl>
-                        <Textarea rows={3} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="heroSubtext_en"
-                  render={({ field }) => (
-                    <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                    <FormItem>
                       <FormLabel>Brödtext ({lang})</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
@@ -402,22 +343,10 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
               <FormField
                 control={form.control}
-                name="featuresTitle"
+                name={lang === "en" ? "featuresTitle_en" : "featuresTitle"}
+                key={`featuresTitle-${lang}`}
                 render={({ field }) => (
-                  <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                    <FormLabel>Sektionens titel ({lang})</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Varför Motion Zone?" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="featuresTitle_en"
-                render={({ field }) => (
-                  <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                  <FormItem>
                     <FormLabel>Sektionens titel ({lang})</FormLabel>
                     <FormControl>
                       <Input placeholder="Varför Motion Zone?" {...field} />
@@ -431,22 +360,10 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
               <FormField
                 control={form.control}
-                name="featuresSubtext"
+                name={lang === "en" ? "featuresSubtext_en" : "featuresSubtext"}
+                key={`featuresSubtext-${lang}`}
                 render={({ field }) => (
-                  <FormItem className={`${lang === "sv" ? "" : "hidden"}`}>
-                    <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="featuresSubtext_en"
-                render={({ field }) => (
-                  <FormItem className={`${lang === "sv" ? "hidden" : ""}`}>
+                  <FormItem>
                     <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
                     <FormControl>
                       <Input {...field} />

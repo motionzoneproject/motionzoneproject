@@ -231,11 +231,10 @@ export default function EditProductForm({
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
+                    <FormItem>
                       <FormLabel>Namn ({formLang})</FormLabel>
                       <FormControl>
                         <Input placeholder="Namnge produkten" {...field} />
@@ -247,47 +246,10 @@ export default function EditProductForm({
 
                 <FormField
                   control={form.control}
-                  name="name_en"
+                  name={formLang === "en" ? "description_en" : "description"}
+                  key={`description-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
-                      <FormLabel>Namn ({formLang})</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Namnge produkten" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
-                      <FormLabel>Beskrivning ({formLang})</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Beskriv produkten..."
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description_en"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
+                    <FormItem>
                       <FormLabel>Beskrivning ({formLang})</FormLabel>
                       <FormControl>
                         <Textarea

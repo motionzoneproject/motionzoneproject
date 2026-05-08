@@ -376,28 +376,10 @@ export default function AddCourseToSchemaForm({
 
                 <FormField
                   control={form.control}
-                  name="place"
+                  name={formLang === "en" ? "place_en" : "place"}
+                  key={`place-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
-                      <FormLabel>Plats ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="place_en"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
+                    <FormItem>
                       <FormLabel>Plats ({formLang})</FormLabel>
 
                       <FormControl>

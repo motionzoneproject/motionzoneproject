@@ -670,9 +670,10 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name="title"
+                name={formLang === "en" ? "title_en" : "title"}
+                key={`title-${formLang}`}
                 render={({ field }) => (
-                  <FormItem className={formLang === "sv" ? "" : "hidden"}>
+                  <FormItem>
                     <FormLabel>
                       {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
                       )
@@ -687,40 +688,10 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name="title_en"
+                name={formLang === "en" ? "description_en" : "description"}
+                key={`description-${formLang}`}
                 render={({ field }) => (
-                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
-                    <FormLabel>
-                      {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
-                      )
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value ?? ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className={formLang === "sv" ? "" : "hidden"}>
-                    <FormLabel>Beskrivning ({formLang})</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} value={field.value ?? ""} rows={3} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description_en"
-                render={({ field }) => (
-                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                  <FormItem>
                     <FormLabel>Beskrivning ({formLang})</FormLabel>
                     <FormControl>
                       <Textarea {...field} value={field.value ?? ""} rows={3} />

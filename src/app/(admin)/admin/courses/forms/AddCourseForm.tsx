@@ -137,11 +137,10 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
+                    <FormItem>
                       <FormLabel>Kursnamn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
@@ -153,45 +152,10 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="name_en"
+                  name={formLang === "en" ? "description_en" : "description"}
+                  key={`description-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
-                      <FormLabel>Kursnamn ({formLang})</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
-                      <FormLabel>Beskrivning ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description_en"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
+                    <FormItem>
                       <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
@@ -295,29 +259,10 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="level"
+                  name={formLang === "en" ? "level_en" : "level"}
+                  key={`level-${formLang}`}
                   render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "" : "hidden"}`}
-                    >
-                      <FormLabel>Nivå ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="level_en"
-                  render={({ field }) => (
-                    <FormItem
-                      className={`${formLang === "sv" ? "hidden" : ""}`}
-                    >
+                    <FormItem>
                       <FormLabel>Nivå ({formLang})</FormLabel>
 
                       <FormControl>

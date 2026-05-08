@@ -119,7 +119,7 @@ export default function CourseFilter({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Valj larare" />
+            <SelectValue placeholder="Valj lärare" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

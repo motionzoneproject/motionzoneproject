@@ -106,9 +106,10 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
           >
             <FormField
               control={form.control}
-              name="headline"
+              name={formLang === "en" ? "headline_en" : "headline"}
+              key={`headline-${formLang}`}
               render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
+                <FormItem>
                   <FormLabel>Rubrik ({formLang})</FormLabel>
                   <FormControl>
                     <Input {...field} />
@@ -120,37 +121,10 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
 
             <FormField
               control={form.control}
-              name="headline_en"
+              name={formLang === "en" ? "description_en" : "description"}
+              key={`description-${formLang}`}
               render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
-                  <FormLabel>Rubrik ({formLang})</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "" : "hidden"}`}>
-                  <FormLabel>Beskrivning ({formLang})</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description_en"
-              render={({ field }) => (
-                <FormItem className={`${formLang === "sv" ? "hidden" : ""}`}>
+                <FormItem>
                   <FormLabel>Beskrivning ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
