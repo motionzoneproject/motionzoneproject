@@ -3,13 +3,12 @@
     "home": "Hem",
     "courses": "Kurser",
     "about": "Om oss",
-    "gallery": "Galleri"
+    "gallery": "Galleri",
+    "cart": "Varukorg"
   },
-  "auth": {
+  "navAuth": {
     "signIn": "Logga in",
-    "signOut": "Logga ut"
-  },
-  "cart": {
-    "title": "Varukorg"
+    "signOut": "Logga ut",
+    "profile": "Min sida"
   }
 }

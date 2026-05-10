@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslate } from "@/locales";
 import CartIcon from "./CartIcon";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
@@ -13,13 +14,15 @@ import NavBarAuth from "./Navbar-auth";
 const MOBILE_MENU_ID = "mobile-nav-menu";
 
 export default function NavBar() {
+  const { t } = useTranslate();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const navLinks = [
-    { href: "/", label: "Hem" },
-    { href: "/courses", label: "Våra kurser" },
-    { href: "/about", label: "Om oss" },
-    { href: "/gallery", label: "Galleri" },
+    { href: "/", label: t("nav.home") },
+    { href: "/courses", label: t("nav.courses") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/gallery", label: t("nav.gallery") },
   ];
 
   useEffect(() => {
@@ -77,11 +80,15 @@ export default function NavBar() {
         </ul>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3 flex w-fit gap-3 ">
           <div className="hover:scale-110 transition-transform duration-200">
-            <CartIcon />
+            <div>
+              <CartIcon />
+            </div>
           </div>
+
           <LanguageSwitcher />
+
           <ModeToggle />
           <NavBarAuth />
         </div>
@@ -116,12 +123,13 @@ export default function NavBar() {
             </Link>
           ))}
 
-          <div className="space-y-3 pt-3 border-t border-brand/10 px-4">
-            <CartIcon showLabel onClick={() => setMenuOpen(false)} />
-            <div className="flex items-center gap-3">
+          <div className="space-y-3 p-3 border-t border-brand/10 px-4">
+            <div className="flex items-center justify-between gap-3 ">
+              <CartIcon onClick={() => setMenuOpen(false)} />
               <LanguageSwitcher />
               <ModeToggle />
             </div>
+
             <NavBarAuth mobile onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>

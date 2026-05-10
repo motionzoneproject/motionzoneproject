@@ -6,11 +6,13 @@ import { useTranslation } from "react-i18next";
 import { allLangs, defaultLang } from "./config-lang";
 
 export function useLocales() {
-  const langStorage =
-    typeof window !== "undefined" ? localStorage.getItem("i18nextLng") : null;
+  const locale =
+    typeof document !== "undefined"
+      ? (document.cookie.match(/locale=([^;]+)/)?.[1] ?? defaultLang.value)
+      : defaultLang.value;
 
   const currentLang =
-    allLangs.find((lang) => lang.value === langStorage) || defaultLang;
+    allLangs.find((lang) => lang.value === locale) ?? defaultLang;
 
   return {
     allLangs,
@@ -23,10 +25,8 @@ export function useTranslate() {
 
   const onChangeLang = useCallback(
     (newLang: string) => {
+      document.cookie = `locale=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
       i18n.changeLanguage(newLang);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("i18nextLng", newLang);
-      }
     },
     [i18n],
   );

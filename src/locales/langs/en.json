@@ -3,13 +3,12 @@
     "home": "Home",
     "courses": "Courses",
     "about": "About us",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "cart": "Cart"
   },
-  "auth": {
+  "navAuth": {
     "signIn": "Sign in",
-    "signOut": "Sign out"
-  },
-  "cart": {
-    "title": "Cart"
+    "signOut": "Sign out",
+    "profile": "My page"
   }
 }

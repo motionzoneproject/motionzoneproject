@@ -1,32 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { allLangs } from "@/locales";
+import { useLocales, useTranslate } from "@/locales/use-locales";
 
 export default function LanguageSwitcher() {
-  const [currentLang, setCurrentLang] = useState("sv");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("i18nextLng");
-    if (stored) setCurrentLang(stored.slice(0, 2));
-  }, []);
+  const { currentLang } = useLocales();
+  const { onChangeLang } = useTranslate();
+  const router = useRouter();
 
   function handleChange(value: string) {
-    setCurrentLang(value);
-    localStorage.setItem("i18nextLng", value);
+    onChangeLang(value);
+    router.refresh();
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-brand/20 p-0.5">
+    <div className="flex items-center gap-2 rounded-lg border border-brand/20 p-0.5">
       {allLangs.map((lang) => {
-        const isActive = currentLang === lang.value;
+        const isActive = currentLang.value === lang.value;
         return (
           <button
             key={lang.value}
             type="button"
             onClick={() => handleChange(lang.value)}
             title={lang.label}
-            className={`flex items-center justify-center w-8 h-7 rounded-md text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center w-10 h-8 rounded-md text-xs p-1 font-medium transition-all duration-200 ${
               isActive
                 ? "bg-brand/10 scale-105"
                 : "opacity-50 hover:opacity-100 hover:bg-brand/5"

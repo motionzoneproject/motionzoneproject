@@ -1,7 +1,9 @@
 "use client";
 
+import { Crown, LogIn, LogOut, User2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
@@ -16,6 +18,7 @@ export default function NavBarAuth({
   mobile = false,
   onNavigate,
 }: NavBarAuthProps) {
+  const { t } = useTranslation();
   const { session, user } = useSession();
   const router = useRouter();
 
@@ -37,10 +40,12 @@ export default function NavBarAuth({
           )}
         >
           <Link href="/user" onClick={onNavigate}>
-            <span>Profil &amp; boka</span>
-            <span className="max-w-[12rem] truncate text-xs font-normal text-muted-foreground">
-              {user.name}
-            </span>
+            <div className="p-1 text-center">
+              <span>
+                <User2Icon className="inline-block mx-2" />
+                {t("navAuth.profile")}
+              </span>
+            </div>
           </Link>
         </Button>
         <div
@@ -54,16 +59,24 @@ export default function NavBarAuth({
               asChild
               size="sm"
               variant="outline"
-              className={cn(mobile && "justify-center")}
+              className={cn(
+                "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
+                mobile && "w-full justify-start",
+              )}
             >
               <Link href="/admin" onClick={onNavigate}>
-                Admin
+                <div className="p-1">
+                  <Crown className="inline-block mx-2" /> Admin
+                </div>
               </Link>
             </Button>
           )}
           <Button
             variant="ghost"
-            className="text-muted-foreground hover:text-foreground"
+            className={cn(
+              "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
+              mobile && "w-full justify-start",
+            )}
             onClick={() => {
               onNavigate?.();
               authClient.signOut({
@@ -76,7 +89,10 @@ export default function NavBarAuth({
               });
             }}
           >
-            Logga ut
+            <div className="p-1">
+              <LogOut className="inline-block mx-2" />
+              {t("navAuth.signOut")}
+            </div>
           </Button>
         </div>
       </div>
@@ -86,13 +102,17 @@ export default function NavBarAuth({
   return (
     <Button
       asChild
+      variant="ghost"
       className={cn(
-        "bg-brand hover:bg-brand-light text-white",
-        mobile && "w-full justify-center",
+        "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
+        mobile && "w-full items-center justify-center text-center",
       )}
     >
       <Link href="/signin" onClick={onNavigate}>
-        Logga in
+        <div className="flex flex-col items-center gap-1">
+          <LogIn className="w-4 h-4" />
+          {t("navAuth.signIn")}
+        </div>
       </Link>
     </Button>
   );

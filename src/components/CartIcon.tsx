@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getCart } from "@/lib/actions/cart";
 
 interface CartIconProps {
@@ -14,6 +15,8 @@ interface CartIconProps {
 export default function CartIcon({ showLabel, onClick }: CartIconProps) {
   const [count, setCount] = useState(0);
   const pathname = usePathname();
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchCount() {
@@ -34,17 +37,17 @@ export default function CartIcon({ showLabel, onClick }: CartIconProps) {
     <Link
       href="/checkout"
       onClick={onClick}
-      className="relative flex items-center gap-2 text-muted-foreground hover:text-brand transition-colors"
+      className="relative items-center gap-2 text-muted-foreground hover:text-brand transition-colors"
     >
-      <span className="relative">
+      <div className="relative flex mx-2">
         <ShoppingCart className="w-5 h-5" />
         {count > 0 && (
           <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-brand text-white shadow-sm">
             {count > 99 ? "99+" : count}
           </span>
         )}
-      </span>
-      {showLabel && <span>Varukorg</span>}
+      </div>
+      {showLabel && <div>{t("nav.cart")}</div>}
     </Link>
   );
 }
