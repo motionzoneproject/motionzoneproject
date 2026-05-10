@@ -16,9 +16,10 @@ import EditEventForm from "./EditEventForm";
 
 interface Props {
   event: Event;
+  initialLang?: string;
 }
 
-export default function EditEventBtn({ event }: Props) {
+export default function EditEventBtn({ event, initialLang }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -37,6 +38,7 @@ export default function EditEventBtn({ event }: Props) {
         </DialogHeader>
         <EditEventForm
           event={event}
+          initialLang={initialLang}
           isOpen={isOpen}
           onSuccess={() => setIsOpen(false)}
         />

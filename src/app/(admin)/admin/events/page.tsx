@@ -8,13 +8,20 @@ import {
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { AddEventBtn } from "./components/AddEventBtn";
 import DelEventBtn from "./components/DelEventBtn";
 import EditEventBtn from "./components/EditEventBtn";
 import ToggleEventStartpageBtn from "./components/ToggleEventStartpageBtn";
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ lang?: string }>;
+}) {
   await requireAdmin();
+  const params = (await searchParams) ?? {};
+  const lang = params.lang === "en" ? "en" : "sv";
   const events = await prisma.event.findMany({
     orderBy: { startDate: "asc" },
   });
@@ -22,8 +29,13 @@ export default async function EventsPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Events</h1>
-        <AddEventBtn />
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Events</h1>
+          <div className="text-sm mt-2 w-fit">
+            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          </div>
+        </div>
+        <AddEventBtn initialLang={lang} />
       </div>
 
       <div className="mt-2">
@@ -38,7 +50,11 @@ export default async function EventsPage() {
           <TableBody>
             {events.map((event) => (
               <TableRow key={event.id}>
-                <TableCell className="font-medium">{event.headline}</TableCell>
+                <TableCell className="font-medium">
+                  {lang === "en"
+                    ? event.headline_en || event.headline
+                    : event.headline}
+                </TableCell>
                 <TableCell>
                   {event.startDate.toLocaleDateString("sv-SE")}{" "}
                   {event.endDate &&
@@ -50,7 +66,7 @@ export default async function EventsPage() {
                     eventId={event.id}
                     showOnStartpage={event.showOnStartpage}
                   />
-                  <EditEventBtn event={event} />
+                  <EditEventBtn event={event} initialLang={lang} />
                   <DelEventBtn eventId={event.id} imageURL={event.imageURL} />
                 </TableCell>
               </TableRow>

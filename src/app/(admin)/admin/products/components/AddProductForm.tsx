@@ -9,6 +9,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
+import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,14 +42,20 @@ const formSchema = adminProductSchema;
 type CourseFormInput = z.input<typeof formSchema>;
 type CourseFormOutput = z.output<typeof formSchema>;
 
-export default function AddProductForm() {
+export default function AddProductForm({
+  initialLang = "sv",
+}: {
+  initialLang?: "sv" | "en";
+}) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clipcard: false,
       description: "",
+      description_en: "",
       imageURL: "",
       name: "",
+      name_en: "",
       price: 0,
       clipCount: 0,
       unlimitedCustomers: true,
@@ -55,10 +63,12 @@ export default function AddProductForm() {
     },
   });
 
+  const [formLang, setFormLang] = useState(initialLang);
+
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
+  const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) form.reset();
@@ -115,6 +125,13 @@ export default function AddProductForm() {
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -122,12 +139,13 @@ export default function AddProductForm() {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                      <FormLabel>Namn ({formLang})</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Namnge produkten" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -136,15 +154,18 @@ export default function AddProductForm() {
 
                 <FormField
                   control={form.control}
-                  name="description"
+                  name={formLang === "en" ? "description_en" : "description"}
+                  key={`description-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Beskrivning av produkten</FormLabel>
-
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
                       <FormControl>
-                        <Textarea {...field} />
+                        <Textarea
+                          placeholder="Beskriv produkten..."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
                       </FormControl>
-
                       <FormMessage />
                     </FormItem>
                   )}
@@ -297,10 +318,14 @@ export default function AddProductForm() {
                   )}
                 />
 
-                <Button variant="ghost" type="submit" className="w-full">
-                  <Plus className="h-4 w-4" />
-                  Skapa
-                </Button>
+                {isBusy ? (
+                  <Loader />
+                ) : (
+                  <Button variant="ghost" type="submit" className="w-full">
+                    <Plus className="h-4 w-4" />
+                    Skapa
+                  </Button>
+                )}
               </form>
             </Form>
           </CardContent>

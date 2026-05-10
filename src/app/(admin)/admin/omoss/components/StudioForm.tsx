@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,10 +30,15 @@ import { adminStudioSchema } from "@/validations/adminforms";
 
 type StudioFormProps = {
   studio?: Studio;
+  initialLang?: "sv" | "en";
   onSuccess?: () => void;
 };
 
-export function StudioForm({ studio, onSuccess }: StudioFormProps) {
+export function StudioForm({
+  studio,
+  onSuccess,
+  initialLang = "sv",
+}: StudioFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -40,11 +46,15 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
     resolver: zodResolver(adminStudioSchema),
     defaultValues: {
       name: studio?.name ?? "",
+      name_en: studio?.name_en ?? "",
       description: studio?.description ?? "",
+      description_en: studio?.description_en ?? "",
       imageUrl: studio?.imageUrl ?? "",
       active: studio?.active ?? true,
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof adminStudioSchema>) {
     setIsPending(true);
@@ -113,91 +123,102 @@ export function StudioForm({ studio, onSuccess }: StudioFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Namn</FormLabel>
-              <FormControl>
-                <Input placeholder="t.ex. Studio 1" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <div>
+      <div className="p2 text-sm my-2">
+        Formulärspråk:{" "}
+        <LanguageSwitcherInput
+          value={formLang ?? "sv"}
+          setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
         />
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "name_en" : "name"}
+            key={`name-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Namn ({formLang})</FormLabel>
+                <FormControl>
+                  <Input placeholder="t.ex. Studio 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Beskrivning</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Beskriv studion..."
-                  className="min-h-[120px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "description_en" : "description"}
+            key={`description-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Beskrivning ({formLang})</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Beskriv studion..."
+                    className="min-h-[120px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bild</FormLabel>
-              <FormControl>
-                <ImageInput {...field} value={field.value || ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bild</FormLabel>
+                <FormControl>
+                  <ImageInput {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="active"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
-              <FormControl>
-                <Checkbox
-                  checked={field.value ?? false}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Visa</FormLabel>
-                <FormDescription>
-                  Om avmarkerad visas inte studion på "Om oss"-sidan.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="active"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Visa</FormLabel>
+                  <FormDescription>
+                    Om avmarkerad visas inte studion på "Om oss"-sidan.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
 
-        <Button
-          variant="ghost"
-          type="submit"
-          className="w-full"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <Loader />
-          ) : studio ? (
-            <Save className="h-4 w-4" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {isPending ? "Sparar..." : studio ? "Spara" : "Skapa"}
-        </Button>
-      </form>
-    </Form>
+          <Button
+            variant="ghost"
+            type="submit"
+            className="w-full"
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader />
+            ) : studio ? (
+              <Save className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {isPending ? "Sparar..." : studio ? "Spara" : "Skapa"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

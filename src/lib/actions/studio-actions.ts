@@ -12,12 +12,18 @@ async function isAdminRole(): Promise<boolean> {
   return sessiondata?.user.role === "admin";
 }
 
-export async function getStudios(): Promise<Studio[]> {
-  return prisma.studio.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
+export async function getStudios(lang: "sv" | "en" = "sv"): Promise<Studio[]> {
+  return lang === "sv"
+    ? prisma.studio.findMany({
+        orderBy: {
+          name: "asc",
+        },
+      })
+    : prisma.studio.findMany({
+        orderBy: {
+          name_en: "asc",
+        },
+      });
 }
 
 export async function createStudio(
@@ -32,7 +38,9 @@ export async function createStudio(
     await prisma.studio.create({
       data: {
         name: validated.name,
+        name_en: validated.name_en,
         description: validated.description,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -62,7 +70,9 @@ export async function updateStudio(
       where: { id },
       data: {
         name: validated.name,
+        name_en: validated.name_en,
         description: validated.description,
+        description_en: validated.description_en,
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },

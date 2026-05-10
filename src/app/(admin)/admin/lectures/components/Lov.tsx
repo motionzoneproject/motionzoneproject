@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -65,7 +66,8 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
       from: toDateInput(new Date()),
       to: toDateInput(new Date()),
       courseIds: [],
-      message: "",
+      message: "Lov",
+      message_en: "Holiday",
       cancelled: true,
     },
   });
@@ -112,10 +114,13 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
       to: toDateInput(new Date()),
       courseIds: [],
       message: "Lov",
+      message_en: "Holiday",
       cancelled: true,
     });
     router.refresh();
   }
+
+  const [formLang, setFormLang] = useState<string>("sv");
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -133,6 +138,14 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
             Valj datum, kurser och anledning.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="p2 text-sm">
+          Formulärspråk:{" "}
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e)}
+          />
+        </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -176,15 +189,13 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
 
             <FormField
               control={form.control}
-              name="message"
+              name={formLang === "en" ? "message_en" : "message"}
+              key={`message-${formLang}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Anledning</FormLabel>
+                  <FormLabel>Meddelande ({formLang})</FormLabel>
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="T.ex. Lov, studiedag eller helgdag"
-                    />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

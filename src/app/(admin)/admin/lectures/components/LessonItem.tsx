@@ -4,8 +4,14 @@ import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import { AttendeDialog } from "./attendence/AttendenceDialog";
 import { EditLessonBtn } from "./EditLesson";
 
-export async function LessonItem({ lesson }: { lesson: Lesson }) {
-  const courseName = await getFullCourseNameFromId(lesson.courseId);
+export async function LessonItem({
+  lesson,
+  lang = "sv",
+}: {
+  lesson: Lesson;
+  lang: "sv" | "en";
+}) {
+  const courseName = await getFullCourseNameFromId(lesson.courseId, lang);
 
   return (
     <TableRow>

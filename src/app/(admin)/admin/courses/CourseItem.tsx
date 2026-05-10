@@ -13,12 +13,14 @@ interface Props {
   course: Course;
   teachers: User[];
   teacherName?: string;
+  lang?: "sv" | "en";
 }
 
 export default async function CourseItem({
   course,
   teachers,
   teacherName,
+  lang = "sv",
 }: Props) {
   const lessonsCnt = await prisma.lesson.count({
     where: { courseId: course.id },
@@ -39,7 +41,7 @@ export default async function CourseItem({
     <TableRow className={!course.active ? "opacity-60" : ""}>
       <TableCell className="font-medium max-w-[360px] whitespace-normal">
         <div className="flex items-center gap-2">
-          {getCourseName(course)}
+          {getCourseName(course, lang)}
           {!course.active && (
             <span className="inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />

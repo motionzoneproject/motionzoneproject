@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,14 @@ import { adminLegalPageSchema } from "@/validations/adminforms";
 type LegalPageFormProps = {
   page: LegalPage;
   onSuccess?: () => void;
+  initialLang?: string;
 };
 
-export function LegalPageForm({ page, onSuccess }: LegalPageFormProps) {
+export function LegalPageForm({
+  page,
+  onSuccess,
+  initialLang = "sv",
+}: LegalPageFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -37,9 +43,13 @@ export function LegalPageForm({ page, onSuccess }: LegalPageFormProps) {
     defaultValues: {
       slug: page.slug,
       title: page.title,
+      title_en: page.title_en ?? "",
       content: page.content,
+      content_en: page.content_en ?? "",
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof adminLegalPageSchema>) {
     setIsPending(true);
@@ -65,50 +75,62 @@ export function LegalPageForm({ page, onSuccess }: LegalPageFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Titel</FormLabel>
-              <FormControl>
-                <Input placeholder="t.ex. Integritetspolicy" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <div>
+      {" "}
+      <div className="p2 text-sm">
+        Formulärspråk:{" "}
+        <LanguageSwitcherInput
+          value={formLang ?? "sv"}
+          setValue={(e) => setFormLang(e)}
         />
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "title_en" : "title"}
+            key={`title-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Titel ({formLang})</FormLabel>
+                <FormControl>
+                  <Input placeholder="t.ex. Integritetspolicy" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Innehåll</FormLabel>
-              <FormControl>
-                <RichTextEditor
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Skriv sidans innehåll..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "content_en" : "content"}
+            key={`content-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Innehåll ({formLang})</FormLabel>
+                <FormControl>
+                  <RichTextEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Skriv sidans innehåll..."
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button
-          variant="ghost"
-          type="submit"
-          className="w-full"
-          disabled={isPending}
-        >
-          {isPending ? <Loader /> : <Save className="h-4 w-4" />}
-          {isPending ? "Sparar..." : "Spara"}
-        </Button>
-      </form>
-    </Form>
+          <Button
+            variant="ghost"
+            type="submit"
+            className="w-full"
+            disabled={isPending}
+          >
+            {isPending ? <Loader /> : <Save className="h-4 w-4" />}
+            {isPending ? "Sparar..." : "Spara"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

@@ -4,9 +4,11 @@ import { Weekday } from "@/generated/prisma/enums";
 
 export const adminGalleryItemSchema = z.object({
   type: z.enum(["IMAGE", "VIDEO"]),
+  title_en: z.string(),
   title: z.string().min(1, "Titel måste anges."),
   url: z.string().min(1, "Mediafil krävs."),
   thumbnailUrl: z.string().optional(),
+  description_en: z.string(),
   description: z.string().optional(),
   eventId: z.string().optional(),
   displayOrder: z
@@ -21,13 +23,12 @@ export const adminGalleryItemSchema = z.object({
 
 const TIME_REGEX = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
 
-// fix: max-booking per tillfälle (t.ex om de har ett tillfälle i studio-1 och ett annat i studio-2 eller bara vill kunna ha olika per dag.)
 export const adminAddCourseToSchemaSchema = z
   .object({
     courseId: z.string().min(1),
 
     place: z.string().optional(),
-
+    place_en: z.string().optional(),
     timeStart: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
@@ -66,7 +67,9 @@ export const adminAddCourseToSchemaSchema = z
 
 export const adminEventSchema = z.object({
   headline: z.string().min(1, "Namn måste anges."),
+  headline_en: z.string(),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description_en: z.string(),
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),
@@ -77,7 +80,9 @@ export const adminEventSchema = z.object({
 export const adminEditEventSchema = z.object({
   id: z.string().min(1),
   headline: z.string().min(1, "Namn måste anges."),
+  headline_en: z.string(),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description_en: z.string(),
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),
@@ -88,6 +93,7 @@ export const adminEditEventSchema = z.object({
 export const adminAddTerminSchema = z
   .object({
     name: z.string().min(1, "Namn måste anges."),
+    name_en: z.string().min(1, "Namn måste anges."),
 
     startDate: z.coerce.date("Ogiltigt datum"),
 
@@ -101,6 +107,7 @@ export const adminAddTerminSchema = z
 
 export const adminAddCourseSchema = z.object({
   name: z.string().min(3),
+  name_en: z.string().min(3),
   // maxbookings: z.coerce
   //   .number()
   //   .int("Antal bokningar måste vara ett heltal.")
@@ -110,7 +117,9 @@ export const adminAddCourseSchema = z.object({
   //   .int("Antal platser måste vara ett heltal.")
   //   .nonnegative("Antal platser måste vara noll eller ett positivt tal."),
   description: z.string(),
+  description_en: z.string(),
   level: z.string().optional(),
+  level_en: z.string().optional(),
   minAge: z.coerce
     .number()
     .int("Ålder måste vara ett heltal.")
@@ -126,6 +135,7 @@ export const adminAddCourseSchema = z.object({
 export const adminLessonFormSchema = z.object({
   id: z.string().min(1),
   message: z.string().optional(),
+  message_en: z.string().optional(),
   cancelled: z.coerce.boolean().optional(),
 });
 
@@ -135,6 +145,7 @@ export const adminBulkCancelLessonsSchema = z
     to: z.coerce.date("Ogiltigt slutdatum"),
     courseIds: z.array(z.string().min(1)).min(1, "Valj minst en kurs."),
     message: z.string().trim().min(1, "Anledning maste anges."),
+    message_en: z.string().trim().min(1, "Skriv en anledning"),
     cancelled: z.literal(true),
   })
   .refine((data) => data.to >= data.from, {
@@ -145,7 +156,9 @@ export const adminBulkCancelLessonsSchema = z
 export const adminProductSchema = z
   .object({
     name: z.string().min(1),
+    name_en: z.string().min(1),
     description: z.string(),
+    description_en: z.string(),
     imageURL: z.string().optional(),
     unlimitedCustomers: z.coerce.boolean().optional(),
     maxCustomers: z.coerce.number().int().nonnegative(),
@@ -201,7 +214,9 @@ export const adminTeacherSchema = z.object({
   id: z.string().optional(), // Optional for creation, required for updates (but we usually handle id separately)
   name: z.string().min(1, "Namn måste anges."),
   specialty: z.string().optional(),
+  specialty_en: z.string().optional(),
   description: z.string().optional(),
+  description_en: z.string().optional(),
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });
@@ -209,7 +224,9 @@ export const adminTeacherSchema = z.object({
 export const adminStudioSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Namn måste anges."),
+  name_en: z.string().min(1, "Namn måste anges."),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description_en: z.string().min(1, "Beskrivning måste anges."),
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });
@@ -217,7 +234,9 @@ export const adminStudioSchema = z.object({
 export const adminStyleSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Namn måste anges."),
+  name_en: z.string().min(1, "Namn måste anges."),
   description: z.string().min(1, "Beskrivning måste anges."),
+  description_en: z.string().min(1, "Beskrivning måste anges."),
   imageUrl: z.string().nullish(),
   active: z.boolean().optional(),
 });
@@ -225,7 +244,9 @@ export const adminStyleSchema = z.object({
 export const adminLegalPageSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1, "Titel måste anges."),
+  title_en: z.string().min(1, "Titel måste anges."),
   content: z.string().min(1, "Innehåll måste anges."),
+  content_en: z.string().min(1, "Innehåll måste anges."),
 });
 
 export const adminStartPageSchema = z.object({
@@ -249,4 +270,22 @@ export const adminStartPageSchema = z.object({
   feature3Image: z.string().min(1, "Bild måste anges."),
   feature3Title: z.string().min(1, "Titel måste anges."),
   feature3Description: z.string().min(1, "Beskrivning måste anges."),
+
+  // en:
+
+  heroLabel_en: z.string().min(1, "Etikett måste anges."),
+  heroTitleLine1_en: z.string().min(1, "Rubrik rad 1 måste anges."),
+  heroTitleAccent_en: z.string().min(1, "Accenttext måste anges."),
+  heroTitleLine2_en: z.string().min(1, "Rubrik rad 2 måste anges."),
+  heroSubtext_en: z.string().min(1, "Brödtext måste anges."),
+  // Features header
+  featuresTitle_en: z.string().min(1, "Titel måste anges."),
+  featuresSubtext_en: z.string().min(1, "Underrubrik måste anges."),
+  // Feature card
+  feature1Title_en: z.string().min(1, "Titel måste anges."),
+  feature1Description_en: z.string().min(1, "Beskrivning måste anges."),
+  feature2Title_en: z.string().min(1, "Titel måste anges."),
+  feature2Description_en: z.string().min(1, "Beskrivning måste anges."),
+  feature3Title_en: z.string().min(1, "Titel måste anges."),
+  feature3Description_en: z.string().min(1, "Beskrivning måste anges."),
 });

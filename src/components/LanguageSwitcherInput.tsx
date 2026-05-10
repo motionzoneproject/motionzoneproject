@@ -1,25 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { allLangs } from "@/locales";
 
-export default function LanguageSwitcher() {
-  const [currentLang, setCurrentLang] = useState("sv");
+interface Props {
+  value: string;
+  setValue: (val: string) => void;
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem("i18nextLng");
-    if (stored) setCurrentLang(stored.slice(0, 2));
-  }, []);
-
+export default function LanguageSwitcherInput({ value, setValue }: Props) {
   function handleChange(value: string) {
-    setCurrentLang(value);
-    localStorage.setItem("i18nextLng", value);
+    setValue(value);
   }
 
   return (
     <div className="flex items-center gap-1 rounded-lg border border-brand/20 p-0.5">
       {allLangs.map((lang) => {
-        const isActive = currentLang === lang.value;
+        const isActive = value === lang.value;
         return (
           <button
             key={lang.value}

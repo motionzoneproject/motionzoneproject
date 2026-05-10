@@ -177,9 +177,13 @@ export default async function Page() {
                           const isLow =
                             Number.isFinite(remaining) && remaining <= 3;
 
-                          const piBookings = bookings.filter(
-                            (b) => b.purchaseItemId === pi.id,
-                          );
+                          const piBookings = bookings
+                            .filter((b) => b.purchaseItemId === pi.id)
+                            .sort(
+                              (a, b) =>
+                                a.lesson.startTime.getUTCDate() -
+                                b.lesson.startTime.getUTCDate(),
+                            );
 
                           return (
                             <div

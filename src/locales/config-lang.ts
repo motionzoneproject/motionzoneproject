@@ -1,15 +1,15 @@
-﻿export const allLangs = [
+export const allLangs = [
   {
     label: "Svenska",
+    shortLabel: "SE",
     value: "sv",
     langCode: "sv-SE",
-    flag: "\uD83C\uDDF8\uD83C\uDDEA",
   },
   {
     label: "English",
+    shortLabel: "EN",
     value: "en",
     langCode: "en-US",
-    flag: "\uD83C\uDDEC\uD83C\uDDE7",
   },
 ];
 
