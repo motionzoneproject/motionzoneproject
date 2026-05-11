@@ -1,6 +1,7 @@
 "use client";
 
 import i18next from "i18next";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { allLangs, defaultLang, normalizeLang } from "@/locales";
@@ -12,6 +13,7 @@ import {
 export default function LanguageSwitcher() {
   const [currentLang, setCurrentLang] = useState(defaultLang.value);
   const { t } = useTranslation();
+  const router = useRouter();
 
   useEffect(() => {
     async function syncLang() {
@@ -31,6 +33,7 @@ export default function LanguageSwitcher() {
     localStorage.setItem("i18nextLng", nextLang);
     void writeClientLangCookie(nextLang);
     void i18next.changeLanguage(nextLang);
+    router.refresh();
   }
 
   return (
