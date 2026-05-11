@@ -193,13 +193,13 @@
   }
 
   :root {
-    --bg-glow-1: rgba(168, 85, 247, 0.1);
-    --bg-glow-2: rgba(76, 173, 178, 0.08);
+    --bg-glow-1: #a855f71a;
+    --bg-glow-2: #4cadb214;
   }
 
   .dark {
-    --bg-glow-1: rgba(168, 85, 247, 0.06);
-    --bg-glow-2: rgba(76, 173, 178, 0.05);
+    --bg-glow-1: #a855f70f;
+    --bg-glow-2: #4cadb20d;
   }
 
   body {

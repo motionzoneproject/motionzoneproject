@@ -187,14 +187,13 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
                 isVideo?: boolean;
                 isVideoPlaceholder?: boolean;
               };
-              const rounded: React.CSSProperties = { borderRadius: "0.5rem" };
               if (p.isVideoPlaceholder) {
                 return (
                   <div
-                    style={{ ...props.style, ...rounded }}
-                    className="flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_50%),linear-gradient(180deg,rgba(15,23,42,0.75),rgba(2,6,23,0.97))]"
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative overflow-hidden border border-border shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_28px_rgba(124,68,194,0.22)] flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_50%),linear-gradient(180deg,rgba(15,23,42,0.75),rgba(2,6,23,0.97))]"
+                    style={{ ...props.style, borderRadius: "0.5rem" }}
                   >
-                    <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
                       <Play
                         className="h-8 w-8 text-white"
                         fill="currentColor"
@@ -205,33 +204,35 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
               }
               return (
                 <div
-                  style={{
-                    ...props.style,
-                    ...rounded,
-                    overflow: "hidden",
-                    position: "relative",
-                  }}
+                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_28px_rgba(124,68,194,0.22)]"
+                  style={{ ...props.style, borderRadius: "0.5rem" }}
                 >
-                  {/* biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here */}
-                  <img
-                    alt={props.alt}
-                    {...props}
-                    style={{
-                      ...props.style,
-                      borderRadius: 0,
-                      display: "block",
-                    }}
-                  />
-                  {p.isVideo && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="rounded-full bg-black/60 p-3 backdrop-blur-sm">
-                        <Play
-                          className="h-6 w-6 text-white"
-                          fill="currentColor"
-                        />
+                  <div
+                    className="overflow-hidden border border-border relative"
+                    style={{ borderRadius: "0.5rem" }}
+                  >
+                    {/* biome-ignore lint/performance/noImgElement: react-photo-album render.image callback — Next/Image is incompatible here */}
+                    <img
+                      alt={props.alt}
+                      {...props}
+                      className="transition-transform duration-500 group-hover:scale-105"
+                      style={{
+                        ...props.style,
+                        borderRadius: 0,
+                        display: "block",
+                      }}
+                    />
+                    {p.isVideo && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-full bg-black/60 p-3 backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
+                          <Play
+                            className="h-6 w-6 text-white"
+                            fill="currentColor"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             },

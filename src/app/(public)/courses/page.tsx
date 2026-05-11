@@ -5,6 +5,9 @@ import {
   InfinityIcon,
   Info,
   MapPin,
+  ShoppingBag,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -258,7 +261,15 @@ export default async function Page({ searchParams }: Props) {
           </div>
         </div>
         {/* Filter component */}
-        <p className="font-bold mt-4">Våra produkter</p>
+        <div className="flex items-center gap-2 mt-4">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg"
+            style={{ backgroundColor: "#8f5ccf26" }}
+          >
+            <ShoppingBag className="w-4 h-4" style={{ color: "#8f5ccf" }} />
+          </div>
+          <p className="font-bold text-foreground">Våra produkter</p>
+        </div>
 
         {totalProducts > 0 ? (
           <>
@@ -494,9 +505,38 @@ export default async function Page({ searchParams }: Props) {
             </div>
           </>
         ) : (
-          <div className="text-center py-12 border rounded-lg bg-muted/20 mt-4">
-            <p className="text-muted-foreground">
-              Inga produkter hittades med nuvarande filter.
+          <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/20 py-16 px-6 flex flex-col items-center justify-center text-center">
+            <div className="relative mb-6 flex items-center justify-center">
+              {/* Soft glow blob */}
+              <div
+                className="absolute w-24 h-24 rounded-full blur-2xl opacity-25"
+                style={{ backgroundColor: "#8f5ccf" }}
+              />
+              {/* Sparkle decorations */}
+              <Sparkles
+                className="absolute -top-4 -right-4 w-5 h-5 opacity-80"
+                style={{ color: "#e8a04d" }}
+              />
+              <Star
+                className="absolute -bottom-2 -left-5 w-4 h-4 opacity-70"
+                style={{ color: "#e87ea1" }}
+              />
+              <Star
+                className="absolute top-0 -left-4 w-3 h-3 opacity-60"
+                style={{ color: "#8f5ccf" }}
+              />
+              {/* Main icon */}
+              <ShoppingBag
+                className="relative w-16 h-16"
+                style={{ color: "#8f5ccf" }}
+              />
+            </div>
+            <p className="font-bold text-foreground text-lg mb-1">
+              Inga produkter hittades
+            </p>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              Prova att justera eller ta bort dina filter för att se fler
+              kurser.
             </p>
           </div>
         )}

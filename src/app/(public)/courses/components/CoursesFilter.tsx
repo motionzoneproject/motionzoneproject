@@ -1,7 +1,15 @@
 "use client";
 
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Package,
+  Search,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { SearchInput } from "@/components/SearchInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,17 +27,30 @@ export function CoursesFilter() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  const [open, setOpen] = useState(false);
 
   const params = useMemo(
     () => new URLSearchParams(searchParams),
     [searchParams],
   );
+  // räknar hur många filter som är aktiva (sökning, typ, åldersgrupp, sortering).
+  // När filterpanelen är stängd vet användaren ändå att filter är aktiva — den lila
+  // siffran på knappen visar t.ex. "2" om två filter är på. Utan det skulle man kunna
+  // missa att resultaten är filtrerade och undra varför inte alla kurser syns.
+  const activeCount = useMemo(() => {
+    let count = 0;
+    if (searchParams.get("q")) count++;
+    if (searchParams.get("type")) count++;
+    if (searchParams.get("adult")) count++;
+    if (searchParams.get("sort") && searchParams.get("sort") !== "name-asc")
+      count++;
+    return count;
+  }, [searchParams]);
 
   const setFilter = useCallback(
     (name: string, value: string) => {
       const next = new URLSearchParams(searchParams);
 
-      // Check if the filter value is actually changing
       const currentValue = searchParams.get(name);
       const newValue = !value || value === "all" ? null : value;
       const isChanging = currentValue !== newValue;
@@ -40,7 +61,6 @@ export function CoursesFilter() {
         next.set(name, value);
       }
 
-      // Reset to page 1 only when filter value actually changes
       if (isChanging) {
         next.delete("page");
       }
@@ -55,100 +75,181 @@ export function CoursesFilter() {
   );
 
   return (
-    <div className="mt-6 grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* Search Field */}
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Sök produktnamn
-        </Label>
-        <SearchInput
-          placeholder="Sök..."
-          className="border-0 ring-1 ring-input w-full"
+    <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm">
+      {/* Toggle button */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 p-4 hover:bg-muted/30 transition-colors rounded-2xl"
+      >
+        <div
+          className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0"
+          style={{ backgroundColor: "#8f5ccf26" }}
+        >
+          <SlidersHorizontal
+            className="w-3.5 h-3.5"
+            style={{ color: "#8f5ccf" }}
+          />
+        </div>
+        <span className="text-sm font-semibold text-foreground">
+          Filtrera kurser
+        </span>
+        {activeCount > 0 && (
+          <span
+            className="ml-1 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white"
+            style={{ backgroundColor: "#8f5ccf" }}
+          >
+            {activeCount}
+          </span>
+        )}
+        <ChevronDown
+          className="w-4 h-4 text-muted-foreground ml-auto transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
         />
-      </div>
+      </button>
 
-      {/* Product Type Filter */}
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Produkttyp
-        </Label>
-        <Select
-          value={params.get("type") || "all"}
-          onValueChange={(value) =>
-            setFilter("type", value === "all" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj typ" />
-          </SelectTrigger>
+      {/* Filter content */}
+      {open && (
+        <div className="px-4 pb-4 pt-1 border-t border-border">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-3">
+            {/* Search Field */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
+                  style={{ backgroundColor: "#8f5ccf1f" }}
+                >
+                  <Search
+                    className="w-3.5 h-3.5"
+                    style={{ color: "#8f5ccf" }}
+                  />
+                </div>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Sök kurs
+                </Label>
+              </div>
+              <SearchInput
+                placeholder="Sök produktnamn..."
+                className="border-0 ring-1 ring-input w-full"
+              />
+            </div>
 
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Välj produkttyp</SelectLabel>
-              <SelectItem value="all">Alla</SelectItem>
-              <SelectSeparator />
-              <SelectItem value="COURSE">Kurs</SelectItem>
-              <SelectItem value="PACK">Paket</SelectItem>
-              <SelectItem value="CLIP">Klippkort</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+            {/* Product Type Filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
+                  style={{ backgroundColor: "#5aa6b81f" }}
+                >
+                  <Package
+                    className="w-3.5 h-3.5"
+                    style={{ color: "#5aa6b8" }}
+                  />
+                </div>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Produkttyp
+                </Label>
+              </div>
+              <Select
+                value={params.get("type") || "all"}
+                onValueChange={(value) =>
+                  setFilter("type", value === "all" ? "" : value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Välj typ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Välj produkttyp</SelectLabel>
+                    <SelectItem value="all">Alla</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="COURSE">Kurs</SelectItem>
+                    <SelectItem value="PACK">Paket</SelectItem>
+                    <SelectItem value="CLIP">Klippkort</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Age Group Filter */}
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Åldersgrupp
-        </Label>
-        <Select
-          value={params.get("adult") || "all"}
-          onValueChange={(value) =>
-            setFilter("adult", value === "all" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj åldersgrupp" />
-          </SelectTrigger>
+            {/* Age Group Filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
+                  style={{ backgroundColor: "#e87ea11f" }}
+                >
+                  <Users className="w-3.5 h-3.5" style={{ color: "#e87ea1" }} />
+                </div>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Åldersgrupp
+                </Label>
+              </div>
+              <Select
+                value={params.get("adult") || "all"}
+                onValueChange={(value) =>
+                  setFilter("adult", value === "all" ? "" : value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Välj åldersgrupp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Välj åldersgrupp</SelectLabel>
+                    <SelectItem value="all">Alla</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="false">Barn/Ungdom</SelectItem>
+                    <SelectItem value="true">Vuxen</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Välj åldersgrupp</SelectLabel>
-              <SelectItem value="all">Alla</SelectItem>
-              <SelectSeparator />
-              <SelectItem value="false">Barn/Ungdom</SelectItem>
-              <SelectItem value="true">Vuxen</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Sorting Filter */}
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Sortering
-        </Label>
-        <Select
-          value={params.get("sort") || "name-asc"}
-          onValueChange={(value) =>
-            setFilter("sort", value === "name-asc" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sortera efter" />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Sortera efter</SelectLabel>
-              <SelectItem value="name-asc">Namn (A-Ö)</SelectItem>
-              <SelectItem value="name-desc">Namn (Ö-A)</SelectItem>
-              <SelectSeparator />
-              <SelectItem value="price-asc">Pris (lägst först)</SelectItem>
-              <SelectItem value="price-desc">Pris (högst först)</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+            {/* Sorting Filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
+                  style={{ backgroundColor: "#e8a04d1f" }}
+                >
+                  <ArrowUpDown
+                    className="w-3.5 h-3.5"
+                    style={{ color: "#e8a04d" }}
+                  />
+                </div>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Sortering
+                </Label>
+              </div>
+              <Select
+                value={params.get("sort") || "name-asc"}
+                onValueChange={(value) =>
+                  setFilter("sort", value === "name-asc" ? "" : value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sortera efter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Sortera efter</SelectLabel>
+                    <SelectItem value="name-asc">Namn (A-Ö)</SelectItem>
+                    <SelectItem value="name-desc">Namn (Ö-A)</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="price-asc">
+                      Pris (lägst först)
+                    </SelectItem>
+                    <SelectItem value="price-desc">
+                      Pris (högst först)
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
