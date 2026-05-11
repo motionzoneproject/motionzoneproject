@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ManageCookiesLink } from "@/components/ManageCookiesLink";
 import { Button } from "@/components/ui/button";
 
 const quickLinks = [
@@ -154,7 +155,7 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} MotionZone Växjö.
           </p>
-          <nav className="flex gap-4">
+          <nav className="flex flex-wrap gap-4">
             {legalLinks.map((link) => (
               <Link
                 key={link.name}
@@ -164,6 +165,7 @@ const Footer = () => {
                 {link.name}
               </Link>
             ))}
+            <ManageCookiesLink />
           </nav>
         </div>
       </div>

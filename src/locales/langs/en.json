@@ -22,5 +22,19 @@
   "mode": {
     "light": "Light",
     "dark": "Dark"
+  },
+  "consent": {
+    "title": "We value your privacy",
+    "body": "We only use cookies that are strictly necessary for the site to function, plus an optional language preference. We do not use analytics or marketing cookies. You can change your choice at any time via the \"Manage cookies\" link in the footer.",
+    "accept_all": "Accept all",
+    "reject_optional": "Reject optional",
+    "customize": "Customize",
+    "save_preferences": "Save preferences",
+    "manage_link": "Manage cookies",
+    "necessary_label": "Strictly necessary",
+    "necessary_desc": "Required for sign-in, cart and security. Cannot be turned off.",
+    "preferences_label": "Preferences",
+    "preferences_desc": "Stores your language choice (Swedish or English) between visits.",
+    "read_policy": "Read our cookie policy"
   }
 }

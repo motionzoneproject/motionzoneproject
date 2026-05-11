@@ -22,5 +22,19 @@
   "mode": {
     "light": "Ljust",
     "dark": "Mörkt"
+  },
+  "consent": {
+    "title": "Vi värnar om din integritet",
+    "body": "Vi använder endast cookies som är nödvändiga för att webbplatsen ska fungera samt en valfri språkpreferens. Vi använder inga analys- eller marknadsföringscookies. Du kan när som helst ändra ditt val via länken \"Hantera cookies\" i sidfoten.",
+    "accept_all": "Godkänn alla",
+    "reject_optional": "Avböj valfria",
+    "customize": "Anpassa",
+    "save_preferences": "Spara val",
+    "manage_link": "Hantera cookies",
+    "necessary_label": "Nödvändiga",
+    "necessary_desc": "Krävs för inloggning, varukorg och säkerhet. Kan inte stängas av.",
+    "preferences_label": "Preferenser",
+    "preferences_desc": "Sparar ditt språkval (svenska eller engelska) mellan besök.",
+    "read_policy": "Läs vår cookiepolicy"
   }
 }
