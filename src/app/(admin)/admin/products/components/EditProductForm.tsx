@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -75,6 +75,7 @@ export default function EditProductForm({
   maxCustomers,
   initialLang = "sv",
 }: Props) {
+  const id = useId();
   const form = useForm<EditProductFormInput, unknown, EditProductFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -207,7 +208,7 @@ export default function EditProductForm({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90dvh] overflow-auto">
+      <DialogContent id={id} className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ändra produkt</DialogTitle>
           <DialogDescription>

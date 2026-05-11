@@ -1,18 +1,4 @@
-import {
-  Calendar,
-  Calendar1Icon,
-  CheckCircle2,
-  Clock,
-  EyeOffIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Calendar, CheckCircle2, Clock, EyeOffIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
 import {
@@ -24,6 +10,7 @@ import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
 import EditTerminForm from "./forms/EditTerminForm";
 import Schema from "./Schema";
+import { TerminScheduleDialogUI } from "./TerminScheduleDialogUI";
 
 interface Props {
   termin: Termin;
@@ -71,29 +58,14 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
       <TableCell className="p-3 text-right">
         <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
           <ToggleTerminActiveBtn terminId={termin.id} active={termin.active} />
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
-                <Calendar1Icon className="h-4 w-4" />
-                <span className="sr-only">Visa veckoschema</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {lang === "en" ? termin.name_en : termin.name}
-                  <br />
-                  veckoschema
-                </DialogTitle>
-              </DialogHeader>
-              <Schema
-                lang={lang}
-                allCourses={allCourses}
-                termin={termin}
-                schemaItems={schemaItems}
-              />
-            </DialogContent>
-          </Dialog>
+          <TerminScheduleDialogUI termin={termin} lang={lang}>
+            <Schema
+              lang={lang}
+              allCourses={allCourses}
+              termin={termin}
+              schemaItems={schemaItems}
+            />
+          </TerminScheduleDialogUI>
           <EditTerminForm termin={termin} />
           <DeleteTerminBtn terminId={termin.id} />
         </div>

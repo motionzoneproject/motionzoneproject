@@ -1,7 +1,7 @@
 "use client";
 
 import { EditIcon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,7 @@ interface Props {
 }
 
 export default function EditEventBtn({ event, initialLang }: Props) {
+  const id = useId();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -29,7 +30,10 @@ export default function EditEventBtn({ event, initialLang }: Props) {
           <EditIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-2xl">
+      <DialogContent
+        id={id}
+        className="max-h-[90dvh] overflow-auto sm:max-w-2xl"
+      >
         <DialogHeader>
           <DialogTitle>Redigera event</DialogTitle>
           <DialogDescription>
