@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 // Falls back to localhost so local builds and previews don't 404 on absolute URLs.
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 
+// CI builds (and prod cold-starts before the DB is reachable) shouldn't try to
+// prerender this route, since legalPage.findMany would fail. Force dynamic and
+// regenerate on request; sitemaps are tiny and crawled infrequently.
+export const dynamic = "force-dynamic";
+
 type StaticEntry = {
   path: string;
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
@@ -48,9 +53,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   );
 
-  const legalPages = await prisma.legalPage.findMany({
-    select: { slug: true, updatedAt: true },
-  });
+  // Belt-and-braces: if the DB is unreachable (CI without postgres, network
+  // hiccup) still serve the static portion of the sitemap.
+  let legalPages: { slug: string; updatedAt: Date }[] = [];
+  try {
+    legalPages = await prisma.legalPage.findMany({
+      select: { slug: true, updatedAt: true },
+    });
+  } catch {
+    legalPages = [];
+  }
 
   const legalEntries: MetadataRoute.Sitemap = legalPages.map((page) => {
     const url = `${SITE_URL}/${page.slug}`;
