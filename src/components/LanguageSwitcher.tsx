@@ -3,22 +3,29 @@
 import i18next from "i18next";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { allLangs } from "@/locales";
+import { allLangs, defaultLang, normalizeLang } from "@/locales";
 
 export default function LanguageSwitcher() {
-  const [currentLang, setCurrentLang] = useState("sv");
+  const [currentLang, setCurrentLang] = useState(defaultLang.value);
   const { t } = useTranslation();
 
   useEffect(() => {
-    const stored = localStorage.getItem("i18nextLng");
-    if (stored) setCurrentLang(stored.slice(0, 2));
-    if (stored) i18next.changeLanguage(stored.slice(0, 2));
+    const stored = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("i18nextLng="))
+      ?.split("=")[1];
+    const nextLang = normalizeLang(stored ?? i18next.resolvedLanguage);
+
+    setCurrentLang(nextLang);
+    void i18next.changeLanguage(nextLang);
   }, []);
 
   function handleChange(value: string) {
-    setCurrentLang(value);
-    localStorage.setItem("i18nextLng", value);
-    i18next.changeLanguage(value);
+    const nextLang = normalizeLang(value);
+    setCurrentLang(nextLang);
+    localStorage.setItem("i18nextLng", nextLang);
+    document.cookie = `i18nextLng=${nextLang}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    void i18next.changeLanguage(nextLang);
   }
 
   return (

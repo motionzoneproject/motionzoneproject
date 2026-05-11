@@ -14,3 +14,9 @@ export const allLangs = [
 ];
 
 export const defaultLang = allLangs[0]; // Svenska
+
+export type AppLang = "sv" | "en";
+
+export function normalizeLang(value?: string | null): AppLang {
+  return value === "en" ? "en" : "sv";
+}
