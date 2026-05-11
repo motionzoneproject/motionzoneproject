@@ -2,10 +2,12 @@
 
 import i18next from "i18next";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { allLangs } from "@/locales";
 
 export default function LanguageSwitcher() {
   const [currentLang, setCurrentLang] = useState("sv");
+  const { t } = useTranslation();
 
   useEffect(() => {
     const stored = localStorage.getItem("i18nextLng");
@@ -34,7 +36,7 @@ export default function LanguageSwitcher() {
                 ? "bg-brand/10 scale-105"
                 : "opacity-50 hover:opacity-100 hover:bg-brand/5"
             }`}
-            aria-label={`Byt till ${lang.label}`}
+            aria-label={t("language.switchTo", { language: lang.label })}
             aria-pressed={isActive}
           >
             {lang.shortLabel}

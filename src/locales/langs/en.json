@@ -3,13 +3,24 @@
     "home": "Home",
     "courses": "Courses",
     "about": "About us",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "auth": {
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "profileAndBook": "Profile & book",
+    "admin": "Admin"
   },
   "cart": {
     "title": "Cart"
+  },
+  "language": {
+    "switchTo": "Switch to {{language}}"
+  },
+  "mode": {
+    "light": "Light",
+    "dark": "Dark"
   }
 }

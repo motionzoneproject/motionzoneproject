@@ -3,13 +3,24 @@
     "home": "Hem",
     "courses": "Kurser",
     "about": "Om oss",
-    "gallery": "Galleri"
+    "gallery": "Galleri",
+    "openMenu": "Öppna meny",
+    "closeMenu": "Stäng meny"
   },
   "auth": {
     "signIn": "Logga in",
-    "signOut": "Logga ut"
+    "signOut": "Logga ut",
+    "profileAndBook": "Profil & boka",
+    "admin": "Admin"
   },
   "cart": {
     "title": "Varukorg"
+  },
+  "language": {
+    "switchTo": "Byt till {{language}}"
+  },
+  "mode": {
+    "light": "Ljust",
+    "dark": "Mörkt"
   }
 }

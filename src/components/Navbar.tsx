@@ -93,7 +93,7 @@ export default function NavBar() {
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
           className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center border border-brand/20 text-foreground hover:border-brand/50 hover:bg-brand/5 transition-all duration-200"
-          aria-label={menuOpen ? "Stäng meny" : "Öppna meny"}
+          aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={menuOpen}
           aria-controls={MOBILE_MENU_ID}
         >
