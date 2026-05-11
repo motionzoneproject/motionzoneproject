@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import { getLegalPageBySlug } from "@/lib/actions/legal-actions";
 import { normalizeLang } from "@/locales";
+import { getDictionary } from "@/locales/get-dictionary";
 
 const LEGAL_SLUGS = ["integritetspolicy", "cookiepolicy", "kopvillkor"];
 
@@ -68,8 +69,7 @@ export default async function LegalPage({ params }: Props) {
     notFound();
   }
 
-  const cookieStore = await cookies();
-  const lang = normalizeLang(cookieStore.get("i18nextLng")?.value);
+  const { lang, t } = await getDictionary();
 
   const title =
     lang === "en" && page.title_en && page.title_en.length > 0
@@ -80,7 +80,7 @@ export default async function LegalPage({ params }: Props) {
       ? page.content_en
       : page.content;
   const locale = lang === "en" ? "en-GB" : "sv-SE";
-  const updatedLabel = lang === "en" ? "Last updated" : "Senast uppdaterad";
+  const updatedLabel = t.legal.lastUpdated;
 
   const webPageLd = {
     "@context": "https://schema.org",

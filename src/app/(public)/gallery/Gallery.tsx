@@ -2,6 +2,7 @@
 
 import { Filter, Play } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import "react-photo-album/masonry.css";
 import Lightbox from "yet-another-react-lightbox";
@@ -63,6 +64,7 @@ function buildSlides(items: GalleryMediaItem[]) {
 }
 
 export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
+  const { t } = useTranslation();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [eventFilter, setEventFilter] = useState("ALL");
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -132,10 +134,13 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
             <Filter className="h-4 w-4" />
-            Filtrera galleriet
+            {t("gallery.filterTitle")}
           </div>
           <p className="text-sm text-muted-foreground">
-            {filteredItems.length} av {items.length} objekt visas.
+            {t("gallery.filterStatus", {
+              shown: filteredItems.length,
+              total: items.length,
+            })}
           </p>
         </div>
 
@@ -145,21 +150,21 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
             onValueChange={(v) => setTypeFilter(v as TypeFilter)}
           >
             <SelectTrigger className="w-full min-w-40 bg-background sm:w-40">
-              <SelectValue placeholder="Alla" />
+              <SelectValue placeholder={t("gallery.typeAll")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Alla</SelectItem>
-              <SelectItem value="IMAGE">Bilder</SelectItem>
-              <SelectItem value="VIDEO">Video</SelectItem>
+              <SelectItem value="ALL">{t("gallery.typeAll")}</SelectItem>
+              <SelectItem value="IMAGE">{t("gallery.typeImage")}</SelectItem>
+              <SelectItem value="VIDEO">{t("gallery.typeVideo")}</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={eventFilter} onValueChange={setEventFilter}>
             <SelectTrigger className="w-full min-w-55 bg-background sm:w-55">
-              <SelectValue placeholder="Alla event" />
+              <SelectValue placeholder={t("gallery.eventAll")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Alla event</SelectItem>
+              <SelectItem value="ALL">{t("gallery.eventAll")}</SelectItem>
               {eventOptions.map((eventOption) => (
                 <SelectItem key={eventOption.id} value={eventOption.id}>
                   {eventOption.headline}
@@ -174,10 +179,10 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
       {filteredItems.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/40 px-6 py-16 text-center">
           <p className="text-lg font-medium text-foreground">
-            Inget media matchar filtren.
+            {t("gallery.emptyTitle")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Prova att visa alla objekt eller byta eventfilter.
+            {t("gallery.emptyHint")}
           </p>
         </div>
       ) : (

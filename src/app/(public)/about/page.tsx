@@ -5,6 +5,8 @@ import LarareProfile from "@/components/larare-profile";
 import JsonLd from "@/components/seo/JsonLd";
 import { getStudios } from "@/lib/actions/studio-actions";
 import { getStyles } from "@/lib/actions/style-actions";
+import { pick } from "@/lib/i18n/pick";
+import { getDictionary } from "@/locales/get-dictionary";
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 
@@ -40,6 +42,7 @@ export const metadata: Metadata = {
 };
 
 export default async function About() {
+  const { lang, t } = await getDictionary();
   const [studios, styles] = await Promise.all([getStudios(), getStyles()]);
   const activeStudios = studios.filter((studio) => studio.active);
   const studioContentMaxWidth = Math.min(
@@ -67,14 +70,14 @@ export default async function About() {
       <section className="border-b border-border py-20 text-center md:py-32">
         <div className="mx-auto max-w-7xl px-6">
           <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-7xl">
-            Om vår
+            {t.about.heroTitleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}
-              Dansstudio
+              {t.about.heroTitleAccent}
             </span>
           </h1>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            En plats där rörelse möter gemenskap, kreativitet och passion.
+            {t.about.heroSubtitle}
           </p>
         </div>
       </section>
@@ -86,38 +89,44 @@ export default async function About() {
       <section className="bg-muted/50 py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <h2 className="mb-4 text-4xl md:text-5xl font-black text-foreground">
-            Våra lokaler
+            {t.about.studiosTitle}
           </h2>
           {activeStudios.length === 0 ? (
-            <p className="mb-8 text-muted-foreground">
-              Information om våra studios kommer snart.
-            </p>
+            <p className="mb-8 text-muted-foreground">{t.about.studiosEmpty}</p>
           ) : (
             <div
               className="mx-auto w-full max-w-full"
               style={{ maxWidth: `${studioContentMaxWidth}px` }}
             >
               <div className="flex flex-wrap justify-center gap-6">
-                {activeStudios.map((studio) => (
-                  <div
-                    key={studio.id}
-                    className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
-                  >
-                    {studio.imageUrl && (
-                      <Image
-                        src={studio.imageUrl}
-                        alt={studio.name}
-                        height={220}
-                        width={420}
-                        className="mb-4 h-[220px] w-full rounded-lg object-cover"
-                      />
-                    )}
-                    <h3 className="text-lg font-semibold">{studio.name}</h3>
-                    <p className="mt-2 text-muted-foreground">
-                      {studio.description}
-                    </p>
-                  </div>
-                ))}
+                {activeStudios.map((studio) => {
+                  const studioName = pick(studio, "name", lang) as string;
+                  const studioDescription = pick(
+                    studio,
+                    "description",
+                    lang,
+                  ) as string;
+                  return (
+                    <div
+                      key={studio.id}
+                      className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
+                    >
+                      {studio.imageUrl && (
+                        <Image
+                          src={studio.imageUrl}
+                          alt={studioName}
+                          height={220}
+                          width={420}
+                          className="mb-4 h-[220px] w-full rounded-lg object-cover"
+                        />
+                      )}
+                      <h3 className="text-lg font-semibold">{studioName}</h3>
+                      <p className="mt-2 text-muted-foreground">
+                        {studioDescription}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -125,9 +134,9 @@ export default async function About() {
           <div className="relative mt-6 overflow-hidden rounded-2xl border border-brand/30 bg-brand/10 p-7 backdrop-blur-sm">
             <div className="absolute top-0 left-0 h-full w-1 rounded-l-2xl bg-brand" />
             <p className="text-xl  leading-snug text-foreground">
-              Här är alla välkomna –{" "}
+              {t.about.welcomePrefix}{" "}
               <span className="font-serif italic text-brand-light">
-                oavsett nivå.
+                {t.about.welcomeAccent}
               </span>
             </p>
           </div>

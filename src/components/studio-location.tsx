@@ -2,6 +2,7 @@
 
 import { MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslation } from "react-i18next";
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), {
   ssr: false,
@@ -9,6 +10,7 @@ const LeafletMap = dynamic(() => import("./leaflet-map"), {
 });
 
 export default function StudioLocation() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden w-full py-20 md:py-32">
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand/10 blur-[120px] rounded-full pointer-events-none" />
@@ -19,14 +21,16 @@ export default function StudioLocation() {
             <div className="flex items-center gap-3 mb-6">
               <span className="h-[2px] w-8 bg-brand" />
               <p className="text-brand-secondary font-bold tracking-[0.2em] uppercase text-sm">
-                Hitta till oss
+                {t("studio.kicker")}
               </p>
             </div>
 
             <h2 className="text-4xl md:text-6xl font-light text-foreground leading-tight mb-8">
-              Besök vår{" "}
-              <span className="font-serif italic text-brand-light">Studio</span>{" "}
-              i Växjö
+              {t("studio.titlePrefix")}{" "}
+              <span className="font-serif italic text-brand-light">
+                {t("studio.titleAccent")}
+              </span>{" "}
+              {t("studio.titleSuffix")}
             </h2>
 
             <div className="space-y-6 text-muted-foreground">
@@ -36,7 +40,7 @@ export default function StudioLocation() {
                 </div>
                 <div>
                   <h4 className="text-foreground font-medium text-lg">
-                    Adress
+                    {t("studio.addressLabel")}
                   </h4>
                   <p className="text-foreground font-light">
                     Smedsvängen 70
@@ -47,8 +51,7 @@ export default function StudioLocation() {
               </div>
 
               <p className="text-foreground leading-relaxed font-light max-w-md">
-                Vi finns belägna i moderna lokaler anpassade för rörelse och
-                kreativitet.
+                {t("studio.addressBody")}
               </p>
 
               <a
@@ -57,7 +60,7 @@ export default function StudioLocation() {
                 rel="noopener noreferrer"
                 className="inline-block mt-4 px-8 py-3 border shadow border-brand-secondary text-foreground font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-white hover:text-black transition-all duration-300"
               >
-                Öppna i Google Maps
+                {t("studio.openInMaps")}
               </a>
             </div>
           </div>

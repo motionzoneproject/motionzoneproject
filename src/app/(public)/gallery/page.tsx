@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getActiveGalleryItems } from "@/lib/actions/gallery";
+import { getDictionary } from "@/locales/get-dictionary";
 import Gallery from "./Gallery";
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
@@ -40,6 +41,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+  const { t } = await getDictionary();
   const mediaItems = await getActiveGalleryItems();
 
   return (
@@ -48,12 +50,13 @@ export default async function Page() {
       <section className="py-16 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
-            Bild & Video
-            <span className="font-serif italic text-brand-light"> Galleri</span>
+            {t.gallery.title1}
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              {t.gallery.titleAccent}
+            </span>
           </h1>
-          <p className="text-muted-foreground mb-4">
-            Se bilder och videor från våra lektioner, uppträdanden och studio.
-          </p>
+          <p className="text-muted-foreground mb-4">{t.gallery.subtitle}</p>
         </div>
       </section>
 
@@ -82,10 +85,10 @@ export default async function Page() {
 
                 <div>
                   <h2 className="text-3xl md:text-4xl font-black mb-2 text-foreground tracking-tight">
-                    Följ oss på Instagram
+                    {t.gallery.instagramTitle}
                   </h2>
                   <p className="text-muted-foreground text-lg mb-4">
-                    Se fler bilder och håll dig uppdaterad om våra aktiviteter.
+                    {t.gallery.instagramSubtitle}
                   </p>
                 </div>
 

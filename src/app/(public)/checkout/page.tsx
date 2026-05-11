@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMyParticipants } from "@/lib/actions/participants";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { readCart } from "@/lib/cart";
+import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
+import { getDictionary } from "@/locales/get-dictionary";
 import CartSummary from "./CartSummary";
 import CheckoutForm from "./CheckoutForm";
 
@@ -19,6 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+  const { lang, t } = await getDictionary();
   const session = await getSessionData();
   const cart = await readCart();
   const hasItems = cart.items.length > 0;
@@ -29,7 +32,7 @@ export default async function Page() {
     const ids = cart.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: ids }, active: true },
-      select: { id: true, name: true, price: true },
+      select: { id: true, name: true, name_en: true, price: true },
     });
 
     const byId = new Map(products.map((p) => [p.id, p]));
@@ -38,7 +41,7 @@ export default async function Page() {
       const p = byId.get(it.productId);
       return {
         productId: it.productId,
-        name: p?.name ?? "Okänd",
+        name: p ? (pick(p, "name", lang) as string) : t.common.unknown,
         qty: it.qty,
         price: p?.price ?? 0,
       };
@@ -66,16 +69,18 @@ export default async function Page() {
     <div className="flex-1 bg-background py-12">
       <div className="max-w-2xl mx-auto px-4 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Varukorg</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {t.checkout.title}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            {hasItems ? "Granska din beställning" : "Din varukorg är tom"}
+            {hasItems ? t.checkout.subtitleHasItems : t.checkout.subtitleEmpty}
           </p>
         </div>
 
         {/* Cart Summary - Always visible */}
         <Card>
           <CardHeader>
-            <CardTitle>Dina produkter</CardTitle>
+            <CardTitle>{t.checkout.yourProducts}</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -90,11 +95,11 @@ export default async function Page() {
           ) : (
             <Card>
               <CardHeader className="text-center">
-                <CardTitle>Logga in för att slutföra köpet</CardTitle>
+                <CardTitle>{t.checkout.loginRequiredTitle}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground text-center text-sm">
-                  Du måste vara inloggad för att slutföra ett köp.
+                  {t.checkout.loginRequiredBody}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
@@ -106,7 +111,7 @@ export default async function Page() {
                         "/checkout",
                       )}`}
                     >
-                      Logga in
+                      {t.checkout.signIn}
                     </Link>
                   </Button>
                   <Button asChild variant="outline" className="flex-1">
@@ -115,7 +120,7 @@ export default async function Page() {
                         "/checkout",
                       )}`}
                     >
-                      Skapa konto
+                      {t.checkout.signUp}
                     </Link>
                   </Button>
                 </div>

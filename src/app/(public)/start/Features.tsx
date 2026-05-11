@@ -1,7 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 import type { StartPageContent } from "@/generated/prisma/client";
+import { pick } from "@/lib/i18n/pick";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 
 type FeaturesProps = {
   content: StartPageContent;
@@ -24,23 +28,26 @@ const cardAccents = [
 ] as const;
 
 export default function Features({ content }: FeaturesProps) {
+  const { i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
+
   const features = [
     {
       image: content.feature1Image,
-      title: content.feature1Title,
-      description: content.feature1Description,
+      title: pick(content, "feature1Title", lang),
+      description: pick(content, "feature1Description", lang),
       ...cardAccents[0],
     },
     {
       image: content.feature2Image,
-      title: content.feature2Title,
-      description: content.feature2Description,
+      title: pick(content, "feature2Title", lang),
+      description: pick(content, "feature2Description", lang),
       ...cardAccents[1],
     },
     {
       image: content.feature3Image,
-      title: content.feature3Title,
-      description: content.feature3Description,
+      title: pick(content, "feature3Title", lang),
+      description: pick(content, "feature3Description", lang),
       ...cardAccents[2],
     },
   ];
@@ -59,10 +66,10 @@ export default function Features({ content }: FeaturesProps) {
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
-            {content.featuresTitle}
+            {pick(content, "featuresTitle", lang)}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-            {content.featuresSubtext}
+            {pick(content, "featuresSubtext", lang)}
           </p>
         </div>
 

@@ -28,9 +28,11 @@ import {
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
 import { getCourseName, getVeckodag } from "@/lib/tools";
+import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
 
@@ -80,6 +82,8 @@ export const metadata: Metadata = {
 
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
+  const { lang, t } = await getDictionary();
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
 
   // Build filters based on search params
   const filters = {
@@ -270,7 +274,7 @@ export default async function Page({ searchParams }: Props) {
       seenCourseIds.add(course.id);
       courseListItems.push({
         id: course.id,
-        name: getCourseName(course, "sv"),
+        name: getCourseName(course, lang),
       });
     }
   }
@@ -329,31 +333,33 @@ export default async function Page({ searchParams }: Props) {
           </p> */}
 
           <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
-            Köp tillgång till våra
-            <span className="font-serif italic text-brand-light"> kurser</span>
+            {t.coursesPage.titleLine1}
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              {t.coursesPage.titleAccent}
+            </span>
           </h1>
           <div className="w-full">
-            <p className="text-muted-foreground">
-              Vid köp blir du samtidigt medlem hos Motion Zone. Du kan även köpa
-              kurser till exempelvis dina barn genom att enkelt lägga till
-              deltagare i kundkorgen. När köpet är klart loggar du in och bokar
-              de lektioner ni vill gå.
-            </p>
+            <p className="text-muted-foreground">{t.coursesPage.intro}</p>
 
             <CoursesFilter />
           </div>
         </div>
         {/* Filter component */}
-        <p className="font-bold mt-4">Våra produkter</p>
+        <p className="font-bold mt-4">{t.coursesPage.ourProducts}</p>
 
         {totalProducts > 0 ? (
           <>
             {/* Results count */}
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
               <span>
-                Visar {skip + 1}-
-                {Math.min(skip + ITEMS_PER_PAGE, totalProducts)} av{" "}
-                {totalProducts} produkter
+                {t.coursesPage.showingRange
+                  .replace("{{from}}", String(skip + 1))
+                  .replace(
+                    "{{to}}",
+                    String(Math.min(skip + ITEMS_PER_PAGE, totalProducts)),
+                  )
+                  .replace("{{total}}", String(totalProducts))}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -368,7 +374,7 @@ export default async function Page({ searchParams }: Props) {
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
                         <Badge className="font-bold text-lg bg-brand text-white border-0">
-                          {formatPrice(p.price)}
+                          {formatPrice(p.price, lang)}
                         </Badge>
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
@@ -380,7 +386,10 @@ export default async function Page({ searchParams }: Props) {
                               p.spotsLeft <= 4 ? "text-white" : "text-green-500"
                             }
                           >
-                            {`${p.spotsLeft} platser kvar`}
+                            {t.coursesPage.spotsLeft.replace(
+                              "{{count}}",
+                              String(p.spotsLeft),
+                            )}
                           </Badge>
                         ) : p.spotsLeft === Infinity ? (
                           <Badge variant={"outline"}>
@@ -388,14 +397,20 @@ export default async function Page({ searchParams }: Props) {
                           </Badge>
                         ) : (
                           <Badge variant={"destructive"}>
-                            <Info /> Osäkert
+                            <Info /> {t.coursesPage.spotsUncertain}
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-lg">{p.name}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {pick(p, "name", lang) as string}
+                      </CardTitle>
                       <CardDescription className="whitespace-pre-line">
-                        Produkttyp:{" "}
-                        {p.type === "CLIP" ? "Klippkort" : "Kurs/paket"}
+                        {t.coursesPage.productTypeLabel.replace(
+                          "{{type}}",
+                          p.type === "CLIP"
+                            ? t.coursesPage.productTypeClip
+                            : t.coursesPage.productTypeCourse,
+                        )}
                       </CardDescription>
                     </CardHeader>
 
@@ -404,7 +419,7 @@ export default async function Page({ searchParams }: Props) {
                         <div className="overflow-hidden max-h-64 rounded-md">
                           <Image
                             src={p.imageURL}
-                            alt={p.name}
+                            alt={pick(p, "name", lang) as string}
                             width={800}
                             height={600}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -415,14 +430,16 @@ export default async function Page({ searchParams }: Props) {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <CalendarDays className="w-3 h-3" />
-                          Giltig under
+                          {t.coursesPage.validDuring}
                         </div>
-                        {p.terminer.map((t) => (
+                        {p.terminer.map((termin) => (
                           <div
-                            key={t.id}
+                            key={termin.id}
                             className="text-sm bg-muted p-2 rounded border border-border"
                           >
-                            <p className="font-medium">{t.name}</p>
+                            <p className="font-medium">
+                              {pick(termin, "name", lang) as string}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -430,30 +447,41 @@ export default async function Page({ searchParams }: Props) {
                       <Accordion type="single" collapsible>
                         <AccordionItem value="description">
                           <AccordionTrigger className="text-sm hover:text-brand">
-                            Om Produkten
+                            {t.coursesPage.aboutProduct}
                           </AccordionTrigger>
                           <AccordionContent className="whitespace-pre-line">
-                            {p.description && ` – ${p.description}`}
+                            {(() => {
+                              const desc = pick(
+                                p,
+                                "description",
+                                lang,
+                              ) as string;
+                              return desc ? ` – ${desc}` : "";
+                            })()}
                           </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-1">
                           <AccordionTrigger className="text-sm hover:text-brand">
-                            Innehåll och Schema
+                            {t.coursesPage.contentSchedule}
                           </AccordionTrigger>
                           <AccordionContent>
                             <div className="space-y-3 text-sm">
                               <div>
                                 <span className="font-medium text-sm flex items-center gap-1 mb-2">
-                                  <Book className="w-3 h-3" /> Kurser som ingår:
+                                  <Book className="w-3 h-3" />{" "}
+                                  {t.coursesPage.coursesIncluded}
                                 </span>
                                 {productCourses.map((pc) => {
                                   const c = pc.course;
 
                                   const lessonCount =
                                     p.type === "CLIP"
-                                      ? `${String(p.totalCount ?? 0)} (klipp)`
+                                      ? t.coursesPage.lessonCountClip.replace(
+                                          "{{count}}",
+                                          String(p.totalCount ?? 0),
+                                        )
                                       : pc.unlimited
-                                        ? "Obegränsat"
+                                        ? t.coursesPage.lessonCountUnlimited
                                         : String(pc.lessonsIncluded);
 
                                   return (
@@ -463,13 +491,16 @@ export default async function Page({ searchParams }: Props) {
                                     >
                                       <div className="flex justify-between gap-2 mb-1 items-center">
                                         <div className="font-medium">
-                                          {`${getCourseName(c)}`}
+                                          {`${getCourseName(c, lang)}`}
                                         </div>
 
                                         <CourseInfoDialog course={c} />
                                       </div>
                                       <p className="text-muted-foreground text-xs">
-                                        Antal Tillfällen: {lessonCount}
+                                        {t.coursesPage.lessonCountLabel.replace(
+                                          "{{count}}",
+                                          lessonCount,
+                                        )}
                                       </p>
                                       <div className="mt-2">
                                         {p.schemaItems
@@ -480,13 +511,19 @@ export default async function Page({ searchParams }: Props) {
                                               className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
                                             >
                                               <p className="font-medium">
-                                                {s.termin.name}
+                                                {
+                                                  pick(
+                                                    s.termin,
+                                                    "name",
+                                                    lang,
+                                                  ) as string
+                                                }
                                               </p>
                                               <p className="flex items-center text-muted-foreground">
-                                                {getVeckodag(s.weekday)}{" "}
+                                                {getVeckodag(s.weekday, lang)}{" "}
                                                 <Clock className="inline w-3 h-3 mx-1" />
                                                 {s.timeStart.toLocaleTimeString(
-                                                  "sv-SE",
+                                                  dateLocale,
                                                   {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
@@ -494,7 +531,7 @@ export default async function Page({ searchParams }: Props) {
                                                 )}
                                                 –
                                                 {s.timeEnd.toLocaleTimeString(
-                                                  "sv-SE",
+                                                  dateLocale,
                                                   {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
@@ -504,11 +541,35 @@ export default async function Page({ searchParams }: Props) {
                                               {s.place && (
                                                 <p className="text-brand flex items-center gap-1 mt-1">
                                                   <MapPin className="w-3 h-3" />
-                                                  {s.place}
+                                                  {
+                                                    pick(
+                                                      s,
+                                                      "place",
+                                                      lang,
+                                                    ) as string
+                                                  }
                                                 </p>
                                               )}
                                               <div className="mt-2">
-                                                {`Period: ${(s.customStartDate ?? s.termin.startDate).toLocaleDateString("sv-SE")} - ${(s.customEndDate ?? s.termin.endDate).toLocaleDateString("sv-SE")}`}
+                                                {t.coursesPage.period
+                                                  .replace(
+                                                    "{{from}}",
+                                                    (
+                                                      s.customStartDate ??
+                                                      s.termin.startDate
+                                                    ).toLocaleDateString(
+                                                      dateLocale,
+                                                    ),
+                                                  )
+                                                  .replace(
+                                                    "{{to}}",
+                                                    (
+                                                      s.customEndDate ??
+                                                      s.termin.endDate
+                                                    ).toLocaleDateString(
+                                                      dateLocale,
+                                                    ),
+                                                  )}
                                               </div>
                                             </div>
                                           ))}
@@ -539,7 +600,7 @@ export default async function Page({ searchParams }: Props) {
                           disabled={p.spotsLeft === 0}
                           className="w-full bg-brand hover:bg-brand-light text-white font-medium"
                         >
-                          Köp nu →
+                          {t.coursesPage.buyNow}
                         </Button>
                       </form>
                     </CardFooter>
@@ -558,9 +619,7 @@ export default async function Page({ searchParams }: Props) {
           </>
         ) : (
           <div className="text-center py-12 border rounded-lg bg-muted/20 mt-4">
-            <p className="text-muted-foreground">
-              Inga produkter hittades med nuvarande filter.
-            </p>
+            <p className="text-muted-foreground">{t.coursesPage.noProducts}</p>
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { PlusIcon } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,10 @@ import {
 import { addUserInLesson } from "@/lib/actions/admin";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
 import type { UserPurchaseWithProduct } from "@/lib/actions/server-actions";
+import { pick } from "@/lib/i18n/pick";
 import { useSession } from "@/lib/session-provider";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 import { AdminAddUserInLessonSchema } from "@/validations/adminforms";
 
 const formSchema = AdminAddUserInLessonSchema;
@@ -59,6 +63,8 @@ export default function AddTerminForm({
   disabled,
 }: Props) {
   const { user } = useSession();
+  const { t, i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
@@ -99,13 +105,13 @@ export default function AddTerminForm({
           disabled={!!disabled}
         >
           <PlusIcon className="h-4 w-4" />
-          Boka
+          {t("user.booking.book")}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Boka lektionen</DialogTitle>
+          <DialogTitle>{t("user.booking.bookDialogTitle")}</DialogTitle>
         </DialogHeader>
 
         <Card>
@@ -148,7 +154,7 @@ export default function AddTerminForm({
                   name="purchaseItemId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Välj kurs:</FormLabel>
+                      <FormLabel>{t("user.booking.selectCourse")}</FormLabel>
 
                       <FormControl>
                         <Select
@@ -161,12 +167,18 @@ export default function AddTerminForm({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Välj kurs" />
+                              <SelectValue
+                                placeholder={t(
+                                  "user.booking.selectCoursePlaceholder",
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectLabel>Välj kurs</SelectLabel>
+                              <SelectLabel>
+                                {t("user.booking.selectCourseGroup")}
+                              </SelectLabel>
                               {purschaseItems.map((c) => {
                                 const remaining = calcRemainingCount({
                                   purchase: c.purchase,
@@ -175,9 +187,21 @@ export default function AddTerminForm({
 
                                 return (
                                   <SelectItem key={c.id} value={c.id}>
-                                    {c.purchase.product.name} (
-                                    {c.purchase.participant?.name ?? "Du"}) (
-                                    {remaining === Infinity ? "∞" : remaining})
+                                    {
+                                      pick(
+                                        c.purchase.product,
+                                        "name",
+                                        lang,
+                                      ) as string
+                                    }{" "}
+                                    (
+                                    {c.purchase.participant?.name ??
+                                      t("user.booking.yourselfFallback")}
+                                    ) (
+                                    {remaining === Infinity
+                                      ? t("common.infinitySymbol")
+                                      : remaining}
+                                    )
                                   </SelectItem>
                                 );
                               })}
@@ -192,7 +216,7 @@ export default function AddTerminForm({
                 />
 
                 <Button type="submit" className="w-full">
-                  Boka
+                  {t("user.booking.submitBook")}
                 </Button>
               </form>
             </Form>
@@ -202,7 +226,7 @@ export default function AddTerminForm({
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button type="button" variant="secondary">
-              Close
+              {t("user.booking.close")}
             </Button>
           </DialogClose>
         </DialogFooter>
