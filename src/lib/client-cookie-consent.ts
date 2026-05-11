@@ -6,7 +6,7 @@ import {
   COOKIE_CONSENT_VERSION,
   type CookieConsentValue,
   parseCookieConsent,
-} from "./cookie-consent";
+} from "./cookie-consent.shared";
 
 type CookieStoreLike = {
   get(name: string): Promise<{ value?: string } | null>;
