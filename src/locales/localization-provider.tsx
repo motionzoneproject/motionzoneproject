@@ -12,6 +12,9 @@ type Props = {
 };
 
 export default function LocalizationProvider({ children, lang }: Props) {
+  // Sync render-time so the first paint of children matches the server lang
+  // and we don't flash Swedish strings into an English page. changeLanguage
+  // is idempotent.
   const currentLang = (i18n.resolvedLanguage ?? i18n.language ?? "").slice(
     0,
     2,
