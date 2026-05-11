@@ -31,14 +31,14 @@ import BookBtn from "./BookBtn";
 interface Props {
   lessons: LessonWithCourse[]; // Alla lektioner i alla kurser som kunden har tillgång till.
   bookings: BookingWithLesson[]; // Alla bokningar gjorda av kunden.
-  purschaseItems: UserPurchaseWithProduct[]; // Alla produkter (purschaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
+  purchaseItems: UserPurchaseWithProduct[]; // Alla produkter (purchaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
   initDate?: Date;
 }
 
 export default function BookingCal({
   lessons,
   bookings,
-  purschaseItems,
+  purchaseItems,
   initDate,
 }: Props) {
   const { t, i18n } = useTranslation();
@@ -61,7 +61,7 @@ export default function BookingCal({
       .filter((lesson) => {
         if (lesson.cancelled || lesson.startTime.getTime() < now) return false;
 
-        const lessonPurchaseItems = purschaseItems.filter(
+        const lessonPurchaseItems = purchaseItems.filter(
           (itm) => itm.courseId === lesson.courseId,
         );
 
@@ -111,7 +111,7 @@ export default function BookingCal({
         return false;
       })
       .map((l) => new Date(l.startTime));
-  }, [lessons, purschaseItems, bookings]);
+  }, [lessons, purchaseItems, bookings]);
 
   const cancelledDays = useMemo(
     () => lessons.filter((l) => l.cancelled).map((l) => new Date(l.startTime)),
@@ -196,7 +196,7 @@ export default function BookingCal({
               // mappa lektionerna för det valda datumet.
               selectedDateLessons.map((lesson) => {
                 // Samla purchaseItems som kunden äger för den lektionen
-                const lessonPurchaseItems = purschaseItems.filter(
+                const lessonPurchaseItems = purchaseItems.filter(
                   (itm) => itm.courseId === lesson.courseId,
                 );
 
@@ -350,7 +350,7 @@ export default function BookingCal({
                         {canBookMore && (
                           <BookBtn
                             lessonId={lesson.id}
-                            purschaseItems={availablePurchaseItems}
+                            purchaseItems={availablePurchaseItems}
                             disabled={lesson.startTime.getTime() < now}
                           />
                         )}

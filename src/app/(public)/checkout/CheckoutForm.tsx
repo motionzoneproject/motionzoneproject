@@ -242,10 +242,11 @@ export default function CheckoutForm({
                         !slot.participantId) && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-xs" htmlFor={`name-${key}`}>
                               {t("checkout.form.name")}
                             </Label>
                             <Input
+                              id={`name-${key}`}
                               placeholder={t("checkout.form.namePlaceholder")}
                               value={slot.customData?.name || ""}
                               onChange={(e) =>
@@ -262,10 +263,11 @@ export default function CheckoutForm({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-xs" htmlFor={`email-${key}`}>
                               {t("checkout.form.emailOptional")}
                             </Label>
                             <Input
+                              id={`email-${key}`}
                               type="email"
                               placeholder={t("checkout.form.emailPlaceholder")}
                               value={slot.customData?.email || ""}
@@ -283,10 +285,11 @@ export default function CheckoutForm({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-xs" htmlFor={`phone-${key}`}>
                               {t("checkout.form.phoneOptional")}
                             </Label>
                             <Input
+                              id={`phone-${key}`}
                               placeholder={t("checkout.form.phonePlaceholder")}
                               value={slot.customData?.phone || ""}
                               onChange={(e) =>

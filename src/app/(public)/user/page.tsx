@@ -67,12 +67,12 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
-  const purschaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
+  const purchaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
 
-  const groupedPurchases = purschaseItems.reduce(
+  const groupedPurchases = purchaseItems.reduce(
     (acc, item) => {
       const purchaseId = item.purchaseId;
       if (!acc[purchaseId]) {
@@ -84,7 +84,7 @@ export default async function Page() {
       acc[purchaseId].items.push(item);
       return acc;
     },
-    {} as Record<string, { productName: string; items: typeof purschaseItems }>,
+    {} as Record<string, { productName: string; items: typeof purchaseItems }>,
   );
 
   return (
@@ -126,7 +126,7 @@ export default async function Page() {
               {t.user.bookings}
             </h3>
             <BookingCal
-              purschaseItems={purschaseItems}
+              purchaseItems={purchaseItems}
               lessons={lessons}
               bookings={bookings}
             />

@@ -53,13 +53,13 @@ type FormOutput = z.output<typeof formSchema>;
 
 interface Props {
   lessonId: string;
-  purschaseItems: UserPurchaseWithProduct[];
+  purchaseItems: UserPurchaseWithProduct[];
   disabled?: boolean;
 }
 
 export default function AddTerminForm({
   lessonId,
-  purschaseItems,
+  purchaseItems,
   disabled,
 }: Props) {
   const { user } = useSession();
@@ -179,7 +179,7 @@ export default function AddTerminForm({
                               <SelectLabel>
                                 {t("user.booking.selectCourseGroup")}
                               </SelectLabel>
-                              {purschaseItems.map((c) => {
+                              {purchaseItems.map((c) => {
                                 const remaining = calcRemainingCount({
                                   purchase: c.purchase,
                                   purchaseItem: c,
