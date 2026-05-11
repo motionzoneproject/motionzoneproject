@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,7 +58,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: course.name,
+      name_en: course.name_en ?? "",
       description: course.description,
+      description_en: course.description_en ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
@@ -75,10 +78,13 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
     form.reset({
       name: course.name,
+      name_en: course.name_en ?? "",
       description: course.description,
+      description_en: course.description_en ?? "",
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
+      level_en: course.level_en ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
     });
@@ -86,12 +92,15 @@ export default function EditCourseForm({ course, teachers }: Props) {
     isOpen,
     form,
     course.name,
+    course.name_en,
     course.description,
+    course.description_en,
     course.minAge,
     course.maxAge,
     course.level,
     course.adult,
     course.teacherId,
+    course.level_en,
   ]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -110,6 +119,9 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
   const maxAgeValue = form.watch("maxAge");
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
+  const [formLang, setFormLang] = useState("sv");
+
+  const _key = crypto.randomUUID();
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -127,6 +139,14 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e)}
+              />
+            </div>
+
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -134,10 +154,11 @@ export default function EditCourseForm({ course, teachers }: Props) {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                      <FormLabel>Kursnamn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -148,10 +169,11 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="description"
+                  name={formLang === "en" ? "description_en" : "description"}
+                  key={`description-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Beskrivning av kursen</FormLabel>
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
@@ -254,10 +276,11 @@ export default function EditCourseForm({ course, teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="level"
+                  name={formLang === "en" ? "level_en" : "level"}
+                  key={`level-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nivå:</FormLabel>
+                      <FormLabel>Nivå ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

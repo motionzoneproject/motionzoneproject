@@ -9,12 +9,14 @@ interface SchemaProps {
   schemaItems: SchemaItemWithCourse[]; // Tar emot alla schemaItems (som har denna terminId) inkl kursdata.
   termin: Termin;
   allCourses: Course[];
+  lang: "sv" | "en";
 }
 
 export default function Schema({
   schemaItems,
   termin,
   allCourses,
+  lang = "sv",
 }: SchemaProps) {
   const weekdays = getWeekdays();
   return (
@@ -36,6 +38,7 @@ export default function Schema({
           <Accordion type="single" collapsible>
             {weekdays.map((day) => (
               <SchemaDay
+                lang={lang}
                 allCourses={allCourses}
                 termin={termin}
                 schemaItems={schemaItems}

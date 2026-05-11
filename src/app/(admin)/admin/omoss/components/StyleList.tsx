@@ -26,9 +26,10 @@ import { StylesForm } from "./StylesForm";
 
 type StyleListProps = {
   styles: Style[];
+  lang?: string;
 };
 
-export function StyleList({ styles }: StyleListProps) {
+export function StyleList({ styles, lang }: StyleListProps) {
   const router = useRouter();
   const [editingStyle, setEditingStyle] = useState<Style | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -97,7 +98,9 @@ export function StyleList({ styles }: StyleListProps) {
           <TableBody>
             {styles.map((style) => (
               <TableRow key={style.id}>
-                <TableCell className="font-medium">{style.name}</TableCell>
+                <TableCell className="font-medium">
+                  {lang === "en" ? style.name_en : style.name}
+                </TableCell>
                 <TableCell>
                   {style.active ? (
                     <Check className="h-4 w-4 text-green-500" />

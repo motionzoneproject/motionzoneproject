@@ -27,6 +27,7 @@ import Schema from "./Schema";
 
 interface Props {
   termin: Termin;
+  lang: "sv" | "en";
 }
 
 function isTerminActive(termin: Termin): boolean {
@@ -34,7 +35,7 @@ function isTerminActive(termin: Termin): boolean {
   return today >= termin.startDate && today <= termin.endDate;
 }
 
-export default async function TerminItem({ termin }: Props) {
+export default async function TerminItem({ termin, lang = "sv" }: Props) {
   const schemaItems: SchemaItemWithCourse[] = await getSchemaItems(termin.id);
   const allCourses = await getAllCourses("", true);
 
@@ -42,7 +43,7 @@ export default async function TerminItem({ termin }: Props) {
     <TableRow className="align-top">
       <TableCell className="p-3">
         <div className="font-semibold">
-          {termin.name}{" "}
+          {lang === "en" ? termin.name_en : termin.name}{" "}
           {!termin.active && (
             <span className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />
@@ -80,12 +81,13 @@ export default async function TerminItem({ termin }: Props) {
             <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {termin.name}
+                  {lang === "en" ? termin.name_en : termin.name}
                   <br />
                   veckoschema
                 </DialogTitle>
               </DialogHeader>
               <Schema
+                lang={lang}
                 allCourses={allCourses}
                 termin={termin}
                 schemaItems={schemaItems}

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,18 +61,21 @@ interface Props {
   allCourses: Course[];
   weekdays: string[];
   schemaItem: SchemaItem;
+  initialLang?: "sv" | "en";
 }
 
 export default function EditCourseToSchemaForm({
   termin,
   allCourses,
   schemaItem,
+  initialLang = "sv",
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: schemaItem.courseId,
       place: schemaItem.place ?? "",
+      place_en: schemaItem.place_en ?? "",
       customEndDate:
         schemaItem.customEndDate?.toISOString().split("T")[0] ??
         termin.endDate.toISOString().split("T")[0],
@@ -83,6 +87,8 @@ export default function EditCourseToSchemaForm({
       timeEnd: dbToFormTime(schemaItem.timeEnd),
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   const terminStartValue = termin.startDate.toISOString().split("T")[0];
   const terminEndValue = termin.endDate.toISOString().split("T")[0];
@@ -115,6 +121,7 @@ export default function EditCourseToSchemaForm({
       form.reset({
         courseId: schemaItem.courseId,
         place: schemaItem.place ?? "",
+        place_en: schemaItem.place_en ?? "",
         customEndDate:
           schemaItem.customEndDate?.toISOString().split("T")[0] ??
           termin.endDate.toISOString().split("T")[0],
@@ -148,6 +155,7 @@ export default function EditCourseToSchemaForm({
     termin.startDate,
     schemaItem.courseId,
     schemaItem.place,
+    schemaItem.place_en,
     schemaItem.timeEnd,
     schemaItem.timeStart,
     schemaItem.weekday,
@@ -193,6 +201,13 @@ export default function EditCourseToSchemaForm({
             <CardDescription></CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -221,7 +236,7 @@ export default function EditCourseToSchemaForm({
                             <SelectLabel>Välj kurs</SelectLabel>
                             {allCourses.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {getCourseName(c)}
+                                {getCourseName(c, formLang)}
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -255,7 +270,7 @@ export default function EditCourseToSchemaForm({
                             <SelectLabel>Välj dag</SelectLabel>
                             {weekdays.map((c) => (
                               <SelectItem key={c} value={c}>
-                                {getVeckodag(c)}
+                                {getVeckodag(c, formLang)}
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -416,10 +431,11 @@ export default function EditCourseToSchemaForm({
 
                 <FormField
                   control={form.control}
-                  name="place"
+                  name={formLang === "en" ? "place_en" : "place"}
+                  key={`place-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plats</FormLabel>
+                      <FormLabel>Plats ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

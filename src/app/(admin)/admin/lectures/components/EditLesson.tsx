@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +44,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
+      message_en: lesson.message_en ?? "",
     },
   });
 
@@ -56,8 +58,16 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
       cancelled: lesson.cancelled,
       id: lesson.id,
       message: lesson.message ?? "",
+      message_en: lesson.message_en ?? "",
     });
-  }, [isOpen, form, lesson.cancelled, lesson.id, lesson.message]);
+  }, [
+    isOpen,
+    form,
+    lesson.cancelled,
+    lesson.id,
+    lesson.message,
+    lesson.message_en,
+  ]);
 
   const isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
@@ -75,6 +85,8 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
     }
   }
 
+  const [formLang, setFormLang] = useState<string>("sv");
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
@@ -89,6 +101,14 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
           <DialogDescription></DialogDescription>
         </DialogHeader>
 
+        <div className="p2 text-sm">
+          Formulärspråk:{" "}
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e)}
+          />
+        </div>
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -96,10 +116,11 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
           >
             <FormField
               control={form.control}
-              name="message"
+              name={formLang === "en" ? "message_en" : "message"}
+              key={`message-${formLang}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Meddelande</FormLabel>
+                  <FormLabel>Meddelande ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -133,7 +154,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
               name="id"
               render={({ field }) => (
                 <FormItem className="hidden">
-                  <FormLabel>Meddelande</FormLabel>
+                  <FormLabel>id</FormLabel>
                   <FormControl>
                     <Input {...field} type="hidden" />
                   </FormControl>

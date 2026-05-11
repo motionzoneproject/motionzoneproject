@@ -88,7 +88,7 @@ export default async function Page({
     const orderId = String(formData.get("orderId"));
     const note = formData.get("note")?.toString();
     await approveOrder(orderId, note);
-    await createPurchaseFromOrder(orderId); // fix: kanske se så purchase är skapad osv.
+    await createPurchaseFromOrder(orderId);
     revalidatePath("/admin/orders");
   }
 

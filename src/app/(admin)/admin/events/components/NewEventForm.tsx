@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,14 +35,17 @@ type FormOutput = z.output<typeof adminEventSchema>;
 
 interface Props {
   onSuccess?: () => void;
+  initialLang?: string;
 }
 
-export default function NewEventForm({ onSuccess }: Props) {
+export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       headline: "",
+      headline_en: "",
       description: "",
+      description_en: "",
       link: "",
       imageURL: "",
       showOnStartpage: false,
@@ -82,9 +86,19 @@ export default function NewEventForm({ onSuccess }: Props) {
 
   const [hasEndDate, sethasEndDate] = useState<boolean>(false);
 
+  const [formLang, setFormLang] = useState(initialLang);
+
   return (
     <Card>
       <CardContent>
+        <div className="p2 text-sm">
+          Formulärspråk:{" "}
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e)}
+          />
+        </div>
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -92,10 +106,11 @@ export default function NewEventForm({ onSuccess }: Props) {
           >
             <FormField
               control={form.control}
-              name="headline"
+              name={formLang === "en" ? "headline_en" : "headline"}
+              key={`headline-${formLang}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Namn</FormLabel>
+                  <FormLabel>Rubrik ({formLang})</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -106,10 +121,11 @@ export default function NewEventForm({ onSuccess }: Props) {
 
             <FormField
               control={form.control}
-              name="description"
+              name={formLang === "en" ? "description_en" : "description"}
+              key={`description-${formLang}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Beskrivning</FormLabel>
+                  <FormLabel>Beskrivning ({formLang})</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>

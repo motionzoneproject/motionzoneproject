@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,15 +42,17 @@ type FormOutput = z.output<typeof adminAddTerminSchema>;
 
 interface Props {
   termin: Termin;
+  initialLang?: "sv" | "en";
 }
 
-export default function EditTerminForm({ termin }: Props) {
+export default function EditTerminForm({ termin, initialLang = "sv" }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: termin.name,
-      startDate: termin.startDate,
-      endDate: termin.endDate,
+      name: termin.name ?? "",
+      name_en: termin.name_en ?? "",
+      startDate: termin.startDate ?? "",
+      endDate: termin.endDate ?? "",
     },
   });
 
@@ -62,10 +65,20 @@ export default function EditTerminForm({ termin }: Props) {
 
     form.reset({
       name: termin.name,
+      name_en: termin.name_en ?? "",
       startDate: termin.startDate,
       endDate: termin.endDate,
     });
-  }, [isOpen, form, termin.name, termin.startDate, termin.endDate]);
+  }, [
+    isOpen,
+    form,
+    termin.name,
+    termin.startDate,
+    termin.endDate,
+    termin.name_en,
+  ]);
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const check = await checkTerminDateChange(
@@ -115,6 +128,13 @@ export default function EditTerminForm({ termin }: Props) {
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm my-2">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -122,10 +142,11 @@ export default function EditTerminForm({ termin }: Props) {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Namn</FormLabel>
+                      <FormLabel>Namn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -133,7 +154,6 @@ export default function EditTerminForm({ termin }: Props) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="startDate"
@@ -154,7 +174,6 @@ export default function EditTerminForm({ termin }: Props) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="endDate"
@@ -175,7 +194,6 @@ export default function EditTerminForm({ termin }: Props) {
                     </FormItem>
                   )}
                 />
-
                 {isBusy && <Loader />}
                 <Button
                   variant="ghost"

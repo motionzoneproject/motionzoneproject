@@ -36,6 +36,29 @@ const defaults: Omit<StartPageContent, "updatedAt"> = {
   feature3Title: "Moderna Lokaler",
   feature3Description:
     "Vår studio är utrustad med det senaste ljudsystemet och stora speglar för optimal träning.",
+
+  // en:
+
+  heroLabel_en: "Welcome to Motion Zone",
+  heroTitleLine1_en: "Dans is",
+  heroTitleAccent_en: "Passion",
+  heroTitleLine2_en: "And life in motion",
+  heroSubtext_en:
+    "Experience dance in a whole new way. We have courses for all ages and levels with proffessional instructors.",
+  featuresTitle_en: "Why Motion Zone?",
+  featuresSubtext_en:
+    "We offer an unique experience with instructors in worldclass and modern facitilities",
+
+  feature1Title_en: "Professionell instructors",
+  feature1Description_en:
+    "Our teachers have a long experience and has a great passion to share it.",
+
+  feature2Title_en: "Flexible times",
+  feature2Description_en:
+    "We have courses all week at different times to suit your schedule", // Detta stämmer ju inte riktigt, men det får kunden ändra till något som de tycker passar kanske.
+
+  feature3Title_en: "Modern studios",
+  feature3Description_en: "Our studios have great sound for music and mirrors.",
 };
 
 export async function getStartPageContent(): Promise<StartPageContent> {

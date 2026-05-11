@@ -9,6 +9,7 @@ import {
 import type { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import CourseItem from "./CourseItem";
 import CourseFilter from "./components/CourseFilter";
 import AddCourseForm from "./forms/AddCourseForm";
@@ -22,10 +23,12 @@ export default async function Page({
     termin?: string;
     page?: string;
     showInactive?: string;
+    lang?: string;
   }>;
 }) {
   await requireAdmin();
   const params = await searchParams;
+  const lang = params.lang === "en" ? "en" : "sv";
   const query = params.q || "";
   const teacher = params.teacher || "";
   const termin = params.termin || "";
@@ -41,7 +44,14 @@ export default async function Page({
 
   const where: Prisma.CourseWhereInput = {
     ...(showInactive ? {} : { active: true }),
-    ...(query ? { name: { contains: query, mode: "insensitive" } } : {}),
+    ...(query
+      ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { name_en: { contains: query, mode: "insensitive" } },
+          ],
+        }
+      : {}),
     ...(teacher ? { teacherId: teacher } : {}),
     ...(termin ? { schemaItems: { some: { terminId: termin } } } : {}),
   };
@@ -66,10 +76,15 @@ export default async function Page({
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-bold text-2xl">Kurser</span>
+        <div className="space-y-2">
+          <span className="font-bold text-2xl">Kurser</span>
+          <div className="text-sm mt-2 w-fit">
+            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          </div>
+        </div>
         <AddCourseForm teachers={teachers} />
       </div>
-      <CourseFilter teachers={teachers} terminer={terminer} />
+      <CourseFilter teachers={teachers} terminer={terminer} lang={lang} />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
         <span>Totalt {totalCourses} kurser</span>
@@ -91,6 +106,7 @@ export default async function Page({
               <CourseItem
                 course={c}
                 key={c.id}
+                lang={lang}
                 teachers={teachers}
                 teacherName={teacherMap.get(c.teacherId)}
               />

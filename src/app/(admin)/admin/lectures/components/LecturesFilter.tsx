@@ -48,6 +48,8 @@ export function LecturesFilter({
     [searchParams],
   );
 
+  const lang = params.get("lang") === "en" ? "en" : "sv";
+
   const getWeekdayNumber = (d: Weekday) => {
     if (d === "MONDAY") return 0;
     if (d === "TUESDAY") return 1;
@@ -221,7 +223,7 @@ export function LecturesFilter({
               <SelectSeparator></SelectSeparator>
               {courses.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {getCourseName(t)}
+                  {getCourseName(t, lang)}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -278,7 +280,7 @@ export function LecturesFilter({
                     })}{" "}
                     {t.courseId &&
                       courses.find((c) => c.id === t.courseId) &&
-                      `${getCourseName(courses.find((c) => c.id === t.courseId) as Course)}`}
+                      `${getCourseName(courses.find((c) => c.id === t.courseId) as Course, lang)}`}
                   </SelectItem>
                 ))}
             </SelectGroup>

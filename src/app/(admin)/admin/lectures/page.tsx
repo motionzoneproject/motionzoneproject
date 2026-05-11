@@ -9,6 +9,7 @@ import {
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { LecturesFilter } from "./components/LecturesFilter";
 import { LessonItem } from "./components/LessonItem";
 import { Lov } from "./components/Lov";
@@ -24,6 +25,7 @@ interface Props {
     status?: string;
     hideold?: string;
     page?: string;
+    lang?: string;
   }>;
 }
 
@@ -110,9 +112,15 @@ export default async function LecturePage({ searchParams }: Props) {
     take: ITEMS_PER_PAGE,
   });
 
+  const lang = sp.lang === "en" ? "en" : "sv";
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Lektioner</h1>
+
+      <div className="mt-3 text-sm w-fit">
+        Formulärspråk: <AdminLanguageSwitch value={lang ?? "sv"} />
+      </div>
 
       <LecturesFilter
         courses={courses}
@@ -145,7 +153,7 @@ export default async function LecturePage({ searchParams }: Props) {
               </TableHeader>
               <TableBody>
                 {lessons.map((l) => (
-                  <LessonItem lesson={l} key={l.id} />
+                  <LessonItem lang={lang} lesson={l} key={l.id} />
                 ))}
               </TableBody>
             </Table>

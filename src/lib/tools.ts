@@ -2,10 +2,12 @@ import type { Weekday } from "@/generated/prisma/client";
 
 type CourseLike = {
   name: string;
+  name_en?: string | null;
   minAge: number | null;
   maxAge: number | null;
   adult: boolean;
   level: string | null;
+  level_en?: string | null;
 };
 
 const WEEKDAYS = [
@@ -18,42 +20,54 @@ const WEEKDAYS = [
   "SUNDAY",
 ] as const;
 
-export function getCourseName(course: CourseLike) {
+export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
   const ageRange =
     course.minAge && course.minAge > 0
       ? `${course.minAge}${
           course.maxAge && course.maxAge > 0
             ? `–${course.maxAge} år` // Använder tankstreck (–) och lägger till " år" här
             : "+ år" // Lägger till "+ år" om maxAge saknas
-        }${course.adult ? ` / Vuxen` : ""}`
+        }${course.adult ? (lang === "sv" ? ` / Vuxen` : ` / Adult`) : ""}`
       : course.adult
-        ? "Vuxen" // Om minAge saknas, men adult är true
+        ? lang === "sv"
+          ? "Vuxen"
+          : "Adult" // Om minAge saknas, men adult är true
         : ""; // Om varken minAge eller adult är true
-  const levelInfo = course.level && ` - ${course.level}`;
+  const levelInfo =
+    lang === "sv"
+      ? course.level
+        ? ` - ${course.level}`
+        : ""
+      : course.level_en
+        ? ` - ${course.level_en}`
+        : "";
 
-  return `${course.name} ${ageRange} ${levelInfo}`;
+  const baseName =
+    lang === "sv" ? course.name : course.name_en?.trim() || course.name; // Fallback på svenskt namn.
+
+  return `${baseName} ${ageRange} ${levelInfo}`.trim();
 }
 
 export function getWeekdays() {
   return [...WEEKDAYS];
 }
 
-export const getVeckodag = (day: Weekday) => {
+export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") => {
   switch (day) {
     case "MONDAY":
-      return "Måndag";
+      return lang === "sv" ? "Måndag" : "Monday";
     case "TUESDAY":
-      return "Tisdag";
+      return lang === "sv" ? "Tisdag" : "Tuesday";
     case "WEDNESDAY":
-      return "Onsdag";
+      return lang === "sv" ? "Onsdag" : "Wednedsay";
     case "THURSDAY":
-      return "Torsdag";
+      return lang === "sv" ? "Torsdag" : "Thursday";
     case "FRIDAY":
-      return "Fredag";
+      return lang === "sv" ? "Fredag" : "Friday";
     case "SATURDAY":
-      return "Lördag";
+      return lang === "sv" ? "Lördag" : "Saturday";
     case "SUNDAY":
-      return "Söndag";
+      return lang === "sv" ? "Söndag" : "Sunday";
     default:
       return day; // Returnerar originalsträngen om ingen matchning hittas
   }

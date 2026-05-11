@@ -10,6 +10,7 @@ import {
 import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import prisma from "@/lib/prisma";
+import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import AddProductForm from "./components/AddProductForm";
 import ProductFilter from "./components/ProductFilter";
 import ProductItem from "./components/ProductItem";
@@ -25,6 +26,7 @@ export default async function Page({
     teacher?: string;
     termin?: string;
     course?: string;
+    lang?: string;
   }>;
 }) {
   const isAdmin = await isAdminRole();
@@ -39,6 +41,7 @@ export default async function Page({
   const teacher = params.teacher || "";
   const termin = params.termin || "";
   const course = params.course || "";
+  const lang: "sv" | "en" = params.lang === "en" ? "en" : "sv";
 
   const teachers = await prisma.user.findMany({
     where: { role: "admin" },
@@ -65,10 +68,20 @@ export default async function Page({
     ...(showInactive ? {} : { active: true }),
     ...(query
       ? {
-          name: {
-            contains: query,
-            mode: "insensitive" as const,
-          },
+          OR: [
+            {
+              name: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              name_en: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
         }
       : {}),
     ...(type ? { type } : {}),
@@ -97,10 +110,16 @@ export default async function Page({
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-bold text-2xl">Produkter</span>
+        <div>
+          <span className="font-bold text-2xl">Produkter</span>
+          <div className="text-sm mt-2 w-fit">
+            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          </div>
+        </div>
         <AddProductForm />
       </div>
       <ProductFilter
+        lang={lang}
         teachers={teachers}
         terminer={terminer}
         courses={courses}
@@ -124,7 +143,7 @@ export default async function Page({
           </TableHeader>
           <TableBody>
             {allProducts.map((p) => (
-              <ProductItem product={p} key={p.id} />
+              <ProductItem product={p} key={p.id} lang={lang} />
             ))}
           </TableBody>
         </Table>
