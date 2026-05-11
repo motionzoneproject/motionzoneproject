@@ -4,27 +4,32 @@ import i18next from "i18next";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { allLangs, defaultLang, normalizeLang } from "@/locales";
+import {
+  readClientLangCookie,
+  writeClientLangCookie,
+} from "@/locales/client-lang-cookie";
 
 export default function LanguageSwitcher() {
   const [currentLang, setCurrentLang] = useState(defaultLang.value);
   const { t } = useTranslation();
 
   useEffect(() => {
-    const stored = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("i18nextLng="))
-      ?.split("=")[1];
-    const nextLang = normalizeLang(stored ?? i18next.resolvedLanguage);
+    async function syncLang() {
+      const stored = await readClientLangCookie();
+      const nextLang = normalizeLang(stored ?? i18next.resolvedLanguage);
 
-    setCurrentLang(nextLang);
-    void i18next.changeLanguage(nextLang);
+      setCurrentLang(nextLang);
+      void i18next.changeLanguage(nextLang);
+    }
+
+    void syncLang();
   }, []);
 
   function handleChange(value: string) {
     const nextLang = normalizeLang(value);
     setCurrentLang(nextLang);
     localStorage.setItem("i18nextLng", nextLang);
-    document.cookie = `i18nextLng=${nextLang}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    void writeClientLangCookie(nextLang);
     void i18next.changeLanguage(nextLang);
   }
 
