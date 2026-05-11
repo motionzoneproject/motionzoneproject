@@ -1,5 +1,6 @@
 "use client";
 
+import i18next from "i18next";
 import { useEffect, useState } from "react";
 import { allLangs } from "@/locales";
 
@@ -9,11 +10,13 @@ export default function LanguageSwitcher() {
   useEffect(() => {
     const stored = localStorage.getItem("i18nextLng");
     if (stored) setCurrentLang(stored.slice(0, 2));
+    if (stored) i18next.changeLanguage(stored.slice(0, 2));
   }, []);
 
   function handleChange(value: string) {
     setCurrentLang(value);
     localStorage.setItem("i18nextLng", value);
+    i18next.changeLanguage(value);
   }
 
   return (

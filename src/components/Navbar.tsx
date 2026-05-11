@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import CartIcon from "./CartIcon";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
@@ -15,11 +16,12 @@ const MOBILE_MENU_ID = "mobile-nav-menu";
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useTranslation();
   const navLinks = [
-    { href: "/", label: "Hem" },
-    { href: "/courses", label: "Våra kurser" },
-    { href: "/about", label: "Om oss" },
-    { href: "/gallery", label: "Galleri" },
+    { href: "/", label: t("nav.home") },
+    { href: "/courses", label: t("nav.courses") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/gallery", label: t("nav.gallery") },
   ];
 
   useEffect(() => {
