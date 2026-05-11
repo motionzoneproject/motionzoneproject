@@ -9,6 +9,7 @@ import {
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
+import JsonLd from "@/components/seo/JsonLd";
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +34,8 @@ import { getCourseName, getVeckodag } from "@/lib/tools";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
 
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+
 interface Props {
   searchParams: Promise<{
     page?: string;
@@ -43,10 +46,36 @@ interface Props {
   }>;
 }
 
+// TODO(i18n): swap title/description by `i18nextLng` cookie when bilingual
+// metadata is prioritised.
 export const metadata: Metadata = {
   title: "Våra kurser",
   description:
     "Bläddra och boka MotionZone Växjös danskurser för barn, ungdomar och vuxna.",
+  alternates: {
+    canonical: `${SITE_URL}/courses`,
+    languages: {
+      sv: `${SITE_URL}/courses`,
+      en: `${SITE_URL}/courses`,
+      "x-default": `${SITE_URL}/courses`,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: "Våra kurser — Motion Zone Växjö",
+    description:
+      "Bläddra och boka danskurser, klippkort och paket hos Motion Zone Växjö.",
+    url: `${SITE_URL}/courses`,
+    siteName: "MotionZone Växjö",
+    locale: "sv_SE",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Våra kurser — Motion Zone Växjö",
+    description:
+      "Bläddra och boka danskurser, klippkort och paket hos Motion Zone Växjö.",
+  },
 };
 
 export default async function Page({ searchParams }: Props) {
@@ -229,8 +258,64 @@ export default async function Page({ searchParams }: Props) {
     }),
   );
 
+  // Collect unique course names for the ItemList JSON-LD. We use Swedish names
+  // here because metadata above is Swedish; bilingual JSON-LD would require
+  // separate inLanguage entries.
+  const seenCourseIds = new Set<string>();
+  const courseListItems: Array<{ name: string; id: string }> = [];
+  for (const product of productsWithData) {
+    for (const pc of product.courses) {
+      const course = pc.course;
+      if (seenCourseIds.has(course.id)) continue;
+      seenCourseIds.add(course.id);
+      courseListItems.push({
+        id: course.id,
+        name: getCourseName(course, "sv"),
+      });
+    }
+  }
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Hem",
+        item: `${SITE_URL}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Kurser",
+        item: `${SITE_URL}/courses`,
+      },
+    ],
+  };
+
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Danskurser hos Motion Zone Växjö",
+    itemListElement: courseListItems.map((c, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      item: {
+        "@type": "Course",
+        name: c.name,
+        provider: {
+          "@type": "Organization",
+          name: "Motion Zone Växjö",
+          sameAs: SITE_URL,
+        },
+      },
+    })),
+  };
+
   return (
     <div className="bg-background">
+      <JsonLd data={[breadcrumbLd, itemListLd]} />
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="py-8 border-b border-border mb-8">
           {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">

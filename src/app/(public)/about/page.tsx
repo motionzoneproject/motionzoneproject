@@ -2,13 +2,41 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
 import LarareProfile from "@/components/larare-profile";
+import JsonLd from "@/components/seo/JsonLd";
 import { getStudios } from "@/lib/actions/studio-actions";
 import { getStyles } from "@/lib/actions/style-actions";
 
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+
+// TODO(i18n): switch by cookie when bilingual metadata is wired in.
 export const metadata: Metadata = {
   title: "Om oss",
   description:
     "Lär känna MotionZone Växjö — våra studios, dansstilar och lärare.",
+  alternates: {
+    canonical: `${SITE_URL}/about`,
+    languages: {
+      sv: `${SITE_URL}/about`,
+      en: `${SITE_URL}/about`,
+      "x-default": `${SITE_URL}/about`,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: "Om oss — Motion Zone Växjö",
+    description:
+      "Lär känna Motion Zone Växjö: våra studios, dansstilar och lärare.",
+    url: `${SITE_URL}/about`,
+    siteName: "MotionZone Växjö",
+    locale: "sv_SE",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Om oss — Motion Zone Växjö",
+    description:
+      "Lär känna Motion Zone Växjö: våra studios, dansstilar och lärare.",
+  },
 };
 
 export default async function About() {
@@ -19,8 +47,22 @@ export default async function About() {
     1152,
   );
 
+  const aboutPageLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "Om Motion Zone Växjö",
+    url: `${SITE_URL}/about`,
+    inLanguage: "sv-SE",
+    about: {
+      "@type": "Organization",
+      name: "Motion Zone Växjö",
+      url: SITE_URL,
+    },
+  };
+
   return (
     <div className="bg-background">
+      <JsonLd data={aboutPageLd} />
       {/* Hero */}
       <section className="border-b border-border py-20 text-center md:py-32">
         <div className="mx-auto max-w-7xl px-6">

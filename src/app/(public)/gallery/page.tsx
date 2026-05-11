@@ -5,10 +5,38 @@ import { Button } from "@/components/ui/button";
 import { getActiveGalleryItems } from "@/lib/actions/gallery";
 import Gallery from "./Gallery";
 
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+
+// TODO(i18n): swap title/description by `i18nextLng` cookie when bilingual
+// metadata is wired in.
 export const metadata: Metadata = {
   title: "Bild & Videogalleri",
   description:
     "Bilder och videor från MotionZone Växjös event, uppvisningar och vardagsträning.",
+  alternates: {
+    canonical: `${SITE_URL}/gallery`,
+    languages: {
+      sv: `${SITE_URL}/gallery`,
+      en: `${SITE_URL}/gallery`,
+      "x-default": `${SITE_URL}/gallery`,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: "Bild & Videogalleri — Motion Zone Växjö",
+    description:
+      "Bilder och videor från Motion Zone Växjös event, uppvisningar och vardagsträning.",
+    url: `${SITE_URL}/gallery`,
+    siteName: "MotionZone Växjö",
+    locale: "sv_SE",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bild & Videogalleri — Motion Zone Växjö",
+    description:
+      "Bilder och videor från Motion Zone Växjös event, uppvisningar och vardagsträning.",
+  },
 };
 
 export default async function Page() {

@@ -19,7 +19,12 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
 });
 
+// SITE_URL falls back to http://localhost:3000 for local dev so OG/Twitter
+// image URLs and sitemap entries resolve correctly without env config.
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "MotionZone Växjö",
   description:
     "Dansstudio MotionZone Växjö - Köp och boka kurser och medlemskap.",
