@@ -163,6 +163,13 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* WCAG 2.4.7 — make keyboard focus unambiguously visible.
+     :focus-visible only triggers on keyboard navigation, so mouse users
+     don't see a ring around buttons after clicking. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
 }
 
 :root {
