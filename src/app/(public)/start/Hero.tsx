@@ -44,7 +44,7 @@ export default function Hero({ content }: HeroProps) {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-light text-white leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
-            {pick(content, "heroTitleLine1", lang)}
+            {pick(content, "heroTitleLine1", lang)}{" "}
             <span className="font-serif italic text-brand-light">
               {pick(content, "heroTitleAccent", lang)}
             </span>

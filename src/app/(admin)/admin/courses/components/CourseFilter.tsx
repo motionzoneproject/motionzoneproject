@@ -97,12 +97,7 @@ export default function CourseFilter({
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
           Sök
         </Label>
-        <SearchInput
-          className="w-full"
-          placeholder={
-            lang === "en" ? "Search course name..." : "Sok kursnamn..."
-          }
-        />
+        <SearchInput className="w-full" placeholder="Sök kursnamn..." />
       </div>
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -123,7 +118,7 @@ export default function CourseFilter({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Valj lärare</SelectLabel>
+              <SelectLabel>Välj lärare</SelectLabel>
               <SelectItem value="all">Alla</SelectItem>
               <SelectSeparator />
               {teachers.map((t) => (
@@ -154,7 +149,7 @@ export default function CourseFilter({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Valj termin</SelectLabel>
+              <SelectLabel>Välj termin</SelectLabel>
               <SelectItem value="all">Alla</SelectItem>
               <SelectSeparator />
               {terminer.map((t) => (
