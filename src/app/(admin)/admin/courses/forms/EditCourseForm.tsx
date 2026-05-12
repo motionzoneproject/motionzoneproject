@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EditIcon, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -54,6 +54,7 @@ interface Props {
 }
 
 export default function EditCourseForm({ course, teachers }: Props) {
+  const id = useId();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -132,7 +133,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90dvh] overflow-auto">
+      <DialogContent id={id} className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ändra en kurs</DialogTitle>
         </DialogHeader>

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -70,6 +70,7 @@ export default function EditCourseToSchemaForm({
   schemaItem,
   initialLang = "sv",
 }: Props) {
+  const id = useId();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -184,7 +185,7 @@ export default function EditCourseToSchemaForm({
           <span className="sr-only">Redigera kurstillfälle</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="overflow-y-auto max-h-[90vh]">
+      <DialogContent id={id} className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Lägg till kurstillfälle i veckoschemat</DialogTitle>
           <DialogDescription>

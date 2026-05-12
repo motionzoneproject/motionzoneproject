@@ -33,4 +33,9 @@ jobs:
       - name: Build
         run: npx next build
         env:
+          # Dummy values just so Better Auth doesn't log noisy warnings/errors
+          # during module initialisation. Build never actually runs auth flows.
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          BETTER_AUTH_SECRET: "ci-dummy-secret-do-not-use-in-prod"
+          BETTER_AUTH_URL: "http://localhost:3000"
+          SITE_URL: "http://localhost:3000"

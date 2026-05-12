@@ -4,9 +4,19 @@
  * Use these helpers to convert between öre and SEK for display/input.
  */
 
-/** Format an öre amount as a Swedish SEK currency string, e.g. 15000 → "150,00 kr" */
-export function formatPrice(ore: number): string {
-  return (ore / 100).toLocaleString("sv-SE", {
+import type { AppLang } from "@/locales/config-lang";
+
+/**
+ * Format an öre amount as a SEK currency string.
+ * - `sv` (default): "150 kr" via sv-SE locale.
+ * - `en`: "SEK 150" via en-GB locale (kept neutral; we don't convert to GBP).
+ *
+ * Anything else falls back to Swedish so older call-sites stay readable.
+ */
+export function formatPrice(ore: number, lang: AppLang = "sv"): string {
+  const sek = ore / 100;
+  const locale = lang === "en" ? "en-GB" : "sv-SE";
+  return sek.toLocaleString(locale, {
     style: "currency",
     currency: "SEK",
     minimumFractionDigits: 0,

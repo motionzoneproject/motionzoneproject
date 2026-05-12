@@ -27,7 +27,9 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
+import { getDictionary } from "@/locales/get-dictionary";
 import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
 import { DelBookBtn } from "./components/DelBookBtn";
@@ -43,6 +45,8 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+  const { lang, t } = await getDictionary();
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const sessionData = await getSessionData();
 
   if (!sessionData) {
@@ -63,24 +67,24 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
-  const purschaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
+  const purchaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
 
-  const groupedPurchases = purschaseItems.reduce(
+  const groupedPurchases = purchaseItems.reduce(
     (acc, item) => {
       const purchaseId = item.purchaseId;
       if (!acc[purchaseId]) {
         acc[purchaseId] = {
-          productName: item.purchase.product.name,
+          productName: pick(item.purchase.product, "name", lang) as string,
           items: [],
         };
       }
       acc[purchaseId].items.push(item);
       return acc;
     },
-    {} as Record<string, { productName: string; items: typeof purschaseItems }>,
+    {} as Record<string, { productName: string; items: typeof purchaseItems }>,
   );
 
   return (
@@ -90,12 +94,11 @@ export default async function Page() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle>{user?.name} - Profilsida</CardTitle>
+                <CardTitle>
+                  {t.user.profileTitle.replace("{{name}}", user?.name ?? "")}
+                </CardTitle>
                 <CardDescription className="mt-2">
-                  Här kan du hantera dina bokningar genom att välja ett datum i
-                  kalendern och tryck på boka eller avboka. Har du lagt till
-                  deltagare bokar du åt dem här också. Längre ned ser du dina
-                  ordrar och dina uppgifter med mera.
+                  {t.user.profileDescription}
                 </CardDescription>
               </div>
               {userDetails && (
@@ -111,8 +114,8 @@ export default async function Page() {
                     }
                   >
                     {userDetails.allowPhotoVideo
-                      ? "📸 Foto/Video OK"
-                      : "🚫 Inga foton/videos"}
+                      ? t.user.photoBadgeOk
+                      : t.user.photoBadgeNo}
                   </Badge>
                 </div>
               )}
@@ -120,17 +123,17 @@ export default async function Page() {
           </CardHeader>
           <CardContent>
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Bokningar
+              {t.user.bookings}
             </h3>
             <BookingCal
-              purschaseItems={purschaseItems}
+              purchaseItems={purchaseItems}
               lessons={lessons}
               bookings={bookings}
             />
 
             <div className="mt-8 space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Dina köpta paket & produkter
+                {t.user.yourPurchases}
               </h3>
 
               <Accordion type="single" collapsible className="space-y-2">
@@ -144,7 +147,7 @@ export default async function Page() {
                       <div className="flex flex-1 items-center justify-between text-left pr-4">
                         <div>
                           <span className="text-xs text-brand">
-                            Produkt / Paket
+                            {t.user.productPack}
                           </span>
                           <p className="font-medium">
                             {group.productName}{" "}
@@ -157,7 +160,9 @@ export default async function Page() {
                         </div>
                         <Badge variant="outline">
                           {group.items.length}{" "}
-                          {group.items.length === 1 ? "kurs" : "kurser"}
+                          {group.items.length === 1
+                            ? t.user.courseOne
+                            : t.user.courseMany}
                         </Badge>
                       </div>
                     </AccordionTrigger>
@@ -167,7 +172,11 @@ export default async function Page() {
                     <AccordionContent className="border-t pt-4 pb-2">
                       <div className="space-y-3">
                         {group.items.map((pi) => {
-                          const courseName = pi.course.name;
+                          const courseName = pick(
+                            pi.course,
+                            "name",
+                            lang,
+                          ) as string;
 
                           const remaining = calcRemainingCount({
                             purchase: pi.purchase,
@@ -200,7 +209,7 @@ export default async function Page() {
                                     pi.purchase.participant.name !==
                                       user?.name && (
                                       <p className="text-[10px] text-brand font-medium">
-                                        Deltagare:{" "}
+                                        {t.user.participantPrefix}{" "}
                                         {pi.purchase.participant.name}
                                       </p>
                                     )}
@@ -211,7 +220,7 @@ export default async function Page() {
 
                               <div>
                                 <p className="text-muted-foreground text-xs mb-2">
-                                  Dina bokningar
+                                  {t.user.yourBookings}
                                 </p>
 
                                 {piBookings.length > 0 ? (
@@ -227,7 +236,7 @@ export default async function Page() {
                                           <p className="text-sm">
                                             {new Date(
                                               b.lesson.startTime,
-                                            ).toLocaleDateString("sv-SE", {
+                                            ).toLocaleDateString(dateLocale, {
                                               day: "numeric",
                                               month: "short",
                                               hour: "2-digit",
@@ -245,7 +254,7 @@ export default async function Page() {
                                   </div>
                                 ) : (
                                   <p className="text-xs text-muted-foreground italic">
-                                    Inga bokningar gjorda än.
+                                    {t.user.noBookings}
                                   </p>
                                 )}
                               </div>
@@ -256,10 +265,14 @@ export default async function Page() {
                                     isLow ? "text-destructive" : ""
                                   }`}
                                 >
-                                  {remaining === Infinity ? "∞" : remaining}{" "}
-                                  klipp kvar{" "}
+                                  {t.user.clipsLeft.replace(
+                                    "{{count}}",
+                                    remaining === Infinity
+                                      ? t.common.infinitySymbol
+                                      : String(remaining),
+                                  )}{" "}
                                   {pi.purchase.type === "CLIP"
-                                    ? "(totalt)"
+                                    ? t.user.clipsLeftTotal
                                     : ""}
                                 </span>
                               </div>
@@ -276,7 +289,7 @@ export default async function Page() {
             {myParticipants.length > 0 && (
               <div className="mt-8 space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Sparade deltagare (t.ex. barn)
+                  <Users className="w-4 h-4" /> {t.user.savedParticipants}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {myParticipants.map((p) => (
@@ -294,11 +307,11 @@ export default async function Page() {
                         <div className="flex gap-2 mt-1">
                           {p.allowPhotoVideo ? (
                             <span className="text-[9px] text-emerald-600 font-bold uppercase">
-                              📸 Foto OK
+                              {t.user.photoBadgeShort}
                             </span>
                           ) : (
                             <span className="text-[9px] text-amber-600 font-bold uppercase">
-                              🚫 Inga foton
+                              {t.user.noPhotoBadgeShort}
                             </span>
                           )}
                         </div>
@@ -313,7 +326,7 @@ export default async function Page() {
             {pendingRegistrations.length > 0 && (
               <div className="mt-8 space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Väntande anmälningar
+                  <Clock className="w-4 h-4" /> {t.user.pendingRegistrations}
                 </h3>
                 <div className="space-y-2">
                   {pendingRegistrations.map((reg) => (
@@ -323,18 +336,18 @@ export default async function Page() {
                     >
                       <div>
                         <p className="font-medium text-sm">
-                          {reg.product.name}
+                          {pick(reg.product, "name", lang) as string}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Status:{" "}
+                          {t.user.pendingStatusLabel}{" "}
                           <span className="text-amber-600 font-medium">
-                            Väntar på betalning / godkännande
+                            {t.user.pendingStatusValue}
                           </span>
                         </p>
                         {reg.participant &&
                           reg.participant.name !== user?.name && (
                             <p className="text-[10px] text-brand mt-1 uppercase font-bold">
-                              Deltagare: {reg.participant.name}
+                              {t.user.participantPrefix} {reg.participant.name}
                             </p>
                           )}
                       </div>
@@ -342,7 +355,7 @@ export default async function Page() {
                         variant="outline"
                         className="text-amber-600 border-amber-600/20"
                       >
-                        Behandlas
+                        {t.user.pendingProcessing}
                       </Badge>
                     </div>
                   ))}
@@ -356,22 +369,23 @@ export default async function Page() {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border bg-muted/30">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Kontaktuppgifter
+                    {t.user.contactInfo}
                   </p>
                   <p className="text-sm mt-1">
-                    <span className="font-semibold">Telefon:</span>{" "}
-                    {userDetails.phoneNumber || "Ej angivet"}
+                    <span className="font-semibold">{t.user.phoneLabel}</span>{" "}
+                    {userDetails.phoneNumber || t.user.phoneEmpty}
                   </p>
                   <p className="text-sm">
-                    <span className="font-semibold">E-post:</span> {user?.email}
+                    <span className="font-semibold">{t.user.emailLabel}</span>{" "}
+                    {user?.email}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Adress
+                    {t.user.address}
                   </p>
                   <p className="text-sm mt-1">
-                    {userDetails.address || "Ej angiven adress"}
+                    {userDetails.address || t.user.addressEmpty}
                   </p>
                   <p className="text-sm">
                     {userDetails.postalCode} {userDetails.city}

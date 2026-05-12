@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EditIcon, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -38,6 +38,7 @@ type FormInput = z.input<typeof adminLessonFormSchema>;
 type FormOutput = z.output<typeof adminLessonFormSchema>;
 
 export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
+  const id = useId();
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -95,7 +96,7 @@ export function EditLessonBtn({ lesson }: { lesson: Lesson }) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90dvh] overflow-auto">
+      <DialogContent id={id} className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Hantera lektion</DialogTitle>
           <DialogDescription></DialogDescription>

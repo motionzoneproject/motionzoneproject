@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const formSchema = UserDetailsSchema;
 type FormValues = z.infer<typeof formSchema>;
 
 export function EditDetailsForm({ details }: { details: UserDetails }) {
+  const { t } = useTranslation();
   const { user, session } = useSession();
   const router = useRouter();
 
@@ -92,18 +94,18 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
     try {
       const result = await changeDetails(values);
       if (!result.success) {
-        toast.error("Kunde inte spara uppgifter", {
+        toast.error(t("user.editDetails.errorTitle"), {
           description: result.error,
         });
         return;
       }
 
-      toast.success("Uppgifter ändrades.");
+      toast.success(t("user.editDetails.successToast"));
       setIsOpen(false);
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error("Ett oväntat fel uppstod.");
+      toast.error(t("user.editDetails.unexpected"));
     }
   }
 
@@ -112,12 +114,12 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
       <DialogTrigger asChild>
         <Button variant="ghost" className="mx-2">
           <Pencil className="h-4 w-4" />
-          Ändra uppgifter
+          {t("user.editDetails.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[680px]">
         <DialogHeader>
-          <DialogTitle>Redigera konto</DialogTitle>
+          <DialogTitle>{t("user.editDetails.title")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -127,10 +129,10 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Förnamn</FormLabel>
+                    <FormLabel>{t("user.editDetails.firstName")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Förnamn"
+                        placeholder={t("user.editDetails.firstName")}
                         autoComplete="given-name"
                         {...field}
                       />
@@ -144,10 +146,10 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Efternamn</FormLabel>
+                    <FormLabel>{t("user.editDetails.lastName")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Efternamn"
+                        placeholder={t("user.editDetails.lastName")}
                         autoComplete="family-name"
                         {...field}
                       />
@@ -162,7 +164,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Telefonnummer</FormLabel>
+                  <FormLabel>{t("user.editDetails.phone")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="070-123 45 67"
@@ -179,10 +181,10 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Gatuadress</FormLabel>
+                  <FormLabel>{t("user.editDetails.address")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Gatuadress"
+                      placeholder={t("user.editDetails.address")}
                       autoComplete="street-address"
                       {...field}
                     />
@@ -197,7 +199,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                 name="postalCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Postnummer</FormLabel>
+                    <FormLabel>{t("user.editDetails.postalCode")}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="123 45"
@@ -214,10 +216,10 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ort</FormLabel>
+                    <FormLabel>{t("user.editDetails.city")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ort"
+                        placeholder={t("user.editDetails.city")}
                         autoComplete="address-level2"
                         {...field}
                       />
@@ -232,7 +234,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Födelsedatum</FormLabel>
+                  <FormLabel>{t("user.editDetails.dateOfBirth")}</FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -250,10 +252,10 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
               name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bio</FormLabel>
+                  <FormLabel>{t("user.editDetails.bio")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Kort presentation (valfri)"
+                      placeholder={t("user.editDetails.bioPlaceholder")}
                       className="min-h-24"
                       {...field}
                     />
@@ -274,9 +276,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Jag godkänner att foton och videor på mig får delas
-                    </FormLabel>
+                    <FormLabel>{t("user.editDetails.allowPhoto")}</FormLabel>
                   </div>
                 </FormItem>
               )}
@@ -286,7 +286,9 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
-              {form.formState.isSubmitting ? "Sparar..." : "Spara ändringar"}
+              {form.formState.isSubmitting
+                ? t("user.editDetails.submitting")
+                : t("user.editDetails.submit")}
             </Button>
           </form>
         </Form>

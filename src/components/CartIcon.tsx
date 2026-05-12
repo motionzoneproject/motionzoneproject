@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getCart } from "@/lib/actions/cart";
 
 interface CartIconProps {
@@ -14,6 +15,7 @@ interface CartIconProps {
 export default function CartIcon({ showLabel, onClick }: CartIconProps) {
   const [count, setCount] = useState(0);
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchCount() {
@@ -44,7 +46,7 @@ export default function CartIcon({ showLabel, onClick }: CartIconProps) {
           </span>
         )}
       </span>
-      {showLabel && <span>Varukorg</span>}
+      {showLabel && <span>{t("cart.title")}</span>}
     </Link>
   );
 }

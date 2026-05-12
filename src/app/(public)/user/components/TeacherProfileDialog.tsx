@@ -2,6 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TeacherForm } from "@/app/(admin)/admin/omoss/components/teacher-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ type TeacherProfileDialogProps = {
 };
 
 export function TeacherProfileDialog({ user }: TeacherProfileDialogProps) {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const teacher = user.teacherProfile ? user : undefined;
 
@@ -31,13 +33,17 @@ export function TeacherProfileDialog({ user }: TeacherProfileDialogProps) {
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="mx-2">
           <Pencil className="h-4 w-4" />
-          {teacher ? "Ändra lärarprofil" : "Skapa lärarprofil"}
+          {teacher
+            ? t("user.teacherProfileDialog.edit")
+            : t("user.teacherProfileDialog.create")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {teacher ? "Redigera lärarprofil" : "Skapa lärarprofil"}
+            {teacher
+              ? t("user.teacherProfileDialog.titleEdit")
+              : t("user.teacherProfileDialog.titleCreate")}
           </DialogTitle>
         </DialogHeader>
         <TeacherForm

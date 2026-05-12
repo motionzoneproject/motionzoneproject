@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { SearchInput } from "@/components/SearchInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/select";
 
 export function CoursesFilter() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -59,10 +61,10 @@ export function CoursesFilter() {
       {/* Search Field */}
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Sök produktnamn
+          {t("coursesPage.filter.searchLabel")}
         </Label>
         <SearchInput
-          placeholder="Sök..."
+          placeholder={t("coursesPage.filter.searchPlaceholder")}
           className="border-0 ring-1 ring-input w-full"
         />
       </div>
@@ -70,7 +72,7 @@ export function CoursesFilter() {
       {/* Product Type Filter */}
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Produkttyp
+          {t("coursesPage.filter.typeLabel")}
         </Label>
         <Select
           value={params.get("type") || "all"}
@@ -79,17 +81,27 @@ export function CoursesFilter() {
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj typ" />
+            <SelectValue
+              placeholder={t("coursesPage.filter.typePlaceholder")}
+            />
           </SelectTrigger>
 
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Välj produkttyp</SelectLabel>
-              <SelectItem value="all">Alla</SelectItem>
+              <SelectLabel>{t("coursesPage.filter.typeGroup")}</SelectLabel>
+              <SelectItem value="all">
+                {t("coursesPage.filter.typeAll")}
+              </SelectItem>
               <SelectSeparator />
-              <SelectItem value="COURSE">Kurs</SelectItem>
-              <SelectItem value="PACK">Paket</SelectItem>
-              <SelectItem value="CLIP">Klippkort</SelectItem>
+              <SelectItem value="COURSE">
+                {t("coursesPage.filter.typeCourse")}
+              </SelectItem>
+              <SelectItem value="PACK">
+                {t("coursesPage.filter.typePack")}
+              </SelectItem>
+              <SelectItem value="CLIP">
+                {t("coursesPage.filter.typeClip")}
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -98,7 +110,7 @@ export function CoursesFilter() {
       {/* Age Group Filter */}
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Åldersgrupp
+          {t("coursesPage.filter.ageLabel")}
         </Label>
         <Select
           value={params.get("adult") || "all"}
@@ -107,16 +119,22 @@ export function CoursesFilter() {
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj åldersgrupp" />
+            <SelectValue placeholder={t("coursesPage.filter.agePlaceholder")} />
           </SelectTrigger>
 
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Välj åldersgrupp</SelectLabel>
-              <SelectItem value="all">Alla</SelectItem>
+              <SelectLabel>{t("coursesPage.filter.ageGroup")}</SelectLabel>
+              <SelectItem value="all">
+                {t("coursesPage.filter.ageAll")}
+              </SelectItem>
               <SelectSeparator />
-              <SelectItem value="false">Barn/Ungdom</SelectItem>
-              <SelectItem value="true">Vuxen</SelectItem>
+              <SelectItem value="false">
+                {t("coursesPage.filter.ageChild")}
+              </SelectItem>
+              <SelectItem value="true">
+                {t("coursesPage.filter.ageAdult")}
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -125,7 +143,7 @@ export function CoursesFilter() {
       {/* Sorting Filter */}
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Sortering
+          {t("coursesPage.filter.sortLabel")}
         </Label>
         <Select
           value={params.get("sort") || "name-asc"}
@@ -134,17 +152,27 @@ export function CoursesFilter() {
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sortera efter" />
+            <SelectValue
+              placeholder={t("coursesPage.filter.sortPlaceholder")}
+            />
           </SelectTrigger>
 
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Sortera efter</SelectLabel>
-              <SelectItem value="name-asc">Namn (A-Ö)</SelectItem>
-              <SelectItem value="name-desc">Namn (Ö-A)</SelectItem>
+              <SelectLabel>{t("coursesPage.filter.sortGroup")}</SelectLabel>
+              <SelectItem value="name-asc">
+                {t("coursesPage.filter.sortNameAsc")}
+              </SelectItem>
+              <SelectItem value="name-desc">
+                {t("coursesPage.filter.sortNameDesc")}
+              </SelectItem>
               <SelectSeparator />
-              <SelectItem value="price-asc">Pris (lägst först)</SelectItem>
-              <SelectItem value="price-desc">Pris (högst först)</SelectItem>
+              <SelectItem value="price-asc">
+                {t("coursesPage.filter.sortPriceAsc")}
+              </SelectItem>
+              <SelectItem value="price-desc">
+                {t("coursesPage.filter.sortPriceDesc")}
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>

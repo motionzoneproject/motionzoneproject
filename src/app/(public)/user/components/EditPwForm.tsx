@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const formSchema = UserPasswordSchema;
 type FormValues = z.infer<typeof formSchema>;
 
 export function EditPwForm() {
+  const { t } = useTranslation();
   const { session } = useSession();
   const router = useRouter();
 
@@ -52,18 +54,18 @@ export function EditPwForm() {
     try {
       const result = await changePassword(values);
       if (!result.success) {
-        toast.error("Kunde inte ändra lösenord", {
+        toast.error(t("user.editPw.errorTitle"), {
           description: result.error,
         });
         return;
       }
 
-      toast.success("Lösenordet ändrades.");
+      toast.success(t("user.editPw.successToast"));
       setIsOpen(false);
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error("Ett oväntat fel uppstod.");
+      toast.error(t("user.editPw.unexpected"));
     }
   }
 
@@ -72,12 +74,12 @@ export function EditPwForm() {
       <DialogTrigger asChild>
         <Button variant="ghost" className="mx-2">
           <Pencil className="h-4 w-4" />
-          Ändra lösenord
+          {t("user.editPw.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[680px]">
         <DialogHeader>
-          <DialogTitle>Ändra ditt lösenord</DialogTitle>
+          <DialogTitle>{t("user.editPw.title")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -86,11 +88,11 @@ export function EditPwForm() {
               name="oldPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nuvarande lösenord:</FormLabel>
+                  <FormLabel>{t("user.editPw.current")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Skriv ditt lösenord..."
+                      placeholder={t("user.editPw.currentPlaceholder")}
                       autoComplete="given-name"
                       {...field}
                     />
@@ -104,11 +106,11 @@ export function EditPwForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nytt lösenord</FormLabel>
+                  <FormLabel>{t("user.editPw.new")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Skriv nytt lösenord..."
+                      placeholder={t("user.editPw.newPlaceholder")}
                       autoComplete="family-name"
                       {...field}
                     />
@@ -122,11 +124,11 @@ export function EditPwForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bekräfta lösenordet</FormLabel>
+                  <FormLabel>{t("user.editPw.confirm")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Skriv nya lösenordet igen..."
+                      placeholder={t("user.editPw.confirmPlaceholder")}
                       autoComplete="family-name"
                       {...field}
                     />
@@ -141,7 +143,9 @@ export function EditPwForm() {
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
-              {form.formState.isSubmitting ? "Sparar..." : "Spara ändringar"}
+              {form.formState.isSubmitting
+                ? t("user.editPw.submitting")
+                : t("user.editPw.submit")}
             </Button>
           </form>
         </Form>

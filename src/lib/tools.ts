@@ -59,7 +59,7 @@ export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") => {
     case "TUESDAY":
       return lang === "sv" ? "Tisdag" : "Tuesday";
     case "WEDNESDAY":
-      return lang === "sv" ? "Onsdag" : "Wednedsay";
+      return lang === "sv" ? "Onsdag" : "Wednesday";
     case "THURSDAY":
       return lang === "sv" ? "Torsdag" : "Thursday";
     case "FRIDAY":

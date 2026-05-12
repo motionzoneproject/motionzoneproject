@@ -17,7 +17,7 @@ export async function handleClips(
     return { success: true, msg: "No adjustment needed." };
   }
 
-  // Så vi hämtar purschaseItem, och inkluderar även purchasen så vi kan se vilken typ det är (CLIP, PACK eller COURSE). Kolla även unlimited.
+  // Så vi hämtar purchaseItem, och inkluderar även purchasen så vi kan se vilken typ det är (CLIP, PACK eller COURSE). Kolla även unlimited.
   const purchaseItem = await tx.purchaseItem.findUnique({
     where: { id: purchaseItemId },
     select: {

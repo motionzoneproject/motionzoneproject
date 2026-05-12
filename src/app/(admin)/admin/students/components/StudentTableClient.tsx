@@ -3,7 +3,7 @@
 import { EditIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import EditParticipantForm from "@/components/EditParticipantForm";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,7 @@ function CountDialogButton({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const id = useId();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -108,7 +109,10 @@ function CountDialogButton({
           <EditIcon className="h-4 w-4" />({count}st)
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-2xl">
+      <DialogContent
+        id={id}
+        className="max-h-[90dvh] overflow-auto sm:max-w-2xl"
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (

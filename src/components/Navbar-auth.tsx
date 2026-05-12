@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
@@ -18,6 +19,7 @@ export default function NavBarAuth({
 }: NavBarAuthProps) {
   const { session, user } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
 
   if (session && user) {
     return (
@@ -37,7 +39,7 @@ export default function NavBarAuth({
           )}
         >
           <Link href="/user" onClick={onNavigate}>
-            <span>Profil &amp; boka</span>
+            <span>{t("auth.profileAndBook")}</span>
             <span className="max-w-[12rem] truncate text-xs font-normal text-muted-foreground">
               {user.name}
             </span>
@@ -57,7 +59,7 @@ export default function NavBarAuth({
               className={cn(mobile && "justify-center")}
             >
               <Link href="/admin" onClick={onNavigate}>
-                Admin
+                {t("auth.admin")}
               </Link>
             </Button>
           )}
@@ -76,7 +78,7 @@ export default function NavBarAuth({
               });
             }}
           >
-            Logga ut
+            {t("auth.signOut")}
           </Button>
         </div>
       </div>
@@ -92,7 +94,7 @@ export default function NavBarAuth({
       )}
     >
       <Link href="/signin" onClick={onNavigate}>
-        Logga in
+        {t("auth.signIn")}
       </Link>
     </Button>
   );

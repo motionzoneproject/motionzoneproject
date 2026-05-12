@@ -1,19 +1,39 @@
 "use client";
 
+import i18next from "i18next";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { allLangs } from "@/locales";
+import { useTranslation } from "react-i18next";
+import { allLangs, defaultLang, normalizeLang } from "@/locales";
+import {
+  readClientLangCookie,
+  writeClientLangCookie,
+} from "@/locales/client-lang-cookie";
 
 export default function LanguageSwitcher() {
-  const [currentLang, setCurrentLang] = useState("sv");
+  const [currentLang, setCurrentLang] = useState(defaultLang.value);
+  const { t } = useTranslation();
+  const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("i18nextLng");
-    if (stored) setCurrentLang(stored.slice(0, 2));
+    async function syncLang() {
+      const stored = await readClientLangCookie();
+      const nextLang = normalizeLang(stored ?? i18next.resolvedLanguage);
+
+      setCurrentLang(nextLang);
+      void i18next.changeLanguage(nextLang);
+    }
+
+    void syncLang();
   }, []);
 
   function handleChange(value: string) {
-    setCurrentLang(value);
-    localStorage.setItem("i18nextLng", value);
+    const nextLang = normalizeLang(value);
+    setCurrentLang(nextLang);
+    localStorage.setItem("i18nextLng", nextLang);
+    void writeClientLangCookie(nextLang);
+    void i18next.changeLanguage(nextLang);
+    router.refresh();
   }
 
   return (
@@ -31,7 +51,7 @@ export default function LanguageSwitcher() {
                 ? "bg-brand/10 scale-105"
                 : "opacity-50 hover:opacity-100 hover:bg-brand/5"
             }`}
-            aria-label={`Byt till ${lang.label}`}
+            aria-label={t("language.switchTo", { language: lang.label })}
             aria-pressed={isActive}
           >
             {lang.shortLabel}
