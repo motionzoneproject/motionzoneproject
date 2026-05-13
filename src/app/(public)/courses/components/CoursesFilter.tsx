@@ -33,10 +33,7 @@ export function CoursesFilter() {
     () => new URLSearchParams(searchParams),
     [searchParams],
   );
-  // räknar hur många filter som är aktiva (sökning, typ, åldersgrupp, sortering).
-  // När filterpanelen är stängd vet användaren ändå att filter är aktiva — den lila
-  // siffran på knappen visar t.ex. "2" om två filter är på. Utan det skulle man kunna
-  // missa att resultaten är filtrerade och undra varför inte alla kurser syns.
+
   const activeCount = useMemo(() => {
     let count = 0;
     if (searchParams.get("q")) count++;
@@ -82,23 +79,14 @@ export function CoursesFilter() {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-2 p-4 hover:bg-muted/30 transition-colors rounded-2xl"
       >
-        <div
-          className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0"
-          style={{ backgroundColor: "#8f5ccf26" }}
-        >
-          <SlidersHorizontal
-            className="w-3.5 h-3.5"
-            style={{ color: "#8f5ccf" }}
-          />
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-brand/15">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-brand" />
         </div>
         <span className="text-sm font-semibold text-foreground">
           Filtrera kurser
         </span>
         {activeCount > 0 && (
-          <span
-            className="ml-1 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white"
-            style={{ backgroundColor: "#8f5ccf" }}
-          >
+          <span className="ml-1 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white bg-brand">
             {activeCount}
           </span>
         )}
@@ -115,14 +103,8 @@ export function CoursesFilter() {
             {/* Search Field */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
-                  style={{ backgroundColor: "#8f5ccf1f" }}
-                >
-                  <Search
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#8f5ccf" }}
-                  />
+                <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand/12">
+                  <Search className="w-3.5 h-3.5 text-brand" />
                 </div>
                 <Label className="text-xs font-medium text-muted-foreground">
                   Sök kurs
@@ -137,14 +119,8 @@ export function CoursesFilter() {
             {/* Product Type Filter */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
-                  style={{ backgroundColor: "#5aa6b81f" }}
-                >
-                  <Package
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#5aa6b8" }}
-                  />
+                <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand-secondary/12">
+                  <Package className="w-3.5 h-3.5 text-brand-secondary" />
                 </div>
                 <Label className="text-xs font-medium text-muted-foreground">
                   Produkttyp
@@ -175,11 +151,8 @@ export function CoursesFilter() {
             {/* Age Group Filter */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
-                  style={{ backgroundColor: "#e87ea11f" }}
-                >
-                  <Users className="w-3.5 h-3.5" style={{ color: "#e87ea1" }} />
+                <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand-light/12">
+                  <Users className="w-3.5 h-3.5 text-brand-light" />
                 </div>
                 <Label className="text-xs font-medium text-muted-foreground">
                   Åldersgrupp
@@ -209,14 +182,8 @@ export function CoursesFilter() {
             {/* Sorting Filter */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="flex items-center justify-center w-7 h-7 rounded-full shrink-0"
-                  style={{ backgroundColor: "#e8a04d1f" }}
-                >
-                  <ArrowUpDown
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#e8a04d" }}
-                  />
+                <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand-secondary-light/12">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-brand-secondary-light" />
                 </div>
                 <Label className="text-xs font-medium text-muted-foreground">
                   Sortering
