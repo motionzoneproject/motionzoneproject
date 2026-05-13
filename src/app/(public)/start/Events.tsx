@@ -4,8 +4,12 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { Event } from "@/generated/prisma/client";
+import { pick } from "@/lib/i18n/pick";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 
 interface EventsProps {
   events: Event[];
@@ -27,6 +31,9 @@ const accentGradients = [
 ];
 
 export default function Events({ events }: EventsProps) {
+  const { t, i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() &&
@@ -50,11 +57,9 @@ export default function Events({ events }: EventsProps) {
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
-            Kommande Event
+            {t("home.eventsTitle")}
           </h2>
-          <p className="text-muted-foreground">
-            Inga events tillgängliga för närvarande
-          </p>
+          <p className="text-muted-foreground">{t("home.eventsEmpty")}</p>
         </div>
       </section>
     );
@@ -77,10 +82,10 @@ export default function Events({ events }: EventsProps) {
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
-            Kommande Event
+            {t("home.eventsTitle")}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-            Köp biljetter och delta i våra danshöjdpunkter
+            {t("home.eventsSubtitle")}
           </p>
         </div>
 
@@ -89,7 +94,7 @@ export default function Events({ events }: EventsProps) {
             <button
               type="button"
               onClick={prevEvent}
-              aria-label="Föregående event"
+              aria-label={t("home.eventsPrev")}
               className="p-2 rounded-full backdrop-blur-xl bg-card/60 border border-white/10 text-foreground hover:scale-110 transition-all duration-300 shadow-lg"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -107,7 +112,7 @@ export default function Events({ events }: EventsProps) {
                   <div className="relative overflow-hidden h-52">
                     <Image
                       src={currentEvent.imageURL}
-                      alt={currentEvent.headline}
+                      alt={pick(currentEvent, "headline", lang) as string}
                       width={500}
                       height={300}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -123,11 +128,11 @@ export default function Events({ events }: EventsProps) {
                   />
 
                   <h3 className="text-xl font-bold text-foreground">
-                    {currentEvent.headline}
+                    {pick(currentEvent, "headline", lang) as string}
                   </h3>
 
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    {currentEvent.description}
+                    {pick(currentEvent, "description", lang) as string}
                   </p>
 
                   <div className="space-y-2 pt-4 border-t border-white/10">
@@ -136,10 +141,10 @@ export default function Events({ events }: EventsProps) {
                         className="w-4 h-4"
                         style={{ color: accent.accentVar }}
                       />
-                      {currentEvent.startDate.toLocaleDateString("sv-SE")}
+                      {currentEvent.startDate.toLocaleDateString(dateLocale)}
                       {currentEvent.endDate &&
                       !isSameDay(currentEvent.endDate, currentEvent.startDate)
-                        ? ` - ${currentEvent.endDate.toLocaleDateString("sv-SE")}`
+                        ? ` - ${currentEvent.endDate.toLocaleDateString(dateLocale)}`
                         : ""}
                     </div>
                   </div>
@@ -149,7 +154,9 @@ export default function Events({ events }: EventsProps) {
                       asChild
                       className="w-full mt-2 bg-brand hover:bg-brand-light text-white"
                     >
-                      <Link href={currentEvent.link}>Köp Biljett</Link>
+                      <Link href={currentEvent.link}>
+                        {t("home.eventsBuyTicket")}
+                      </Link>
                     </Button>
                   )}
                 </div>
@@ -159,7 +166,7 @@ export default function Events({ events }: EventsProps) {
             <button
               type="button"
               onClick={nextEvent}
-              aria-label="Nästa event"
+              aria-label={t("home.eventsNext")}
               className="p-2 rounded-full backdrop-blur-xl bg-card/60 border border-white/10 text-foreground hover:scale-110 transition-all duration-300 shadow-lg"
             >
               <ChevronRight className="w-5 h-5" />
@@ -173,7 +180,7 @@ export default function Events({ events }: EventsProps) {
                   key={event.id}
                   type="button"
                   onClick={() => setCurrentEventIndex(index)}
-                  aria-label={`Gå till event ${index + 1}`}
+                  aria-label={t("home.eventsGoTo", { number: index + 1 })}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     index === currentEventIndex
                       ? "w-6 bg-brand"

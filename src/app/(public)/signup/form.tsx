@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const formSchema = SignUpFormSchema;
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
+  const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,14 +61,14 @@ export default function SignUpForm() {
       const result = await signUpWithDetails(values);
 
       if (!result.success) {
-        toast.error("Registrering misslyckades", {
+        toast.error(t("signup.errorTitle"), {
           description: result.error,
         });
         return;
       }
 
-      toast.success("Konto skapat!", {
-        description: "Välkommen till MotionZone! Logga in för att fortsätta.",
+      toast.success(t("signup.successTitle"), {
+        description: t("signup.successDescription"),
       });
 
       // Reset form to clear inputs
@@ -76,8 +78,10 @@ export default function SignUpForm() {
       router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Ett nätverksfel inträffade";
-      toast.error("Något gick fel", {
+        error instanceof Error
+          ? error.message
+          : t("signup.networkErrorFallback");
+      toast.error(t("signup.networkErrorTitle"), {
         description: errorMessage,
       });
     }
@@ -92,8 +96,8 @@ export default function SignUpForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Skapa konto</CardTitle>
-        <CardDescription>Fyll i dina uppgifter</CardDescription>
+        <CardTitle>{t("signup.cardTitle")}</CardTitle>
+        <CardDescription>{t("signup.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -104,10 +108,10 @@ export default function SignUpForm() {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>Förnamn</FormLabel>
+                    <FormLabel required>{t("signup.firstName")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Förnamn"
+                        placeholder={t("signup.firstNamePlaceholder")}
                         autoComplete="given-name"
                         aria-required="true"
                         {...field}
@@ -122,10 +126,10 @@ export default function SignUpForm() {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>Efternamn</FormLabel>
+                    <FormLabel required>{t("signup.lastName")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Efternamn"
+                        placeholder={t("signup.lastNamePlaceholder")}
                         autoComplete="family-name"
                         aria-required="true"
                         {...field}
@@ -141,11 +145,11 @@ export default function SignUpForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>E-post</FormLabel>
+                  <FormLabel required>{t("signup.email")}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="din@epost.se"
+                      placeholder={t("signup.emailPlaceholder")}
                       autoComplete="email"
                       aria-required="true"
                       {...field}
@@ -160,10 +164,10 @@ export default function SignUpForm() {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Telefonnummer</FormLabel>
+                  <FormLabel required>{t("signup.phone")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="070-123 45 67"
+                      placeholder={t("signup.phonePlaceholder")}
                       autoComplete="tel"
                       aria-required="true"
                       {...field}
@@ -178,10 +182,10 @@ export default function SignUpForm() {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Gatuadress</FormLabel>
+                  <FormLabel required>{t("signup.address")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Gatuadress"
+                      placeholder={t("signup.addressPlaceholder")}
                       autoComplete="street-address"
                       aria-required="true"
                       {...field}
@@ -197,10 +201,10 @@ export default function SignUpForm() {
                 name="postalCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>Postnummer</FormLabel>
+                    <FormLabel required>{t("signup.postalCode")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="123 45"
+                        placeholder={t("signup.postalCodePlaceholder")}
                         autoComplete="postal-code"
                         aria-required="true"
                         {...field}
@@ -215,10 +219,10 @@ export default function SignUpForm() {
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>Ort</FormLabel>
+                    <FormLabel required>{t("signup.city")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ort"
+                        placeholder={t("signup.cityPlaceholder")}
                         autoComplete="address-level2"
                         aria-required="true"
                         {...field}
@@ -234,7 +238,7 @@ export default function SignUpForm() {
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Födelsedatum</FormLabel>
+                  <FormLabel required>{t("signup.dateOfBirth")}</FormLabel>
                   <FormControl>
                     <Input type="date" aria-required="true" {...field} />
                   </FormControl>
@@ -254,9 +258,7 @@ export default function SignUpForm() {
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Jag godkänner att foton och videor på mig får delas
-                    </FormLabel>
+                    <FormLabel>{t("signup.allowPhoto")}</FormLabel>
                   </div>
                 </FormItem>
               )}
@@ -266,11 +268,11 @@ export default function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Lösenord</FormLabel>
+                  <FormLabel required>{t("signup.password")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="********"
+                      placeholder={t("signup.passwordPlaceholder")}
                       autoComplete="new-password"
                       aria-required="true"
                       {...field}
@@ -285,11 +287,11 @@ export default function SignUpForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Bekräfta lösenord</FormLabel>
+                  <FormLabel required>{t("signup.confirmPassword")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="********"
+                      placeholder={t("signup.passwordPlaceholder")}
                       autoComplete="new-password"
                       aria-required="true"
                       {...field}
@@ -304,7 +306,9 @@ export default function SignUpForm() {
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
-              {form.formState.isSubmitting ? "Skapar konto..." : "Skapa konto"}
+              {form.formState.isSubmitting
+                ? t("signup.submitting")
+                : t("signup.submit")}
             </Button>
           </form>
         </Form>

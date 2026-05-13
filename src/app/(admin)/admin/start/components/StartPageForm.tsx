@@ -29,6 +29,7 @@ import { adminStartPageSchema } from "@/validations/adminforms";
 
 type StartPageFormProps = {
   content: StartPageContent;
+  lang: "sv" | "en";
 };
 
 type FormValues = z.infer<typeof adminStartPageSchema>;
@@ -94,7 +95,7 @@ const IMAGE_DEFAULTS = {
   feature3Image: "/moderna-lokaler.png",
 } as const;
 
-export function StartPageForm({ content }: StartPageFormProps) {
+export function StartPageForm({ content, lang }: StartPageFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -102,22 +103,35 @@ export function StartPageForm({ content }: StartPageFormProps) {
     resolver: zodResolver(adminStartPageSchema),
     defaultValues: {
       heroImage: content.heroImage,
-      heroLabel: content.heroLabel,
-      heroTitleLine1: content.heroTitleLine1,
-      heroTitleAccent: content.heroTitleAccent,
-      heroTitleLine2: content.heroTitleLine2,
-      heroSubtext: content.heroSubtext,
-      featuresTitle: content.featuresTitle,
-      featuresSubtext: content.featuresSubtext,
+      heroLabel: content.heroLabel ?? "",
+      heroLabel_en: content.heroLabel_en ?? "",
+      heroTitleLine1: content.heroTitleLine1 ?? "",
+      heroTitleLine1_en: content.heroTitleLine1_en ?? "",
+      heroTitleAccent: content.heroTitleAccent ?? "",
+      heroTitleAccent_en: content.heroTitleAccent_en ?? "",
+      heroTitleLine2: content.heroTitleLine2 ?? "",
+      heroTitleLine2_en: content.heroTitleLine2_en ?? "",
+      heroSubtext: content.heroSubtext ?? "",
+      heroSubtext_en: content.heroSubtext_en ?? "",
+      featuresTitle: content.featuresTitle ?? "",
+      featuresTitle_en: content.featuresTitle_en ?? "",
+      featuresSubtext: content.featuresSubtext ?? "",
+      featuresSubtext_en: content.featuresSubtext_en ?? "",
       feature1Image: content.feature1Image,
-      feature1Title: content.feature1Title,
-      feature1Description: content.feature1Description,
+      feature1Title: content.feature1Title ?? "",
+      feature1Title_en: content.feature1Title_en ?? "",
+      feature1Description: content.feature1Description ?? "",
+      feature1Description_en: content.feature1Description_en ?? "",
       feature2Image: content.feature2Image,
-      feature2Title: content.feature2Title,
-      feature2Description: content.feature2Description,
+      feature2Title: content.feature2Title ?? "",
+      feature2Title_en: content.feature2Title_en ?? "",
+      feature2Description: content.feature2Description ?? "",
+      feature2Description_en: content.feature2Description_en ?? "",
       feature3Image: content.feature3Image,
-      feature3Title: content.feature3Title,
-      feature3Description: content.feature3Description,
+      feature3Title: content.feature3Title ?? "",
+      feature3Title_en: content.feature3Title_en ?? "",
+      feature3Description: content.feature3Description ?? "",
+      feature3Description_en: content.feature3Description_en ?? "",
     },
   });
 
@@ -145,6 +159,7 @@ export function StartPageForm({ content }: StartPageFormProps) {
       }
 
       const result = await updateStartPageContent(resolved);
+      console.log(JSON.stringify(result));
 
       if (result.success) {
         // Best-effort cleanup of replaced S3 images
@@ -173,6 +188,9 @@ export function StartPageForm({ content }: StartPageFormProps) {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left column – background image preview */}
+
+              {/* do this so i get some space */}
+
               <FormField
                 control={form.control}
                 name="heroImage"
@@ -198,10 +216,13 @@ export function StartPageForm({ content }: StartPageFormProps) {
               <div className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="heroLabel"
+                  name={lang === "en" ? "heroLabel_en" : "heroLabel"}
+                  key={`heroLabel-${lang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Etikett (liten text ovan rubriken)</FormLabel>
+                      <FormLabel>
+                        Etikett (liten text ovan rubriken) ({lang}){" "}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Välkommen till Motion Zone"
@@ -213,13 +234,20 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   )}
                 />
 
+                {/*  */}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/*  */}
+
                   <FormField
                     control={form.control}
-                    name="heroTitleLine1"
+                    name={
+                      lang === "en" ? "heroTitleLine1_en" : "heroTitleLine1"
+                    }
+                    key={`heroTitleLine1-${lang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – del 1</FormLabel>
+                        <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Dans är" {...field} />
                         </FormControl>
@@ -227,12 +255,18 @@ export function StartPageForm({ content }: StartPageFormProps) {
                       </FormItem>
                     )}
                   />
+
+                  {/*  */}
+
                   <FormField
                     control={form.control}
-                    name="heroTitleAccent"
+                    name={
+                      lang === "en" ? "heroTitleAccent_en" : "heroTitleAccent"
+                    }
+                    key={`heroTitleAccent-${lang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – accent</FormLabel>
+                        <FormLabel>Rubrik – accent ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Passion" {...field} />
                         </FormControl>
@@ -240,12 +274,18 @@ export function StartPageForm({ content }: StartPageFormProps) {
                       </FormItem>
                     )}
                   />
+
+                  {/*  */}
+
                   <FormField
                     control={form.control}
-                    name="heroTitleLine2"
+                    name={
+                      lang === "en" ? "heroTitleLine2_en" : "heroTitleLine2"
+                    }
+                    key={`heroTitleLine2-${lang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – del 2</FormLabel>
+                        <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Och Livet i Rörelse" {...field} />
                         </FormControl>
@@ -254,6 +294,9 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     )}
                   />
                 </div>
+
+                {/*  */}
+
                 <FormDescription>
                   Visas som:{" "}
                   <em>
@@ -265,12 +308,15 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   </em>
                 </FormDescription>
 
+                {/*  */}
+
                 <FormField
                   control={form.control}
-                  name="heroSubtext"
+                  name={lang === "en" ? "heroSubtext_en" : "heroSubtext"}
+                  key={`heroSubtext-${lang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Brödtext</FormLabel>
+                      <FormLabel>Brödtext ({lang})</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>
@@ -278,24 +324,30 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     </FormItem>
                   )}
                 />
+
+                {/*  */}
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* ── Features ──────────────────────────────────────────────────── */}
+
         <Card>
           <CardHeader>
             <CardTitle>Features-sektion</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/*  */}
+
               <FormField
                 control={form.control}
-                name="featuresTitle"
+                name={lang === "en" ? "featuresTitle_en" : "featuresTitle"}
+                key={`featuresTitle-${lang}`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sektionens titel</FormLabel>
+                    <FormLabel>Sektionens titel ({lang})</FormLabel>
                     <FormControl>
                       <Input placeholder="Varför Motion Zone?" {...field} />
                     </FormControl>
@@ -303,12 +355,16 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   </FormItem>
                 )}
               />
+
+              {/*  */}
+
               <FormField
                 control={form.control}
-                name="featuresSubtext"
+                name={lang === "en" ? "featuresSubtext_en" : "featuresSubtext"}
+                key={`featuresSubtext-${lang}`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sektionens underrubrik</FormLabel>
+                    <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -316,6 +372,8 @@ export function StartPageForm({ content }: StartPageFormProps) {
                   </FormItem>
                 )}
               />
+
+              {/*  */}
             </div>
 
             {/* Feature cards – horizontal grid on wider screens */}
@@ -332,6 +390,8 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     <CardTitle className="text-base">{label}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/*  */}
+
                     <FormField
                       control={form.control}
                       name={`feature${n}Image`}
@@ -352,12 +412,17 @@ export function StartPageForm({ content }: StartPageFormProps) {
                         </FormItem>
                       )}
                     />
+
+                    {/*  */}
+
                     <FormField
                       control={form.control}
                       name={`feature${n}Title`}
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Titel</FormLabel>
+                        <FormItem
+                          className={`${lang === "sv" ? "" : "hidden"}`}
+                        >
+                          <FormLabel>Titel ({lang})</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -367,10 +432,30 @@ export function StartPageForm({ content }: StartPageFormProps) {
                     />
                     <FormField
                       control={form.control}
+                      name={`feature${n}Title_en`}
+                      render={({ field }) => (
+                        <FormItem
+                          className={`${lang === "sv" ? "hidden" : ""}`}
+                        >
+                          <FormLabel>Titel ({lang})</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/*  */}
+
+                    <FormField
+                      control={form.control}
                       name={`feature${n}Description`}
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Beskrivning</FormLabel>
+                        <FormItem
+                          className={`${lang === "sv" ? "" : "hidden"}`}
+                        >
+                          <FormLabel>Beskrivning ({lang})</FormLabel>
                           <FormControl>
                             <Textarea rows={2} {...field} />
                           </FormControl>
@@ -378,6 +463,24 @@ export function StartPageForm({ content }: StartPageFormProps) {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name={`feature${n}Description_en`}
+                      render={({ field }) => (
+                        <FormItem
+                          className={`${lang === "sv" ? "hidden" : ""}`}
+                        >
+                          <FormLabel>Beskrivning ({lang})</FormLabel>
+                          <FormControl>
+                            <Textarea rows={2} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/*  */}
                   </CardContent>
                 </Card>
               ))}

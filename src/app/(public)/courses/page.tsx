@@ -5,13 +5,11 @@ import {
   InfinityIcon,
   Info,
   MapPin,
-  ShoppingBag,
-  Sparkles,
-  Star,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PaginationBar } from "@/components/PaginationBar";
+import JsonLd from "@/components/seo/JsonLd";
 import {
   Accordion,
   AccordionContent,
@@ -23,17 +21,22 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
 import { getCourseName, getVeckodag } from "@/lib/tools";
+import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
+
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 
 interface Props {
   searchParams: Promise<{
@@ -45,14 +48,42 @@ interface Props {
   }>;
 }
 
+// TODO(i18n): swap title/description by `i18nextLng` cookie when bilingual
+// metadata is prioritised.
 export const metadata: Metadata = {
   title: "Våra kurser",
   description:
     "Bläddra och boka MotionZone Växjös danskurser för barn, ungdomar och vuxna.",
+  alternates: {
+    canonical: `${SITE_URL}/courses`,
+    languages: {
+      sv: `${SITE_URL}/courses`,
+      en: `${SITE_URL}/courses`,
+      "x-default": `${SITE_URL}/courses`,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: "Våra kurser — Motion Zone Växjö",
+    description:
+      "Bläddra och boka danskurser, klippkort och paket hos Motion Zone Växjö.",
+    url: `${SITE_URL}/courses`,
+    siteName: "MotionZone Växjö",
+    locale: "sv_SE",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Våra kurser — Motion Zone Växjö",
+    description:
+      "Bläddra och boka danskurser, klippkort och paket hos Motion Zone Växjö.",
+  },
 };
 
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
+  const { lang, t } = await getDictionary();
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
 
   // Build filters based on search params
   const filters = {
@@ -231,8 +262,64 @@ export default async function Page({ searchParams }: Props) {
     }),
   );
 
+  // Collect unique course names for the ItemList JSON-LD. We use Swedish names
+  // here because metadata above is Swedish; bilingual JSON-LD would require
+  // separate inLanguage entries.
+  const seenCourseIds = new Set<string>();
+  const courseListItems: Array<{ name: string; id: string }> = [];
+  for (const product of productsWithData) {
+    for (const pc of product.courses) {
+      const course = pc.course;
+      if (seenCourseIds.has(course.id)) continue;
+      seenCourseIds.add(course.id);
+      courseListItems.push({
+        id: course.id,
+        name: getCourseName(course, lang),
+      });
+    }
+  }
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Hem",
+        item: `${SITE_URL}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Kurser",
+        item: `${SITE_URL}/courses`,
+      },
+    ],
+  };
+
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Danskurser hos Motion Zone Växjö",
+    itemListElement: courseListItems.map((c, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      item: {
+        "@type": "Course",
+        name: c.name,
+        provider: {
+          "@type": "Organization",
+          name: "Motion Zone Växjö",
+          sameAs: SITE_URL,
+        },
+      },
+    })),
+  };
+
   return (
     <div className="bg-background">
+      <JsonLd data={[breadcrumbLd, itemListLd]} />
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="py-5 border-b border-border mb-6">
           {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
@@ -245,40 +332,34 @@ export default async function Page({ searchParams }: Props) {
             enkelt in och boka våra lektioner!
           </p> */}
 
-          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
-            Köp tillgång till våra
-            <span className="font-serif italic text-brand-light"> kurser</span>
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+            {t.coursesPage.titleLine1}
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              {t.coursesPage.titleAccent}
+            </span>
           </h1>
           <div className="w-full">
-            <p className="text-muted-foreground">
-              Vid köp blir du samtidigt medlem hos Motion Zone. Du kan även köpa
-              kurser till exempelvis dina barn genom att enkelt lägga till
-              deltagare i kundkorgen. När köpet är klart loggar du in och bokar
-              de lektioner ni vill gå.
-            </p>
+            <p className="text-muted-foreground">{t.coursesPage.intro}</p>
 
             <CoursesFilter />
           </div>
         </div>
         {/* Filter component */}
-        <div className="flex items-center gap-2 mt-4">
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ backgroundColor: "#8f5ccf26" }}
-          >
-            <ShoppingBag className="w-4 h-4" style={{ color: "#8f5ccf" }} />
-          </div>
-          <p className="font-bold text-foreground">Våra produkter</p>
-        </div>
+        <p className="font-bold mt-4">{t.coursesPage.ourProducts}</p>
 
         {totalProducts > 0 ? (
           <>
             {/* Results count */}
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
               <span>
-                Visar {skip + 1}-
-                {Math.min(skip + ITEMS_PER_PAGE, totalProducts)} av{" "}
-                {totalProducts} produkter
+                {t.coursesPage.showingRange
+                  .replace("{{from}}", String(skip + 1))
+                  .replace(
+                    "{{to}}",
+                    String(Math.min(skip + ITEMS_PER_PAGE, totalProducts)),
+                  )
+                  .replace("{{total}}", String(totalProducts))}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -290,28 +371,11 @@ export default async function Page({ searchParams }: Props) {
                     key={p.id}
                     className="group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
                   >
-                    {/* Image header */}
-                    <div className="relative h-48 overflow-hidden shrink-0">
-                      {p.imageURL ? (
-                        <Image
-                          src={p.imageURL}
-                          alt={p.name}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-linear-to-br from-brand/20 via-brand-secondary/10 to-brand/5" />
-                      )}
-                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                      {/* Price */}
-                      <div className="absolute bottom-3 left-4">
-                        <span className="text-white text-2xl font-bold drop-shadow-sm">
-                          {formatPrice(p.price)}
-                        </span>
-                      </div>
-                      {/* Spots badge */}
-                      <div className="absolute top-3 right-3">
+                    <CardHeader>
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge className="font-bold text-lg bg-brand text-white border-0">
+                          {formatPrice(p.price, lang)}
+                        </Badge>
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
                           <Badge
@@ -324,7 +388,10 @@ export default async function Page({ searchParams }: Props) {
                                 : "backdrop-blur-sm bg-black/40 text-green-400 border-green-500/50"
                             }
                           >
-                            {`${p.spotsLeft} platser kvar`}
+                            {t.coursesPage.spotsLeft.replace(
+                              "{{count}}",
+                              String(p.spotsLeft),
+                            )}
                           </Badge>
                         ) : p.spotsLeft === Infinity ? (
                           <Badge
@@ -334,43 +401,50 @@ export default async function Page({ searchParams }: Props) {
                             <InfinityIcon className="text-green-400 w-4 h-4" />
                           </Badge>
                         ) : (
-                          <Badge variant="destructive">
-                            <Info /> Osäkert
+                          <Badge variant={"destructive"}>
+                            <Info /> {t.coursesPage.spotsUncertain}
                           </Badge>
                         )}
                       </div>
-                    </div>
-
-                    <CardHeader className="pb-2 pt-4">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Badge
-                          variant="secondary"
-                          className="text-xs font-medium"
-                        >
-                          {p.type === "CLIP"
-                            ? "Klippkort"
-                            : p.type === "PACK"
-                              ? "Paket"
-                              : "Kurs"}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl leading-tight font-semibold">
-                        {p.name}
+                      <CardTitle className="text-lg">
+                        {pick(p, "name", lang) as string}
                       </CardTitle>
+                      <CardDescription className="whitespace-pre-line">
+                        {t.coursesPage.productTypeLabel.replace(
+                          "{{type}}",
+                          p.type === "CLIP"
+                            ? t.coursesPage.productTypeClip
+                            : t.coursesPage.productTypeCourse,
+                        )}
+                      </CardDescription>
                     </CardHeader>
 
                     <CardContent className="flex-1 space-y-4">
+                      {p.imageURL && (
+                        <div className="overflow-hidden max-h-64 rounded-md">
+                          <Image
+                            src={p.imageURL}
+                            alt={pick(p, "name", lang) as string}
+                            width={800}
+                            height={600}
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <CalendarDays className="w-3 h-3" />
-                          Giltig under
+                          {t.coursesPage.validDuring}
                         </div>
-                        {p.terminer.map((t) => (
+                        {p.terminer.map((termin) => (
                           <div
-                            key={t.id}
-                            className="text-sm bg-muted/60 px-3 py-1.5 rounded-lg border border-border/60"
+                            key={termin.id}
+                            className="text-sm bg-muted p-2 rounded border border-border"
                           >
-                            <p className="font-medium">{t.name}</p>
+                            <p className="font-medium">
+                              {pick(termin, "name", lang) as string}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -378,30 +452,41 @@ export default async function Page({ searchParams }: Props) {
                       <Accordion type="single" collapsible>
                         <AccordionItem value="description">
                           <AccordionTrigger className="text-sm hover:text-brand">
-                            Om Produkten
+                            {t.coursesPage.aboutProduct}
                           </AccordionTrigger>
                           <AccordionContent className="whitespace-pre-line">
-                            {p.description && ` – ${p.description}`}
+                            {(() => {
+                              const desc = pick(
+                                p,
+                                "description",
+                                lang,
+                              ) as string;
+                              return desc ? ` – ${desc}` : "";
+                            })()}
                           </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-1">
                           <AccordionTrigger className="text-sm hover:text-brand">
-                            Innehåll och Schema
+                            {t.coursesPage.contentSchedule}
                           </AccordionTrigger>
                           <AccordionContent>
                             <div className="space-y-3 text-sm">
                               <div>
                                 <span className="font-medium text-sm flex items-center gap-1 mb-2">
-                                  <Book className="w-3 h-3" /> Kurser som ingår:
+                                  <Book className="w-3 h-3" />{" "}
+                                  {t.coursesPage.coursesIncluded}
                                 </span>
                                 {productCourses.map((pc) => {
                                   const c = pc.course;
 
                                   const lessonCount =
                                     p.type === "CLIP"
-                                      ? `${String(p.totalCount ?? 0)} (klipp)`
+                                      ? t.coursesPage.lessonCountClip.replace(
+                                          "{{count}}",
+                                          String(p.totalCount ?? 0),
+                                        )
                                       : pc.unlimited
-                                        ? "Obegränsat"
+                                        ? t.coursesPage.lessonCountUnlimited
                                         : String(pc.lessonsIncluded);
 
                                   return (
@@ -411,13 +496,16 @@ export default async function Page({ searchParams }: Props) {
                                     >
                                       <div className="flex justify-between gap-2 mb-1 items-center">
                                         <div className="font-medium">
-                                          {`${getCourseName(c)}`}
+                                          {`${getCourseName(c, lang)}`}
                                         </div>
 
                                         <CourseInfoDialog course={c} />
                                       </div>
                                       <p className="text-muted-foreground text-xs">
-                                        Antal Tillfällen: {lessonCount}
+                                        {t.coursesPage.lessonCountLabel.replace(
+                                          "{{count}}",
+                                          lessonCount,
+                                        )}
                                       </p>
                                       <div className="mt-2">
                                         {p.schemaItems
@@ -428,13 +516,19 @@ export default async function Page({ searchParams }: Props) {
                                               className="text-xs p-2 bg-card text-muted-foreground rounded border border-border mb-2"
                                             >
                                               <p className="font-medium">
-                                                {s.termin.name}
+                                                {
+                                                  pick(
+                                                    s.termin,
+                                                    "name",
+                                                    lang,
+                                                  ) as string
+                                                }
                                               </p>
                                               <p className="flex items-center text-muted-foreground">
-                                                {getVeckodag(s.weekday)}{" "}
+                                                {getVeckodag(s.weekday, lang)}{" "}
                                                 <Clock className="inline w-3 h-3 mx-1" />
                                                 {s.timeStart.toLocaleTimeString(
-                                                  "sv-SE",
+                                                  dateLocale,
                                                   {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
@@ -442,7 +536,7 @@ export default async function Page({ searchParams }: Props) {
                                                 )}
                                                 –
                                                 {s.timeEnd.toLocaleTimeString(
-                                                  "sv-SE",
+                                                  dateLocale,
                                                   {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
@@ -452,11 +546,35 @@ export default async function Page({ searchParams }: Props) {
                                               {s.place && (
                                                 <p className="text-brand flex items-center gap-1 mt-1">
                                                   <MapPin className="w-3 h-3" />
-                                                  {s.place}
+                                                  {
+                                                    pick(
+                                                      s,
+                                                      "place",
+                                                      lang,
+                                                    ) as string
+                                                  }
                                                 </p>
                                               )}
                                               <div className="mt-2">
-                                                {`Period: ${(s.customStartDate ?? s.termin.startDate).toLocaleDateString("sv-SE")} - ${(s.customEndDate ?? s.termin.endDate).toLocaleDateString("sv-SE")}`}
+                                                {t.coursesPage.period
+                                                  .replace(
+                                                    "{{from}}",
+                                                    (
+                                                      s.customStartDate ??
+                                                      s.termin.startDate
+                                                    ).toLocaleDateString(
+                                                      dateLocale,
+                                                    ),
+                                                  )
+                                                  .replace(
+                                                    "{{to}}",
+                                                    (
+                                                      s.customEndDate ??
+                                                      s.termin.endDate
+                                                    ).toLocaleDateString(
+                                                      dateLocale,
+                                                    ),
+                                                  )}
                                               </div>
                                             </div>
                                           ))}
@@ -487,7 +605,7 @@ export default async function Page({ searchParams }: Props) {
                           disabled={p.spotsLeft === 0}
                           className="w-full bg-brand hover:bg-brand-light text-white font-medium transition-colors duration-200"
                         >
-                          Köp nu →
+                          {t.coursesPage.buyNow}
                         </Button>
                       </form>
                     </CardFooter>
@@ -505,39 +623,8 @@ export default async function Page({ searchParams }: Props) {
             </div>
           </>
         ) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/20 py-16 px-6 flex flex-col items-center justify-center text-center">
-            <div className="relative mb-6 flex items-center justify-center">
-              {/* Soft glow blob */}
-              <div
-                className="absolute w-24 h-24 rounded-full blur-2xl opacity-25"
-                style={{ backgroundColor: "#8f5ccf" }}
-              />
-              {/* Sparkle decorations */}
-              <Sparkles
-                className="absolute -top-4 -right-4 w-5 h-5 opacity-80"
-                style={{ color: "#e8a04d" }}
-              />
-              <Star
-                className="absolute -bottom-2 -left-5 w-4 h-4 opacity-70"
-                style={{ color: "#e87ea1" }}
-              />
-              <Star
-                className="absolute top-0 -left-4 w-3 h-3 opacity-60"
-                style={{ color: "#8f5ccf" }}
-              />
-              {/* Main icon */}
-              <ShoppingBag
-                className="relative w-16 h-16"
-                style={{ color: "#8f5ccf" }}
-              />
-            </div>
-            <p className="font-bold text-foreground text-lg mb-1">
-              Inga produkter hittades
-            </p>
-            <p className="text-muted-foreground text-sm max-w-xs">
-              Prova att justera eller ta bort dina filter för att se fler
-              kurser.
-            </p>
+          <div className="text-center py-12 border rounded-lg bg-muted/20 mt-4">
+            <p className="text-muted-foreground">{t.coursesPage.noProducts}</p>
           </div>
         )}
       </div>

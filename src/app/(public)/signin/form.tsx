@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import z from "zod";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const FormSchema = z.object({
 type FormValues = z.infer<typeof FormSchema>;
 
 export default function SignInForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/user";
@@ -53,12 +55,11 @@ export default function SignInForm() {
     });
 
     if (error) {
-      toast.error("Inloggning misslyckades", {
-        description:
-          error.message || "Kontrollera dina uppgifter och försök igen.",
+      toast.error(t("signin.errorTitle"), {
+        description: error.message || t("signin.errorFallback"),
       });
     } else {
-      toast.success("Inloggad!");
+      toast.success(t("signin.successToast"));
       router.push(callbackUrl);
       router.refresh();
     }
@@ -67,11 +68,11 @@ export default function SignInForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Logga in</CardTitle>
-        <CardDescription>Ange din e-post och lösenord</CardDescription>
+        <CardTitle>{t("signin.cardTitle")}</CardTitle>
+        <CardDescription>{t("signin.cardDescription")}</CardDescription>
         <CardAction>
           <Button asChild variant="link" className="text-brand p-0">
-            <Link href="/signup">Skapa konto</Link>
+            <Link href="/signup">{t("signin.createAccount")}</Link>
           </Button>
         </CardAction>
       </CardHeader>
@@ -83,11 +84,11 @@ export default function SignInForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>E-post</FormLabel>
+                  <FormLabel required>{t("signin.email")}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="din@epost.se"
+                      placeholder={t("signin.emailPlaceholder")}
                       autoComplete="email"
                       aria-required="true"
                       {...field}
@@ -102,11 +103,11 @@ export default function SignInForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Lösenord</FormLabel>
+                  <FormLabel required>{t("signin.password")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="********"
+                      placeholder={t("signin.passwordPlaceholder")}
                       autoComplete="current-password"
                       aria-required="true"
                       {...field}
@@ -121,7 +122,9 @@ export default function SignInForm() {
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
-              {form.formState.isSubmitting ? "Loggar in..." : "Logga in"}
+              {form.formState.isSubmitting
+                ? t("signin.submitting")
+                : t("signin.submit")}
             </Button>
           </form>
         </Form>

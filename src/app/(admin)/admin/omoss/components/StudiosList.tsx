@@ -26,9 +26,10 @@ import { StudioForm } from "./StudioForm";
 
 type StudiosListProps = {
   studios: Studio[];
+  lang?: "sv" | "en";
 };
 
-export function StudiosList({ studios }: StudiosListProps) {
+export function StudiosList({ studios, lang }: StudiosListProps) {
   const router = useRouter();
   const [editingStudio, setEditingStudio] = useState<Studio | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -97,7 +98,9 @@ export function StudiosList({ studios }: StudiosListProps) {
           <TableBody>
             {studios.map((studio) => (
               <TableRow key={studio.id}>
-                <TableCell className="font-medium">{studio.name}</TableCell>
+                <TableCell className="font-medium">
+                  {lang === "en" ? studio.name_en : studio.name}
+                </TableCell>
                 <TableCell>
                   {studio.active ? (
                     <Check className="h-4 w-4 text-green-500" />

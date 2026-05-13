@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -44,6 +44,7 @@ type User = {
 };
 
 export default function EditUserDialog({ user }: { user: User }) {
+  const id = useId();
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
@@ -79,7 +80,10 @@ export default function EditUserDialog({ user }: { user: User }) {
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[500px]">
+      <DialogContent
+        id={id}
+        className="max-h-[90dvh] overflow-auto sm:max-w-[500px]"
+      >
         <DialogHeader>
           <DialogTitle>Redigera användare</DialogTitle>
         </DialogHeader>

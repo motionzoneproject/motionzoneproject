@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowRight,
   Facebook,
@@ -8,22 +10,26 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
+import { ManageCookiesLink } from "@/components/ManageCookiesLink";
 import { Button } from "@/components/ui/button";
 
-const quickLinks = [
-  { name: "Hem", href: "/" },
-  { name: "Kurser", href: "/courses" },
-  { name: "Om oss", href: "/about" },
-  { name: "Galleri", href: "/gallery" },
-];
-
-const legalLinks = [
-  { name: "Integritetspolicy", href: "/integritetspolicy" },
-  { name: "Cookiepolicy", href: "/cookiepolicy" },
-  { name: "Köpvillkor", href: "/kopvillkor" },
-];
-
 const Footer = () => {
+  const { t } = useTranslation();
+
+  const quickLinks = [
+    { name: t("nav.home"), href: "/" },
+    { name: t("nav.courses"), href: "/courses" },
+    { name: t("nav.about"), href: "/about" },
+    { name: t("nav.gallery"), href: "/gallery" },
+  ];
+
+  const legalLinks = [
+    { name: t("footer.legalPrivacy"), href: "/integritetspolicy" },
+    { name: t("footer.legalCookies"), href: "/cookiepolicy" },
+    { name: t("footer.legalTerms"), href: "/kopvillkor" },
+  ];
+
   return (
     <footer className="relative border-t border-brand/20 bg-card [background-image:linear-gradient(180deg,rgba(76,173,178,0.08)_0%,rgba(30,41,59,0.18)_38%,rgba(154,89,215,0.05)_100%),radial-gradient(circle_at_top_left,rgba(76,173,178,0.12),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(154,89,215,0.1),transparent_48%)]">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -53,13 +59,13 @@ const Footer = () => {
               />
             </Link>
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-              Din plats för dans, glädje och gemenskap.
+              {t("footer.tagline")}
             </p>
             <div className="flex gap-3">
               <Link
                 href="https://www.facebook.com/p/Motion-Zone-V%C3%A4xj%C3%B6-61571413538266/"
                 target="_blank"
-                aria-label="Facebook"
+                aria-label={t("footer.ariaFacebook")}
                 className="w-9 h-9 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:border-brand/50 hover:text-brand hover:bg-brand/5 transition-all duration-300"
               >
                 <Facebook className="w-4 h-4" />
@@ -67,7 +73,7 @@ const Footer = () => {
               <Link
                 href="https://instagram.com/motionzonevaxjo"
                 target="_blank"
-                aria-label="Instagram"
+                aria-label={t("footer.ariaInstagram")}
                 className="w-9 h-9 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:border-brand-secondary/50 hover:text-brand-secondary hover:bg-brand-secondary/5 transition-all duration-300"
               >
                 <Instagram className="w-4 h-4" />
@@ -77,7 +83,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
-              Sidor
+              {t("footer.sectionPages")}
             </h3>
             <ul className="space-y-3">
               {quickLinks.map((link) => (
@@ -96,7 +102,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
-              Kontakt
+              {t("footer.sectionContact")}
             </h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
@@ -136,14 +142,14 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-bold mb-5 text-foreground tracking-wider uppercase">
-              Bli Medlem
+              {t("footer.sectionMember")}
             </h3>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Skapa ett konto och boka din första kurs idag!
+              {t("footer.memberBody")}
             </p>
             <Button asChild variant="cta" className="group">
               <Link href="/signup">
-                Skapa konto
+                {t("footer.memberCta")}
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
               </Link>
             </Button>
@@ -154,7 +160,7 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} MotionZone Växjö.
           </p>
-          <nav className="flex gap-4">
+          <nav className="flex flex-wrap gap-4">
             {legalLinks.map((link) => (
               <Link
                 key={link.name}
@@ -164,6 +170,7 @@ const Footer = () => {
                 {link.name}
               </Link>
             ))}
+            <ManageCookiesLink />
           </nav>
         </div>
       </div>

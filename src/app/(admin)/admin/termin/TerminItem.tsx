@@ -1,18 +1,4 @@
-import {
-  Calendar,
-  Calendar1Icon,
-  CheckCircle2,
-  Clock,
-  EyeOffIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Calendar, CheckCircle2, Clock, EyeOffIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
 import {
@@ -24,9 +10,11 @@ import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
 import EditTerminForm from "./forms/EditTerminForm";
 import Schema from "./Schema";
+import { TerminScheduleDialogUI } from "./TerminScheduleDialogUI";
 
 interface Props {
   termin: Termin;
+  lang: "sv" | "en";
 }
 
 function isTerminActive(termin: Termin): boolean {
@@ -34,7 +22,7 @@ function isTerminActive(termin: Termin): boolean {
   return today >= termin.startDate && today <= termin.endDate;
 }
 
-export default async function TerminItem({ termin }: Props) {
+export default async function TerminItem({ termin, lang = "sv" }: Props) {
   const schemaItems: SchemaItemWithCourse[] = await getSchemaItems(termin.id);
   const allCourses = await getAllCourses("", true);
 
@@ -42,7 +30,7 @@ export default async function TerminItem({ termin }: Props) {
     <TableRow className="align-top">
       <TableCell className="p-3">
         <div className="font-semibold">
-          {termin.name}{" "}
+          {lang === "en" ? termin.name_en : termin.name}{" "}
           {!termin.active && (
             <span className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600">
               <EyeOffIcon className="h-3 w-3" />
@@ -70,28 +58,14 @@ export default async function TerminItem({ termin }: Props) {
       <TableCell className="p-3 text-right">
         <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
           <ToggleTerminActiveBtn terminId={termin.id} active={termin.active} />
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
-                <Calendar1Icon className="h-4 w-4" />
-                <span className="sr-only">Visa veckoschema</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {termin.name}
-                  <br />
-                  veckoschema
-                </DialogTitle>
-              </DialogHeader>
-              <Schema
-                allCourses={allCourses}
-                termin={termin}
-                schemaItems={schemaItems}
-              />
-            </DialogContent>
-          </Dialog>
+          <TerminScheduleDialogUI termin={termin} lang={lang}>
+            <Schema
+              lang={lang}
+              allCourses={allCourses}
+              termin={termin}
+              schemaItems={schemaItems}
+            />
+          </TerminScheduleDialogUI>
           <EditTerminForm termin={termin} />
           <DeleteTerminBtn terminId={termin.id} />
         </div>

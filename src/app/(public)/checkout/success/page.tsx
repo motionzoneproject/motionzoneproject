@@ -1,22 +1,27 @@
 import type { Metadata } from "next";
+import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import { getOrderById } from "@/lib/orders";
+import { getDictionary } from "@/locales/get-dictionary";
 
 export const metadata: Metadata = {
   title: "Tack för din beställning",
   robots: { index: false, follow: false },
 };
 
-function getStatusLabel(status: string) {
+function getStatusLabel(
+  status: string,
+  t: Awaited<ReturnType<typeof getDictionary>>["t"],
+) {
   switch (status) {
     case "PENDING_PAYMENT":
-      return "Inväntar betalning";
+      return t.checkout.success.statusPendingPayment;
     case "APPROVED":
-      return "Godkänd";
+      return t.checkout.success.statusApproved;
     case "PAID":
-      return "Betald";
+      return t.checkout.success.statusPaid;
     case "CANCELLED":
-      return "Avbruten";
+      return t.checkout.success.statusCancelled;
     default:
       return status;
   }
@@ -27,6 +32,8 @@ export default async function Page({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const { lang, t } = await getDictionary();
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const { orderId: rawOrderId } = await searchParams;
   const orderId = typeof rawOrderId === "string" ? rawOrderId : undefined;
 
@@ -34,83 +41,103 @@ export default async function Page({
 
   return (
     <div className="max-w-xl mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Orderbekräftelse</h1>
+      <h1 className="text-2xl font-bold">{t.checkout.success.title}</h1>
       {order ? (
         <div className="space-y-3">
           <p>
-            Tack för din beställning,{" "}
-            {order.user?.name ?? order.user?.email ?? "kund"}.
+            {t.checkout.success.thanks.replace(
+              "{{name}}",
+              order.user?.name ??
+                order.user?.email ??
+                t.checkout.success.thanksFallbackCustomer,
+            )}
           </p>
           <div className="text-sm">
             <div>
-              <span className="text-gray-600">Ordernummer:</span>
+              <span className="text-gray-600">
+                {t.checkout.success.orderNumber}
+              </span>
               <span className="ml-2 font-mono">{order.id}</span>
             </div>
             <div>
-              <span className="text-gray-600">Status:</span>
+              <span className="text-gray-600">{t.checkout.success.status}</span>
               <span className="ml-2 font-semibold">
-                {getStatusLabel(order.status ?? "PENDING_PAYMENT")}
+                {getStatusLabel(order.status ?? "PENDING_PAYMENT", t)}
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Datum:</span>
+              <span className="text-gray-600">{t.checkout.success.date}</span>
               <span className="ml-2">
-                {new Date(order.createdAt).toLocaleString()}
+                {new Date(order.createdAt).toLocaleString(dateLocale)}
               </span>
             </div>
           </div>
 
           <div className="border rounded">
             <div className="grid grid-cols-4 gap-2 p-2 text-xs text-gray-600">
-              <span>Produkt</span>
-              <span className="text-right">Pris/st</span>
-              <span className="text-right">Antal</span>
-              <span className="text-right">Summa</span>
+              <span>{t.checkout.success.colProduct}</span>
+              <span className="text-right">
+                {t.checkout.success.colUnitPrice}
+              </span>
+              <span className="text-right">{t.checkout.success.colCount}</span>
+              <span className="text-right">{t.checkout.success.colSum}</span>
             </div>
             {order.orderItems.map((it) => {
               const unit = it.price;
               const sum = unit * it.count;
+              const productName = it.product
+                ? (pick(it.product, "name", lang) as string)
+                : it.productId;
               return (
                 <div
                   key={it.id}
                   className="grid grid-cols-4 gap-2 p-2 border-t text-sm"
                 >
                   <span>
-                    {it.product?.name ?? it.productId}
+                    {productName}
                     <span className="block text-xs text-gray-500">
-                      Deltagare: {it.participant?.name ?? "Du själv"}
+                      {it.participant?.name
+                        ? t.checkout.success.participantLabel.replace(
+                            "{{name}}",
+                            it.participant.name,
+                          )
+                        : t.checkout.success.participantLabel.replace(
+                            "{{name}}",
+                            t.checkout.success.participantSelf,
+                          )}
                     </span>
                   </span>
-                  <span className="text-right">{formatPrice(unit)}</span>
+                  <span className="text-right">{formatPrice(unit, lang)}</span>
                   <span className="text-right">{it.count}</span>
                   <span className="text-right font-medium">
-                    {formatPrice(sum)}
+                    {formatPrice(sum, lang)}
                   </span>
                 </div>
               );
             })}
             <div className="grid grid-cols-4 gap-2 p-2 border-t font-semibold">
-              <span className="col-span-3 text-right">Totalt</span>
+              <span className="col-span-3 text-right">
+                {t.checkout.success.total}
+              </span>
               <span className="text-right">
-                {formatPrice(order.totalPrice)}
+                {formatPrice(order.totalPrice, lang)}
               </span>
             </div>
           </div>
 
           <p className="text-xs text-gray-600">
-            Betalning via faktura/överenskommelse. En lärare kommer att godkänna
-            din order när betalning bekräftats.
+            {t.checkout.success.paymentNote}
           </p>
 
           <a href="/" className="underline">
-            Till startsidan
+            {t.checkout.success.toHome}
           </a>
         </div>
       ) : (
         <div>
-          <p>Beställning mottagen.</p>
+          <p>{t.checkout.success.received}</p>
           <a href="/" className="underline">
-            Till startsidan
+            {t.checkout.success.toHome}
           </a>
         </div>
       )}

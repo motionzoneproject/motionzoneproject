@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import NewEventForm from "./NewEventForm";
 
-export function AddEventBtn() {
+export function AddEventBtn({ initialLang }: { initialLang?: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -28,7 +28,10 @@ export function AddEventBtn() {
           <DialogTitle>Lägg till nytt event</DialogTitle>
           <DialogDescription>Fyll i formuläret</DialogDescription>
         </DialogHeader>
-        <NewEventForm onSuccess={() => setIsOpen(false)} />
+        <NewEventForm
+          initialLang={initialLang}
+          onSuccess={() => setIsOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

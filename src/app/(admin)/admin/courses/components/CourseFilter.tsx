@@ -19,9 +19,14 @@ import type { Termin, User } from "@/generated/prisma/client";
 interface Props {
   teachers: User[];
   terminer: Termin[];
+  lang?: string;
 }
 
-export default function CourseFilter({ teachers, terminer }: Props) {
+export default function CourseFilter({
+  teachers,
+  terminer,
+  lang = "sv",
+}: Props) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -33,8 +38,9 @@ export default function CourseFilter({ teachers, terminer }: Props) {
 
   const validParam = useCallback(
     (param: "teacher" | "termin", value?: string | null): string => {
-      if (param === "teacher")
+      if (param === "teacher") {
         return teachers.find((t) => t.id === value)?.id ?? "all";
+      }
       return terminer.find((t) => t.id === value)?.id ?? "all";
     },
     [teachers, terminer],
@@ -44,7 +50,6 @@ export default function CourseFilter({ teachers, terminer }: Props) {
     (name: string, term: string) => {
       const next = new URLSearchParams(searchParams);
 
-      // Check if the filter value is actually changing
       const currentValue = searchParams.get(name);
       const newValue = !term || term === "all" ? null : term;
       const isChanging = currentValue !== newValue;
@@ -55,7 +60,6 @@ export default function CourseFilter({ teachers, terminer }: Props) {
         next.set(name, term);
       }
 
-      // Reset to page 1 only when filter value actually changes
       if (isChanging) {
         next.delete("page");
       }
@@ -110,7 +114,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj lärare" />
+            <SelectValue placeholder="Valj lärare" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -141,7 +145,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj termin" />
+            <SelectValue placeholder="Valj termin" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -150,7 +154,7 @@ export default function CourseFilter({ teachers, terminer }: Props) {
               <SelectSeparator />
               {terminer.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {t.name}
+                  {lang === "en" ? t.name_en || t.name : t.name}
                 </SelectItem>
               ))}
             </SelectGroup>

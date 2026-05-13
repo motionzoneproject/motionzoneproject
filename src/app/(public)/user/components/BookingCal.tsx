@@ -1,8 +1,9 @@
 "use client";
 
-import { sv } from "date-fns/locale";
+import { enGB, sv } from "date-fns/locale";
 import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,21 +23,28 @@ import {
   type LessonWithCourse,
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
+import { pick } from "@/lib/i18n/pick";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 import BookBtn from "./BookBtn";
 
 interface Props {
   lessons: LessonWithCourse[]; // Alla lektioner i alla kurser som kunden har tillgång till.
   bookings: BookingWithLesson[]; // Alla bokningar gjorda av kunden.
-  purschaseItems: UserPurchaseWithProduct[]; // Alla produkter (purschaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
+  purchaseItems: UserPurchaseWithProduct[]; // Alla produkter (purchaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
   initDate?: Date;
 }
 
 export default function BookingCal({
   lessons,
   bookings,
-  purschaseItems,
+  purchaseItems,
   initDate,
 }: Props) {
+  const { t, i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const calendarLocale = lang === "en" ? enGB : sv;
   const [date, setDate] = useState<Date | undefined>(initDate ?? new Date());
 
   const bookedDays = useMemo(
@@ -53,7 +61,7 @@ export default function BookingCal({
       .filter((lesson) => {
         if (lesson.cancelled || lesson.startTime.getTime() < now) return false;
 
-        const lessonPurchaseItems = purschaseItems.filter(
+        const lessonPurchaseItems = purchaseItems.filter(
           (itm) => itm.courseId === lesson.courseId,
         );
 
@@ -103,7 +111,7 @@ export default function BookingCal({
         return false;
       })
       .map((l) => new Date(l.startTime));
-  }, [lessons, purschaseItems, bookings]);
+  }, [lessons, purchaseItems, bookings]);
 
   const cancelledDays = useMemo(
     () => lessons.filter((l) => l.cancelled).map((l) => new Date(l.startTime)),
@@ -129,7 +137,7 @@ export default function BookingCal({
             selected={date}
             onSelect={setDate}
             showWeekNumber
-            locale={sv}
+            locale={calendarLocale}
             className="rounded-lg border shadow w-full sm:w-auto"
             modifiers={{
               isBooked: bookedDays,
@@ -157,15 +165,15 @@ export default function BookingCal({
         <div className="mt-4 flex flex-col gap-2 text-sm">
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-blue-500" />
-            <span>Redan bokad lektion</span>
+            <span>{t("user.booking.legendBooked")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full border-2 border-green-500" />
-            <span>Ledig lektion (kan bokas)</span>
+            <span>{t("user.booking.legendAvailable")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-red-500" />
-            <span>Inställd lektion</span>
+            <span>{t("user.booking.legendCancelled")}</span>
           </div>
         </div>
       </div>
@@ -175,12 +183,12 @@ export default function BookingCal({
           <CardHeader>
             <CardTitle className="text-lg">
               {date
-                ? date.toLocaleDateString("sv-SE", {
+                ? date.toLocaleDateString(dateLocale, {
                     weekday: "long",
                     day: "numeric",
                     month: "long",
                   })
-                : "Välj ett datum"}
+                : t("user.booking.selectDate")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -188,7 +196,7 @@ export default function BookingCal({
               // mappa lektionerna för det valda datumet.
               selectedDateLessons.map((lesson) => {
                 // Samla purchaseItems som kunden äger för den lektionen
-                const lessonPurchaseItems = purschaseItems.filter(
+                const lessonPurchaseItems = purchaseItems.filter(
                   (itm) => itm.courseId === lesson.courseId,
                 );
 
@@ -264,25 +272,25 @@ export default function BookingCal({
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
-                        {lesson.startTime.toLocaleTimeString("sv-SE", {
+                        {lesson.startTime.toLocaleTimeString(dateLocale, {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {lesson.course.name}{" "}
+                        {pick(lesson.course, "name", lang) as string}{" "}
                         {lesson.cancelled && (
                           <span className="font-bold text-red-500">
-                            (INSTÄLLD)
+                            {t("user.booking.cancelled")}
                           </span>
                         )}
                         <br />
-                        {lesson.message}
+                        {pick(lesson, "message", lang) as string}
                       </p>
                       {hasAnyBooking && (
                         <div className="mt-2 space-y-1.5 w-full">
                           <p className="text-xs font-medium text-muted-foreground">
-                            Dina bokningar
+                            {t("user.booking.yourBookings")}
                           </p>
                           {bookingsOnLesson.map((b) => {
                             const bookedItem = purchaseItemById.get(
@@ -291,9 +299,13 @@ export default function BookingCal({
                             if (!bookedItem) return null;
 
                             const participantName =
-                              bookedItem.purchase.participant?.name ?? "Du";
-                            const productName =
-                              bookedItem.purchase.product.name;
+                              bookedItem.purchase.participant?.name ??
+                              t("user.booking.yourselfShort");
+                            const productName = pick(
+                              bookedItem.purchase.product,
+                              "name",
+                              lang,
+                            ) as string;
 
                             return (
                               <Item
@@ -316,7 +328,7 @@ export default function BookingCal({
                                     onClick={() =>
                                       delBooking(lesson.id, b.purchaseItemId)
                                     }
-                                    title="Avboka"
+                                    title={t("user.booking.cancelTitle")}
                                     disabled={
                                       lesson.cancelled ||
                                       lesson.startTime.getTime() < Date.now()
@@ -332,13 +344,13 @@ export default function BookingCal({
                       )}
                     </div>
                     {lesson.cancelled ? (
-                      "Inställd."
+                      t("user.booking.cancelledShort")
                     ) : (
                       <div className="text-right flex items-center gap-2 self-start">
                         {canBookMore && (
                           <BookBtn
                             lessonId={lesson.id}
-                            purschaseItems={availablePurchaseItems}
+                            purchaseItems={availablePurchaseItems}
                             disabled={lesson.startTime.getTime() < now}
                           />
                         )}
@@ -358,7 +370,7 @@ export default function BookingCal({
               })
             ) : (
               <p className="text-muted-foreground">
-                Inga lektioner planerade denna dag.
+                {t("user.booking.noLessons")}
               </p>
             )}
           </CardContent>

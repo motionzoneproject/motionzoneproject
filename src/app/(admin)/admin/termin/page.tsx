@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
 import { getTerminer, requireAdmin } from "@/lib/actions/admin";
+import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
 import TerminItem from "./TerminItem";
@@ -14,7 +15,7 @@ import TerminItem from "./TerminItem";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ hide?: string }>;
+  searchParams: Promise<{ hide?: string; lang?: string }>;
 }) {
   await requireAdmin();
   const terminer = await getTerminer(true);
@@ -31,6 +32,8 @@ export default async function Page({
   const params = await searchParams;
   const hide = params.hide || "";
 
+  const lang = params.lang === "en" ? "en" : "sv";
+
   return (
     <div className=" w-full p-2">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -38,6 +41,9 @@ export default async function Page({
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
             Terminer och veckoscheman
           </h1>
+          <div className="text-sm my-2 w-fit">
+            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          </div>
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
             Skapa terminer och hantera veckoscheman för kurserna.
           </p>
@@ -60,7 +66,7 @@ export default async function Page({
             {terminer
               .filter((t) => hide !== "yes" || isVisible(t))
               .map((t) => (
-                <TerminItem termin={t} key={t.id} />
+                <TerminItem lang={lang} termin={t} key={t.id} />
               ))}
           </TableBody>
         </Table>

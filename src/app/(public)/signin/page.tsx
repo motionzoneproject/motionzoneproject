@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getDictionary } from "@/locales/get-dictionary";
 import SignInForm from "./form";
 
 export const metadata: Metadata = {
@@ -8,25 +9,24 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const { t } = await getDictionary();
   return (
     <div className="flex-1 flex items-center justify-center py-12 px-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
-            Välkommen tillbaka
+            {t.signin.title}
           </h1>
-          <p className="text-muted-foreground">
-            Logga in för att hantera dina bokningar
-          </p>
+          <p className="text-muted-foreground">{t.signin.subtitle}</p>
         </div>
 
         <SignInForm />
 
         <p className="text-center mt-6 text-muted-foreground text-sm">
-          Har du inget konto?{" "}
+          {t.signin.noAccount}{" "}
           <Link href="/signup" className="text-brand hover:text-brand-light">
-            Skapa konto
+            {t.signin.createAccount}
           </Link>
         </p>
       </div>

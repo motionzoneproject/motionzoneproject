@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner"; // Assuming you use sonner for toasts
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -40,9 +41,15 @@ type TeacherFormProps = {
   teacher?: TeacherWithProfile;
   users: TeacherWithProfile[];
   onSuccess?: () => void;
+  initialLang?: "sv" | "en";
 };
 
-export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
+export function TeacherForm({
+  teacher,
+  users,
+  onSuccess,
+  initialLang = "sv",
+}: TeacherFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -57,11 +64,15 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
       userId: teacher?.id || "",
       name: teacher?.name || "",
       specialty: profile?.specialty || "",
+      specialty_en: profile?.specialty_en || "",
       description: profile?.description || "",
+      description_en: profile?.description_en || "",
       imageUrl: profile?.imageUrl || "",
       active: profile?.active ?? true,
     },
   });
+
+  const [formLang, setFormLang] = useState(initialLang);
 
   const selectedUserId = form.watch("userId");
   const selectedUser = availableUsers.find(
@@ -148,130 +159,141 @@ export function TeacherForm({ teacher, users, onSuccess }: TeacherFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="userId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Användare</FormLabel>
-              <Select
-                value={field.value || ""}
-                onValueChange={field.onChange}
-                disabled={!!teacher}
-              >
+    <div>
+      <div className="p2 text-sm my-2">
+        Formulärspråk:{" "}
+        <LanguageSwitcherInput
+          value={formLang ?? "sv"}
+          setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+        />
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="userId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Användare</FormLabel>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={!!teacher}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Välj användare" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "specialty_en" : "specialty"}
+            key={`specialty-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Specialitet ({formLang})</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Välj användare" />
-                  </SelectTrigger>
+                  <Input
+                    placeholder="t.ex. Balett & Modern dans"
+                    {...field}
+                    value={field.value || ""}
+                  />
                 </FormControl>
-                <SelectContent>
-                  {availableUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="specialty"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Specialitet</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="t.ex. Balett & Modern dans"
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormDescription>
-                Kort beskrivning av vad läraren undervisar i.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Beskrivning</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Längre beskrivning om läraren..."
-                  className="min-h-[120px]"
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bild</FormLabel>
-
-              <FormControl>
-                <ImageInput {...field} value={field.value || ""} />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="active"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
-              <FormControl>
-                <Checkbox
-                  checked={field.value ?? false}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Visa</FormLabel>
                 <FormDescription>
-                  Om avmarkerad visas inte läraren på "Om oss"-sidan.
+                  Kort beskrivning av vad läraren undervisar i.
                 </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button
-          variant="ghost"
-          type="submit"
-          className="w-full"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : teacher ? (
-            <Save className="h-4 w-4" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {isPending ? "Sparar..." : teacher ? "Spara" : "Skapa"}
-        </Button>
-      </form>
-    </Form>
+          <FormField
+            control={form.control}
+            name={formLang === "en" ? "description_en" : "description"}
+            key={`description-${formLang}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Beskrivning ({formLang})</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Längre beskrivning om läraren..."
+                    className="min-h-[120px]"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bild</FormLabel>
+
+                <FormControl>
+                  <ImageInput {...field} value={field.value || ""} />
+                </FormControl>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="active"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Visa</FormLabel>
+                  <FormDescription>
+                    Om avmarkerad visas inte läraren på "Om oss"-sidan.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <Button
+            variant="ghost"
+            type="submit"
+            className="w-full"
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : teacher ? (
+              <Save className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {isPending ? "Sparar..." : teacher ? "Spara" : "Skapa"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

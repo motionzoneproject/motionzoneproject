@@ -120,7 +120,14 @@ export async function getAllCourses(
 
   const courses = await prisma.course.findMany({
     where: {
-      name: { contains: q, mode: "insensitive" },
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { name_en: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       ...(showInactive ? {} : { active: true }),
     },
     orderBy: { name: "asc" },
@@ -141,7 +148,9 @@ export async function editNewEvent(
       where: { id: validated.id },
       data: {
         headline: validated.headline,
+        headline_en: validated.headline_en,
         description: validated.description,
+        description_en: validated.description_en,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -173,7 +182,9 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
     const newEvent = await prisma.event.create({
       data: {
         headline: validated.headline,
+        headline_en: validated.headline_en,
         description: validated.description,
+        description_en: validated.description_en,
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -211,11 +222,7 @@ export async function addNewTermin(
     const validated = await adminAddTerminSchema.parseAsync(formData);
 
     const newSchemaItem = await prisma.termin.create({
-      data: {
-        name: validated.name,
-        startDate: new Date(validated.startDate),
-        endDate: new Date(validated.endDate),
-      },
+      data: validated, // Provar :)
     });
     return {
       success: true,
@@ -277,11 +284,7 @@ export async function editTermin(
       // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
-        data: {
-          name: validated.name,
-          startDate: newStartDate,
-          endDate: newEndDate,
-        },
+        data: validated, // Såhär borde vi göra på alla ställen där det går. I framtiden.
       });
 
       // 2. Hämta alla schemaItems för att synka lektioner
@@ -478,6 +481,7 @@ export async function addCoursetoSchema(
         data: {
           terminId,
           place: validated.place,
+          place_en: validated.place_en,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -547,6 +551,7 @@ export async function editCourseInSchema(
         data: {
           terminId,
           place: validated.place,
+          place_en: validated.place_en,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -817,11 +822,14 @@ export async function addNewCourse(
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
+        name_en: validated.name_en,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
         level: validated.level,
+        level_en: validated.level_en,
         adult: validated.adult,
         description: validated.description,
+        description_en: validated.description_en,
         teacherId: validated.teacherid,
       },
     });
@@ -863,11 +871,14 @@ export async function editCourse(
       const updatedCourse = await tx.course.update({
         data: {
           name: validated.name,
+          name_en: validated.name_en,
           minAge: validated.minAge,
           maxAge: validated.maxAge,
           level: validated.level,
+          level_en: validated.level_en,
           adult: validated.adult,
           description: validated.description,
+          description_en: validated.description_en,
           teacherId: validated.teacherid,
         },
         where: { id },
@@ -1036,7 +1047,7 @@ export async function sendCancelledMail(
         ).toLocaleTimeString("sv-SE", {
           hour: "2-digit",
           minute: "2-digit",
-        })} har blivit inställd. Ditt tillfälle har återställts.`;
+        })} har blivit inställd. Ditt tillfälle har återställts. `;
         const result = await sendMail(student.email, subject, html, text);
 
         return {
@@ -1134,6 +1145,7 @@ export async function editLessonItem(
         where: { id: validated.id },
         data: {
           message: validated.message,
+          message_en: validated.message_en,
           cancelled: validated.cancelled,
         },
       });
@@ -1146,6 +1158,7 @@ export async function editLessonItem(
         {
           ...currentLesson,
           message: validated.message ?? null,
+          message_en: validated.message_en ?? null,
           cancelled: validated.cancelled,
         },
         mailStudents,
@@ -1251,6 +1264,7 @@ export async function bulkCancelLessons(
         data: {
           cancelled: validated.cancelled,
           message: validated.message,
+          message_en: validated.message_en,
         },
       });
     });
@@ -1316,6 +1330,8 @@ export async function addNewProduct(
       data: {
         name: validated.name,
         description: validated.description,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         price: sekToOre(validated.price),
         maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
         unlimitedCustomers,
@@ -1379,6 +1395,8 @@ export async function editProduct(
       data: {
         name: validated.name,
         description: validated.description,
+        name_en: validated.name_en,
+        description_en: validated.description_en,
         price: sekToOre(validated.price),
         maxCustomer: maxCustomers,
         unlimitedCustomers,

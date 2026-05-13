@@ -23,9 +23,10 @@ import { LegalPageForm } from "./LegalPageForm";
 
 type LegalPageListProps = {
   pages: LegalPage[];
+  lang?: "sv" | "en";
 };
 
-export function LegalPageList({ pages }: LegalPageListProps) {
+export function LegalPageList({ pages, lang }: LegalPageListProps) {
   const router = useRouter();
   const [editingPage, setEditingPage] = useState<LegalPage | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -66,7 +67,9 @@ export function LegalPageList({ pages }: LegalPageListProps) {
         <TableBody>
           {pages.map((page) => (
             <TableRow key={page.id}>
-              <TableCell className="font-medium">{page.title}</TableCell>
+              <TableCell className="font-medium">
+                {lang === "en" ? page.title_en : page.title}
+              </TableCell>
               <TableCell className="text-muted-foreground">
                 /{page.slug}
               </TableCell>

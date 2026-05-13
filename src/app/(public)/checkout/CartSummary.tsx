@@ -6,19 +6,22 @@ import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { readCart } from "@/lib/cart";
+import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
+import { getDictionary } from "@/locales/get-dictionary";
 
 export default async function CartSummary() {
+  const { lang, t } = await getDictionary();
   const cart = await readCart();
   const items = cart.items;
 
   if (!items.length) {
     return (
       <div className="text-center py-8 space-y-4">
-        <p className="text-muted-foreground">Din varukorg är tom.</p>
+        <p className="text-muted-foreground">{t.checkout.summary.empty}</p>
         <Button asChild className="bg-brand hover:bg-brand-light text-white">
-          <Link href="/courses">Se våra kurser</Link>
+          <Link href="/courses">{t.checkout.summary.seeCourses}</Link>
         </Button>
       </div>
     );
@@ -30,6 +33,7 @@ export default async function CartSummary() {
     select: {
       id: true,
       name: true,
+      name_en: true,
       price: true,
       maxCustomer: true,
       unlimitedCustomers: true,
@@ -45,7 +49,7 @@ export default async function CartSummary() {
       if (!p) {
         return {
           id: it.productId,
-          name: "Okänd produkt",
+          name: t.checkout.summary.unknownProduct,
           unit: 0,
           qty: 0,
           available: 0,
@@ -62,7 +66,7 @@ export default async function CartSummary() {
 
       return {
         id: it.productId,
-        name: p.name,
+        name: pick(p, "name", lang) as string,
         unit,
         qty: stats.success ? it.qty : 0,
         maxCustomer: p.maxCustomer,
@@ -81,20 +85,26 @@ export default async function CartSummary() {
             <div className="flex-1">
               <p className="font-medium text-foreground">{r.name}</p>
               <p className="text-sm text-muted-foreground">
-                {formatPrice(r.unit)} / st
+                {t.checkout.summary.perUnit.replace(
+                  "{{price}}",
+                  formatPrice(r.unit, lang),
+                )}
               </p>
               <p className="text-xs text-muted-foreground">
                 {!r.success
-                  ? "Platsstatus: okänd (fel vid hämtning)"
+                  ? t.checkout.summary.statusUnknown
                   : Number.isFinite(r.available)
-                    ? `max: ${r.available}st`
-                    : "Obegränsat"}
+                    ? t.checkout.summary.maxLabel.replace(
+                        "{{count}}",
+                        String(r.available),
+                      )
+                    : t.checkout.summary.unlimited}
               </p>
               {r.success &&
                 Number.isFinite(r.available) &&
                 r.qty >= r.available && (
                   <p className="text-xs text-amber-600 mt-1">
-                    Max antal platser uppnått för denna produkt.
+                    {t.checkout.summary.maxReached}
                   </p>
                 )}
             </div>
@@ -134,7 +144,7 @@ export default async function CartSummary() {
               </form>
               <div className="w-24 text-right">
                 <p className="font-semibold text-foreground">
-                  {formatPrice(r.line)}
+                  {formatPrice(r.line, lang)}
                 </p>
                 <form
                   action={async () => {
@@ -146,7 +156,7 @@ export default async function CartSummary() {
                     type="submit"
                     className="text-xs text-destructive hover:underline"
                   >
-                    Ta bort
+                    {t.checkout.summary.remove}
                   </button>
                 </form>
               </div>
@@ -155,9 +165,11 @@ export default async function CartSummary() {
         ))}
       </div>
       <div className="pt-4 border-t border-border flex justify-between items-center">
-        <span className="text-muted-foreground">Totalt</span>
+        <span className="text-muted-foreground">
+          {t.checkout.summary.total}
+        </span>
         <span className="text-xl font-bold text-foreground">
-          {formatPrice(total)}
+          {formatPrice(total, lang)}
         </span>
       </div>
     </div>

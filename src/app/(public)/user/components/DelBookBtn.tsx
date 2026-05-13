@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function DelBookBtn({ lId, pId }: Props) {
+  const { t } = useTranslation();
   const [loading, setloading] = useState<boolean>(false);
 
   return (
@@ -30,9 +32,7 @@ export function DelBookBtn({ lId, pId }: Props) {
             if (del.success) {
               toast.success(del.msg);
             } else {
-              toast.error(
-                `Något gick fel, kunde inte ta bort bokning. ${del.msg}`,
-              );
+              toast.error(`${t("user.booking.delErrorPrefix")} ${del.msg}`);
             }
 
             setloading(false);

@@ -1,8 +1,9 @@
 "use client";
 
 import { format } from "date-fns";
-import { sv } from "date-fns/locale";
+import { enGB, sv } from "date-fns/locale";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/money";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 
 type OrderItem = {
   id: string;
@@ -39,16 +42,31 @@ interface OrderHistoryProps {
 }
 
 export default function OrderHistory({ orders }: OrderHistoryProps) {
+  const { t, i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
+  const dateLocale = lang === "en" ? enGB : sv;
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "PAID":
-        return <Badge className="bg-green-500">Betald</Badge>;
+        return (
+          <Badge className="bg-green-500">
+            {t("user.orderHistory.statusPaid")}
+          </Badge>
+        );
       case "PENDING_PAYMENT":
-        return <Badge variant="outline">Väntar på betalning</Badge>;
+        return (
+          <Badge variant="outline">
+            {t("user.orderHistory.statusPendingPayment")}
+          </Badge>
+        );
       case "APPROVED":
-        return <Badge className="bg-blue-500">Godkänd</Badge>;
+        return (
+          <Badge className="bg-blue-500">
+            {t("user.orderHistory.statusApproved")}
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -57,17 +75,27 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
   return (
     <div className="mt-8 space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">
-        Orderhistorik
+        {t("user.orderHistory.title")}
       </h3>
       <div className="overflow-x-auto rounded-lg border">
         <table className="min-w-[640px] w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="border-b">
-              <th className="p-3 text-left font-medium">Order ID</th>
-              <th className="p-3 text-left font-medium">Datum</th>
-              <th className="p-3 text-left font-medium">Summa</th>
-              <th className="p-3 text-left font-medium">Status</th>
-              <th className="p-3 text-right font-medium">Åtgärd</th>
+              <th className="p-3 text-left font-medium">
+                {t("user.orderHistory.colOrderId")}
+              </th>
+              <th className="p-3 text-left font-medium">
+                {t("user.orderHistory.colDate")}
+              </th>
+              <th className="p-3 text-left font-medium">
+                {t("user.orderHistory.colTotal")}
+              </th>
+              <th className="p-3 text-left font-medium">
+                {t("user.orderHistory.colStatus")}
+              </th>
+              <th className="p-3 text-right font-medium">
+                {t("user.orderHistory.colAction")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -77,7 +105,7 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                   colSpan={5}
                   className="text-center py-8 text-muted-foreground"
                 >
-                  Inga beställningar hittades.
+                  {t("user.orderHistory.empty")}
                 </td>
               </tr>
             ) : (
@@ -88,12 +116,12 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                   </td>
                   <td className="p-3">
                     {format(new Date(order.createdAt), "d MMM yyyy", {
-                      locale: sv,
+                      locale: dateLocale,
                     })}
                   </td>
                   <td className="p-3">
                     {order.totalPrice != null
-                      ? formatPrice(Number(order.totalPrice))
+                      ? formatPrice(Number(order.totalPrice), lang)
                       : "-"}
                   </td>
                   <td className="p-3">{getStatusBadge(order.status)}</td>
@@ -104,18 +132,20 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                           variant="ghost"
                           onClick={() => setSelectedOrder(order)}
                         >
-                          Visa detaljer
+                          {t("user.orderHistory.viewDetails")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-h-[90dvh] overflow-auto max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Orderdetaljer</DialogTitle>
+                          <DialogTitle>
+                            {t("user.orderHistory.detailsTitle")}
+                          </DialogTitle>
                         </DialogHeader>
                         {selectedOrder && (
                           <div className="space-y-4">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">
-                                Order ID:
+                                {t("user.orderHistory.orderIdLabel")}
                               </span>
                               <span className="font-mono">
                                 {selectedOrder.id}
@@ -123,27 +153,29 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">
-                                Datum:
+                                {t("user.orderHistory.dateLabel")}
                               </span>
                               <span>
                                 {format(
                                   new Date(selectedOrder.createdAt),
                                   "PPP p",
                                   {
-                                    locale: sv,
+                                    locale: dateLocale,
                                   },
                                 )}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">
-                                Status:
+                                {t("user.orderHistory.statusLabel")}
                               </span>
                               {getStatusBadge(selectedOrder.status)}
                             </div>
 
                             <div className="border-t pt-4">
-                              <h4 className="font-medium mb-2">Produkter</h4>
+                              <h4 className="font-medium mb-2">
+                                {t("user.orderHistory.products")}
+                              </h4>
                               <div className="space-y-2">
                                 {selectedOrder.orderItems.map((item) => (
                                   <div
@@ -155,13 +187,18 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                         {item.product.name} x {item.count}
                                       </span>
                                       <p className="text-xs text-muted-foreground">
-                                        Deltagare:{" "}
-                                        {item.participant?.name ?? "Du själv"}
+                                        {t(
+                                          "user.orderHistory.participantPrefix",
+                                        )}{" "}
+                                        {item.participant?.name ??
+                                          t(
+                                            "user.orderHistory.participantSelf",
+                                          )}
                                       </p>
                                     </div>
                                     <span>
                                       {item.price != null
-                                        ? formatPrice(Number(item.price))
+                                        ? formatPrice(Number(item.price), lang)
                                         : "-"}
                                     </span>
                                   </div>
@@ -170,11 +207,12 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                             </div>
 
                             <div className="border-t pt-4 flex justify-between font-bold">
-                              <span>Totalt</span>
+                              <span>{t("user.orderHistory.total")}</span>
                               <span>
                                 {selectedOrder.totalPrice != null
                                   ? formatPrice(
                                       Number(selectedOrder.totalPrice),
+                                      lang,
                                     )
                                   : "-"}
                               </span>

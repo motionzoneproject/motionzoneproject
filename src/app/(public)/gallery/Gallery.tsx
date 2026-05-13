@@ -1,7 +1,8 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { Filter, Play } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import "react-photo-album/masonry.css";
 import Lightbox from "yet-another-react-lightbox";
@@ -63,6 +64,7 @@ function buildSlides(items: GalleryMediaItem[]) {
 }
 
 export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
+  const { t } = useTranslation();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [eventFilter, setEventFilter] = useState("ALL");
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -128,47 +130,59 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
   return (
     <>
       {/* Filter bar */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {filteredItems.length}/{items.length} objekt
-        </span>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v as TypeFilter)}
-        >
-          <SelectTrigger className="h-8 w-auto min-w-28 rounded-full border-border/60 bg-card text-sm px-3">
-            <SelectValue placeholder="Alla" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Alla</SelectItem>
-            <SelectItem value="IMAGE">Bilder</SelectItem>
-            <SelectItem value="VIDEO">Video</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-border/70 bg-card/70 p-4 shadow-sm md:flex-row md:items-center md:justify-between md:p-5">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+            <Filter className="h-4 w-4" />
+            {t("gallery.filterTitle")}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t("gallery.filterStatus", {
+              shown: filteredItems.length,
+              total: items.length,
+            })}
+          </p>
+        </div>
 
-        <Select value={eventFilter} onValueChange={setEventFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-36 rounded-full border-border/60 bg-card text-sm px-3">
-            <SelectValue placeholder="Alla event" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Alla event</SelectItem>
-            {eventOptions.map((eventOption) => (
-              <SelectItem key={eventOption.id} value={eventOption.id}>
-                {eventOption.headline}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+          >
+            <SelectTrigger className="w-full min-w-40 bg-background sm:w-40">
+              <SelectValue placeholder={t("gallery.typeAll")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t("gallery.typeAll")}</SelectItem>
+              <SelectItem value="IMAGE">{t("gallery.typeImage")}</SelectItem>
+              <SelectItem value="VIDEO">{t("gallery.typeVideo")}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={eventFilter} onValueChange={setEventFilter}>
+            <SelectTrigger className="w-full min-w-55 bg-background sm:w-55">
+              <SelectValue placeholder={t("gallery.eventAll")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t("gallery.eventAll")}</SelectItem>
+              {eventOptions.map((eventOption) => (
+                <SelectItem key={eventOption.id} value={eventOption.id}>
+                  {eventOption.headline}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Grid */}
       {filteredItems.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/40 px-6 py-16 text-center">
           <p className="text-lg font-medium text-foreground">
-            Inget media matchar filtren.
+            {t("gallery.emptyTitle")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Prova att visa alla objekt eller byta eventfilter.
+            {t("gallery.emptyHint")}
           </p>
         </div>
       ) : (

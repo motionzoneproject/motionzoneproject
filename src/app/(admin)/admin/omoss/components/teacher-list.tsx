@@ -29,11 +29,13 @@ import { TeacherForm } from "./teacher-form";
 type TeacherListProps = {
   teachersWithProfile: TeacherWithProfile[];
   teacherUsers: TeacherWithProfile[];
+  lang?: string;
 };
 
 export function TeacherList({
   teachersWithProfile: teachers,
   teacherUsers,
+  lang,
 }: TeacherListProps) {
   const router = useRouter();
   const [editingTeacher, setEditingTeacher] =
@@ -111,7 +113,9 @@ export function TeacherList({
               return (
                 <TableRow key={profile.id}>
                   <TableCell className="font-medium">{profile.name}</TableCell>
-                  <TableCell>{profile.specialty}</TableCell>
+                  <TableCell>
+                    {lang === "en" ? profile.specialty_en : profile.specialty}
+                  </TableCell>
                   <TableCell>
                     {profile.active ? (
                       <Check className="h-4 w-4 text-green-500" />

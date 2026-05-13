@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +67,7 @@ export default function CheckoutForm({
   userDetails,
   existingParticipants,
 }: CheckoutFormProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,14 +125,18 @@ export default function CheckoutForm({
           participantId = slot.participantId;
         } else if (slot.customData) {
           if (!slot.customData.name) {
-            toast.error(`Ange namn för deltagare på ${it.name}`);
+            toast.error(
+              t("checkout.form.missingNameForProduct", { name: it.name }),
+            );
             setIsSubmitting(false);
             return;
           }
           const p = await getOrCreateParticipant(slot.customData);
           participantId = p.id;
         } else {
-          toast.error(`Välj deltagare för ${it.name}`);
+          toast.error(
+            t("checkout.form.missingParticipantForProduct", { name: it.name }),
+          );
           setIsSubmitting(false);
           return;
         }
@@ -149,12 +155,14 @@ export default function CheckoutForm({
         note,
       });
 
-      toast.success("Beställning skapad!");
+      toast.success(t("checkout.form.orderCreated"));
       router.push(result.successRedirect);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Ett fel uppstod";
-      toast.error("Ett fel uppstod", { description: message });
+        error instanceof Error
+          ? error.message
+          : t("checkout.form.errorGeneric");
+      toast.error(t("checkout.form.errorTitle"), { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -163,20 +171,16 @@ export default function CheckoutForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Slutför köp & Deltagare</CardTitle>
+        <CardTitle>{t("checkout.form.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <CardDescription className="mb-2">
-          Här kan du också välja om en produkt är till dig eller t.ex en
-          familjemedlem genom att lägga till deltagare. Bokningar för dig och
-          dina deltagare sker sedan på profilsidan. Om du köper en kurs så bokas
-          du automatiskt på kommande lektioner från dagens datum så långt
-          klippen räcker.
+          {t("checkout.form.intro")}
         </CardDescription>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Vilka ska delta?
+              {t("checkout.form.whoAttends")}
             </h3>
             {flattenedItems.map((it, idx) => {
               const key = `slot-${idx}`;
@@ -194,7 +198,7 @@ export default function CheckoutForm({
                         htmlFor={`self-${key}`}
                         className="text-sm cursor-pointer"
                       >
-                        Jag själv
+                        {t("checkout.form.myself")}
                       </Label>
                       <Checkbox
                         id={`self-${key}`}
@@ -209,7 +213,7 @@ export default function CheckoutForm({
                   {!slot.isSelf && (
                     <div className="space-y-4 pt-2 border-t border-dashed">
                       <div className="space-y-2">
-                        <Label>Välj befintlig eller lägg till ny</Label>
+                        <Label>{t("checkout.form.selectExistingOrNew")}</Label>
                         <Select
                           value={slot.participantId || "new"}
                           onValueChange={(val) =>
@@ -217,10 +221,14 @@ export default function CheckoutForm({
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Välj deltagare" />
+                            <SelectValue
+                              placeholder={t("checkout.form.selectPlaceholder")}
+                            />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="new">+ Ny person</SelectItem>
+                            <SelectItem value="new">
+                              {t("checkout.form.newPerson")}
+                            </SelectItem>
                             {otherParticipants.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
                                 {p.name}
@@ -234,9 +242,12 @@ export default function CheckoutForm({
                         !slot.participantId) && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
                           <div className="space-y-1">
-                            <Label className="text-xs">Namn*</Label>
+                            <Label className="text-xs" htmlFor={`name-${key}`}>
+                              {t("checkout.form.name")}
+                            </Label>
                             <Input
-                              placeholder="Fullständigt namn"
+                              id={`name-${key}`}
+                              placeholder={t("checkout.form.namePlaceholder")}
                               value={slot.customData?.name || ""}
                               onChange={(e) =>
                                 updateSlot(key, {
@@ -252,10 +263,13 @@ export default function CheckoutForm({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">E-post (valfri)</Label>
+                            <Label className="text-xs" htmlFor={`email-${key}`}>
+                              {t("checkout.form.emailOptional")}
+                            </Label>
                             <Input
+                              id={`email-${key}`}
                               type="email"
-                              placeholder="epost@exempel.se"
+                              placeholder={t("checkout.form.emailPlaceholder")}
                               value={slot.customData?.email || ""}
                               onChange={(e) =>
                                 updateSlot(key, {
@@ -271,9 +285,12 @@ export default function CheckoutForm({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">Telefon (valfri)</Label>
+                            <Label className="text-xs" htmlFor={`phone-${key}`}>
+                              {t("checkout.form.phoneOptional")}
+                            </Label>
                             <Input
-                              placeholder="070-000 00 00"
+                              id={`phone-${key}`}
+                              placeholder={t("checkout.form.phonePlaceholder")}
                               value={slot.customData?.phone || ""}
                               onChange={(e) =>
                                 updateSlot(key, {
@@ -309,8 +326,7 @@ export default function CheckoutForm({
                               htmlFor={`photo-${key}`}
                               className="text-xs leading-none"
                             >
-                              Godkänner fotografering/filmning för sociala
-                              medier
+                              {t("checkout.form.allowPhoto")}
                             </Label>
                           </div>
                         </div>
@@ -323,13 +339,13 @@ export default function CheckoutForm({
           </div>
 
           <div className="space-y-2 pt-4 border-t">
-            <Label htmlFor="note">Notering till beställningen</Label>
+            <Label htmlFor="note">{t("checkout.form.noteLabel")}</Label>
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="t.ex. speciella önskemål"
+              placeholder={t("checkout.form.notePlaceholder")}
               className="resize-none"
             />
           </div>
@@ -340,10 +356,12 @@ export default function CheckoutForm({
               disabled={isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white font-medium h-12 text-lg"
             >
-              {isSubmitting ? "Behandlar..." : "Slutför beställning"}
+              {isSubmitting
+                ? t("checkout.form.submitting")
+                : t("checkout.form.submit")}
             </Button>
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              Genom att slutföra köpet godkänner du våra köpvillkor.
+              {t("checkout.form.terms")}
             </p>
           </div>
         </form>

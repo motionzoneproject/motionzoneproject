@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,18 +51,22 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   teachers: User[];
+  initialLang?: "sv" | "en";
 }
 
-export default function AddCourseForm({ teachers }: Props) {
+export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
   const { user } = useSession();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      name_en: "",
       description: "",
+      description_en: "",
       minAge: "",
       maxAge: "",
       level: "",
+      level_en: "",
       adult: false,
       teacherid: user?.id,
     },
@@ -93,6 +98,14 @@ export default function AddCourseForm({ teachers }: Props) {
   const maxAgeValue = form.watch("maxAge");
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
 
+  const [formLang, setFormLang] = useState(initialLang);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormLang(initialLang);
+    }
+  }, [initialLang, isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
       <DialogTrigger asChild>
@@ -109,6 +122,14 @@ export default function AddCourseForm({ teachers }: Props) {
 
         <Card>
           <CardContent>
+            <div className="p2 text-sm">
+              Formulärspråk:{" "}
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
+
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -116,10 +137,11 @@ export default function AddCourseForm({ teachers }: Props) {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name={formLang === "en" ? "name_en" : "name"}
+                  key={`name-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Kursnamn</FormLabel>
+                      <FormLabel>Kursnamn ({formLang})</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -130,10 +152,11 @@ export default function AddCourseForm({ teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="description"
+                  name={formLang === "en" ? "description_en" : "description"}
+                  key={`description-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Beskrivning av kursen</FormLabel>
+                      <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
                         <Textarea {...field} />
@@ -236,10 +259,11 @@ export default function AddCourseForm({ teachers }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="level"
+                  name={formLang === "en" ? "level_en" : "level"}
+                  key={`level-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nivå:</FormLabel>
+                      <FormLabel>Nivå ({formLang})</FormLabel>
 
                       <FormControl>
                         <Input {...field} />

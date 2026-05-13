@@ -3,15 +3,45 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getActiveGalleryItems } from "@/lib/actions/gallery";
+import { getDictionary } from "@/locales/get-dictionary";
 import Gallery from "./Gallery";
 
+const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+
+// TODO(i18n): swap title/description by `i18nextLng` cookie when bilingual
+// metadata is wired in.
 export const metadata: Metadata = {
   title: "Bild & Videogalleri",
   description:
     "Bilder och videor från MotionZone Växjös event, uppvisningar och vardagsträning.",
+  alternates: {
+    canonical: `${SITE_URL}/gallery`,
+    languages: {
+      sv: `${SITE_URL}/gallery`,
+      en: `${SITE_URL}/gallery`,
+      "x-default": `${SITE_URL}/gallery`,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: "Bild & Videogalleri — Motion Zone Växjö",
+    description:
+      "Bilder och videor från Motion Zone Växjös event, uppvisningar och vardagsträning.",
+    url: `${SITE_URL}/gallery`,
+    siteName: "MotionZone Växjö",
+    locale: "sv_SE",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bild & Videogalleri — Motion Zone Växjö",
+    description:
+      "Bilder och videor från Motion Zone Växjös event, uppvisningar och vardagsträning.",
+  },
 };
 
 export default async function Page() {
+  const { t } = await getDictionary();
   const mediaItems = await getActiveGalleryItems();
 
   return (
@@ -19,13 +49,14 @@ export default async function Page() {
       {/* Hero */}
       <section className="py-8 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
-            Bild & Video
-            <span className="font-serif italic text-brand-light"> Galleri</span>
+          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+            {t.gallery.title1}
+            <span className="font-serif italic text-brand-light">
+              {" "}
+              {t.gallery.titleAccent}
+            </span>
           </h1>
-          <p className="text-muted-foreground mb-4">
-            Se bilder och videor från våra lektioner, uppträdanden och studio.
-          </p>
+          <p className="text-muted-foreground mb-4">{t.gallery.subtitle}</p>
         </div>
       </section>
 
@@ -54,10 +85,10 @@ export default async function Page() {
 
                 <div>
                   <h2 className="text-3xl md:text-4xl font-black mb-2 text-foreground tracking-tight">
-                    Följ oss på Instagram
+                    {t.gallery.instagramTitle}
                   </h2>
                   <p className="text-muted-foreground text-lg mb-4">
-                    Se fler bilder och håll dig uppdaterad om våra aktiviteter.
+                    {t.gallery.instagramSubtitle}
                   </p>
                 </div>
 
