@@ -5,6 +5,9 @@ import {
   InfinityIcon,
   Info,
   MapPin,
+  ShoppingBag,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -21,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -48,8 +50,6 @@ interface Props {
   }>;
 }
 
-// TODO(i18n): swap title/description by `i18nextLng` cookie when bilingual
-// metadata is prioritised.
 export const metadata: Metadata = {
   title: "Våra kurser",
   description:
@@ -262,9 +262,7 @@ export default async function Page({ searchParams }: Props) {
     }),
   );
 
-  // Collect unique course names for the ItemList JSON-LD. We use Swedish names
-  // here because metadata above is Swedish; bilingual JSON-LD would require
-  // separate inLanguage entries.
+  // Collect unique course names for JSON-LD
   const seenCourseIds = new Set<string>();
   const courseListItems: Array<{ name: string; id: string }> = [];
   for (const product of productsWithData) {
@@ -283,12 +281,7 @@ export default async function Page({ searchParams }: Props) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Hem",
-        item: `${SITE_URL}/`,
-      },
+      { "@type": "ListItem", position: 1, name: "Hem", item: `${SITE_URL}/` },
       {
         "@type": "ListItem",
         position: 2,
@@ -322,17 +315,7 @@ export default async function Page({ searchParams }: Props) {
       <JsonLd data={[breadcrumbLd, itemListLd]} />
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="py-5 border-b border-border mb-6">
-          {/* <h1 className="text-2xl md:text-3xl font-light text-foreground leading-[1.1] tracking-tight mb-6 animate-fade-in-left [animation-delay:200ms]">
-            Här köper du tillgång till våra
-            <span className="font-serif italic text-brand-light"> Kurser</span>!
-          </h1>
-          <p>
-            I samband med köpet blir du medlem. Du kan även köpa produkter till
-            dina barn, lägg enkelt till deltagare i kundkorgen. Logga sedan
-            enkelt in och boka våra lektioner!
-          </p> */}
-
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             {t.coursesPage.titleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -341,12 +324,21 @@ export default async function Page({ searchParams }: Props) {
           </h1>
           <div className="w-full">
             <p className="text-muted-foreground">{t.coursesPage.intro}</p>
-
             <CoursesFilter />
           </div>
         </div>
-        {/* Filter component */}
-        <p className="font-bold mt-4">{t.coursesPage.ourProducts}</p>
+
+        <div className="flex items-center gap-2 mt-4">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg"
+            style={{ backgroundColor: "#8f5ccf26" }}
+          >
+            <ShoppingBag className="w-4 h-4" style={{ color: "#8f5ccf" }} />
+          </div>
+          <p className="font-bold text-foreground">
+            {t.coursesPage.ourProducts}
+          </p>
+        </div>
 
         {totalProducts > 0 ? (
           <>
@@ -371,11 +363,28 @@ export default async function Page({ searchParams }: Props) {
                     key={p.id}
                     className="group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
                   >
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge className="font-bold text-lg bg-brand text-white border-0">
+                    {/* Image header with overlay */}
+                    <div className="relative h-48 overflow-hidden shrink-0">
+                      {p.imageURL ? (
+                        <Image
+                          src={p.imageURL}
+                          alt={pick(p, "name", lang) as string}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-linear-to-br from-brand/20 via-brand-secondary/10 to-brand/5" />
+                      )}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Price */}
+                      <div className="absolute bottom-3 left-4">
+                        <span className="text-white text-2xl font-bold drop-shadow-sm">
                           {formatPrice(p.price, lang)}
-                        </Badge>
+                        </span>
+                      </div>
+                      {/* Spots badge */}
+                      <div className="absolute top-3 right-3">
                         {typeof p.spotsLeft === "number" &&
                         Number.isFinite(p.spotsLeft) ? (
                           <Badge
@@ -406,32 +415,28 @@ export default async function Page({ searchParams }: Props) {
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-lg">
+                    </div>
+
+                    <CardHeader className="pb-2 pt-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-medium"
+                        >
+                          {t.coursesPage.productTypeLabel.replace(
+                            "{{type}}",
+                            p.type === "CLIP"
+                              ? t.coursesPage.productTypeClip
+                              : t.coursesPage.productTypeCourse,
+                          )}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-xl leading-tight font-semibold">
                         {pick(p, "name", lang) as string}
                       </CardTitle>
-                      <CardDescription className="whitespace-pre-line">
-                        {t.coursesPage.productTypeLabel.replace(
-                          "{{type}}",
-                          p.type === "CLIP"
-                            ? t.coursesPage.productTypeClip
-                            : t.coursesPage.productTypeCourse,
-                        )}
-                      </CardDescription>
                     </CardHeader>
 
                     <CardContent className="flex-1 space-y-4">
-                      {p.imageURL && (
-                        <div className="overflow-hidden max-h-64 rounded-md">
-                          <Image
-                            src={p.imageURL}
-                            alt={pick(p, "name", lang) as string}
-                            width={800}
-                            height={600}
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="w-full h-auto"
-                          />
-                        </div>
-                      )}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <CalendarDays className="w-3 h-3" />
@@ -440,7 +445,7 @@ export default async function Page({ searchParams }: Props) {
                         {p.terminer.map((termin) => (
                           <div
                             key={termin.id}
-                            className="text-sm bg-muted p-2 rounded border border-border"
+                            className="text-sm bg-muted/60 px-3 py-1.5 rounded-lg border border-border/60"
                           >
                             <p className="font-medium">
                               {pick(termin, "name", lang) as string}
@@ -623,8 +628,32 @@ export default async function Page({ searchParams }: Props) {
             </div>
           </>
         ) : (
-          <div className="text-center py-12 border rounded-lg bg-muted/20 mt-4">
-            <p className="text-muted-foreground">{t.coursesPage.noProducts}</p>
+          <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/20 py-16 px-6 flex flex-col items-center justify-center text-center">
+            <div className="relative mb-6 flex items-center justify-center">
+              <div
+                className="absolute w-24 h-24 rounded-full blur-2xl opacity-25"
+                style={{ backgroundColor: "#8f5ccf" }}
+              />
+              <Sparkles
+                className="absolute -top-4 -right-4 w-5 h-5 opacity-80"
+                style={{ color: "#e8a04d" }}
+              />
+              <Star
+                className="absolute -bottom-2 -left-5 w-4 h-4 opacity-70"
+                style={{ color: "#e87ea1" }}
+              />
+              <Star
+                className="absolute top-0 -left-4 w-3 h-3 opacity-60"
+                style={{ color: "#8f5ccf" }}
+              />
+              <ShoppingBag
+                className="relative w-16 h-16"
+                style={{ color: "#8f5ccf" }}
+              />
+            </div>
+            <p className="font-bold text-foreground text-lg mb-1">
+              {t.coursesPage.noProducts}
+            </p>
           </div>
         )}
       </div>

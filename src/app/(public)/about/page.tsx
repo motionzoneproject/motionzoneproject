@@ -109,7 +109,7 @@ export default async function About() {
                   return (
                     <div
                       key={studio.id}
-                      className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center"
+                      className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
                     >
                       {studio.imageUrl && (
                         <Image
