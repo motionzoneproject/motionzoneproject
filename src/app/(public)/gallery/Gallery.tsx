@@ -141,7 +141,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
           value={typeFilter}
           onValueChange={(v) => setTypeFilter(v as TypeFilter)}
         >
-          <SelectTrigger className="h-8 w-auto min-w-28 rounded-full border-border/60 bg-card text-sm px-3">
+          <SelectTrigger className="h-8 w-auto min-w-28 rounded-lg border-border/60 bg-card text-sm px-3">
             <SelectValue placeholder={t("gallery.typeAll")} />
           </SelectTrigger>
           <SelectContent>
@@ -152,7 +152,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
         </Select>
 
         <Select value={eventFilter} onValueChange={setEventFilter}>
-          <SelectTrigger className="h-8 w-auto min-w-36 rounded-full border-border/60 bg-card text-sm px-3">
+          <SelectTrigger className="h-8 w-auto min-w-36 rounded-lg border-border/60 bg-card text-sm px-3">
             <SelectValue placeholder={t("gallery.eventAll")} />
           </SelectTrigger>
           <SelectContent>
@@ -195,7 +195,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
               if (p.isVideoPlaceholder) {
                 return (
                   <div
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative overflow-hidden border border-border shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_28px_rgba(124,68,194,0.22)] flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_50%),linear-gradient(180deg,rgba(15,23,42,0.75),rgba(2,6,23,0.97))]"
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative overflow-hidden border border-border shadow-[0_4px_20px_rgb(0_0_0/0.20)] hover:shadow-[0_16px_48px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] flex items-center justify-center bg-[radial-gradient(circle_at_top,color-mix(in_srgb,white_10%,transparent),transparent_50%),linear-gradient(180deg,color-mix(in_srgb,var(--color-card)_50%,black),color-mix(in_srgb,var(--color-background)_5%,black))]"
                     style={{ ...props.style, borderRadius: "0.5rem" }}
                   >
                     <div className="rounded-full bg-black/60 p-4 backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
@@ -209,7 +209,7 @@ export default function Gallery({ items }: { items: GalleryMediaItem[] }) {
               }
               return (
                 <div
-                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_28px_rgba(124,68,194,0.22)]"
+                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:z-10 relative shadow-[0_4px_20px_rgb(0_0_0/0.20)] hover:shadow-[0_16px_48px_color-mix(in_srgb,var(--color-primary)_40%,transparent)]"
                   style={{ ...props.style, borderRadius: "0.5rem" }}
                 >
                   <div

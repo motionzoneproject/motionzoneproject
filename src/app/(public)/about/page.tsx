@@ -69,7 +69,7 @@ export default async function About() {
       {/* Hero */}
       <section className="border-b border-border py-10 text-center md:py-14">
         <div className="mx-auto max-w-7xl px-6">
-          <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-7xl">
+          <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-4xl">
             {t.about.heroTitleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -87,8 +87,8 @@ export default async function About() {
 
       {/* Studio */}
       <section className="bg-muted/50 py-12 md:py-16">
-        <div className="mx-auto max-w-6xl px-6 text-center">
-          <h2 className="mb-4 text-4xl md:text-5xl font-black text-foreground">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <h2 className="mb-4 text-4xl md:text-3xl font-black text-foreground">
             {t.about.studiosTitle}
           </h2>
           {activeStudios.length === 0 ? (

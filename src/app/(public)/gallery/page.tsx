@@ -49,7 +49,7 @@ export default async function Page() {
       {/* Hero */}
       <section className="py-8 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-4xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             {t.gallery.title1}
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -68,7 +68,7 @@ export default async function Page() {
       </section>
 
       {/* Instagram CTA */}
-      <section className="py-10 relative overflow-hidden">
+      <section className="py-10 bg-secondary relative mt-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
