@@ -109,7 +109,7 @@ export default async function About() {
                   return (
                     <div
                       key={studio.id}
-                      className="flex w-[500px] max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
+                      className="flex w-125 max-w-full flex-col items-center rounded-lg border-2 border-border p-6 text-center hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
                     >
                       {studio.imageUrl && (
                         <Image
@@ -117,7 +117,7 @@ export default async function About() {
                           alt={studioName}
                           height={220}
                           width={420}
-                          className="mb-4 h-[220px] w-full rounded-lg object-cover"
+                          className="mb-4 h-55 w-full rounded-lg object-cover"
                         />
                       )}
                       <h3 className="text-lg font-semibold">{studioName}</h3>
