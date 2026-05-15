@@ -361,7 +361,7 @@ export default async function Page({ searchParams }: Props) {
                 return (
                   <Card
                     key={p.id}
-                    className="group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300"
+                    className="py-0 pb-4 gap-0 group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300 "
                   >
                     {/* Image header with overlay */}
                     <div className="relative h-48 overflow-hidden shrink-0">
