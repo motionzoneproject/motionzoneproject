@@ -313,24 +313,23 @@ export default async function Page({ searchParams }: Props) {
   return (
     <div className="bg-background">
       <JsonLd data={[breadcrumbLd, itemListLd]} />
-      <div className="max-w-7xl mx-auto p-6 md:p-8">
-        <div className="py-5 border-b border-border mb-6">
-          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms] text-center">
+
+      <section className="border-b border-border py-8 text-center">
+        <div className="max-w-7xl mx-auto px-6">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             {t.coursesPage.titleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}
               {t.coursesPage.titleAccent}
             </span>
           </h1>
-          <div className="w-full">
-            <p className="text-muted-foreground text-center">
-              {t.coursesPage.intro}
-            </p>
-            <CoursesFilter />
-          </div>
+          <p className="text-muted-foreground mb-4">{t.coursesPage.intro}</p>
+          <CoursesFilter />
         </div>
+      </section>
 
-        <div className="flex items-center gap-2 mt-4">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 py-6 md:py-8">
+        <div className="flex items-center gap-2 mb-4">
           <div
             className="flex items-center justify-center w-8 h-8 rounded-lg"
             style={{ backgroundColor: "#8f5ccf26" }}
