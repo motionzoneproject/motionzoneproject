@@ -315,7 +315,7 @@ export default async function Page({ searchParams }: Props) {
       <JsonLd data={[breadcrumbLd, itemListLd]} />
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="py-5 border-b border-border mb-6">
-          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms] text-center">
             {t.coursesPage.titleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -323,7 +323,9 @@ export default async function Page({ searchParams }: Props) {
             </span>
           </h1>
           <div className="w-full">
-            <p className="text-muted-foreground">{t.coursesPage.intro}</p>
+            <p className="text-muted-foreground text-center">
+              {t.coursesPage.intro}
+            </p>
             <CoursesFilter />
           </div>
         </div>

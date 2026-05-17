@@ -67,9 +67,9 @@ export default async function About() {
     <div className="bg-background">
       <JsonLd data={aboutPageLd} />
       {/* Hero */}
-      <section className="border-b border-border py-10 text-center md:py-14">
+      <section className="border-b border-border py-8 text-center">
         <div className="mx-auto max-w-7xl px-6">
-          <h1 className="mb-6 animate-fade-in-left text-5xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-4xl">
+          <h1 className="mb-2 animate-fade-in-left text-3xl font-light leading-[1.1] tracking-tight text-foreground [animation-delay:200ms] md:text-4xl">
             {t.about.heroTitleLine1}
             <span className="font-serif italic text-brand-light">
               {" "}

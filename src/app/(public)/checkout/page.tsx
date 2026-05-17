@@ -66,68 +66,71 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex-1 bg-background py-12">
-      <div className="max-w-2xl mx-auto px-4 space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">
+    <div className="bg-background">
+      <section className="border-b border-border py-8 text-center">
+        <div className="max-w-7xl mx-auto px-6">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             {t.checkout.title}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground">
             {hasItems ? t.checkout.subtitleHasItems : t.checkout.subtitleEmpty}
           </p>
         </div>
+      </section>
 
-        {/* Cart Summary - Always visible */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.checkout.yourProducts}</CardTitle>
-          </CardHeader>
+      <section className="py-8">
+        <div className="max-w-2xl mx-auto px-4 space-y-6">
+          {/* Cart Summary - Always visible */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.checkout.yourProducts}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CartSummary />
+            </CardContent>
+          </Card>
 
-          <CardContent>
-            <CartSummary />
-          </CardContent>
-        </Card>
-
-        {/* Checkout Form - Only if has items */}
-        {hasItems &&
-          (checkoutData ? (
-            <CheckoutForm {...checkoutData} />
-          ) : (
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle>{t.checkout.loginRequiredTitle}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground text-center text-sm">
-                  {t.checkout.loginRequiredBody}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    asChild
-                    className="flex-1 bg-brand hover:bg-brand-light text-white"
-                  >
-                    <Link
-                      href={`/signin?callbackUrl=${encodeURIComponent(
-                        "/checkout",
-                      )}`}
+          {/* Checkout Form - Only if has items */}
+          {hasItems &&
+            (checkoutData ? (
+              <CheckoutForm {...checkoutData} />
+            ) : (
+              <Card>
+                <CardHeader className="text-center">
+                  <CardTitle>{t.checkout.loginRequiredTitle}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground text-center text-sm">
+                    {t.checkout.loginRequiredBody}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      asChild
+                      className="flex-1 bg-brand hover:bg-brand-light text-white"
                     >
-                      {t.checkout.signIn}
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="flex-1">
-                    <Link
-                      href={`/signup?callbackUrl=${encodeURIComponent(
-                        "/checkout",
-                      )}`}
-                    >
-                      {t.checkout.signUp}
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-      </div>
+                      <Link
+                        href={`/signin?callbackUrl=${encodeURIComponent(
+                          "/checkout",
+                        )}`}
+                      >
+                        {t.checkout.signIn}
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link
+                        href={`/signup?callbackUrl=${encodeURIComponent(
+                          "/checkout",
+                        )}`}
+                      >
+                        {t.checkout.signUp}
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      </section>
     </div>
   );
 }
