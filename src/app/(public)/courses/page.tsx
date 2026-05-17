@@ -361,7 +361,7 @@ export default async function Page({ searchParams }: Props) {
                 return (
                   <Card
                     key={p.id}
-                    className="py-0 pb-4 gap-0 group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300 "
+                    className="py-0 pb-4 gap-0 group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden hover:border-brand/40 hover:shadow-xl hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300 [backface-hidden-true]"
                   >
                     {/* Image header with overlay */}
                     <div className="relative h-48 overflow-hidden shrink-0">
@@ -371,7 +371,7 @@ export default async function Page({ searchParams }: Props) {
                           alt={pick(p, "name", lang) as string}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full bg-linear-to-br from-brand/20 via-brand-secondary/10 to-brand/5" />
