@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function CheckoutError({
   error,
@@ -15,26 +16,34 @@ export default function CheckoutError({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-4">
-      <h2 className="text-xl font-semibold">Något gick fel vid checkout</h2>
-      <p className="text-muted-foreground text-center">
-        Ett fel uppstod. Din beställning har inte genomförts.
-      </p>
-      <div className="flex gap-3 mt-2">
-        <button
-          type="button"
-          onClick={() => reset()}
-          className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
-        >
-          Försök igen
-        </button>
-        <Link
-          href="/courses"
-          className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent"
-        >
-          Tillbaka till kurser
-        </Link>
-      </div>
+    <div className="bg-background">
+      <section className="border-b border-border py-8 text-center">
+        <div className="max-w-7xl mx-auto px-6">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2">
+            Något gick fel
+          </h1>
+          <p className="text-muted-foreground">
+            Ett fel uppstod. Din beställning har inte genomförts.
+          </p>
+        </div>
+      </section>
+
+      <section className="py-8">
+        <div className="flex flex-col items-center gap-3 px-4">
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              onClick={() => reset()}
+              className="bg-brand hover:bg-brand-light text-white"
+            >
+              Försök igen
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/courses">Tillbaka till kurser</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

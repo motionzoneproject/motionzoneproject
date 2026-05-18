@@ -5,163 +5,222 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Dark mode variant for Tailwind v4 */
 @variant dark (&:where(.dark, .dark *));
 
-/* MotionZone Brand Theme Configuration */
 @theme inline {
-  /* Base theme tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* shadcn/ui tokens */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+
   --color-destructive: var(--destructive);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* MotionZone Brand Colors - work in both themes */
-  --color-brand: #9a59d7;
-  --color-brand-light: #b981ee;
-  --color-brand-secondary: #4cadb2;
-  --color-brand-secondary-light: #85e4e9;
+  /* MotionZone Brand Colors */
+  --color-brand: #8f5ccf;
+  --color-brand-light: #b38ae5;
+
+  --color-brand-secondary: #5aa6b8;
+  --color-brand-secondary-light: #8ed2df;
 }
 
-/* Light Mode - Default */
+/* ─── LIGHT MODE ──────────────────────────────────────────── */
+
 :root {
-  --radius: 0.625rem;
-  --background: #fafafa;
-  --foreground: #1a1a2e;
-  --card: #ffffff;
-  --card-foreground: #1a1a2e;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  --primary: #9a59d7;
+  --radius: 0.75rem;
+
+  /* Base — slightly cooler & more distinct than pure grey */
+  --background: #ced4e4;
+  --foreground: #181a2e;
+
+  /* Surface Hierarchy — clear steps between layers */
+  --card: #e8ecf6;
+  --card-foreground: #181a2e;
+
+  --popover: #f4f6fc;
+  --popover-foreground: #181a2e;
+
+  /* Brand */
+  --primary: #7c44c2;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1a1a2e;
-  --muted: #f1f5f9;
-  /* Darkened from #64748b (slate-500) to slate-600 to clear the
-     WCAG AA 4.5:1 contrast threshold on the #fafafa background. */
-  --muted-foreground: #475569;
-  --accent: #4cadb2;
-  --accent-foreground: #1a1a2e;
+
+  --secondary: #c8d1e4;
+  --secondary-foreground: #252840;
+
+  --accent: #3d96aa;
+  --accent-foreground: #ffffff;
+
+  /* Muted */
+  --muted: #bcc5d8;
+  --muted-foreground: #505870;
+
+  /* States */
   --destructive: #dc2626;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #9a59d7;
-  --chart-1: #9a59d7;
-  --chart-2: #4cadb2;
-  --chart-3: #8b5cf6;
-  --chart-4: #06b6d4;
-  --chart-5: #22c55e;
-  --sidebar: #fafafa;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #9a59d7;
+
+  /* Inputs / Borders */
+  --border: #a8b4cb;
+  --input: #bcc5d8;
+  --ring: #7c44c2;
+
+  /* Charts */
+  --chart-1: #7c44c2;
+  --chart-2: #3d96aa;
+  --chart-3: #6b57d6;
+  --chart-4: #55a8b8;
+  --chart-5: #4aab68;
+
+  /* Sidebar */
+  --sidebar: #c4ccde;
+  --sidebar-foreground: #181a2e;
+
+  --sidebar-primary: #7c44c2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #1a1a2e;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #9a59d7;
+
+  --sidebar-accent: #bcc5d8;
+  --sidebar-accent-foreground: #181a2e;
+
+  --sidebar-border: #a8b4cb;
+  --sidebar-ring: #7c44c2;
 }
 
-/* Dark Mode */
+/* ─── DARK MODE ───────────────────────────────────────────── */
+
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-  --primary: #9a59d7;
+  /* Base — richer, deeper navy */
+  --background: #0d1120;
+  --foreground: #eef1fb;
+
+  /* Surface Hierarchy — clear layering */
+  --card: #161d30;
+  --card-foreground: #eef1fb;
+
+  --popover: #1e2740;
+  --popover-foreground: #eef1fb;
+
+  /* Brand */
+  --primary: #a67de8;
   --primary-foreground: #ffffff;
-  --secondary: #334155;
-  --secondary-foreground: #f8fafc;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: #4cadb2;
-  --accent-foreground: #1a1a2e;
-  --destructive: #ef4444;
-  --border: #334155;
-  --input: #334155;
-  --ring: #9a59d7;
-  --chart-1: #9a59d7;
-  --chart-2: #4cadb2;
-  --chart-3: #a78bfa;
-  --chart-4: #22d3ee;
-  --chart-5: #4ade80;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #9a59d7;
-  --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #334155;
-  --sidebar-ring: #9a59d7;
+
+  --secondary: #232e45;
+  --secondary-foreground: #dce4f5;
+
+  --accent: #4db8cc;
+  --accent-foreground: #050c1a;
+
+  /* Muted */
+  --muted: #1e2a3f;
+  --muted-foreground: #8896b4;
+
+  /* States */
+  --destructive: #f87171;
+
+  /* Inputs / Borders */
+  --border: #2a3650;
+  --input: #222e44;
+  --ring: #a67de8;
+
+  /* Charts */
+  --chart-1: #a67de8;
+  --chart-2: #4db8cc;
+  --chart-3: #c4a3f5;
+  --chart-4: #7dd4e0;
+  --chart-5: #6bd990;
+
+  /* Sidebar */
+  --sidebar: #0b0f1c;
+  --sidebar-foreground: #eef1fb;
+
+  --sidebar-primary: #a67de8;
+  --sidebar-primary-foreground: #ffffff;
+
+  --sidebar-accent: #1e2a3f;
+  --sidebar-accent-foreground: #eef1fb;
+
+  --sidebar-border: #2a3650;
+  --sidebar-ring: #a67de8;
 }
 
-@layer base {
-  :root {
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-  }
-
-  .dark {
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.439 0 0);
-  }
-}
+/* ─── BASE LAYER ─────────────────────────────────────────── */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
+  :root {
+    --bg-glow-1: #a855f71a;
+    --bg-glow-2: #4cadb214;
+  }
+
+  .dark {
+    --bg-glow-1: #a855f70f;
+    --bg-glow-2: #4cadb20d;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    background-image:
+      radial-gradient(circle at top right, var(--bg-glow-1), transparent 25%),
+      radial-gradient(circle at bottom left, var(--bg-glow-2), transparent 25%);
+    @apply text-foreground;
+  }
+
+  :root {
+    font-family: var(--font-montserrat), system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-lora), serif;
   }
 
   /* WCAG 2.4.7 — make keyboard focus unambiguously visible.
@@ -172,26 +231,14 @@
   }
 }
 
-:root {
-  font-family: var(--font-montserrat), system-ui, sans-serif;
-}
+/* ─── HERO ANIMATIONS ────────────────────────────────────── */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-lora), serif;
-}
-
-/* Hero animations */
 @keyframes subtlePan {
   0% {
     transform: scale(1);
   }
   100% {
-    transform: scale(1.1);
+    transform: scale(1.08);
   }
 }
 
@@ -206,27 +253,45 @@ h6 {
   }
 }
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in-left {
   animation: fade-in-left 0.8s ease-out forwards;
   opacity: 0;
 }
 
-/* WCAG 2.3.3 — respect users who opt out of motion. Collapse every
-   animation/transition to near-zero so vestibular-disorder users
-   aren't subjected to the hero pan, fade-ins, hover scales, etc.
-   !important is required here to override Tailwind/third-party
-   animation utilities. */
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s ease-out forwards;
+  opacity: 0;
+}
+
+/* ─── GLASS CARD UTILITY ─────────────────────────────────── */
+
+.glass-card {
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* ─── ACCESSIBILITY — REDUCED MOTION ─────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
-    animation-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind animate-* and third-party animation utilities */
-    animation-iteration-count: 1 !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind transition-* utilities */
-    transition-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must override smooth-scroll utilities */
-    scroll-behavior: auto !important;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
   }
 }
