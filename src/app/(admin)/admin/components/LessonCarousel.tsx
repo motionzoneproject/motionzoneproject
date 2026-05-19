@@ -67,10 +67,10 @@ export function LessonCarousel({
                     {format(new Date(lesson.endTime), "HH:mm")}
                   </span>
                 </div>
-                {lesson.schemaItem.place && (
+                {lesson.schemaItem.studio && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{lesson.schemaItem.place}</span>
+                    <span>{lesson.schemaItem.studio.name}</span>
                   </div>
                 )}
                 <div className="text-muted-foreground truncate">

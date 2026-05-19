@@ -12,7 +12,7 @@ import prisma from "@/lib/prisma";
 import { LessonCarousel } from "./components/LessonCarousel";
 import { StatsPage } from "./components/StatsPage";
 
-const lessonsInclude = {
+const _lessonsInclude = {
   bookings: true,
   teacher: true,
   course: true,
@@ -20,7 +20,12 @@ const lessonsInclude = {
 } satisfies Prisma.LessonInclude;
 
 export type LessonWithData = Prisma.LessonGetPayload<{
-  include: typeof lessonsInclude;
+  include: {
+    bookings: true;
+    course: true;
+    teacher: true;
+    schemaItem: { include: { studio: true } };
+  };
 }>;
 
 export default async function Page() {
@@ -44,7 +49,7 @@ export default async function Page() {
       course: true,
       teacher: true,
       bookings: true,
-      schemaItem: true,
+      schemaItem: { include: { studio: true } },
     },
     orderBy: {
       startTime: "asc",
