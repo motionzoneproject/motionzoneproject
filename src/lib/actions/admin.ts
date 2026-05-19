@@ -809,6 +809,7 @@ export async function addNewCourse(
 
   try {
     const validated = await adminAddCourseSchema.parseAsync(formData);
+    const styleId = validated.style?.trim() || undefined;
 
     const checkTeacherId = await prisma.user.findUnique({
       where: { id: validated.teacherid },
@@ -819,9 +820,19 @@ export async function addNewCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
+    if (styleId) {
+      const styleExists = await prisma.style.findUnique({
+        where: { id: styleId },
+        select: { id: true },
+      });
+      if (!styleExists)
+        throw new Error(`Style with id ${styleId} was not found.`);
+    }
+
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
+        styleId: styleId ?? null,
         name_en: validated.name_en,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
@@ -857,6 +868,7 @@ export async function editCourse(
 
   try {
     const validated = await adminAddCourseSchema.parseAsync(formData);
+    const styleId = validated.style?.trim() || undefined;
 
     const checkTeacherId = await prisma.user.findUnique({
       where: { id: validated.teacherid },
@@ -867,11 +879,21 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
+    if (styleId) {
+      const styleExists = await prisma.style.findUnique({
+        where: { id: styleId },
+        select: { id: true },
+      });
+      if (!styleExists)
+        throw new Error(`Style with id ${styleId} was not found.`);
+    }
+
     const newCourseItem = await prisma.$transaction(async (tx) => {
       const updatedCourse = await tx.course.update({
         data: {
           name: validated.name,
           name_en: validated.name_en,
+          styleId: styleId ?? null,
           minAge: validated.minAge,
           maxAge: validated.maxAge,
           level: validated.level,

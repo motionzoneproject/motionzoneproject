@@ -2,7 +2,7 @@ import { EditIcon, EyeOffIcon, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { Course, User } from "@/generated/prisma/client";
+import type { Course, Style, User } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
@@ -11,6 +11,7 @@ import EditCourseForm from "./forms/EditCourseForm";
 
 interface Props {
   course: Course;
+  styles: Style[];
   teachers: User[];
   teacherName?: string;
   lang?: "sv" | "en";
@@ -18,6 +19,7 @@ interface Props {
 
 export default async function CourseItem({
   course,
+  styles,
   teachers,
   teacherName,
   lang = "sv",
@@ -78,7 +80,7 @@ export default async function CourseItem({
       <TableCell className="text-right">
         <div className="flex justify-end items-center gap-2">
           <ToggleCourseActiveBtn courseId={course.id} active={course.active} />
-          <EditCourseForm teachers={teachers} course={course} />
+          <EditCourseForm teachers={teachers} styles={styles} course={course} />
           <DeleteCourseBtn courseId={course.id} />
         </div>
       </TableCell>

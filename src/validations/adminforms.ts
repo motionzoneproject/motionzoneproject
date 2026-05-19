@@ -130,6 +130,7 @@ export const adminAddCourseSchema = z.object({
     .nonnegative("Ålder måste vara noll eller ett positivt tal."),
   adult: z.coerce.boolean().optional(),
   teacherid: z.string().min(1),
+  style: z.string().optional(),
 });
 
 export const adminLessonFormSchema = z.object({
