@@ -71,6 +71,7 @@
     "buyNow": "Buy now →",
     "noProducts": "No products match the current filters.",
     "filter": {
+      "title": "Filter",
       "searchLabel": "Search product name",
       "searchPlaceholder": "Search...",
       "typeLabel": "Product type",

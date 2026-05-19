@@ -71,6 +71,7 @@
     "buyNow": "Köp nu →",
     "noProducts": "Inga produkter hittades med nuvarande filter.",
     "filter": {
+      "title": "Filter",
       "searchLabel": "Sök produktnamn",
       "searchPlaceholder": "Sök...",
       "typeLabel": "Produkttyp",

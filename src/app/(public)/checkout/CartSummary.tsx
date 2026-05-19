@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { removeFromCart, updateCart } from "@/lib/actions/cart";
@@ -154,8 +155,9 @@ export default async function CartSummary() {
                 >
                   <button
                     type="submit"
-                    className="text-xs text-destructive hover:underline"
+                    className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
                   >
+                    <Trash2 className="w-3 h-3" />
                     {t.checkout.summary.remove}
                   </button>
                 </form>

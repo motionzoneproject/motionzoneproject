@@ -19,7 +19,7 @@ export default function StudioLocation() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <span className="h-[2px] w-8 bg-brand" />
+              <span className="h-0.5 w-8 bg-brand" />
               <p className="text-brand-secondary font-bold tracking-[0.2em] uppercase text-sm">
                 {t("studio.kicker")}
               </p>
@@ -69,7 +69,7 @@ export default function StudioLocation() {
           <div className="relative group">
             <div className="absolute -inset-4 border border-brand/20 rounded-2xl shadow-2xl group-hover:border-brand/40 transition-colors duration-500" />
 
-            <div className="relative h-[450px] w-full rounded-xl overflow-hidden ring-1 ring-border">
+            <div className="relative h-112 w-full rounded-xl overflow-hidden ring-1 ring-border">
               <LeafletMap />
             </div>
           </div>

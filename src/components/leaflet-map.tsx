@@ -3,7 +3,6 @@
 import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
-import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 
@@ -38,28 +37,17 @@ const markerIcon = new L.DivIcon({
   popupAnchor: [0, -36],
 });
 
-const DARK_TILES =
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const LIGHT_TILES =
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const TILES =
+  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
-function ThemeAwareTiles() {
-  const { resolvedTheme } = useTheme();
+function MapInit() {
   const map = useMap();
-
   useEffect(() => {
     map.invalidateSize();
   }, [map]);
-
-  return (
-    <TileLayer
-      key={resolvedTheme}
-      attribution={ATTRIBUTION}
-      url={resolvedTheme === "dark" ? DARK_TILES : LIGHT_TILES}
-    />
-  );
+  return null;
 }
 
 export default function LeafletMap() {
@@ -95,13 +83,13 @@ export default function LeafletMap() {
           color: var(--foreground) !important;
         }
         .leaflet-control-attribution {
-          background: var(--card) !important;
-          color: var(--muted-foreground) !important;
+          background: white !important;
+          color: #666 !important;
           font-size: 10px !important;
           opacity: 0.7;
         }
         .leaflet-control-attribution a {
-          color: var(--muted-foreground) !important;
+          color: #666 !important;
         }
       `}</style>
       <MapContainer
@@ -111,7 +99,8 @@ export default function LeafletMap() {
         className="h-full w-full"
         zoomControl={false}
       >
-        <ThemeAwareTiles />
+        <MapInit />
+        <TileLayer attribution={ATTRIBUTION} url={TILES} />
         <Marker position={POSITION} icon={markerIcon}>
           <Popup>
             <div style={{ textAlign: "center" }}>
@@ -119,9 +108,7 @@ export default function LeafletMap() {
                 MotionZone Växjö
               </strong>
               <br />
-              <span
-                style={{ color: "var(--muted-foreground)", fontSize: "13px" }}
-              >
+              <span style={{ color: "#666", fontSize: "13px" }}>
                 Smedsvängen 70, 352 54 Växjö
               </span>
             </div>

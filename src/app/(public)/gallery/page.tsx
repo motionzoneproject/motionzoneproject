@@ -47,9 +47,9 @@ export default async function Page() {
   return (
     <div className="bg-background">
       {/* Hero */}
-      <section className="py-16 text-center border-b border-border">
+      <section className="py-8 text-center border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.1] tracking-tight mb-4 animate-fade-in-left [animation-delay:200ms]">
+          <h1 className="text-4xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
             {t.gallery.title1}
             <span className="font-serif italic text-brand-light">
               {" "}
@@ -61,19 +61,19 @@ export default async function Page() {
       </section>
 
       {/* Gallery */}
-      <section className="py-10 md:py-12">
+      <section className="py-6 md:py-8">
         <div className="max-w-7xl mx-auto px-6">
           <Gallery items={mediaItems} />
         </div>
       </section>
 
       {/* Instagram CTA */}
-      <section className="py-10 relative overflow-hidden">
+      <section className="py-10 bg-secondary relative mt-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[120px]" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="group relative inline-block">
             <div className="absolute -inset-1 bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-1000" />
 
