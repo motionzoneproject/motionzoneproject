@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
@@ -79,8 +79,13 @@ const getStatusLabel = (status: string) => getOrderStatusLabel(status);
 
 export default function OrderDetailsClient() {
   const sp = useSearchParams();
-  const status = (sp.get("status") || "PENDING_PAYMENT").toUpperCase();
   const orderId = sp.get("orderId")?.trim() || "";
+  const backToOrdersHref = useMemo(() => {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("orderId");
+    const query = params.toString();
+    return query ? `/admin/orders?${query}` : "/admin/orders";
+  }, [sp]);
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +112,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -126,7 +131,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -143,7 +148,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -166,7 +171,7 @@ export default function OrderDetailsClient() {
           </p>
         </div>
         <Link
-          href={`/admin/orders?status=${status}`}
+          href={backToOrdersHref}
           className="text-sm font-medium text-blue-600 hover:underline"
         >
           ← Tillbaka till listan
