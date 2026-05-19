@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
+import { getOrderStatusLabel } from "@/lib/order-status";
 import { getOrderById } from "@/lib/orders";
 import { getDictionary } from "@/locales/get-dictionary";
 
@@ -8,24 +9,6 @@ export const metadata: Metadata = {
   title: "Tack för din beställning",
   robots: { index: false, follow: false },
 };
-
-function getStatusLabel(
-  status: string,
-  t: Awaited<ReturnType<typeof getDictionary>>["t"],
-) {
-  switch (status) {
-    case "PENDING_PAYMENT":
-      return t.checkout.success.statusPendingPayment;
-    case "APPROVED":
-      return t.checkout.success.statusApproved;
-    case "PAID":
-      return t.checkout.success.statusPaid;
-    case "CANCELLED":
-      return t.checkout.success.statusCancelled;
-    default:
-      return status;
-  }
-}
 
 export default async function Page({
   searchParams,
@@ -62,7 +45,12 @@ export default async function Page({
             <div>
               <span className="text-gray-600">{t.checkout.success.status}</span>
               <span className="ml-2 font-semibold">
-                {getStatusLabel(order.status ?? "PENDING_PAYMENT", t)}
+                {getOrderStatusLabel(order.status ?? "PENDING_PAYMENT", {
+                  PENDING_PAYMENT: t.checkout.success.statusPendingPayment,
+                  APPROVED: t.checkout.success.statusApproved,
+                  PAID: t.checkout.success.statusPaid,
+                  CANCELLED: t.checkout.success.statusCancelled,
+                })}
               </span>
             </div>
             <div>

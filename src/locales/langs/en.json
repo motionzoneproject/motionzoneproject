@@ -326,7 +326,8 @@
       "total": "Total",
       "statusPaid": "Paid",
       "statusPendingPayment": "Awaiting payment",
-      "statusApproved": "Approved"
+      "statusApproved": "Approved",
+      "statusCancelled": "Cancelled"
     },
     "autobook": {
       "running": "Auto-booking...",

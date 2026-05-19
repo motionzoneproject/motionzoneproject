@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/money";
+import { getOrderStatusLabel } from "@/lib/order-status";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
 
@@ -46,29 +47,25 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
   const lang: AppLang = normalizeLang(i18n.language);
   const dateLocale = lang === "en" ? enGB : sv;
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const statusLabels = {
+    PAID: t("user.orderHistory.statusPaid"),
+    PENDING_PAYMENT: t("user.orderHistory.statusPendingPayment"),
+    APPROVED: t("user.orderHistory.statusApproved"),
+    CANCELLED: t("user.orderHistory.statusCancelled"),
+  } as const;
 
   const getStatusBadge = (status: string) => {
+    const label = getOrderStatusLabel(status, statusLabels);
+
     switch (status) {
       case "PAID":
-        return (
-          <Badge className="bg-green-500">
-            {t("user.orderHistory.statusPaid")}
-          </Badge>
-        );
+        return <Badge className="bg-green-500">{label}</Badge>;
       case "PENDING_PAYMENT":
-        return (
-          <Badge variant="outline">
-            {t("user.orderHistory.statusPendingPayment")}
-          </Badge>
-        );
+        return <Badge variant="outline">{label}</Badge>;
       case "APPROVED":
-        return (
-          <Badge className="bg-blue-500">
-            {t("user.orderHistory.statusApproved")}
-          </Badge>
-        );
+        return <Badge className="bg-blue-500">{label}</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{label}</Badge>;
     }
   };
 

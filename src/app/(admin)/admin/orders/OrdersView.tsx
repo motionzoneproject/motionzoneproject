@@ -6,8 +6,7 @@ import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/money";
-
-type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
+import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
 type OrderLite = {
   id: string;
@@ -127,20 +126,7 @@ export default function OrdersView({
     { id: "CANCELLED", label: "Avbrutna" },
   ];
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "PENDING_PAYMENT":
-        return "Väntar betalning";
-      case "APPROVED":
-        return "Godkänd";
-      case "PAID":
-        return "Betald";
-      case "CANCELLED":
-        return "Avbruten";
-      default:
-        return status;
-    }
-  };
+  const getStatusLabel = (status: string) => getOrderStatusLabel(status);
 
   const getStatusStyles = (status: string) => {
     switch (status) {
