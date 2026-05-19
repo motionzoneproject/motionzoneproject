@@ -6,19 +6,20 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import type { Course, Termin } from "@/generated/prisma/client";
+import type { Course, Studio, Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
-import type { SchemaItemWithCourse } from "@/lib/actions/admin";
+import type { SchemaItemWithCourseStudioLessons } from "@/lib/actions/admin";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";
 import EditCourseToSchemaForm from "./forms/EditCourseToSchemaForm";
 
 interface Props {
-  schemaItems: SchemaItemWithCourse[];
+  schemaItems: SchemaItemWithCourseStudioLessons[];
   weekday: Weekday;
   termin: Termin;
   allCourses: Course[];
+  allStudios: Studio[];
   lang: "sv" | "en";
 }
 
@@ -27,6 +28,7 @@ export default function SchemaDay({
   weekday,
   termin,
   allCourses,
+  allStudios,
   lang = "sv",
 }: Props) {
   if (schemaItems.filter((itm) => itm.weekday === weekday).length === 0)
@@ -78,8 +80,10 @@ export default function SchemaDay({
                     {getCourseName(itm.course, lang)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Plats:{" "}
-                    {lang === "en" ? itm.place_en : itm.place || "Ej angiven"}
+                    Studio:{" "}
+                    {lang === "en"
+                      ? itm.studio?.name_en
+                      : itm.studio?.name || "Ej angiven"}
                   </div>
                   <Link
                     href={`/admin/lectures?schemaitem=${itm.id}&termin=${itm.terminId}&course=${itm.courseId}`}
@@ -97,6 +101,7 @@ export default function SchemaDay({
                   <EditCourseToSchemaForm
                     termin={termin}
                     schemaItem={itm}
+                    allStudios={allStudios}
                     allCourses={allCourses}
                     weekdays={weekdays}
                   />

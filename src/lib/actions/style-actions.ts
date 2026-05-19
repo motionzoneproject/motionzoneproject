@@ -45,6 +45,7 @@ export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/styles");
     revalidatePath("/about");
 
     return { success: true, msg: "Dansstil skapad." };
@@ -77,6 +78,7 @@ export async function updateStyle(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/styles");
     revalidatePath("/about");
 
     return { success: true, msg: "Dansstil uppdaterad." };
@@ -96,6 +98,7 @@ export async function deleteStyle(id: string) {
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/styles");
     revalidatePath("/about");
 
     return { success: true, msg: "Dansstil borttagen." };

@@ -6,6 +6,7 @@ import {
   Package,
   Search,
   SlidersHorizontal,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -23,13 +24,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Style } from "@/generated/prisma/client";
 
-export function CoursesFilter() {
-  const { t } = useTranslation();
+interface CoursesFilterProps {
+  styles: Style[];
+}
+
+export function CoursesFilter({ styles }: CoursesFilterProps) {
+  const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
   const [open, setOpen] = useState(false);
+  const isEnglish = i18n.language.startsWith("en");
 
   const params = useMemo(
     () => new URLSearchParams(searchParams),
@@ -39,6 +46,7 @@ export function CoursesFilter() {
   const activeCount = useMemo(() => {
     let count = 0;
     if (searchParams.get("q")) count++;
+    if (searchParams.get("style")) count++;
     if (searchParams.get("type")) count++;
     if (searchParams.get("adult")) count++;
     if (searchParams.get("sort") && searchParams.get("sort") !== "name-asc")
@@ -101,7 +109,7 @@ export function CoursesFilter() {
       {/* Filter content */}
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-border">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-3">
             {/* Search Field */}
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -116,6 +124,45 @@ export function CoursesFilter() {
                 placeholder={t("coursesPage.filter.searchPlaceholder")}
                 className="border-0 ring-1 ring-input w-full"
               />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand/12">
+                  <Sparkles className="w-3.5 h-3.5 text-brand" />
+                </div>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("coursesPage.filter.styleLabel")}
+                </Label>
+              </div>
+              <Select
+                value={params.get("style") || "all"}
+                onValueChange={(value) =>
+                  setFilter("style", value === "all" ? "" : value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={t("coursesPage.filter.stylePlaceholder")}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>
+                      {t("coursesPage.filter.styleGroup")}
+                    </SelectLabel>
+                    <SelectItem value="all">
+                      {t("coursesPage.filter.styleAll")}
+                    </SelectItem>
+                    <SelectSeparator />
+                    {styles.map((style) => (
+                      <SelectItem key={style.id} value={style.id}>
+                        {isEnglish ? (style.name_en ?? style.name) : style.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Product Type Filter */}

@@ -1,14 +1,15 @@
 import { Accordion } from "@/components/ui/accordion";
-import type { Course, Termin } from "@/generated/prisma/client";
-import type { SchemaItemWithCourse } from "@/lib/actions/admin";
+import type { Course, Studio, Termin } from "@/generated/prisma/client";
+import type { SchemaItemWithCourseStudioLessons } from "@/lib/actions/admin";
 import { getWeekdays } from "@/lib/tools";
 import AddCourseToSchemaForm from "./forms/AddCourseToSchemaForm";
 import SchemaDay from "./SchemaDay";
 
 interface SchemaProps {
-  schemaItems: SchemaItemWithCourse[]; // Tar emot alla schemaItems (som har denna terminId) inkl kursdata.
+  schemaItems: SchemaItemWithCourseStudioLessons[]; // Tar emot alla schemaItems (som har denna terminId) inkl kursdata.
   termin: Termin;
   allCourses: Course[];
+  allStudios: Studio[];
   lang: "sv" | "en";
 }
 
@@ -16,6 +17,7 @@ export default function Schema({
   schemaItems,
   termin,
   allCourses,
+  allStudios,
   lang = "sv",
 }: SchemaProps) {
   const weekdays = getWeekdays();
@@ -28,7 +30,11 @@ export default function Schema({
           </p>
         </div>
         <div className="gap-2">
-          <AddCourseToSchemaForm allCourses={allCourses} termin={termin} />
+          <AddCourseToSchemaForm
+            allCourses={allCourses}
+            termin={termin}
+            allStudios={allStudios}
+          />
         </div>
       </div>
       <div className="p-2">
@@ -40,6 +46,7 @@ export default function Schema({
               <SchemaDay
                 lang={lang}
                 allCourses={allCourses}
+                allStudios={allStudios}
                 termin={termin}
                 schemaItems={schemaItems}
                 weekday={day}

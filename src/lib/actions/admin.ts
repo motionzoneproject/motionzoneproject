@@ -15,6 +15,7 @@ import type {
   Purchase,
   PurchaseItem,
   SchemaItem,
+  Studio,
   Termin,
   User,
   Weekday,
@@ -80,8 +81,9 @@ export async function getTerminer(showInactive = false): Promise<Termin[]> {
  * Needed in admin/termin to list all schemaitems, including course for building coursename (see GetCourseName in app/tools).
  *
  */
-export type SchemaItemWithCourse = SchemaItem & {
+export type SchemaItemWithCourseStudioLessons = SchemaItem & {
   course: Course;
+  studio: Studio | null;
   Lessons: Lesson[];
 };
 
@@ -93,13 +95,13 @@ export type SchemaItemWithCourse = SchemaItem & {
  */
 export async function getSchemaItems(
   terminId: string,
-): Promise<SchemaItemWithCourse[]> {
+): Promise<SchemaItemWithCourseStudioLessons[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
   const schemaItems = await prisma.schemaItem.findMany({
     where: { terminId },
-    include: { course: true, Lessons: true },
+    include: { course: true, Lessons: true, studio: true },
   });
 
   return schemaItems;
@@ -133,6 +135,13 @@ export async function getAllCourses(
     orderBy: { name: "asc" },
   });
   return courses;
+}
+
+export async function getAllStudios(): Promise<Studio[]> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return [];
+
+  return await prisma.studio.findMany();
 }
 
 export async function editNewEvent(
@@ -466,6 +475,17 @@ export async function addCoursetoSchema(
 
     if (!getCourse) throw new Error("Course was not found.");
 
+    const studioId = validated.studio?.trim() || undefined;
+
+    if (studioId) {
+      const studioExist = await prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { id: true },
+      });
+      if (!studioExist)
+        throw new Error(`Studio with id ${validated.studio} was not found.`);
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const termin = await tx.termin.findUnique({ where: { id: terminId } });
       if (!termin) throw new Error("No termin.");
@@ -480,8 +500,7 @@ export async function addCoursetoSchema(
       const newSchemaItem = await tx.schemaItem.create({
         data: {
           terminId,
-          place: validated.place,
-          place_en: validated.place_en,
+          studioId: studioId ?? null,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -545,13 +564,23 @@ export async function editCourseInSchema(
       ? new Date(validated.customEndDate)
       : termin.endDate;
 
+    const studioId = validated.studio?.trim() || undefined;
+
+    if (studioId) {
+      const studioExist = await prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { id: true },
+      });
+      if (!studioExist)
+        throw new Error(`Studio with id ${validated.studio} was not found.`);
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const updatedSchemaItem = await tx.schemaItem.update({
         where: { id: schemaItemId },
         data: {
           terminId,
-          place: validated.place,
-          place_en: validated.place_en,
+          studioId: studioId ?? null,
           courseId: validated.courseId,
           timeStart: formToDbDate(validated.timeStart),
           timeEnd: formToDbDate(validated.timeEnd),
@@ -809,6 +838,7 @@ export async function addNewCourse(
 
   try {
     const validated = await adminAddCourseSchema.parseAsync(formData);
+    const styleId = validated.style?.trim() || undefined;
 
     const checkTeacherId = await prisma.user.findUnique({
       where: { id: validated.teacherid },
@@ -819,9 +849,19 @@ export async function addNewCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
+    if (styleId) {
+      const styleExists = await prisma.style.findUnique({
+        where: { id: styleId },
+        select: { id: true },
+      });
+      if (!styleExists)
+        throw new Error(`Style with id ${styleId} was not found.`);
+    }
+
     const newCourseItem = await prisma.course.create({
       data: {
         name: validated.name,
+        styleId: styleId ?? null,
         name_en: validated.name_en,
         minAge: validated.minAge,
         maxAge: validated.maxAge,
@@ -857,6 +897,7 @@ export async function editCourse(
 
   try {
     const validated = await adminAddCourseSchema.parseAsync(formData);
+    const styleId = validated.style?.trim() || undefined;
 
     const checkTeacherId = await prisma.user.findUnique({
       where: { id: validated.teacherid },
@@ -867,11 +908,21 @@ export async function editCourse(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
 
+    if (styleId) {
+      const styleExists = await prisma.style.findUnique({
+        where: { id: styleId },
+        select: { id: true },
+      });
+      if (!styleExists)
+        throw new Error(`Style with id ${styleId} was not found.`);
+    }
+
     const newCourseItem = await prisma.$transaction(async (tx) => {
       const updatedCourse = await tx.course.update({
         data: {
           name: validated.name,
           name_en: validated.name_en,
+          styleId: styleId ?? null,
           minAge: validated.minAge,
           maxAge: validated.maxAge,
           level: validated.level,

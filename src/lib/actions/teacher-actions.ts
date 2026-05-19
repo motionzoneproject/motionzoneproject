@@ -64,6 +64,7 @@ export async function createTeacher(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/teachers");
     revalidatePath("/user");
     revalidatePath("/about"); // Revalidate public page too
 
@@ -103,6 +104,7 @@ export async function updateTeacher(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/teachers");
     revalidatePath("/about");
 
     return { success: true, msg: "Lärare uppdaterad." };
@@ -126,6 +128,7 @@ export async function deleteTeacher(id: string) {
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/teachers");
     revalidatePath("/about");
 
     return { success: true, msg: "Lärare borttagen." };

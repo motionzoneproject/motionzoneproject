@@ -47,6 +47,7 @@ export async function createStudio(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/studios");
     revalidatePath("/about");
 
     return { success: true, msg: "Studio skapad." };
@@ -79,6 +80,7 @@ export async function updateStudio(
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/studios");
     revalidatePath("/about");
 
     return { success: true, msg: "Studio uppdaterad." };
@@ -98,6 +100,7 @@ export async function deleteStudio(id: string) {
     });
 
     revalidatePath("/admin/omoss");
+    revalidatePath("/admin/studios");
     revalidatePath("/about");
 
     return { success: true, msg: "Studio borttagen." };

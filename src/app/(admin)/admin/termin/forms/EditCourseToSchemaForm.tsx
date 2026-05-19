@@ -46,7 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
+import type {
+  Course,
+  SchemaItem,
+  Studio,
+  Termin,
+} from "@/generated/prisma/client";
 import { editCourseInSchema } from "@/lib/actions/admin";
 import { formatDateToInput } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
@@ -59,6 +64,7 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
+  allStudios: Studio[];
   weekdays: string[];
   schemaItem: SchemaItem;
   initialLang?: "sv" | "en";
@@ -67,6 +73,7 @@ interface Props {
 export default function EditCourseToSchemaForm({
   termin,
   allCourses,
+  allStudios,
   schemaItem,
   initialLang = "sv",
 }: Props) {
@@ -75,8 +82,7 @@ export default function EditCourseToSchemaForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: schemaItem.courseId,
-      place: schemaItem.place ?? "",
-      place_en: schemaItem.place_en ?? "",
+      studio: schemaItem.studioId ?? "",
       customEndDate:
         schemaItem.customEndDate?.toISOString().split("T")[0] ??
         termin.endDate.toISOString().split("T")[0],
@@ -121,8 +127,7 @@ export default function EditCourseToSchemaForm({
     if (!isOpen) {
       form.reset({
         courseId: schemaItem.courseId,
-        place: schemaItem.place ?? "",
-        place_en: schemaItem.place_en ?? "",
+        studio: schemaItem.studioId ?? "",
         customEndDate:
           schemaItem.customEndDate?.toISOString().split("T")[0] ??
           termin.endDate.toISOString().split("T")[0],
@@ -155,8 +160,7 @@ export default function EditCourseToSchemaForm({
     termin.endDate,
     termin.startDate,
     schemaItem.courseId,
-    schemaItem.place,
-    schemaItem.place_en,
+    schemaItem.studioId,
     schemaItem.timeEnd,
     schemaItem.timeStart,
     schemaItem.weekday,
@@ -432,15 +436,38 @@ export default function EditCourseToSchemaForm({
 
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "place_en" : "place"}
-                  key={`place-${formLang}`}
+                  name="studio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plats ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormLabel>Studio:</FormLabel>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj studio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj studio</SelectLabel>
+                            <SelectItem value="none">
+                              {formLang === "en" ? "No studio" : "Ingen studio"}
+                            </SelectItem>
+                            {allStudios.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {formLang === "en"
+                                  ? (s.name_en ?? s.name)
+                                  : s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
 
                       <FormMessage />
                     </FormItem>

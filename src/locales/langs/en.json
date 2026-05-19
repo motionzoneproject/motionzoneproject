@@ -74,6 +74,10 @@
       "title": "Filter",
       "searchLabel": "Search product name",
       "searchPlaceholder": "Search...",
+      "styleLabel": "Dance style",
+      "stylePlaceholder": "Select dance style",
+      "styleGroup": "Select dance style",
+      "styleAll": "All",
       "typeLabel": "Product type",
       "typePlaceholder": "Select type",
       "typeGroup": "Select product type",
@@ -101,7 +105,11 @@
       "audienceAdult": "Adults",
       "audienceChild": "Children/Youth",
       "ageRange": "Age range: {{range}} years",
-      "teacher": "Teacher"
+      "teacher": "Teacher",
+      "styleOpenLink": "Read about the dance style",
+      "studioOpenLink": "Read about the studio",
+      "studioLabel": "Studio:",
+      "studiosLabel": "Studios:"
     }
   },
   "about": {
