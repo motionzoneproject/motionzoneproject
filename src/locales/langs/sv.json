@@ -327,7 +327,8 @@
       "total": "Totalt",
       "statusPaid": "Betald",
       "statusPendingPayment": "Väntar på betalning",
-      "statusApproved": "Godkänd"
+      "statusApproved": "Godkänd",
+      "statusCancelled": "Avbruten"
     },
     "autobook": {
       "running": "Autobokar...",
