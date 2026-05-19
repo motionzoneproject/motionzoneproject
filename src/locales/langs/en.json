@@ -106,7 +106,10 @@
       "audienceChild": "Children/Youth",
       "ageRange": "Age range: {{range}} years",
       "teacher": "Teacher",
-      "styleOpenLink": "Read about the dance style"
+      "styleOpenLink": "Read about the dance style",
+      "studioOpenLink": "Read about the studio",
+      "studioLabel": "Studio:",
+      "studiosLabel": "Studios:"
     }
   },
   "about": {

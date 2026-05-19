@@ -27,8 +27,7 @@ export const adminAddCourseToSchemaSchema = z
   .object({
     courseId: z.string().min(1),
 
-    place: z.string().optional(),
-    place_en: z.string().optional(),
+    studio: z.string().optional(),
     timeStart: z.string().min(1).regex(TIME_REGEX, "HH:MM."),
 
     timeEnd: z.string().min(1).regex(TIME_REGEX, "HH:MM."),

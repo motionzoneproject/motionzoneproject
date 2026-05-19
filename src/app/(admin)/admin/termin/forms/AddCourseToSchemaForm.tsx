@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, Termin } from "@/generated/prisma/client";
+import type { Course, Studio, Termin } from "@/generated/prisma/client";
 import { addCoursetoSchema } from "@/lib/actions/admin";
 import { formatDateToInput } from "@/lib/date-utils";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
@@ -58,20 +58,21 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
+  allStudios: Studio[];
   initialLang?: "sv" | "en";
 }
 
 export default function AddCourseToSchemaForm({
   termin,
   allCourses,
+  allStudios,
   initialLang = "sv",
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: "",
-      place: "",
-      place_en: "",
+      studio: "",
       customEndDate: termin.endDate.toISOString().split("T")[0],
       customStartDate: termin.startDate.toISOString().split("T")[0],
       day: "MONDAY",
@@ -376,15 +377,38 @@ export default function AddCourseToSchemaForm({
 
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "place_en" : "place"}
-                  key={`place-${formLang}`}
+                  name="studio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plats ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormLabel>Studio:</FormLabel>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj studio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj studio</SelectLabel>
+                            <SelectItem value="none">
+                              {formLang === "en" ? "No studio" : "Ingen studio"}
+                            </SelectItem>
+                            {allStudios.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {formLang === "en"
+                                  ? (s.name_en ?? s.name)
+                                  : s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
 
                       <FormMessage />
                     </FormItem>

@@ -4,6 +4,7 @@ import {
   Clock,
   InfinityIcon,
   Info,
+  MapPin,
   ShoppingBag,
   Sparkles,
   Sparkles as SparklesIcon,
@@ -39,6 +40,7 @@ import { getCourseName, getVeckodag } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
+import { StudioInfoDialog } from "./components/StudioInfoDialog";
 import { StyleInfoDialog } from "./components/StyleInfoDialog";
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
@@ -232,6 +234,7 @@ export default async function Page({ searchParams }: Props) {
               schemaItems: {
                 include: {
                   termin: true,
+                  studio: true,
                 },
               },
               teacher: {
@@ -566,6 +569,26 @@ export default async function Page({ searchParams }: Props) {
                                                   },
                                                 )}
                                               </p>
+                                              {s.studio && (
+                                                <div className="text-brand flex items-center gap-1 mt-1">
+                                                  <MapPin className="w-3 h-3 shrink-0" />
+                                                  <span className="text-xs font-medium">
+                                                    {
+                                                      pick(
+                                                        s.studio,
+                                                        "name",
+                                                        lang,
+                                                      ) as string
+                                                    }
+                                                  </span>
+                                                  <br />
+                                                  <StudioInfoDialog
+                                                    studio={s.studio}
+                                                  />
+                                                  <br />
+                                                  <br />
+                                                </div>
+                                              )}
                                               {c.style && (
                                                 <div className="text-brand flex items-center gap-1 mt-1">
                                                   <SparklesIcon className="w-3 h-3 shrink-0" />
@@ -578,9 +601,11 @@ export default async function Page({ searchParams }: Props) {
                                                       ) as string
                                                     }
                                                   </span>
+                                                  <br />
                                                   <StyleInfoDialog
                                                     style={c.style}
                                                   />
+                                                  <br />
                                                 </div>
                                               )}
                                               <div className="mt-2">

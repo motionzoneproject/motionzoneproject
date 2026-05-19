@@ -106,7 +106,10 @@
       "audienceChild": "Barn/Ungdom",
       "ageRange": "Åldersgrupp: {{range}} år",
       "teacher": "Lärare",
-      "styleOpenLink": "Läs om dansstilen"
+      "styleOpenLink": "Läs om dansstilen",
+      "studioOpenLink": "Läs om studion",
+      "studioLabel": "Studio:",
+      "studiosLabel": "Studios:"
     }
   },
   "about": {
