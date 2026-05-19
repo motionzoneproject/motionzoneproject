@@ -27,12 +27,12 @@ export default function LanguageSwitcher() {
     void syncLang();
   }, []);
 
-  function handleChange(value: string) {
+  async function handleChange(value: string) {
     const nextLang = normalizeLang(value);
     setCurrentLang(nextLang);
     localStorage.setItem("i18nextLng", nextLang);
-    void writeClientLangCookie(nextLang);
-    void i18next.changeLanguage(nextLang);
+    await writeClientLangCookie(nextLang);
+    await i18next.changeLanguage(nextLang);
     router.refresh();
   }
 
