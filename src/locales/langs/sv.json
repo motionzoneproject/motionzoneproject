@@ -74,6 +74,10 @@
       "title": "Filter",
       "searchLabel": "Sök produktnamn",
       "searchPlaceholder": "Sök...",
+      "styleLabel": "Dansstil",
+      "stylePlaceholder": "Välj dansstil",
+      "styleGroup": "Välj dansstil",
+      "styleAll": "Alla",
       "typeLabel": "Produkttyp",
       "typePlaceholder": "Välj typ",
       "typeGroup": "Välj produkttyp",
@@ -101,7 +105,8 @@
       "audienceAdult": "Vuxna",
       "audienceChild": "Barn/Ungdom",
       "ageRange": "Åldersgrupp: {{range}} år",
-      "teacher": "Lärare"
+      "teacher": "Lärare",
+      "styleOpenLink": "Läs om dansstilen"
     }
   },
   "about": {

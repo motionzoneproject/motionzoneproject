@@ -4,9 +4,9 @@ import {
   Clock,
   InfinityIcon,
   Info,
-  MapPin,
   ShoppingBag,
   Sparkles,
+  Sparkles as SparklesIcon,
   Star,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -28,8 +28,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Prisma } from "@/generated/prisma/client";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { getStyles } from "@/lib/actions/style-actions";
 import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
@@ -37,6 +39,7 @@ import { getCourseName, getVeckodag } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
+import { StyleInfoDialog } from "./components/StyleInfoDialog";
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 
@@ -45,6 +48,7 @@ interface Props {
     page?: string;
     q?: string;
     adult?: string;
+    style?: string;
     type?: string;
     sort?: string;
   }>;
@@ -84,6 +88,20 @@ export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const { lang, t } = await getDictionary();
   const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const publicStyles = (await getStyles(lang)).filter((style) => style.active);
+
+  const linkedCourseFilter: Prisma.CourseWhereInput = {
+    ...(sp.adult
+      ? {
+          adult: sp.adult === "true",
+        }
+      : {}),
+    ...(sp.style
+      ? {
+          styleId: sp.style,
+        }
+      : {}),
+  };
 
   // Build filters based on search params
   const filters = {
@@ -96,13 +114,11 @@ export default async function Page({ searchParams }: Props) {
           },
         }
       : {}),
-    ...(sp.adult
+    ...(Object.keys(linkedCourseFilter).length > 0
       ? {
           courses: {
             some: {
-              course: {
-                adult: sp.adult === "true",
-              },
+              course: linkedCourseFilter,
             },
           },
         }
@@ -223,6 +239,7 @@ export default async function Page({ searchParams }: Props) {
                   teacherProfile: true,
                 },
               },
+              style: true,
             },
           },
         },
@@ -324,7 +341,7 @@ export default async function Page({ searchParams }: Props) {
             </span>
           </h1>
           <p className="text-muted-foreground mb-4">{t.coursesPage.intro}</p>
-          <CoursesFilter />
+          <CoursesFilter styles={publicStyles} />
         </div>
       </section>
 
@@ -549,17 +566,22 @@ export default async function Page({ searchParams }: Props) {
                                                   },
                                                 )}
                                               </p>
-                                              {s.place && (
-                                                <p className="text-brand flex items-center gap-1 mt-1">
-                                                  <MapPin className="w-3 h-3" />
-                                                  {
-                                                    pick(
-                                                      s,
-                                                      "place",
-                                                      lang,
-                                                    ) as string
-                                                  }
-                                                </p>
+                                              {c.style && (
+                                                <div className="text-brand flex items-center gap-1 mt-1">
+                                                  <SparklesIcon className="w-3 h-3 shrink-0" />
+                                                  <span className="text-xs font-medium">
+                                                    {
+                                                      pick(
+                                                        c.style,
+                                                        "name",
+                                                        lang,
+                                                      ) as string
+                                                    }
+                                                  </span>
+                                                  <StyleInfoDialog
+                                                    style={c.style}
+                                                  />
+                                                </div>
                                               )}
                                               <div className="mt-2">
                                                 {t.coursesPage.period
