@@ -110,7 +110,12 @@ export default function AddCourseToSchemaForm({
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
-    const res = await addCoursetoSchema(termin.id, values);
+    const payload = {
+      ...values,
+      customStartDate: useTerminStart ? undefined : values.customStartDate,
+      customEndDate: useTerminEnd ? undefined : values.customEndDate,
+    };
+    const res = await addCoursetoSchema(termin.id, payload);
 
     if (res.success) {
       toast.success(res.msg);

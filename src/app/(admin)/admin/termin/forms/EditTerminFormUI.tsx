@@ -76,11 +76,18 @@ export function EditTerminFormUI({
   const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const check = await checkTerminDateChange(
-      termin.id,
-      values.startDate,
-      values.endDate,
-    );
+    // Så varningen kommer alltså även om vi inte ändrar datumen. Genom att kolla om de är oförändrade och även i server-action så löser vi problemet. Samt att i server-action så ska inte schemaItems med satta customDates beröras.
+    const dateIsChanged =
+      values.endDate.toISOString().slice(0, 10) !==
+        termin.endDate.toISOString().slice(0, 10) ||
+      values.startDate.toISOString().slice(0, 10) !==
+        termin.startDate.toISOString().slice(0, 10);
+
+    // 1. Kolla om terminens start och slutdatum har ändrats.
+
+    const check = dateIsChanged
+      ? await checkTerminDateChange(termin.id, values.startDate, values.endDate)
+      : { count: 0 };
 
     if (check.count > 0) {
       const confirm = window.confirm(
@@ -92,7 +99,7 @@ export function EditTerminFormUI({
 
     // 2. Kör den vanliga editTermin om man godkänt
 
-    const res = await editTermin(termin.id, values);
+    const res = await editTermin(termin.id, values, dateIsChanged);
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
