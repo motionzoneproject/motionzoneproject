@@ -276,163 +276,171 @@ export async function checkTerminDateChange(
 export async function editTermin(
   id: string,
   formData: z.infer<typeof adminAddTerminSchema>,
+  dateIsChanged: boolean = true,
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    const existingTermin = await prisma.termin.findUniqueOrThrow({
+      where: { id },
+    });
+
     const validated = await adminAddTerminSchema.parseAsync(formData);
-    const newStartDate = new Date(validated.startDate);
-    const newEndDate = new Date(validated.endDate);
+
+    const newStartDate = dateIsChanged
+      ? new Date(validated.startDate)
+      : existingTermin.startDate;
+    const newEndDate = dateIsChanged
+      ? new Date(validated.endDate)
+      : existingTermin.endDate;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Hämta nuvarande termin (för att avgöra "följ termin")
-      const currentTermin = await tx.termin.findUnique({ where: { id } });
-      if (!currentTermin) throw new Error("No termin.");
-
       // 2. Uppdatera själva terminen
       const updatedTermin = await tx.termin.update({
         where: { id },
         data: validated, // Såhär borde vi göra på alla ställen där det går. I framtiden.
       });
 
-      // 2. Hämta alla schemaItems för att synka lektioner
-      const schemaItems = await tx.schemaItem.findMany({
-        where: { terminId: id },
-        include: {
-          course: true,
-          Lessons: true,
-        },
-      });
+      if (dateIsChanged) {
+        // 2. Hämta alla schemaItems för att synka lektioner
+        const schemaItems = await tx.schemaItem.findMany({
+          where: { terminId: id },
+          include: {
+            course: true,
+          },
+        });
 
-      const sameDayUtc = (a: Date, b: Date) =>
-        a.getUTCFullYear() === b.getUTCFullYear() &&
-        a.getUTCMonth() === b.getUTCMonth() &&
-        a.getUTCDate() === b.getUTCDate();
+        // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
+        for (const item of schemaItems) {
+          // Kollar om schemaItem följer terminens datum:
+          const followsStart = item.customStartDate === null;
+          const followsEnd = item.customEndDate === null;
 
-      // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
-      for (const item of schemaItems) {
-        // Kollar om schemaItem följer terminens datum:
-        const followsStart =
-          !item.customStartDate ||
-          sameDayUtc(item.customStartDate, currentTermin.startDate);
-        const followsEnd =
-          !item.customEndDate ||
-          sameDayUtc(item.customEndDate, currentTermin.endDate);
+          const validStart = followsStart ? newStartDate : item.customStartDate;
+          const validEnd = followsEnd ? newEndDate : item.customEndDate;
 
-        // Beroende på det så ska vi bygga nya lektioner (eller ta bort). Om custom så kommer det bli orört
-        // (eftersom vi hämtar less than validStart och greater than validEnd)...
-        const validStart = followsStart
-          ? newStartDate
-          : (item.customStartDate ?? newStartDate);
-        const validEnd = followsEnd
-          ? newEndDate
-          : (item.customEndDate ?? newEndDate);
+          if (!validStart || !validEnd)
+            throw new Error("ValidStart eller ValidEnd är null");
 
-        // Hämta de boknignar som ev berörs:
-        const affectedBookings = await tx.booking.findMany({
-          where: {
-            lesson: {
+          // Hämta de boknignar som ev berörs:
+          const affectedBookings = await tx.booking.findMany({
+            where: {
+              lesson: {
+                schemaItemId: item.id,
+                OR: [
+                  { startTime: { lt: validStart } },
+                  { startTime: { gt: validEnd } },
+                ],
+              },
+            },
+            select: { id: true, purchaseItemId: true },
+          });
+
+          for (const booking of affectedBookings) {
+            if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
+
+            const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+            if (!clipResult.success) {
+              throw new Error(clipResult.msg || "Clip update failed.");
+            }
+          }
+
+          // Städa bort lektioner utanför intervallet:
+          await tx.lesson.deleteMany({
+            where: {
               schemaItemId: item.id,
               OR: [
                 { startTime: { lt: validStart } },
                 { startTime: { gt: validEnd } },
               ],
             },
-          },
-          select: { id: true, purchaseItemId: true },
-        });
-
-        for (const booking of affectedBookings) {
-          if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
-
-          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
+          });
         }
 
-        // Städa bort lektioner utanför intervallet:
-        await tx.lesson.deleteMany({
-          where: {
-            schemaItemId: item.id,
-            OR: [
-              { startTime: { lt: validStart } },
-              { startTime: { gt: validEnd } },
-            ],
-          },
+        // 5. Skapa nya lektioner för de datum som ev tillkommit ()
+        const WEEKDAY_MAP: Record<string, number> = {
+          MONDAY: 1,
+          TUESDAY: 2,
+          WEDNESDAY: 3,
+          THURSDAY: 4,
+          FRIDAY: 5,
+          SATURDAY: 6,
+          SUNDAY: 0,
+        };
+
+        // Hämta kvarvarande lektioner efter raderingssteget
+        const remainingLessons = await tx.lesson.findMany({
+          where: { schemaItemId: { in: schemaItems.map((i) => i.id) } },
+          select: { schemaItemId: true, startTime: true },
         });
-      }
 
-      // 5. Skapa nya lektioner för de datum som ev tillkommit ()
-      const WEEKDAY_MAP: Record<string, number> = {
-        MONDAY: 1,
-        TUESDAY: 2,
-        WEDNESDAY: 3,
-        THURSDAY: 4,
-        FRIDAY: 5,
-        SATURDAY: 6,
-        SUNDAY: 0,
-      };
+        const remainingSet = new Set(
+          remainingLessons.map(
+            (l) => `${l.schemaItemId}:${l.startTime.getTime()}`,
+          ),
+        );
 
-      const lessonsToCreate = [];
+        const lessonsToCreate = [];
 
-      for (const item of schemaItems) {
-        const targetDay = WEEKDAY_MAP[item.weekday];
-        const followsStart =
-          !item.customStartDate ||
-          sameDayUtc(item.customStartDate, currentTermin.startDate);
-        const followsEnd =
-          !item.customEndDate ||
-          sameDayUtc(item.customEndDate, currentTermin.endDate);
+        for (const item of schemaItems) {
+          const targetDay = WEEKDAY_MAP[item.weekday];
 
-        const actualStart = followsStart
-          ? newStartDate
-          : (item.customStartDate ?? newStartDate);
-        const actualEnd = followsEnd
-          ? newEndDate
-          : (item.customEndDate ?? newEndDate);
-        const currentDate = new Date(actualStart.getTime());
+          const followsStart = item.customStartDate === null;
+          const followsEnd = item.customEndDate === null;
 
-        const startHours = item.timeStart.getHours();
-        const startMinutes = item.timeStart.getMinutes();
-        const endHours = item.timeEnd.getHours();
-        const endMinutes = item.timeEnd.getMinutes();
+          const actualStart = followsStart
+            ? newStartDate
+            : item.customStartDate;
+          const actualEnd = followsEnd ? newEndDate : item.customEndDate;
 
-        while (currentDate <= actualEnd) {
-          currentDate.setHours(0, 0, 0, 0);
+          if (!actualStart)
+            throw new Error(`SchemaItem ${item.id} saknar customStartDate.`);
+          if (!actualEnd)
+            throw new Error(`SchemaItem ${item.id} saknar customEndDate.`);
 
-          if (currentDate.getDay() === targetDay) {
-            const combinedStartTime = new Date(currentDate.getTime());
-            combinedStartTime.setHours(startHours, startMinutes, 0, 0);
+          const currentDate = new Date(actualStart.getTime());
 
-            // Kolla om lektionen redan finns (så vi inte skapar dubbletter)
-            const exists = item.Lessons.some(
-              (l) => l.startTime.getTime() === combinedStartTime.getTime(),
-            );
+          const startHours = item.timeStart.getHours();
+          const startMinutes = item.timeStart.getMinutes();
+          const endHours = item.timeEnd.getHours();
+          const endMinutes = item.timeEnd.getMinutes();
 
-            if (!exists) {
-              const combinedEndTime = new Date(currentDate.getTime());
-              combinedEndTime.setHours(endHours, endMinutes, 0, 0);
+          while (currentDate <= actualEnd) {
+            currentDate.setHours(0, 0, 0, 0);
 
-              lessonsToCreate.push({
-                startTime: combinedStartTime,
-                endTime: combinedEndTime,
-                terminId: id,
-                courseId: item.courseId,
-                teacherId: item.course.teacherId,
-                schemaItemId: item.id,
-              });
+            if (currentDate.getDay() === targetDay) {
+              const combinedStartTime = new Date(currentDate.getTime());
+              combinedStartTime.setHours(startHours, startMinutes, 0, 0);
+
+              // Kolla om lektionen redan finns (så vi inte skapar dubbletter)
+              const exists = remainingSet.has(
+                `${item.id}:${combinedStartTime.getTime()}`,
+              );
+
+              if (!exists) {
+                const combinedEndTime = new Date(currentDate.getTime());
+                combinedEndTime.setHours(endHours, endMinutes, 0, 0);
+
+                lessonsToCreate.push({
+                  startTime: combinedStartTime,
+                  endTime: combinedEndTime,
+                  terminId: id,
+                  courseId: item.courseId,
+                  teacherId: item.course.teacherId,
+                  schemaItemId: item.id,
+                });
+              }
             }
+            currentDate.setDate(currentDate.getDate() + 1);
           }
-          currentDate.setDate(currentDate.getDate() + 1);
         }
-      }
 
-      if (lessonsToCreate.length > 0) {
-        await tx.lesson.createMany({
-          data: lessonsToCreate,
-        });
+        if (lessonsToCreate.length > 0) {
+          await tx.lesson.createMany({
+            data: lessonsToCreate,
+          });
+        }
       }
 
       return updatedTermin;
@@ -442,7 +450,7 @@ export async function editTermin(
 
     return {
       success: true,
-      msg: `Terminen "${result.name}" har uppdaterats. Eventuella bokningar utanför perioden har raderats och bokningar har återställts till eleverna.`,
+      msg: `Terminen "${result.name}" har uppdaterats. ${dateIsChanged ? "Eventuella lektioner och bokningar utanför perioden har raderats och bokningar har återställts till eleverna." : ""}`,
     };
   } catch (e) {
     console.error("Fel vid editTermin:", e);
@@ -490,12 +498,20 @@ export async function addCoursetoSchema(
       const termin = await tx.termin.findUnique({ where: { id: terminId } });
       if (!termin) throw new Error("No termin.");
 
+      // const finalStartDate = validated.customStartDate
+      //   ? new Date(validated.customStartDate)
+      //   : termin.startDate;
+      // const finalEndDate = validated.customEndDate
+      //   ? new Date(validated.customEndDate)
+      //   : termin.endDate;
+
       const finalStartDate = validated.customStartDate
         ? new Date(validated.customStartDate)
-        : termin.startDate;
+        : null; // <-- null istället för termin.startDate
+
       const finalEndDate = validated.customEndDate
         ? new Date(validated.customEndDate)
-        : termin.endDate;
+        : null;
 
       const newSchemaItem = await tx.schemaItem.create({
         data: {
@@ -559,10 +575,10 @@ export async function editCourseInSchema(
 
     const finalStartDate = validated.customStartDate
       ? new Date(validated.customStartDate)
-      : termin.startDate;
+      : null;
     const finalEndDate = validated.customEndDate
       ? new Date(validated.customEndDate)
-      : termin.endDate;
+      : null;
 
     const studioId = validated.studio?.trim() || undefined;
 
@@ -995,8 +1011,8 @@ async function createLessons(
 
     const targetDay = WEEKDAY_MAP[schemaItm?.weekday]; // Få targetday som rätt nummer.
 
-    const startDate = schemaItm.customStartDate ?? schemaItm.termin.startDate;
-    const endDate = schemaItm.customEndDate ?? schemaItm.termin.endDate;
+    const startDate = schemaItm.customStartDate ?? schemaItm.termin.startDate; // Hanterar redan null korrekt
+    const endDate = schemaItm.customEndDate ?? schemaItm.termin.endDate; // Hanterar redan null korrekt.
     const teacherId = schemaItm.course.teacherId;
 
     const lessonsToCreate = []; // Dessa lessions ska skapas.
