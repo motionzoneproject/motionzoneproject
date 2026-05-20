@@ -23,8 +23,11 @@ export default async function Page({ searchParams }: Props) {
         <div>
           <span className="font-bold text-2xl">Juridiskt</span>
           <br />
-          <div className="mt-3 text-sm w-fit">
-            Formulärspråk: <AdminLanguageSwitch value={lang ?? "sv"} />
+          <div className="space-y-0">
+            <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
+            <div className="w-fit">
+              <AdminLanguageSwitch value={lang ?? "sv"} />
+            </div>
           </div>
         </div>
       </div>

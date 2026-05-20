@@ -328,11 +328,15 @@ export default function MediaAdmin({
         <div>
           <h1 className="text-2xl font-bold">Galleri - Mediahantering</h1>
           <div className="mt-3 text-sm w-fit">
-            Formulärspråk:{" "}
-            <LanguageSwitcherInput
-              value={formLang ?? "sv"}
-              setValue={(value) => setFormLang(value)}
-            />
+            <div className="space-y-0">
+              <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
+              <div className="w-fit">
+                <LanguageSwitcherInput
+                  value={formLang ?? "sv"}
+                  setValue={(value) => setFormLang(value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
