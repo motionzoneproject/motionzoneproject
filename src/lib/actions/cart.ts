@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { clearCart, readCart, writeCart } from "@/lib/cart";
+import { formatDateToInputStr } from "../date-utils";
 import prisma from "../prisma";
 import { getProductStats } from "./purchase-actions";
 
@@ -29,7 +30,7 @@ export async function addToCart(params: {
   } else {
     cart.items.push({ productId, qty });
   }
-  cart.updatedAt = new Date().toISOString();
+  cart.updatedAt = formatDateToInputStr(new Date());
   await writeCart(cart);
 
   if (redirectTo) redirect(redirectTo);
@@ -68,7 +69,7 @@ export async function updateCart(params: { productId: string; qty: number }) {
     if (item.qty <= 0) {
       cart.items = cart.items.filter((i) => i.productId !== productId);
     }
-    cart.updatedAt = new Date().toISOString();
+    cart.updatedAt = formatDateToInputStr(new Date());
     await writeCart(cart);
   }
 }
@@ -79,7 +80,7 @@ export async function removeFromCart(params: { productId: string }) {
 
   const cart = await readCart();
   cart.items = cart.items.filter((i) => i.productId !== productId);
-  cart.updatedAt = new Date().toISOString();
+  cart.updatedAt = formatDateToInputStr(new Date());
   await writeCart(cart);
 }
 

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { LegalPage } from "@/generated/prisma/client";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { LegalPageForm } from "./LegalPageForm";
 
 type LegalPageListProps = {
@@ -74,7 +75,7 @@ export function LegalPageList({ pages, lang }: LegalPageListProps) {
                 /{page.slug}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {page.updatedAt.toLocaleDateString("sv-SE")}
+                {formatDateToInputStr(new Date(page.updatedAt))}
               </TableCell>
               <TableCell className="text-right">
                 <Button

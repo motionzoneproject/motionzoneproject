@@ -30,8 +30,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { addNewTermin } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { addNewTermin } from "@/lib/actions/admin-terminer";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddTerminSchema;
@@ -137,7 +137,7 @@ export default function AddTerminForm({
                         <Input
                           type="date"
                           {...field}
-                          value={formatDateToInput(field.value)}
+                          value={formatDateToInputStr(field.value)}
                           onChange={field.onChange}
                         />
                       </FormControl>
@@ -158,7 +158,7 @@ export default function AddTerminForm({
                         <Input
                           type="date"
                           {...field}
-                          value={formatDateToInput(field.value)}
+                          value={formatDateToInputStr(field.value)}
                           onChange={field.onChange}
                         />
                       </FormControl>

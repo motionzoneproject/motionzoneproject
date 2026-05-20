@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { Event } from "@/generated/prisma/client";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
@@ -33,7 +34,7 @@ const accentGradients = [
 export default function Events({ events }: EventsProps) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() &&
@@ -141,10 +142,10 @@ export default function Events({ events }: EventsProps) {
                         className="w-4 h-4"
                         style={{ color: accent.accentVar }}
                       />
-                      {currentEvent.startDate.toLocaleDateString(dateLocale)}
+                      {formatDateToInputStr(currentEvent.startDate)}
                       {currentEvent.endDate &&
                       !isSameDay(currentEvent.endDate, currentEvent.startDate)
-                        ? ` - ${currentEvent.endDate.toLocaleDateString(dateLocale)}`
+                        ? ` - ${formatDateToInputStr(currentEvent.endDate)}`
                         : ""}
                     </div>
                   </div>

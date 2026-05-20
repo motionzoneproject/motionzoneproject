@@ -23,6 +23,7 @@ import {
   type LessonWithCourse,
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
+import { formatFriendlyDate } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
@@ -43,7 +44,7 @@ export default function BookingCal({
 }: Props) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const calendarLocale = lang === "en" ? enGB : sv;
   const [date, setDate] = useState<Date | undefined>(initDate ?? new Date());
 
@@ -182,13 +183,7 @@ export default function BookingCal({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              {date
-                ? date.toLocaleDateString(dateLocale, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })
-                : t("user.booking.selectDate")}
+              {date ? formatFriendlyDate(date) : t("user.booking.selectDate")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -272,10 +267,7 @@ export default function BookingCal({
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
-                        {lesson.startTime.toLocaleTimeString(dateLocale, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatFriendlyDate(lesson.startTime)}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {pick(lesson.course, "name", lang) as string}{" "}

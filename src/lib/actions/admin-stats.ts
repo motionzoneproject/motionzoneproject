@@ -3,6 +3,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
+import { formatDateToInputStr } from "../date-utils";
 
 const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID"] as const;
 
@@ -245,12 +246,13 @@ async function getSelectedPeriod(
   terminId?: string | null,
   customDateRange?: ParsedDateRange | null,
 ): Promise<StatsPeriod | null> {
+  // 1. Hantera custom date range säkert
   if (!terminId && customDateRange) {
     return {
       id: "custom",
       name: "Vald period",
-      from: customDateRange.from.toISOString(),
-      to: customDateRange.to.toISOString(),
+      from: formatDateToInputStr(customDateRange.from), // Säkert format "YYYY-MM-DD"
+      to: formatDateToInputStr(customDateRange.to), // Säkert format "YYYY-MM-DD"
     };
   }
 
@@ -274,29 +276,38 @@ async function getSelectedPeriod(
 
   if (!termin) return null;
 
-  const from = new Date(
-    Math.min(
-      termin.startDate.getTime(),
-      ...termin.schemaItems
-        .map((item) => item.customStartDate?.getTime())
-        .filter((value): value is number => value !== undefined),
-    ),
-  );
+  // 2. Samla in alla startdatum och formatera dem till "YYYY-MM-DD" strängar
+  const startDates = [
+    formatDateToInputStr(termin.startDate),
+    ...termin.schemaItems
+      .map((item) =>
+        item.customStartDate
+          ? formatDateToInputStr(item.customStartDate)
+          : null,
+      )
+      .filter((v): v is string => v !== null),
+  ];
 
-  const to = new Date(
-    Math.max(
-      termin.endDate.getTime(),
-      ...termin.schemaItems
-        .map((item) => item.customEndDate?.getTime())
-        .filter((value): value is number => value !== undefined),
-    ),
-  );
+  // 3. Samla in alla slutdatum och formatera dem till "YYYY-MM-DD" strängar
+  const endDates = [
+    formatDateToInputStr(termin.endDate),
+    ...termin.schemaItems
+      .map((item) =>
+        item.customEndDate ? formatDateToInputStr(item.customEndDate) : null,
+      )
+      .filter((v): v is string => v !== null),
+  ];
+
+  // Eftersom strängar i formatet "YYYY-MM-DD" sorteras perfekt alfabetiskt,
+  // kan vi använda vanlig array-sortering för att hitta min/max utan tidszons-skiftningar.
+  const fromStr = startDates.sort()[0]; // Sorterar stigande, tar det tidigaste
+  const toStr = endDates.sort().reverse()[0]; // Sorterar fallande, tar det senaste
 
   return {
     id: termin.id,
     name: termin.name,
-    from: from.toISOString(),
-    to: to.toISOString(),
+    from: fromStr, // Ger exakt t.ex. "2026-01-07"
+    to: toStr, // Ger exakt t.ex. "2026-06-15"
   };
 }
 
@@ -692,8 +703,9 @@ export async function getTerminsStats(
           ).size,
           bookingCount: 0,
           studentCount: 0,
-          periodStart: range.from?.toISOString() ?? null,
-          periodEnd: range.to?.toISOString() ?? null,
+
+          periodStart: range.from ? formatDateToInputStr(range.from) : null,
+          periodEnd: range.to ? formatDateToInputStr(range.to) : null,
           studentKeys: new Set<string>(),
         },
       ];

@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getTerminsStats, type TerminStats } from "@/lib/actions/admin-stats";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { StatsChart } from "./StatsChart";
 import { StatsFilter } from "./StatsFilter";
@@ -35,23 +36,19 @@ type Props = {
 };
 
 function formatDate(date: string | null) {
-  return date ? new Date(date).toLocaleDateString("sv-SE") : "Ej satt";
+  return date ? formatDateToInputStr(new Date(date)) : "Ej satt";
 }
 
 function getDefaultDateRange() {
-  const today = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 30);
 
-  const from = new Date(today);
-  from.setDate(today.getDate() - 30);
-
-  const to = new Date(today);
-  to.setDate(today.getDate() + 30);
-
-  const format = (d: Date) => d.toISOString().split("T")[0];
+  const to = new Date();
+  to.setDate(to.getDate() + 30);
 
   return {
-    from: format(from),
-    to: format(to),
+    from: formatDateToInputStr(from),
+    to: formatDateToInputStr(to),
   };
 }
 

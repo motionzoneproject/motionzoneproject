@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
 import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
@@ -280,7 +281,7 @@ export default function OrdersView({
                         #{o.id.slice(0, 8)}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {new Date(o.createdAt).toLocaleDateString("sv-SE")}
+                        {formatDateToInputStr(new Date(o.createdAt))}
                       </span>
                     </div>
                   </td>

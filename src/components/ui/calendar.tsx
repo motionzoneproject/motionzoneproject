@@ -12,6 +12,7 @@ import {
   getDefaultClassNames,
 } from "react-day-picker";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { formatDateToInputStr, MONTHS_SHORT_SV } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
 function Calendar({
@@ -39,8 +40,7 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        formatMonthDropdown: (date) => MONTHS_SHORT_SV[date.getMonth()],
         ...formatters,
       }}
       classNames={{
@@ -196,7 +196,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={formatDateToInputStr(day.date)}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

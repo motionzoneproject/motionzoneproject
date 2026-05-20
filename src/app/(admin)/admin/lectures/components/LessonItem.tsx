@@ -1,6 +1,8 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Lesson } from "@/generated/prisma/client";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
+import { formatDateToInputStr } from "@/lib/date-utils";
+import { dbToFormTime } from "@/lib/time-convert";
 import { AttendeDialog } from "./attendence/AttendenceDialog";
 import { EditLessonBtn } from "./EditLesson";
 
@@ -16,17 +18,9 @@ export async function LessonItem({
   return (
     <TableRow>
       <TableCell className="font-medium">
-        {lesson.startTime.toLocaleDateString("sv-SE")}
+        {formatDateToInputStr(lesson.startTime)}
         <br />
-        {lesson.startTime.toLocaleTimeString("sv-SE", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}{" "}
-        -{" "}
-        {lesson.endTime.toLocaleTimeString("sv-SE", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+        {dbToFormTime(lesson.startTime)} - {dbToFormTime(lesson.endTime)}
       </TableCell>
       <TableCell className="max-w-[260px] whitespace-normal">
         {courseName}

@@ -7,6 +7,7 @@ import {
   getSchemaItems,
   type SchemaItemWithCourseStudioLessons,
 } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
 import EditTerminForm from "./forms/EditTerminForm";
@@ -55,8 +56,8 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          {termin.startDate.toLocaleDateString()} –{" "}
-          {termin.endDate.toLocaleDateString()}
+          {formatDateToInputStr(termin.startDate)} –{" "}
+          {formatDateToInputStr(termin.endDate)}
         </div>
       </TableCell>
       <TableCell className="p-3 text-right">

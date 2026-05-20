@@ -21,6 +21,7 @@ import type {
   User,
   Weekday,
 } from "@/generated/prisma/client";
+import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag } from "@/lib/tools";
 import { DatePickerWithRange } from "./DatePicker";
 
@@ -269,15 +270,7 @@ export function LecturesFilter({
                 .map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {getVeckodag(t.weekday).slice(0, 3)}{" "}
-                    {t.timeStart.toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    -{" "}
-                    {t.timeEnd.toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
+                    {dbToFormTime(t.timeStart)} - {dbToFormTime(t.timeEnd)}{" "}
                     {t.courseId &&
                       courses.find((c) => c.id === t.courseId) &&
                       `${getCourseName(courses.find((c) => c.id === t.courseId) as Course, lang)}`}

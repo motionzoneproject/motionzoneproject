@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import { formatDateToInputStr } from "./date-utils";
 
 export type CartItem = { productId: string; qty: number };
 export type Cart = { items: CartItem[]; updatedAt: string; v: 1 };
@@ -6,7 +7,7 @@ export type Cart = { items: CartItem[]; updatedAt: string; v: 1 };
 const COOKIE_NAME = "mz_cart";
 
 function nowIso() {
-  return new Date().toISOString();
+  return formatDateToInputStr(new Date());
 }
 
 export async function readCart(): Promise<Cart> {

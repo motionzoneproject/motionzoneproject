@@ -27,6 +27,7 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
 import { getDictionary } from "@/locales/get-dictionary";
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const { lang, t } = await getDictionary();
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const sessionData = await getSessionData();
 
   if (!sessionData) {
@@ -234,14 +235,9 @@ export default async function Page() {
                                           <Calendar className="w-4 h-4 text-muted-foreground" />
 
                                           <p className="text-sm">
-                                            {new Date(
+                                            {formatDateToInputStr(
                                               b.lesson.startTime,
-                                            ).toLocaleDateString(dateLocale, {
-                                              day: "numeric",
-                                              month: "short",
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
+                                            )}
                                           </p>
                                         </div>
 

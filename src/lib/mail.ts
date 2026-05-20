@@ -2,6 +2,7 @@
 
 import { Resend } from "resend";
 import type { Course, Lesson } from "@/generated/prisma/client";
+import { formatDateToInputStr } from "./date-utils";
 import { formatPrice } from "./money";
 import { getOrderStatusLabel } from "./order-status";
 
@@ -96,9 +97,7 @@ export async function generateOrderConfirmationHtml(order: {
 
       <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
         <p><strong>Ordernummer:</strong> ${order.id}</p>
-        <p><strong>Datum:</strong> ${new Date(
-          order.createdAt,
-        ).toLocaleDateString("sv-SE")}</p>
+        <p><strong>Datum:</strong> ${formatDateToInputStr(order.createdAt)}</p>
         <p><strong>Status:</strong> ${getOrderStatusLabel(order.status, { PENDING_PAYMENT: "Inväntar betalning" })}</p>
       </div>
 
@@ -155,16 +154,19 @@ export async function generateBookingCancelledHtml(
   student: CancelledLessonMailStudent,
 ) {
   const lessonDate = new Date(lesson.startTime).toLocaleDateString("sv-SE", {
+    timeZone: "Europe/Stockholm",
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
   const startTime = new Date(lesson.startTime).toLocaleTimeString("sv-SE", {
+    timeZone: "Europe/Stockholm",
     hour: "2-digit",
     minute: "2-digit",
   });
   const endTime = new Date(lesson.endTime).toLocaleTimeString("sv-SE", {
+    timeZone: "Europe/Stockholm",
     hour: "2-digit",
     minute: "2-digit",
   });

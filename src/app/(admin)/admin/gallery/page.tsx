@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import MediaAdmin from "./MediaAdmin";
 
@@ -34,8 +35,8 @@ export default async function Page() {
         eventId: item.eventId ?? undefined,
         eventHeadline: item.event?.headline ?? undefined,
         eventHeadline_en: item.event?.headline_en ?? undefined,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
+        createdAt: formatDateToInputStr(item.createdAt),
+        updatedAt: formatDateToInputStr(item.updatedAt),
       }))}
       events={events.map((event) => ({
         ...event,

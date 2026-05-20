@@ -46,6 +46,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 
 export function AppSidebar() {
@@ -54,7 +55,8 @@ export function AppSidebar() {
   const { user } = useSession();
   const { isMobile, setOpenMobile } = useSidebar();
 
-  const formatDate = (date: Date) => date.toISOString().split("T")[0];
+  const formatDate = (date: Date) => formatDateToInputStr(date);
+
   const today = new Date();
   const in7 = new Date();
   in7.setDate(in7.getDate() + 7);

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { Course, Studio, Termin } from "@/generated/prisma/client";
 import type { Weekday } from "@/generated/prisma/enums";
 import type { SchemaItemWithCourseStudioLessons } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import DeleteSchemaItemBtn from "./components/DeleteSchemaItemBtn";
@@ -62,13 +63,13 @@ export default function SchemaDay({
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
                       <Calendar className="h-3 w-3" />{" "}
-                      {itm.customStartDate
-                        ? itm.customStartDate.toLocaleDateString()
-                        : termin.startDate.toLocaleDateString()}
+                      {formatDateToInputStr(
+                        itm.customStartDate || termin.startDate,
+                      )}
                       {" - "}
-                      {itm.customEndDate
-                        ? itm.customEndDate.toLocaleDateString()
-                        : termin.endDate.toLocaleDateString()}
+                      {formatDateToInputStr(
+                        itm.customEndDate || termin.endDate,
+                      )}
                     </span>
                     <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
                       <Clock className="h-3 w-3" />{" "}

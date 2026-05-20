@@ -21,8 +21,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Termin } from "@/generated/prisma/client";
-import { checkTerminDateChange, editTermin } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import {
+  checkTerminDateChange,
+  editTermin,
+} from "@/lib/actions/admin-terminer";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { adminAddTerminSchema } from "@/validations/adminforms";
 
 const formSchema = adminAddTerminSchema;
@@ -48,8 +51,8 @@ export function EditTerminFormUI({
     defaultValues: {
       name: termin.name ?? "",
       name_en: termin.name_en ?? "",
-      startDate: termin.startDate ?? "",
-      endDate: termin.endDate ?? "",
+      startDate: termin.startDate ? formatDateToInputStr(termin.startDate) : "",
+      endDate: termin.endDate ? formatDateToInputStr(termin.endDate) : "",
     },
   });
 
@@ -61,8 +64,8 @@ export function EditTerminFormUI({
     form.reset({
       name: termin.name,
       name_en: termin.name_en ?? "",
-      startDate: termin.startDate,
-      endDate: termin.endDate,
+      startDate: termin.startDate ? formatDateToInputStr(termin.startDate) : "",
+      endDate: termin.endDate ? formatDateToInputStr(termin.endDate) : "",
     });
   }, [
     isOpen,
@@ -76,30 +79,38 @@ export function EditTerminFormUI({
   const [formLang, setFormLang] = useState(initialLang);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Så varningen kommer alltså även om vi inte ändrar datumen. Genom att kolla om de är oförändrade och även i server-action så löser vi problemet. Samt att i server-action så ska inte schemaItems med satta customDates beröras.
+    // 1. Skapa rena strängjämförelser (YYYY-MM-DD) för att se om admin ändrat något
+    const inputStartStr = values.startDate;
+    const inputEndStr = values.endDate;
+
+    const dbStartStr = termin.startDate
+      ? formatDateToInputStr(termin.startDate)
+      : "";
+    const dbEndStr = termin.endDate ? formatDateToInputStr(termin.endDate) : "";
+
     const dateIsChanged =
-      values.endDate.toISOString().slice(0, 10) !==
-        termin.endDate.toISOString().slice(0, 10) ||
-      values.startDate.toISOString().slice(0, 10) !==
-        termin.startDate.toISOString().slice(0, 10);
+      inputStartStr !== dbStartStr || inputEndStr !== dbEndStr;
 
-    // 1. Kolla om terminens start och slutdatum har ändrats.
-
+    // 2. Kolla om terminens start och slutdatum har ändrats – skicka strängar till servern!
     const check = dateIsChanged
-      ? await checkTerminDateChange(termin.id, values.startDate, values.endDate)
+      ? await checkTerminDateChange(
+          termin.id,
+          inputStartStr, // ⚡ SÄKERT: Inget mer "new Date()" på klientsidan
+          inputEndStr, // ⚡ SÄKERT: Inget mer "new Date()" på klientsidan
+        )
       : { count: 0 };
 
     if (check.count > 0) {
       const confirm = window.confirm(
         `Varning: ${check.count} bokningar ligger utanför de nya datumen. ` +
-          `Dessa kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
+          `Dese kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
       );
       if (!confirm) return;
     }
 
-    // 2. Kör den vanliga editTermin om man godkänt
-
+    // 3. Kör den vanliga editTermin om man godkänt (eller om datum inte var ändrade)
     const res = await editTermin(termin.id, values, dateIsChanged);
+
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -151,7 +162,7 @@ export function EditTerminFormUI({
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>
@@ -171,7 +182,7 @@ export function EditTerminFormUI({
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

@@ -39,15 +39,20 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { bulkCancelLessons } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
 import { adminBulkCancelLessonsSchema } from "@/validations/adminforms";
 
 type FormInput = z.input<typeof adminBulkCancelLessonsSchema>;
 type FormOutput = z.output<typeof adminBulkCancelLessonsSchema>;
 
-const toDateInput = (value: Date) => value.toISOString().slice(0, 10);
+const toDateInput = (value: Date): string => {
+  if (!value || !(value instanceof Date) || Number.isNaN(value.getTime())) {
+    return "";
+  }
 
+  return new Intl.DateTimeFormat("sv-SE").format(value);
+};
 interface Props {
   courses: Course[];
   terminer: Termin[];
@@ -159,7 +164,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>
@@ -178,7 +183,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

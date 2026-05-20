@@ -33,9 +33,11 @@ import type { Prisma } from "@/generated/prisma/client";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { getStyles } from "@/lib/actions/style-actions";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
+import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
@@ -89,7 +91,7 @@ export const metadata: Metadata = {
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const { lang, t } = await getDictionary();
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const publicStyles = (await getStyles(lang)).filter((style) => style.active);
 
   const linkedCourseFilter: Prisma.CourseWhereInput = {
@@ -553,21 +555,8 @@ export default async function Page({ searchParams }: Props) {
                                               <p className="flex items-center text-muted-foreground">
                                                 {getVeckodag(s.weekday, lang)}{" "}
                                                 <Clock className="inline w-3 h-3 mx-1" />
-                                                {s.timeStart.toLocaleTimeString(
-                                                  dateLocale,
-                                                  {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                  },
-                                                )}
-                                                –
-                                                {s.timeEnd.toLocaleTimeString(
-                                                  dateLocale,
-                                                  {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                  },
-                                                )}
+                                                {dbToFormTime(s.timeStart)} -{" "}
+                                                {dbToFormTime(s.timeEnd)}
                                               </p>
                                               {s.studio && (
                                                 <div className="text-brand flex items-center gap-1 mt-1">
@@ -612,20 +601,16 @@ export default async function Page({ searchParams }: Props) {
                                                 {t.coursesPage.period
                                                   .replace(
                                                     "{{from}}",
-                                                    (
+                                                    formatDateToInputStr(
                                                       s.customStartDate ??
-                                                      s.termin.startDate
-                                                    ).toLocaleDateString(
-                                                      dateLocale,
+                                                        s.termin.startDate,
                                                     ),
                                                   )
                                                   .replace(
                                                     "{{to}}",
-                                                    (
+                                                    formatDateToInputStr(
                                                       s.customEndDate ??
-                                                      s.termin.endDate
-                                                    ).toLocaleDateString(
-                                                      dateLocale,
+                                                        s.termin.endDate,
                                                     ),
                                                   )}
                                               </div>

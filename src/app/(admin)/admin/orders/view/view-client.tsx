@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
@@ -196,11 +197,11 @@ export default function OrderDetailsClient() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Skapad:</span>
-                <span>{new Date(order.createdAt).toLocaleString("sv-SE")}</span>
+                <span>{formatDateToInputStr(new Date(order.createdAt))}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Uppdaterad:</span>
-                <span>{new Date(order.updatedAt).toLocaleString("sv-SE")}</span>
+                <span>{formatDateToInputStr(new Date(order.updatedAt))}</span>
               </div>
               <div className="pt-2 border-t">
                 <span className="text-muted-foreground block mb-1">
@@ -269,9 +270,9 @@ export default function OrderDetailsClient() {
                     )}
                     {order.user?.details?.dateOfBirth && (
                       <p className="text-muted-foreground">
-                        {new Date(
-                          order.user.details.dateOfBirth,
-                        ).toLocaleDateString("sv-SE")}{" "}
+                        {formatDateToInputStr(
+                          new Date(order.user.details.dateOfBirth),
+                        )}{" "}
                         <span className="text-muted-foreground/60 ml-1">
                           ({calculateAge(order.user.details.dateOfBirth)} år)
                         </span>
@@ -337,9 +338,7 @@ export default function OrderDetailsClient() {
                         Medlem sedan:
                       </span>{" "}
                       {order.user?.createdAt
-                        ? new Date(order.user.createdAt).toLocaleDateString(
-                            "sv-SE",
-                          )
+                        ? formatDateToInputStr(new Date(order.user.createdAt))
                         : "Okänt"}
                     </p>
                     {order.user?.banned && (
@@ -467,7 +466,7 @@ export default function OrderDetailsClient() {
               </div>
               <div className="text-right shrink-0">
                 <div className="font-medium">
-                  {new Date(ev.createdAt).toLocaleString("sv-SE")}
+                  {formatDateToInputStr(new Date(ev.createdAt))}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Ändrad av: {ev.changedBy?.email ?? ev.changedByUserId}
