@@ -124,7 +124,6 @@ model Verification {
   @@map("verification")
 }
 
-// Så när en termin skapas och en kurs läggs in i veckodag, så skapas lessons för det tillfället under hela den perioden -Så byggs schemat upp.
 model Lesson {
   id String @id @default(uuid())
 
@@ -151,6 +150,7 @@ model Lesson {
 
   schemaItem SchemaItem @relation(fields: [schemaItemId], references: [id], onDelete: Cascade)
 
+  @@unique([schemaItemId, startTime]) // Förhindra duplicates
   @@index([teacherId])
   @@index([courseId])
   @@index([terminId])

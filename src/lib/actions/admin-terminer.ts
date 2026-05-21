@@ -21,6 +21,7 @@ import { handleClips } from "./purchase-actions";
 async function CreateLessons(
   schemaItemId: string,
   tx?: Prisma.TransactionClient,
+  fromDate?: Date, // Så vi kan avgöra om den bara ska skapa från nu och framåt.
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -60,8 +61,11 @@ async function CreateLessons(
       schemaItm.timeEnd,
     );
 
-    // FIX 2: Iterera med TZDate för att göra dygnsövergångarna (DST) 100% säkra
-    let currentDate = new TZDate(startDate.getTime(), timeZone);
+    // FIX 2: Iterera med TZDate för att göra dygnsövergångarna (DST) 100% säkra.
+    const effectiveStart =
+      fromDate && fromDate > startDate ? fromDate : startDate; // Skapa inte bakåt om fromDate är satt
+    let currentDate = new TZDate(effectiveStart.getTime(), timeZone);
+
     const endTimestamp = endDate.getTime();
 
     while (currentDate.getTime() <= endTimestamp) {
@@ -250,8 +254,10 @@ export async function editCourseInSchema(
         throw new Error(`Studio with id ${validated.studio} was not found.`);
     }
 
-    // Skapa en JavaScript-date för "just nu" i UTC/lokal tid för att skydda historiken
-    const now = new Date();
+    // Skapa en JavaScript-date för "just nu" i UTC/lokal tid för att skydda historiken (med TZDate såklart)
+    const timeZone = "Europe/Stockholm";
+
+    const now = new Date(new TZDate(new Date(), timeZone).getTime());
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. ÅTERBETALA KLIPP: Hämta ENBART bokningar på FRAMTIDA lektioner som ska tas bort
@@ -301,8 +307,7 @@ export async function editCourseInSchema(
       });
 
       // 4. Generera nya lektioner i tomrummet framåt
-      // (Se till att din CreateLessons är smart nog att titta på dagens datum eller terminens start)
-      const lessons = await CreateLessons(schemaItemId, tx);
+      const lessons = await CreateLessons(schemaItemId, tx, now);
 
       if (!lessons.success) {
         throw new Error(
@@ -447,12 +452,11 @@ export async function editTermin(
           if (!validStart || !validEnd)
             throw new Error("ValidStart eller ValidEnd är null");
 
-          // Hämta enbart framtida bokningar utanför det nya intervallet
           const affectedBookings = await tx.booking.findMany({
             where: {
               lesson: {
                 schemaItemId: item.id,
-                startTime: { gte: now },
+                startTime: { gte: now }, // Så baara från nu. historik behålls.
                 OR: [
                   { startTime: { lt: validStart } },
                   { startTime: { gt: validEnd } },
@@ -464,14 +468,12 @@ export async function editTermin(
 
           for (const booking of affectedBookings) {
             if (!booking.purchaseItemId) continue;
-
             const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
             if (!clipResult.success) {
               throw new Error(clipResult.msg || "Clip update failed.");
             }
           }
 
-          // Radera enbart framtida lektioner utanför intervallet
           await tx.lesson.deleteMany({
             where: {
               schemaItemId: item.id,
@@ -484,100 +486,11 @@ export async function editTermin(
           });
         }
 
-        const timeZone = "Europe/Stockholm";
-
-        const remainingLessons = await tx.lesson.findMany({
-          where: { schemaItemId: { in: schemaItems.map((i) => i.id) } },
-          select: { schemaItemId: true, startTime: true },
-        });
-
-        const remainingSet = new Set(
-          remainingLessons.map(
-            (l) => `${l.schemaItemId}:${l.startTime.getTime()}`,
-          ),
-        );
-
-        const lessonsToCreate = [];
-
         for (const item of schemaItems) {
-          const followsStart = item.customStartDate === null;
-          const followsEnd = item.customEndDate === null;
-
-          const actualStart = followsStart
-            ? newStartDate
-            : item.customStartDate;
-          const actualEnd = followsEnd ? newEndDate : item.customEndDate;
-
-          if (!actualStart)
-            throw new Error(`SchemaItem ${item.id} saknar customStartDate.`);
-          if (!actualEnd)
-            throw new Error(`SchemaItem ${item.id} saknar customEndDate.`);
-
-          const { hours: startHours, minutes: startMinutes } =
-            getZonedHoursMinutes(item.timeStart);
-          const { hours: endHours, minutes: endMinutes } = getZonedHoursMinutes(
-            item.timeEnd,
-          );
-
-          const WEEKDAY_MAP: Record<Weekday, number> = {
-            MONDAY: 1,
-            TUESDAY: 2,
-            WEDNESDAY: 3,
-            THURSDAY: 4,
-            FRIDAY: 5,
-            SATURDAY: 6,
-            SUNDAY: 0,
-          };
-          const targetDay = WEEKDAY_MAP[item.weekday];
-
-          let currentDate = new TZDate(actualStart.getTime(), timeZone);
-          const endTimestamp = actualEnd.getTime();
-
-          while (currentDate.getTime() <= endTimestamp) {
-            const currentZonedWeekdayStr = format(currentDate, "i");
-            const currentZonedDayOfWeek =
-              currentZonedWeekdayStr === "7"
-                ? 0
-                : Number(currentZonedWeekdayStr);
-
-            if (currentZonedDayOfWeek === targetDay) {
-              const dateStr = format(currentDate, "yyyy-MM-dd");
-              const pad = (n: number) => String(n).padStart(2, "0");
-
-              const combinedStartTime = new TZDate(
-                `${dateStr}T${pad(startHours)}:${pad(startMinutes)}:00`,
-                timeZone,
-              );
-
-              const exists = remainingSet.has(
-                `${item.id}:${combinedStartTime.getTime()}`,
-              );
-
-              if (!exists) {
-                const combinedEndTime = new TZDate(
-                  `${dateStr}T${pad(endHours)}:${pad(endMinutes)}:00`,
-                  timeZone,
-                );
-
-                lessonsToCreate.push({
-                  startTime: new Date(combinedStartTime.getTime()),
-                  endTime: new Date(combinedEndTime.getTime()),
-                  terminId: id,
-                  courseId: item.courseId,
-                  teacherId: item.course.teacherId,
-                  schemaItemId: item.id,
-                });
-              }
-            }
-
-            currentDate = addDays(currentDate, 1);
+          const lessons = await CreateLessons(item.id, tx, now);
+          if (!lessons.success) {
+            console.warn(`CreateLessons för ${item.id}: ${lessons.msg}`);
           }
-        }
-
-        if (lessonsToCreate.length > 0) {
-          await tx.lesson.createMany({
-            data: lessonsToCreate,
-          });
         }
       }
 

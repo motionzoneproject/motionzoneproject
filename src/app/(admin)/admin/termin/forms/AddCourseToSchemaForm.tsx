@@ -296,7 +296,7 @@ export default function AddCourseToSchemaForm({
                                 );
                               } else {
                                 form.setValue(
-                                  "customEndDate",
+                                  "customStartDate",
                                   customStartBackupRef.current ||
                                     terminStartValue,
                                   { shouldDirty: true, shouldValidate: true },
@@ -350,9 +350,8 @@ export default function AddCourseToSchemaForm({
                                 });
                               } else {
                                 form.setValue(
-                                  "customStartDate",
-                                  customStartBackupRef.current ||
-                                    terminStartValue,
+                                  "customEndDate",
+                                  customEndBackupRef.current || terminEndValue,
                                   { shouldDirty: true, shouldValidate: true },
                                 );
                               }
