@@ -9,7 +9,6 @@ import {
   readClientLangCookie,
   writeClientLangCookie,
 } from "@/locales/client-lang-cookie";
-import Loader from "./Loader";
 
 export default function LanguageSwitcher() {
   const [currentLang, setCurrentLang] = useState(defaultLang.value);
@@ -46,7 +45,6 @@ export default function LanguageSwitcher() {
 
   return (
     <div className="flex items-center gap-1 rounded-lg border border-brand/20 p-0.5">
-      {isLoading && <Loader small />}
       {allLangs.map((lang) => {
         const isActive = currentLang === lang.value;
         return (

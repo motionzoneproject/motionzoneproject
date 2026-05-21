@@ -21,9 +21,11 @@ export default async function Page({ searchParams }: Props) {
       <div className="flex items-center justify-between gap-2">
         <div>
           <span className="font-bold text-2xl">Dansstilar</span>
-
-          <div className="mt-3 text-sm w-fit">
-            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          <div className="space-y-0">
+            <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
+            <div className="w-fit">
+              <AdminLanguageSwitch value={lang ?? "sv"} />
+            </div>
           </div>
         </div>
       </div>

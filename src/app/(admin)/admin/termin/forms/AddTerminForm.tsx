@@ -131,7 +131,7 @@ export default function AddTerminForm({
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start datum</FormLabel>
+                      <FormLabel>Startdatum</FormLabel>
 
                       <FormControl>
                         <Input
@@ -152,7 +152,7 @@ export default function AddTerminForm({
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slut datum</FormLabel>
+                      <FormLabel>Slutdatum</FormLabel>
 
                       <FormControl>
                         <Input
