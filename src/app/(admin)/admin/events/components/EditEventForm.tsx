@@ -58,8 +58,8 @@ export default function EditEventForm({
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      startDate: formatDateToInputStr(event.startDate),
+      endDate: formatDateToInputStr(event.endDate) || "",
     },
   });
 
@@ -77,8 +77,8 @@ export default function EditEventForm({
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
-      startDate: event.startDate,
-      endDate: event.endDate ?? event.startDate,
+      startDate: formatDateToInputStr(event.startDate),
+      endDate: formatDateToInputStr(event.endDate) || "",
     });
   }, [
     isOpen,
