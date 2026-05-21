@@ -1,5 +1,7 @@
 "use server";
 
+import { TZDate } from "@date-fns/tz";
+import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -632,12 +634,19 @@ export async function bulkCancelLessons(
   try {
     const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
 
-    const from = formToDbDate(`${validated.from}T00:00:00`);
-    const to = formToDbDate(`${validated.to}T23:59:59`);
+    const timeZone = "Europe/Stockholm";
+    const from = new Date(
+      new TZDate(`${validated.from}T00:00:00`, timeZone).getTime(),
+    );
+    const to = new Date(
+      addDays(new TZDate(`${validated.to}T00:00:00`, timeZone), 1).getTime(),
+    );
+
+    console.log(`from:${from.toISOString()}, to:${to.toISOString()}`);
 
     const lessons = await prisma.lesson.findMany({
       where: {
-        startTime: { gte: from, lte: to },
+        startTime: { gte: from, lt: to },
         courseId: { in: validated.courseIds },
       },
       select: { id: true, cancelled: true },
