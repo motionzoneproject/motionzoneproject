@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Course, User } from "@/generated/prisma/client";
+import type { Course, Style, User } from "@/generated/prisma/client";
 import { editCourse } from "@/lib/actions/admin";
 import { adminAddCourseSchema } from "@/validations/adminforms";
 
@@ -50,10 +50,11 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   course: Course;
+  styles: Style[];
   teachers: User[]; // fix: Vi tar emot lärare så behövs bara en select.
 }
 
-export default function EditCourseForm({ course, teachers }: Props) {
+export default function EditCourseForm({ course, styles, teachers }: Props) {
   const id = useId();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -65,6 +66,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
       minAge: course.minAge,
       maxAge: course.maxAge,
       level: course.level ?? "",
+      style: course.styleId ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
     },
@@ -86,6 +88,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
       maxAge: course.maxAge,
       level: course.level ?? "",
       level_en: course.level_en ?? "",
+      style: course.styleId ?? "",
       adult: course.adult,
       teacherid: course.teacherId,
     });
@@ -99,6 +102,7 @@ export default function EditCourseForm({ course, teachers }: Props) {
     course.minAge,
     course.maxAge,
     course.level,
+    course.styleId,
     course.adult,
     course.teacherId,
     course.level_en,
@@ -163,6 +167,47 @@ export default function EditCourseForm({ course, teachers }: Props) {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="style"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dansstil:</FormLabel>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={(value) =>
+                          field.onChange(value === "none" ? undefined : value)
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj dansstil" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj dansstil</SelectLabel>
+                            <SelectItem value="none">
+                              {formLang === "en"
+                                ? "No dance style"
+                                : "Ingen dansstil"}
+                            </SelectItem>
+                            {styles.map((style) => (
+                              <SelectItem key={style.id} value={style.id}>
+                                {formLang === "en"
+                                  ? (style.name_en ?? style.name)
+                                  : style.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+
                       <FormMessage />
                     </FormItem>
                   )}

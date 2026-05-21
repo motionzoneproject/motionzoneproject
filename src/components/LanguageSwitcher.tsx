@@ -12,6 +12,7 @@ import {
 
 export default function LanguageSwitcher() {
   const [currentLang, setCurrentLang] = useState(defaultLang.value);
+  const [isLoading, setisloading] = useState(false);
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -21,19 +22,25 @@ export default function LanguageSwitcher() {
       const nextLang = normalizeLang(stored ?? i18next.resolvedLanguage);
 
       setCurrentLang(nextLang);
-      void i18next.changeLanguage(nextLang);
+      await i18next.changeLanguage(nextLang);
     }
 
-    void syncLang();
+    setisloading(true);
+    syncLang();
+
+    setisloading(false);
   }, []);
 
-  function handleChange(value: string) {
+  async function handleChange(value: string) {
+    setisloading(true);
     const nextLang = normalizeLang(value);
     setCurrentLang(nextLang);
     localStorage.setItem("i18nextLng", nextLang);
-    void writeClientLangCookie(nextLang);
-    void i18next.changeLanguage(nextLang);
+    await writeClientLangCookie(nextLang);
+    await i18next.changeLanguage(nextLang);
     router.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setisloading(false);
   }
 
   return (
@@ -44,13 +51,16 @@ export default function LanguageSwitcher() {
           <button
             key={lang.value}
             type="button"
+            disabled={isLoading}
             onClick={() => handleChange(lang.value)}
             title={lang.label}
             className={`flex items-center justify-center w-8 h-7 rounded-md text-xs font-medium transition-all duration-200 ${
-              isActive
-                ? "bg-brand/10 scale-105"
-                : "opacity-50 hover:opacity-100 hover:bg-brand/5"
-            }`}
+              isLoading
+                ? "bg-gray-800 text-gray-500"
+                : isActive
+                  ? "bg-brand/10 scale-105"
+                  : "opacity-50 hover:opacity-100 hover:bg-brand/5"
+            } `}
             aria-label={t("language.switchTo", { language: lang.label })}
             aria-pressed={isActive}
           >

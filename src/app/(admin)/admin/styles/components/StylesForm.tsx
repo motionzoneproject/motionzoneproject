@@ -141,7 +141,7 @@ export function StylesForm({
               <FormItem>
                 <FormLabel>Namn ({formLang})</FormLabel>
                 <FormControl>
-                  <Input placeholder="t.ex. Studio 1" {...field} />
+                  <Input placeholder="t.ex Latino" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

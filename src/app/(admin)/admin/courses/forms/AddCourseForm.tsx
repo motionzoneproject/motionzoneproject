@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { User } from "@/generated/prisma/client";
+import type { Style, User } from "@/generated/prisma/client";
 import { addNewCourse } from "@/lib/actions/admin";
 import { useSession } from "@/lib/session-provider";
 import { adminAddCourseSchema } from "@/validations/adminforms";
@@ -51,10 +51,15 @@ type CourseFormOutput = z.output<typeof adminAddCourseSchema>;
 
 interface Props {
   teachers: User[];
+  styles: Style[];
   initialLang?: "sv" | "en";
 }
 
-export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
+export default function AddCourseForm({
+  teachers,
+  styles,
+  initialLang = "sv",
+}: Props) {
   const { user } = useSession();
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -68,6 +73,7 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
       level: "",
       level_en: "",
       adult: false,
+      style: "",
       teacherid: user?.id,
     },
   });
@@ -145,6 +151,48 @@ export default function AddCourseForm({ teachers, initialLang = "sv" }: Props) {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="style"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dansstil:</FormLabel>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj dansstil" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj dansstil</SelectLabel>
+                            <SelectItem value="none">
+                              {formLang === "en"
+                                ? "No dance style"
+                                : "Ingen dansstil"}
+                            </SelectItem>
+                            {styles.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {formLang === "en"
+                                  ? (s.name_en ?? s.name)
+                                  : s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+
                       <FormMessage />
                     </FormItem>
                   )}

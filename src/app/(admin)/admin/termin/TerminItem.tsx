@@ -3,8 +3,9 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
 import {
   getAllCourses,
+  getAllStudios,
   getSchemaItems,
-  type SchemaItemWithCourse,
+  type SchemaItemWithCourseStudioLessons,
 } from "@/lib/actions/admin";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
@@ -23,8 +24,11 @@ function isTerminActive(termin: Termin): boolean {
 }
 
 export default async function TerminItem({ termin, lang = "sv" }: Props) {
-  const schemaItems: SchemaItemWithCourse[] = await getSchemaItems(termin.id);
+  const schemaItems: SchemaItemWithCourseStudioLessons[] = await getSchemaItems(
+    termin.id,
+  );
   const allCourses = await getAllCourses("", true);
+  const allStudios = await getAllStudios();
 
   return (
     <TableRow className="align-top">
@@ -62,6 +66,7 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
             <Schema
               lang={lang}
               allCourses={allCourses}
+              allStudios={allStudios}
               termin={termin}
               schemaItems={schemaItems}
             />

@@ -41,8 +41,11 @@ export default async function Page({
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
             Terminer och veckoscheman
           </h1>
-          <div className="text-sm my-2 w-fit">
-            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          <div className="space-y-0">
+            <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
+            <div className="w-fit">
+              <AdminLanguageSwitch value={lang ?? "sv"} />
+            </div>
           </div>
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
             Skapa terminer och hantera veckoscheman för kurserna.

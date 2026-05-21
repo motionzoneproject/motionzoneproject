@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -46,7 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
+import type {
+  Course,
+  SchemaItem,
+  Studio,
+  Termin,
+} from "@/generated/prisma/client";
 import { editCourseInSchema } from "@/lib/actions/admin";
 import { formatDateToInput } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
@@ -59,6 +64,7 @@ type FormValues = z.infer<typeof adminAddCourseToSchemaSchema>;
 interface Props {
   termin: Termin;
   allCourses: Course[];
+  allStudios: Studio[];
   weekdays: string[];
   schemaItem: SchemaItem;
   initialLang?: "sv" | "en";
@@ -67,6 +73,7 @@ interface Props {
 export default function EditCourseToSchemaForm({
   termin,
   allCourses,
+  allStudios,
   schemaItem,
   initialLang = "sv",
 }: Props) {
@@ -75,8 +82,7 @@ export default function EditCourseToSchemaForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       courseId: schemaItem.courseId,
-      place: schemaItem.place ?? "",
-      place_en: schemaItem.place_en ?? "",
+      studio: schemaItem.studioId ?? "",
       customEndDate:
         schemaItem.customEndDate?.toISOString().split("T")[0] ??
         termin.endDate.toISOString().split("T")[0],
@@ -94,24 +100,12 @@ export default function EditCourseToSchemaForm({
   const terminStartValue = termin.startDate.toISOString().split("T")[0];
   const terminEndValue = termin.endDate.toISOString().split("T")[0];
 
-  const sameDayUtc = useCallback(
-    (a?: Date | null, b?: Date | null) =>
-      !!a &&
-      !!b &&
-      a.getUTCFullYear() === b.getUTCFullYear() &&
-      a.getUTCMonth() === b.getUTCMonth() &&
-      a.getUTCDate() === b.getUTCDate(),
-    [],
-  );
-
   const [isOpen, setIsOpen] = useState(false);
   const [useTerminStart, setUseTerminStart] = useState(
-    !schemaItem.customStartDate ||
-      sameDayUtc(schemaItem.customStartDate, termin.startDate),
+    schemaItem.customStartDate === null,
   );
   const [useTerminEnd, setUseTerminEnd] = useState(
-    !schemaItem.customEndDate ||
-      sameDayUtc(schemaItem.customEndDate, termin.endDate),
+    schemaItem.customEndDate === null,
   );
   const customStartBackupRef = useRef<string>("");
   const customEndBackupRef = useRef<string>("");
@@ -121,27 +115,18 @@ export default function EditCourseToSchemaForm({
     if (!isOpen) {
       form.reset({
         courseId: schemaItem.courseId,
-        place: schemaItem.place ?? "",
-        place_en: schemaItem.place_en ?? "",
+        studio: schemaItem.studioId ?? "",
         customEndDate:
-          schemaItem.customEndDate?.toISOString().split("T")[0] ??
-          termin.endDate.toISOString().split("T")[0],
+          schemaItem.customEndDate?.toISOString().split("T")[0] ?? undefined,
         customStartDate:
-          schemaItem.customStartDate?.toISOString().split("T")[0] ??
-          termin.startDate.toISOString().split("T")[0],
+          schemaItem.customStartDate?.toISOString().split("T")[0] ?? undefined,
         day: schemaItem.weekday,
         timeStart: dbToFormTime(schemaItem.timeStart),
         timeEnd: dbToFormTime(schemaItem.timeEnd),
       });
 
-      setUseTerminStart(
-        !schemaItem.customStartDate ||
-          sameDayUtc(schemaItem.customStartDate, termin.startDate),
-      );
-      setUseTerminEnd(
-        !schemaItem.customEndDate ||
-          sameDayUtc(schemaItem.customEndDate, termin.endDate),
-      );
+      setUseTerminStart(schemaItem.customStartDate === null);
+      setUseTerminEnd(schemaItem.customEndDate === null);
 
       customStartBackupRef.current = "";
       customEndBackupRef.current = "";
@@ -149,14 +134,10 @@ export default function EditCourseToSchemaForm({
   }, [
     isOpen,
     form,
-    sameDayUtc,
     schemaItem.customEndDate,
     schemaItem.customStartDate,
-    termin.endDate,
-    termin.startDate,
     schemaItem.courseId,
-    schemaItem.place,
-    schemaItem.place_en,
+    schemaItem.studioId,
     schemaItem.timeEnd,
     schemaItem.timeStart,
     schemaItem.weekday,
@@ -165,7 +146,13 @@ export default function EditCourseToSchemaForm({
   const router = useRouter();
 
   async function onSubmit(values: FormValues) {
-    const res = await editCourseInSchema(termin.id, schemaItem.id, values);
+    const payload = {
+      ...values,
+      customStartDate: useTerminStart ? undefined : values.customStartDate,
+      customEndDate: useTerminEnd ? undefined : values.customEndDate,
+    };
+    const res = await editCourseInSchema(termin.id, schemaItem.id, payload);
+
     if (res.success) {
       toast.success(res.msg);
       setIsOpen(false);
@@ -432,15 +419,38 @@ export default function EditCourseToSchemaForm({
 
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "place_en" : "place"}
-                  key={`place-${formLang}`}
+                  name="studio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plats ({formLang})</FormLabel>
-
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormLabel>Studio:</FormLabel>
+                      <Select
+                        defaultValue={field.value || ""}
+                        onValueChange={
+                          (value) =>
+                            field.onChange(value === "none" ? undefined : value) // kan ju ha med none ifall vi vill kunna göra så, why not. Dock är detta req så nja.
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Välj studio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Välj studio</SelectLabel>
+                            <SelectItem value="none">
+                              {formLang === "en" ? "No studio" : "Ingen studio"}
+                            </SelectItem>
+                            {allStudios.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {formLang === "en"
+                                  ? (s.name_en ?? s.name)
+                                  : s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
 
                       <FormMessage />
                     </FormItem>

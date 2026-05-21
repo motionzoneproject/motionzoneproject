@@ -3,18 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
 import { formatPrice } from "@/lib/money";
-
-type OrderStatus =
-  | "CREATED"
-  | "AWAITING_APPROVAL"
-  | "PENDING_PAYMENT"
-  | "APPROVED"
-  | "PAID"
-  | "COMPLETED"
-  | "CANCELLED";
+import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
 type OrderItemLite = {
   id: string;
@@ -83,10 +75,17 @@ function calculateAge(dob: string | Date | null | undefined) {
   return age;
 }
 
+const getStatusLabel = (status: string) => getOrderStatusLabel(status);
+
 export default function OrderDetailsClient() {
   const sp = useSearchParams();
-  const status = (sp.get("status") || "PENDING_PAYMENT").toUpperCase();
   const orderId = sp.get("orderId")?.trim() || "";
+  const backToOrdersHref = useMemo(() => {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("orderId");
+    const query = params.toString();
+    return query ? `/admin/orders?${query}` : "/admin/orders";
+  }, [sp]);
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +112,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -132,7 +131,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -149,7 +148,7 @@ export default function OrderDetailsClient() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Orderdetaljer</h1>
           <Link
-            href={`/admin/orders?status=${status}`}
+            href={backToOrdersHref}
             className="underline text-blue-500 hover:text-blue-600"
           >
             Tillbaka
@@ -172,7 +171,7 @@ export default function OrderDetailsClient() {
           </p>
         </div>
         <Link
-          href={`/admin/orders?status=${status}`}
+          href={backToOrdersHref}
           className="text-sm font-medium text-blue-600 hover:underline"
         >
           ← Tillbaka till listan
@@ -188,7 +187,7 @@ export default function OrderDetailsClient() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
                 <span className="font-bold px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-xs uppercase">
-                  {order.status ?? "PENDING_PAYMENT"}
+                  {getStatusLabel(order.status ?? "PENDING_PAYMENT")}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -210,27 +209,6 @@ export default function OrderDetailsClient() {
                 <code className="text-[10px] bg-muted p-1 rounded block break-all">
                   {order.id}
                 </code>
-              </div>
-            </div>
-          </div>
-
-          {/* System Info / Flags */}
-          <div className="bg-muted/30 border rounded-lg p-4 space-y-3">
-            <h2 className="font-semibold text-sm text-foreground/80">
-              Systemflaggor
-            </h2>
-            <div className="space-y-2 text-xs">
-              {order.postalcode && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Checkout Postnr:
-                  </span>
-                  <span>{order.postalcode}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Användar ID:</span>
-                <span className="font-mono">{order.userId.slice(0, 8)}...</span>
               </div>
             </div>
           </div>
@@ -472,10 +450,14 @@ export default function OrderDetailsClient() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-muted-foreground">
-                    {ev.fromStatus ?? "START"}
+                    {ev.fromStatus
+                      ? getStatusLabel(ev.fromStatus)
+                      : "Order skapad"}
                   </span>
                   <span className="text-muted-foreground/40">→</span>
-                  <span className="font-bold text-blue-500">{ev.toStatus}</span>
+                  <span className="font-bold text-blue-500">
+                    {getStatusLabel(ev.toStatus)}
+                  </span>
                 </div>
                 {ev.note && (
                   <div className="text-foreground bg-blue-500/10 p-2 rounded border border-blue-500/20 text-xs">

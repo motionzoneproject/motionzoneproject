@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import type { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import { getStyles } from "@/lib/actions/style-actions";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import CourseItem from "./CourseItem";
@@ -41,6 +42,8 @@ export default async function Page({
   const terminer = await prisma.termin.findMany({
     orderBy: { startDate: "desc" },
   });
+
+  const styles = await getStyles(lang);
 
   const where: Prisma.CourseWhereInput = {
     ...(showInactive ? {} : { active: true }),
@@ -78,11 +81,14 @@ export default async function Page({
       <div className="flex items-center justify-between gap-2">
         <div className="space-y-2">
           <span className="font-bold text-2xl">Kurser</span>
-          <div className="text-sm mt-2 w-fit">
-            Formulärspråk: <AdminLanguageSwitch value={lang} />
+          <div className="space-y-0">
+            <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
+            <div className="w-fit">
+              <AdminLanguageSwitch value={lang ?? "sv"} />
+            </div>
           </div>
         </div>
-        <AddCourseForm teachers={teachers} />
+        <AddCourseForm teachers={teachers} styles={styles} />
       </div>
       <CourseFilter teachers={teachers} terminer={terminer} lang={lang} />
 
@@ -107,6 +113,7 @@ export default async function Page({
                 course={c}
                 key={c.id}
                 lang={lang}
+                styles={styles}
                 teachers={teachers}
                 teacherName={teacherMap.get(c.teacherId)}
               />

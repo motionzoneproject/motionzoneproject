@@ -3,6 +3,7 @@
 import { Resend } from "resend";
 import type { Course, Lesson } from "@/generated/prisma/client";
 import { formatPrice } from "./money";
+import { getOrderStatusLabel } from "./order-status";
 
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
@@ -87,21 +88,6 @@ export async function generateOrderConfirmationHtml(order: {
     )
     .join("");
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "PENDING_PAYMENT":
-        return "Inväntar betalning";
-      case "APPROVED":
-        return "Godkänd";
-      case "PAID":
-        return "Betald";
-      case "CANCELLED":
-        return "Avbruten";
-      default:
-        return status;
-    }
-  };
-
   return `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
       <h2 style="color: #ed212d; text-align: center;">Orderbekräftelse</h2>
@@ -113,7 +99,7 @@ export async function generateOrderConfirmationHtml(order: {
         <p><strong>Datum:</strong> ${new Date(
           order.createdAt,
         ).toLocaleDateString("sv-SE")}</p>
-        <p><strong>Status:</strong> ${getStatusLabel(order.status)}</p>
+        <p><strong>Status:</strong> ${getOrderStatusLabel(order.status, { PENDING_PAYMENT: "Inväntar betalning" })}</p>
       </div>
 
       <table style="width: 100%; border-collapse: collapse;">

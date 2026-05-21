@@ -11,6 +11,7 @@ import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
 type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
+const PAGE_SIZE = 10;
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,7 +42,7 @@ type OrderLite = {
   status?: OrderStatus;
 };
 
-async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
+async function getOrders(): Promise<OrderLite[]> {
   noStore();
   const orders = (await prisma.order.findMany({
     // Always fetch all, then filter in memory to avoid enum mismatch issues
@@ -51,12 +52,7 @@ async function getOrders(filter: StatusFilter): Promise<OrderLite[]> {
       orderItems: { include: { product: true, participant: true } },
     },
   })) as unknown as OrderLite[];
-
-  if (!filter || filter === "ALL") return orders;
-  if (filter === "PENDING") {
-    return orders.filter((o) => String(o.status) === "PENDING_PAYMENT");
-  }
-  return orders.filter((o) => String(o.status) === filter);
+  return orders;
 }
 
 export default async function Page({
@@ -81,7 +77,7 @@ export default async function Page({
     ? (raw as StatusFilter)
     : "ALL";
 
-  const orders = await getOrders("ALL");
+  const orders = await getOrders();
 
   async function onApprove(formData: FormData) {
     "use server";
@@ -114,6 +110,7 @@ export default async function Page({
       <OrdersView
         orders={orders}
         defaultStatus={status}
+        pageSize={PAGE_SIZE}
         onApprove={onApprove}
         onMarkPaid={onMarkPaid}
         onCancel={onCancel}

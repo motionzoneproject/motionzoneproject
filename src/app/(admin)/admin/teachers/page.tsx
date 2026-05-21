@@ -1,28 +1,30 @@
 import { requireAdmin } from "@/lib/actions/admin";
-import { getStartPageContent } from "@/lib/actions/start-page-actions";
+import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
-import { StartPageForm } from "./components/StartPageForm";
+import { TeacherList } from "./teacher-list";
 
-export default async function Page({
-  searchParams,
-}: {
+interface Props {
   searchParams: Promise<{
     lang?: string;
   }>;
-}) {
+}
+
+export default async function Page({ searchParams }: Props) {
   await requireAdmin();
 
-  const content = await getStartPageContent();
-
   const sp = await searchParams;
-
   const lang = sp.lang === "en" ? "en" : "sv";
+
+  const [teachers, teacherUsers] = await Promise.all([
+    getTeachers(),
+    getTeacherUsers(),
+  ]);
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <span className="font-bold text-2xl">Startsidan</span>
+          <span className="font-bold text-2xl">Lärarprofiler</span>
           <div className="space-y-0">
             <div className="mt-3 text-sm w-fit">Formulärspråk:</div>
             <div className="w-fit">
@@ -31,7 +33,12 @@ export default async function Page({
           </div>
         </div>
       </div>
-      <StartPageForm lang={lang} content={content} />
+
+      <TeacherList
+        lang={lang}
+        teachersWithProfile={teachers}
+        teacherUsers={teacherUsers}
+      />
     </div>
   );
 }

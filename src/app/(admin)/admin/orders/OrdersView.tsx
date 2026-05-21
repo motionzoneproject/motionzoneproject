@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
+import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/money";
-
-type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
+import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
 type OrderLite = {
   id: string;
@@ -37,12 +37,14 @@ type OrderLite = {
 export default function OrdersView({
   orders,
   defaultStatus,
+  pageSize,
   onApprove,
   onMarkPaid,
   onCancel,
 }: {
   orders: OrderLite[];
   defaultStatus: string;
+  pageSize: number;
   onApprove: (formData: FormData) => void;
   onMarkPaid: (formData: FormData) => void;
   onCancel: (formData: FormData) => void;
@@ -51,11 +53,17 @@ export default function OrdersView({
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
   const searchInput = sp.get("q")?.toLowerCase() || "";
   const participantId = sp.get("participantId") || "";
+  const requestedPage = Math.max(1, Number(sp.get("page")) || 1);
   const clearParticipantHref = useMemo(() => {
     const params = new URLSearchParams(sp.toString());
     params.delete("participantId");
     const query = params.toString();
     return query ? `/admin/orders?${query}` : "/admin/orders";
+  }, [sp]);
+  const detailBaseQuery = useMemo(() => {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("orderId");
+    return params;
   }, [sp]);
 
   const counts = useMemo(() => {
@@ -118,6 +126,17 @@ export default function OrdersView({
 
     return result;
   }, [orders, active, searchInput, participantId]);
+  const totalFiltered = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = pageStart + pageSize;
+  const paginatedOrders = filtered.slice(pageStart, pageEnd);
+  const createOrderDetailHref = (orderId: string) => {
+    const params = new URLSearchParams(detailBaseQuery.toString());
+    params.set("orderId", orderId);
+    return `/admin/orders/view?${params.toString()}`;
+  };
 
   const tabs = [
     { id: "ALL", label: "Alla" },
@@ -127,20 +146,7 @@ export default function OrdersView({
     { id: "CANCELLED", label: "Avbrutna" },
   ];
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "PENDING_PAYMENT":
-        return "Väntar betalning";
-      case "APPROVED":
-        return "Godkänd";
-      case "PAID":
-        return "Betald";
-      case "CANCELLED":
-        return "Avbruten";
-      default:
-        return status;
-    }
-  };
+  const getStatusLabel = (status: string) => getOrderStatusLabel(status);
 
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -247,7 +253,17 @@ export default function OrdersView({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filtered.map((o) => {
+            {paginatedOrders.length === 0 && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="p-6 text-center text-muted-foreground"
+                >
+                  Inga ordrar hittades för valt filter.
+                </td>
+              </tr>
+            )}
+            {paginatedOrders.map((o) => {
               const participants = Array.from(
                 new Set(
                   o.orderItems
@@ -330,9 +346,7 @@ export default function OrdersView({
                   </td>
                   <td className="p-3">
                     <Link
-                      href={`/admin/orders/view?status=${encodeURIComponent(
-                        active,
-                      )}&orderId=${encodeURIComponent(o.id)}`}
+                      href={createOrderDetailHref(o.id)}
                       className="text-blue-500 hover:underline font-medium"
                     >
                       Visa
@@ -392,6 +406,16 @@ export default function OrdersView({
           </tbody>
         </table>
       </div>
+
+      {totalFiltered > 0 && (
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <span className="text-sm text-muted-foreground">
+            Visar {pageStart + 1}–{Math.min(pageEnd, totalFiltered)} av{" "}
+            {totalFiltered}
+          </span>
+          <PaginationBar currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      )}
     </>
   );
 }
