@@ -10,7 +10,7 @@
   "auth": {
     "signIn": "Logga in",
     "signOut": "Logga ut",
-    "profileAndBook": "Profil & boka",
+    "profileAndBook": "Profil",
     "admin": "Admin"
   },
   "cart": {
