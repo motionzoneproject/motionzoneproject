@@ -84,10 +84,10 @@ export default function EditCourseToSchemaForm({
       courseId: schemaItem.courseId,
       studio: schemaItem.studioId ?? "",
       customEndDate:
-        formatDateToInputStr(schemaItem.customEndDate) ??
+        formatDateToInputStr(schemaItem.customEndDate) ||
         formatDateToInputStr(termin.endDate),
       customStartDate:
-        formatDateToInputStr(schemaItem.customStartDate) ??
+        formatDateToInputStr(schemaItem.customStartDate) ||
         formatDateToInputStr(termin.startDate),
       day: schemaItem.weekday,
       timeStart: dbToFormTime(schemaItem.timeStart),
@@ -115,9 +115,11 @@ export default function EditCourseToSchemaForm({
         courseId: schemaItem.courseId,
         studio: schemaItem.studioId ?? "",
         customEndDate:
-          formatDateToInputStr(schemaItem.customEndDate) ?? undefined,
+          formatDateToInputStr(schemaItem.customEndDate) ||
+          formatDateToInputStr(termin.endDate),
         customStartDate:
-          formatDateToInputStr(schemaItem.customStartDate) ?? undefined,
+          formatDateToInputStr(schemaItem.customStartDate) ||
+          formatDateToInputStr(termin.startDate),
         day: schemaItem.weekday,
         timeStart: dbToFormTime(schemaItem.timeStart),
         timeEnd: dbToFormTime(schemaItem.timeEnd),
@@ -134,6 +136,8 @@ export default function EditCourseToSchemaForm({
     form,
     schemaItem.customEndDate,
     schemaItem.customStartDate,
+    termin.startDate,
+    termin.endDate,
     schemaItem.courseId,
     schemaItem.studioId,
     schemaItem.timeEnd,
@@ -172,12 +176,12 @@ export default function EditCourseToSchemaForm({
       </DialogTrigger>
       <DialogContent id={id} className="overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Lägg till kurstillfälle i veckoschemat</DialogTitle>
+          <DialogTitle>Ändra kurstillfälle i veckoschemat</DialogTitle>
           <DialogDescription>
             Ange vilken veckodag samt mellan vilka tider du vill lägga in
-            tillfället. Tillfället blir då{" "}
-            <span className="bold">bokningsbart</span> av kunder som köpt
-            tillgång till kursen.
+            tillfället i istället. Lektioner kommer skapas i perioden, och
+            lektioner utanför perioden (ej historiskt) tas bort. Om bokningar
+            finns framåt kommer de återställas till kund.
           </DialogDescription>
         </DialogHeader>
 
@@ -327,10 +331,12 @@ export default function EditCourseToSchemaForm({
                                     shouldValidate: true,
                                   },
                                 );
-                              } else if (customStartBackupRef.current) {
+                              } else {
+                                // Använd backup om den finns, annars terminens datum som startpunkt
                                 form.setValue(
                                   "customStartDate",
-                                  customStartBackupRef.current,
+                                  customStartBackupRef.current ||
+                                    terminStartValue,
                                   {
                                     shouldDirty: true,
                                     shouldValidate: true,
@@ -383,10 +389,10 @@ export default function EditCourseToSchemaForm({
                                   shouldDirty: true,
                                   shouldValidate: true,
                                 });
-                              } else if (customEndBackupRef.current) {
+                              } else {
                                 form.setValue(
                                   "customEndDate",
-                                  customEndBackupRef.current,
+                                  customEndBackupRef.current || terminEndValue,
                                   {
                                     shouldDirty: true,
                                     shouldValidate: true,

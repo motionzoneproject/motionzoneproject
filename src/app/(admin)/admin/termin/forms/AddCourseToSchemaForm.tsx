@@ -139,8 +139,8 @@ export default function AddCourseToSchemaForm({
           <DialogTitle>Lägg till kurstillfälle</DialogTitle>
           <DialogDescription>
             Ange vilken veckodag samt mellan vilka tider du vill lägga in
-            tillfället. Tillfället blir då bokningsbart av kunder som köpt
-            tillgång till kursen.
+            tillfället. Lektioner kommer skapas i perioden, och tillfället blir
+            då bokningsbart av kunder som köpt tillgång till kursen.
           </DialogDescription>
         </DialogHeader>
 
@@ -282,6 +282,7 @@ export default function AddCourseToSchemaForm({
                             onCheckedChange={(checked) => {
                               const isChecked = checked === true;
                               setUseTerminStart(isChecked);
+
                               if (isChecked) {
                                 customStartBackupRef.current =
                                   form.getValues("customStartDate") ?? "";
@@ -293,14 +294,12 @@ export default function AddCourseToSchemaForm({
                                     shouldValidate: true,
                                   },
                                 );
-                              } else if (customStartBackupRef.current) {
+                              } else {
                                 form.setValue(
-                                  "customStartDate",
-                                  customStartBackupRef.current,
-                                  {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  },
+                                  "customEndDate",
+                                  customStartBackupRef.current ||
+                                    terminStartValue,
+                                  { shouldDirty: true, shouldValidate: true },
                                 );
                               }
                             }}
@@ -349,14 +348,12 @@ export default function AddCourseToSchemaForm({
                                   shouldDirty: true,
                                   shouldValidate: true,
                                 });
-                              } else if (customEndBackupRef.current) {
+                              } else {
                                 form.setValue(
-                                  "customEndDate",
-                                  customEndBackupRef.current,
-                                  {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  },
+                                  "customStartDate",
+                                  customStartBackupRef.current ||
+                                    terminStartValue,
+                                  { shouldDirty: true, shouldValidate: true },
                                 );
                               }
                             }}
