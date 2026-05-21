@@ -7,10 +7,19 @@ export function formatDateToInputStr(date: unknown): string {
     if (Number.isNaN(date.getTime())) {
       return "";
     }
-    // TILL (Lokal svensk formatering):
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+
+    const formatter = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Stockholm",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+
     return `${year}-${month}-${day}`;
   }
 
@@ -21,7 +30,17 @@ export function formatDateToInputStr(date: unknown): string {
   return "";
 }
 
-// För att visa datum:
+export function formatFriendlyDate(date: Date) {
+  const formatter = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  return formatter.format(date);
+}
+
 export const MONTHS_SHORT_SV = [
   "jan",
   "feb",
@@ -36,38 +55,3 @@ export const MONTHS_SHORT_SV = [
   "nov",
   "dec",
 ];
-
-export const SV_DAYS = [
-  "söndag",
-  "måndag",
-  "tisdag",
-  "onsdag",
-  "torsdag",
-  "fredag",
-  "lördag",
-];
-
-export const SV_MONTHS = [
-  "januari",
-  "februari",
-  "mars",
-  "april",
-  "maj",
-  "juni",
-  "juli",
-  "augusti",
-  "september",
-  "oktober",
-  "november",
-  "december",
-];
-
-export function formatFriendlyDate(date: Date) {
-  // OBS: Om du kör detta på klienten, se till att justera för tidszon om date-objektet är i UTC midnatt,
-  // eller utgå från lokala metoder om det är ett lokalt klockslag.
-  const dayOfWeek = SV_DAYS[date.getDay()];
-  const dayOfMonth = date.getDate();
-  const month = SV_MONTHS[date.getMonth()];
-
-  return `${dayOfWeek} ${dayOfMonth} ${month}`;
-}
