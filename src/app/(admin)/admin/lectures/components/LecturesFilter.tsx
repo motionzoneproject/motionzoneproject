@@ -292,19 +292,17 @@ export function LecturesFilter({
         />
       </div>
 
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Dölj gamla
-        </Label>
-        <div className="flex h-9 items-center">
+      <div className="md:flex justify-end items-end">
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground flex justify-end items-center">
           <Checkbox
-            className="h-6 w-6"
+            className="h-8 w-8"
             checked={params.get("hideold") === "true"}
             onCheckedChange={(checked) => {
               setFilter("hideold", checked === true ? "true" : "");
             }}
-          />
-        </div>
+          />{" "}
+          Dölj gamla
+        </Label>
       </div>
     </div>
   );
