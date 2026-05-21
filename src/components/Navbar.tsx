@@ -1,20 +1,19 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import CartIcon from "./CartIcon";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
-
-const MOBILE_MENU_ID = "mobile-nav-menu";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 export default function NavBar() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useTranslation();
   const navLinks = [
@@ -23,15 +22,6 @@ export default function NavBar() {
     { href: "/about", label: t("nav.about") },
     { href: "/gallery", label: t("nav.gallery") },
   ];
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [menuOpen]);
 
   return (
     <header className="w-full sticky top-0 z-50 border-b border-brand/10 bg-background/85 backdrop-blur-xl">
@@ -80,54 +70,86 @@ export default function NavBar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
-          <div className="hover:scale-110 transition-transform duration-200">
+          <div className="hover:scale-110 transition-transform duration-200 mr-2">
             <CartIcon />
           </div>
-          <LanguageSwitcher />
           <ModeToggle />
+          <LanguageSwitcher />
           <NavBarAuth />
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center border border-brand/20 text-foreground hover:border-brand/50 hover:bg-brand/5 transition-all duration-200"
-          aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
-          aria-expanded={menuOpen}
-          aria-controls={MOBILE_MENU_ID}
-        >
-          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </nav>
-
-      {/* Mobile Menu */}
-      {menuOpen && (
-        <div
-          id={MOBILE_MENU_ID}
-          className="md:hidden border-t border-brand/10 px-4 py-5 space-y-1 bg-background/97 max-h-[80vh] overflow-y-auto"
-        >
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center px-4 py-3 rounded-xl text-muted-foreground hover:text-brand hover:bg-brand/5 transition-all duration-200 font-medium"
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-
-          <div className="space-y-3 pt-3 border-t border-brand/10 px-4">
-            <CartIcon showLabel onClick={() => setMenuOpen(false)} />
-            <div className="flex items-center gap-3">
-              <LanguageSwitcher />
-              <ModeToggle />
-            </div>
-            <NavBarAuth mobile onNavigate={() => setMenuOpen(false)} />
+        {/* Mobile Actions */}
+        <div className="md:hidden flex items-center gap-2">
+          <div className="hover:scale-110 transition-transform duration-200 mr-2">
+            <CartIcon />
           </div>
+          <ModeToggle />
+          <LanguageSwitcher />
+
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-brand/20 text-foreground hover:border-brand/50 hover:bg-brand/5 transition-all duration-200"
+                aria-label={t("nav.openMenu")}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="w-[85%] max-w-sm p-0 flex flex-col"
+            >
+              <SheetTitle className="sr-only">{t("nav.openMenu")}</SheetTitle>
+              {/* Sheet Logo */}
+              <div className="px-6 py-5 border-b border-brand/10">
+                <Link href="/" onClick={() => setSheetOpen(false)}>
+                  <Image
+                    src="/logo-dark.png"
+                    alt="MotionZone Växjö"
+                    width={640}
+                    height={180}
+                    className="hidden dark:block h-10 w-auto"
+                  />
+                  <Image
+                    src="/logo-light.png"
+                    alt="MotionZone Växjö"
+                    width={640}
+                    height={180}
+                    className="block dark:hidden h-10 w-auto"
+                  />
+                </Link>
+              </div>
+
+              {/* Auth + ModeToggle */}
+              <div className="px-4 py-4 border-b border-brand/10">
+                <NavBarAuth mobile onNavigate={() => setSheetOpen(false)} />
+              </div>
+
+              {/* Nav Links */}
+              <nav className="flex-1 px-3 py-3">
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setSheetOpen(false)}
+                      className={`flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:text-brand hover:bg-brand/5 ${
+                        isActive
+                          ? "text-brand bg-brand/5"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
-      )}
+      </nav>
     </header>
   );
 }

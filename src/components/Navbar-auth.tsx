@@ -1,99 +1,206 @@
 "use client";
 
+import { LogIn, LogOut, ShieldUser, User } from "lucide-react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { type ReactNode } from "react";
+
 import { useTranslation } from "react-i18next";
+
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
-import { cn } from "@/lib/utils";
 
 interface NavBarAuthProps {
   mobile?: boolean;
   onNavigate?: () => void;
+  mobileTopContent?: ReactNode;
 }
 
 export default function NavBarAuth({
   mobile = false,
   onNavigate,
+  mobileTopContent,
 }: NavBarAuthProps) {
   const { session, user } = useSession();
+
   const router = useRouter();
+
   const { t } = useTranslation();
 
+  const handleSignOut = () => {
+    onNavigate?.();
+
+    authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/");
+          router.refresh();
+        },
+      },
+    });
+  };
+
+  // AUTHENTICATED
+
   if (session && user) {
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-3",
-          mobile && "w-full flex-col items-start gap-2",
-        )}
-      >
-        <Button
-          asChild
-          size="sm"
-          variant="outline"
-          className={cn(
-            "h-auto min-h-8 flex-col items-start gap-0 px-3 py-1.5 text-left leading-tight",
-            mobile && "w-full justify-start",
-          )}
-        >
-          <Link href="/user" onClick={onNavigate}>
-            <span>{t("auth.profileAndBook")}</span>
-            <span className="max-w-[12rem] truncate text-xs font-normal text-muted-foreground">
-              {user.name}
-            </span>
-          </Link>
-        </Button>
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            mobile && "w-full flex-wrap gap-2",
-          )}
-        >
+    // MOBILE
+    if (mobile) {
+      return (
+        <div className="flex flex-col gap-3">
+          {/* Admin */}
           {user.role === "admin" && (
             <Button
               asChild
               size="sm"
-              variant="outline"
-              className={cn(mobile && "justify-center")}
+              variant="destructive"
+              className="w-full justify-start gap-2"
             >
               <Link href="/admin" onClick={onNavigate}>
+                <ShieldUser className="h-4 w-4" />
                 {t("auth.admin")}
               </Link>
             </Button>
           )}
+
+          {/* Profile */}
           <Button
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              onNavigate?.();
-              authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    router.push("/");
-                    router.refresh();
-                  },
-                },
-              });
-            }}
+            asChild
+            className="
+              w-full
+              justify-start
+              gap-2
+              bg-accent
+              text-accent-foreground
+              hover:bg-accent/80
+            "
           >
+            <Link href="/user" onClick={onNavigate}>
+              <User className="h-4 w-4" />
+              {t("auth.profileAndBook")}
+            </Link>
+          </Button>
+
+          {/* Logout */}
+          <Button
+            size="sm"
+            onClick={handleSignOut}
+            className="
+              w-full
+              justify-start
+              gap-2
+              bg-card
+              text-foreground
+              border border-border
+              hover:bg-muted
+              shadow-sm
+            "
+          >
+            <LogOut className="h-4 w-4" />
             {t("auth.signOut")}
           </Button>
         </div>
+      );
+    }
+
+    // DESKTOP
+    return (
+      <div className="flex items-center gap-2">
+        {/* Profile */}
+        <Button
+          asChild
+          size="sm"
+          className="
+            gap-2
+            bg-foreground/10
+            text-accent
+            hover:bg-accent/80
+            border border-accent/20
+          "
+        >
+          <Link href="/user" onClick={onNavigate}>
+            <User className="h-4 w-4" />
+            {t("auth.profileAndBook")}
+          </Link>
+        </Button>
+
+        {/* Admin */}
+        {user.role === "admin" && (
+          <Button
+            asChild
+            size="sm"
+            className="
+              gap-2
+              bg-brand/10
+              text-brand
+              border border-brand/20
+              hover:bg-brand/20
+            "
+          >
+            <Link href="/admin" onClick={onNavigate}>
+              <ShieldUser className="h-4 w-4" />
+              {t("auth.admin")}
+            </Link>
+          </Button>
+        )}
+
+        {/* Logout */}
+        <Button
+          size="sm"
+          onClick={handleSignOut}
+          className="
+            gap-2
+            bg-card
+            text-foreground
+            border border-border
+            hover:bg-muted
+            shadow-sm
+          "
+        >
+          <LogOut className="h-4 w-4" />
+          {t("auth.signOut")}
+        </Button>
       </div>
+    );
+  }
+
+  // NOT AUTHENTICATED
+
+  if (mobile) {
+    return (
+      <Button
+        asChild
+        className="
+          w-full
+          justify-center
+          gap-2
+          bg-brand
+          text-white
+          hover:bg-brand-light
+        "
+      >
+        <Link href="/signin" onClick={onNavigate}>
+          <LogIn className="h-4 w-4" />
+          {t("auth.signIn")}
+        </Link>
+      </Button>
     );
   }
 
   return (
     <Button
       asChild
-      className={cn(
-        "bg-brand hover:bg-brand-light text-white",
-        mobile && "w-full justify-center",
-      )}
+      size="sm"
+      className="
+        gap-2
+        bg-brand
+        text-white
+        hover:bg-brand-light
+      "
     >
       <Link href="/signin" onClick={onNavigate}>
+        <LogIn className="h-4 w-4" />
         {t("auth.signIn")}
       </Link>
     </Button>
