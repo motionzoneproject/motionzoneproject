@@ -27,7 +27,6 @@ export const formToDbDate = (dateOrTimeString: string): Date => {
     throw new Error("formToDbDate fick ett tomt eller ogiltigt värde.");
   }
 
-  const timeZone = "Europe/Stockholm";
   let sanitizedStr = dateOrTimeString.trim();
 
   // Scenario 1: Det är en ren tidsträng (t.ex. "16:15" eller "08:00")
@@ -40,6 +39,8 @@ export const formToDbDate = (dateOrTimeString: string): Date => {
   }
 
   // Skapa ett tidszonssäkrat datumobjekt låst till svensk tid (hanterar DST automatiskt!)
+
+  const timeZone = "Europe/Stockholm";
   const zonedDate = new TZDate(sanitizedStr, timeZone);
 
   // Om JS-motorn ändå inte kan tolka strängen, kasta ett tydligt fel i terminalen
@@ -59,19 +60,31 @@ export const formToDbDate = (dateOrTimeString: string): Date => {
  * oavsett vilken månad loopen befinner sig i (sommartid/vintertid).
  * @param date Date-objektet från databasen (timeStart/timeEnd).
  */
+
 export const getZonedHoursMinutes = (
   date: Date,
 ): { hours: number; minutes: number } => {
+  const timeZone = "Europe/Stockholm";
+
+  // Konvertera UTC Date till TZDate för Stockholm-tid
+  const tzDate = new TZDate(date.getTime(), timeZone);
+
   const formatter = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Stockholm",
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
 
-  const parts = formatter.formatToParts(date);
-  const hours = Number(parts.find((p) => p.type === "hour")?.value);
-  const minutes = Number(parts.find((p) => p.type === "minute")?.value);
+  const parts = formatter.formatToParts(tzDate);
+  const hours = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minutes = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    throw new Error(
+      `getZonedHoursMinutes: Kunde inte extrahera tid från "${date.toISOString()}"`,
+    );
+  }
 
   return { hours, minutes };
 };

@@ -642,8 +642,6 @@ export async function bulkCancelLessons(
       addDays(new TZDate(`${validated.to}T00:00:00`, timeZone), 1).getTime(),
     );
 
-    console.log(`from:${from.toISOString()}, to:${to.toISOString()}`);
-
     const lessons = await prisma.lesson.findMany({
       where: {
         startTime: { gte: from, lt: to },
@@ -1333,7 +1331,10 @@ export async function addUserInLesson(
     if (!hasClips)
       return { success: false, msg: "inga tillgängliga klipp i vald produkt" };
 
-    if (!isAdmin && lesson.startTime.getTime() < Date.now()) {
+    const timeZone = "Europe/Stockholm";
+    const now = new TZDate(new Date(), timeZone);
+
+    if (!isAdmin && lesson.startTime.getTime() < now.getTime()) {
       return {
         success: false,
         msg: "Lektionen har redan varit, ednast lärare kan lägga in bakåt i tiden.",

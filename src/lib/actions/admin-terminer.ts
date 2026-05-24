@@ -422,7 +422,9 @@ export async function editTermin(
       ? formToDbDate(validated.endDate)
       : existingTermin.endDate;
 
-    const now = new Date();
+    const timeZone = "Europe/Stockholm";
+
+    const now = new Date(new TZDate(new Date(), timeZone).getTime());
 
     const result = await prisma.$transaction(async (tx) => {
       const { startDate, endDate, ...rest } = validated;
@@ -528,7 +530,9 @@ export async function checkTerminDateChange(
   if (!isAdmin) return { count: 0 };
 
   try {
-    const now = new Date();
+    const timeZone = "Europe/Stockholm";
+
+    const now = new Date(new TZDate(new Date(), timeZone).getTime());
     const targetStart = formToDbDate(newStartStr);
     const targetEnd = formToDbDate(newEndStr);
 
