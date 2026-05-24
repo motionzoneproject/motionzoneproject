@@ -109,14 +109,14 @@ async function CreateLessons(
       };
     }
 
-    const result = await db.lesson.createMany({
+    const results = await db.lesson.createMany({
       data: lessonsToCreate,
       skipDuplicates: true,
     });
 
     return {
       success: true,
-      msg: `Successfully created ${result.count} lessons.`,
+      msg: `Successfully created ${results.count} lessons.`,
     };
   } catch (e) {
     console.error(e);
@@ -189,12 +189,14 @@ export async function addCoursetoSchema(
         include: { course: true, termin: true },
       });
 
-      // Anropar din nya, helt DST- och TZDate-säkrade lektionsgenerator
       const lessons = await CreateLessons(newSchemaItem.id, tx);
 
-      if (!lessons.success) {
+      if (
+        !lessons.success &&
+        lessons.msg !== "No matching days found to create lessons."
+      ) {
         throw new Error(
-          "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
+          `Skapande av lektioner misslyckades ${lessons.msg}. Kunde inte ändra lägga till schemaItem`,
         );
       }
 
@@ -309,9 +311,12 @@ export async function editCourseInSchema(
       // 4. Generera nya lektioner i tomrummet framåt
       const lessons = await CreateLessons(schemaItemId, tx, now);
 
-      if (!lessons.success) {
+      if (
+        !lessons.success &&
+        lessons.msg !== "No matching days found to create lessons."
+      ) {
         throw new Error(
-          "Kunde inte generera nya lektioner för det ändrade schemat. Kontrollera dina datum.",
+          `Skapande av lektioner misslyckades: ${lessons.msg}. Kunde inte ändra schemat.`,
         );
       }
 
@@ -490,7 +495,10 @@ export async function editTermin(
 
         for (const item of schemaItems) {
           const lessons = await CreateLessons(item.id, tx, now);
-          if (!lessons.success) {
+          if (
+            !lessons.success &&
+            lessons.msg !== "No matching days found to create lessons."
+          ) {
             throw new Error(
               `Skapande av lektioner misslyckades för ${item.id}: ${lessons.msg}. Kunde inte ändra terminen`,
             );
@@ -614,17 +622,16 @@ export async function delTermin(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // 1. Hitta alla aktiva bokningar kopplade till denna termin
-    const bookings = await prisma.booking.findMany({
-      where: {
-        lesson: { terminId: id },
-        cancelled: false, // Hmm, ska vi verkligen ignorera detta? Kommer ligga onödiga bokningar. Eller just det, ja för annars betalas inställda bokningar tillbaka. Ev. fix för att inte ha onödig data i db.
-      },
-      select: { purchaseItemId: true },
-    });
-
     // 2. Kör transaktionen
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Hitta alla aktiva bokningar kopplade till denna termin
+      const bookings = await tx.booking.findMany({
+        where: {
+          lesson: { terminId: id },
+          cancelled: false, // Hmm, ska vi verkligen ignorera detta? Kommer ligga onödiga bokningar. Eller just det, ja för annars betalas inställda bokningar tillbaka. Ev. fix för att inte ha onödig data i db.
+        },
+        select: { purchaseItemId: true },
+      });
       // Återställ alla klipp
       if (bookings.length > 0) {
         for (const booking of bookings) {
@@ -652,7 +659,7 @@ export async function delTermin(
 
     return {
       success: true,
-      msg: `Terminen ${result} och ${bookings.length} tillhörande bokningar raderades. Klipp har återställts.`,
+      msg: `Terminen ${result} och tillhörande bokningar raderades. Klipp har återställts.`,
     };
   } catch (e) {
     console.error(e);
