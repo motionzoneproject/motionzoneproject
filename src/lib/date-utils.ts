@@ -20,6 +20,13 @@ export function formatDateToInputStr(date: unknown): string {
     const month = parts.find((p) => p.type === "month")?.value;
     const day = parts.find((p) => p.type === "day")?.value;
 
+    // Fallback om formatering misslyckas istället för undefined-undefined-undefined
+    if (!year || !month || !day) {
+      throw new Error(
+        `formatDateToInputStr: Kunde inte formatera datum "${date.toISOString()}"`,
+      );
+    }
+
     return `${year}-${month}-${day}`;
   }
 

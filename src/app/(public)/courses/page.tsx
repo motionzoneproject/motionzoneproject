@@ -91,7 +91,6 @@ export const metadata: Metadata = {
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const { lang, t } = await getDictionary();
-  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const publicStyles = (await getStyles(lang)).filter((style) => style.active);
 
   const linkedCourseFilter: Prisma.CourseWhereInput = {

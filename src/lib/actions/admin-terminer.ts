@@ -489,7 +489,9 @@ export async function editTermin(
         for (const item of schemaItems) {
           const lessons = await CreateLessons(item.id, tx, now);
           if (!lessons.success) {
-            console.warn(`CreateLessons för ${item.id}: ${lessons.msg}`);
+            throw new Error(
+              `Skapande av lektioner misslyckades för ${item.id}: ${lessons.msg}. Kunde inte ändra terminen`,
+            );
           }
         }
       }
