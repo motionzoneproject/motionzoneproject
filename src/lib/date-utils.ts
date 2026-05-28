@@ -1,3 +1,5 @@
+const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
+
 export function formatDateToInputStr(date: unknown): string {
   if (!date) {
     return "";
@@ -9,7 +11,7 @@ export function formatDateToInputStr(date: unknown): string {
     }
 
     const formatter = new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Europe/Stockholm",
+      timeZone: STOCKHOLM_TIME_ZONE,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -37,12 +39,26 @@ export function formatDateToInputStr(date: unknown): string {
   return "";
 }
 
-export function formatFriendlyDate(date: Date) {
-  const formatter = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Stockholm",
+export function formatFriendlyDate(date: Date, locale: string = "sv-SE") {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone: STOCKHOLM_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
+  });
+
+  return formatter.format(date);
+}
+
+export function formatFriendlyDateTime(date: Date, locale: string = "sv-SE") {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone: STOCKHOLM_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   });
 
   return formatter.format(date);

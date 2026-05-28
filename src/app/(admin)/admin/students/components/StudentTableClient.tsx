@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/table";
 import { removeUserFromLesson } from "@/lib/actions/admin";
 import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { formatFriendlyDateTime } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import type { StudentSummary } from "../page";
 import { MailDialog } from "./MailDialog";
@@ -71,11 +71,6 @@ function isStudentsSelectedType(value: unknown): value is StudentsSelectedType {
   }
 
   return Object.values(value).every(isSelectedStudent);
-}
-
-function _formatDateTime(value: string) {
-  const date = new Date(value);
-  return formatDateToInputStr(date);
 }
 
 function CountDialogButton({
@@ -213,7 +208,7 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
               <div className="space-y-1 text-sm">
                 <div className="font-medium">{booking.courseName}</div>
                 <div className="text-muted-foreground">
-                  {formatDateToInputStr(new Date(booking.startTime))} -{" "}
+                  {formatFriendlyDateTime(new Date(booking.startTime))} -{" "}
                   {dbToFormTime(new Date(booking.endTime))}
                 </div>
               </div>

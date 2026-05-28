@@ -23,7 +23,11 @@ import {
   type LessonWithCourse,
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
-import { formatFriendlyDate } from "@/lib/date-utils";
+import {
+  formatDateToInputStr,
+  formatFriendlyDate,
+  formatFriendlyDateTime,
+} from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
@@ -44,7 +48,7 @@ export default function BookingCal({
 }: Props) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
-  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const calendarLocale = lang === "en" ? enGB : sv;
   const [date, setDate] = useState<Date | undefined>(initDate ?? new Date());
 
@@ -122,8 +126,9 @@ export default function BookingCal({
   // 2. Hitta lektioner för den valda dagen
   const selectedDateLessons = useMemo(() => {
     if (!date) return [];
+    const selectedDateStr = formatDateToInputStr(date);
     return lessons.filter(
-      (l) => l.startTime.toDateString() === date.toDateString(),
+      (l) => formatDateToInputStr(l.startTime) === selectedDateStr,
     );
   }, [date, lessons]);
 
@@ -183,7 +188,9 @@ export default function BookingCal({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              {date ? formatFriendlyDate(date) : t("user.booking.selectDate")}
+              {date
+                ? formatFriendlyDate(date, dateLocale)
+                : t("user.booking.selectDate")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -267,7 +274,7 @@ export default function BookingCal({
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
-                        {formatFriendlyDate(lesson.startTime)}
+                        {formatFriendlyDateTime(lesson.startTime, dateLocale)}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {pick(lesson.course, "name", lang) as string}{" "}
