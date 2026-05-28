@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import type z from "zod";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { formToDbDate } from "@/lib/time-convert";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
 import { UserDetailsSchema, UserPasswordSchema } from "@/validations/userforms";
 
@@ -38,7 +39,7 @@ export async function signUpWithDetails(values: SignUpValues) {
           address: validated.address,
           postalCode: validated.postalCode,
           city: validated.city,
-          dateOfBirth: new Date(validated.dateOfBirth),
+          dateOfBirth: formToDbDate(validated.dateOfBirth),
           allowPhotoVideo: validated.allowPhotoVideo,
         },
       });
@@ -86,7 +87,7 @@ export async function changeDetails(values: ChangeDetailsValues) {
     const validated = await UserDetailsSchema.parseAsync(values);
     const fullName = `${validated.firstName} ${validated.lastName}`.trim();
     const dateOfBirth = validated.dateOfBirth
-      ? new Date(`${validated.dateOfBirth}T00:00:00.000Z`)
+      ? formToDbDate(validated.dateOfBirth)
       : null;
 
     const result = await auth.api.updateUser({

@@ -1,3 +1,6 @@
+import { TZDate } from "@date-fns/tz";
+import { addDays } from "date-fns";
+
 const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
 
 export function formatDateToInputStr(date: unknown): string {
@@ -62,6 +65,52 @@ export function formatFriendlyDateTime(date: Date, locale: string = "sv-SE") {
   });
 
   return formatter.format(date);
+}
+
+export function formatLongFriendlyDate(date: Date, locale: string = "sv-SE") {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone: STOCKHOLM_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return formatter.format(date);
+}
+
+export function formatLongFriendlyDateTime(
+  date: Date,
+  locale: string = "sv-SE",
+) {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone: STOCKHOLM_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return formatter.format(date);
+}
+
+export function parseStockholmDateInput(dateInput: string): Date {
+  return new TZDate(`${dateInput}T00:00:00`, STOCKHOLM_TIME_ZONE);
+}
+
+export function endOfStockholmDateInput(dateInput: string): Date {
+  return new Date(addDays(parseStockholmDateInput(dateInput), 1).getTime() - 1);
+}
+
+export function startOfStockholmDay(date: Date): Date {
+  return parseStockholmDateInput(formatDateToInputStr(date));
+}
+
+export function endOfStockholmDay(date: Date): Date {
+  return endOfStockholmDateInput(formatDateToInputStr(date));
 }
 
 export const MONTHS_SHORT_SV = [

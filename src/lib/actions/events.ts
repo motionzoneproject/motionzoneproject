@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { formToDbDate } from "@/lib/time-convert";
 import { isAdminRole } from "./admin";
 
 export async function createEvent(formData: FormData) {
@@ -9,8 +10,9 @@ export async function createEvent(formData: FormData) {
   if (!isAdmin) throw new Error("No permission.");
 
   const headline = formData.get("headline") as string;
-  const startDate = new Date(formData.get("startDate") as string);
-  const endDate = new Date(formData.get("endDate") as string);
+  const startDate = formToDbDate(formData.get("startDate") as string);
+  const endDateValue = formData.get("endDate") as string;
+  const endDate = endDateValue ? formToDbDate(endDateValue) : null;
   const description = formData.get("description") as string;
   const link = formData.get("link") as string;
   const imageURL = formData.get("imageURL") as string;
@@ -39,8 +41,9 @@ export async function updateEvent(id: string, formData: FormData) {
   if (!isAdmin) throw new Error("No permission.");
 
   const headline = formData.get("headline") as string;
-  const startDate = new Date(formData.get("startDate") as string);
-  const endDate = new Date(formData.get("endDate") as string);
+  const startDate = formToDbDate(formData.get("startDate") as string);
+  const endDateValue = formData.get("endDate") as string;
+  const endDate = endDateValue ? formToDbDate(endDateValue) : null;
   const description = formData.get("description") as string;
   const link = formData.get("link") as string;
   const imageURL = formData.get("imageURL") as string;

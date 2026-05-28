@@ -8,6 +8,11 @@ import {
 } from "@/components/ui/table";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import {
+  endOfStockholmDateInput,
+  parseStockholmDateInput,
+  startOfStockholmDay,
+} from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { LecturesFilter } from "./components/LecturesFilter";
@@ -68,8 +73,17 @@ export default async function LecturePage({ searchParams }: Props) {
 
   const schemaItems = await getSchemaItems();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = startOfStockholmDay(new Date());
+  const fromDate = sp.from ? parseStockholmDateInput(sp.from) : undefined;
+  const toDate = sp.to ? endOfStockholmDateInput(sp.to) : undefined;
+  const effectiveFromDate =
+    sp.hideold && fromDate
+      ? fromDate > todayStart
+        ? fromDate
+        : todayStart
+      : sp.hideold
+        ? todayStart
+        : fromDate;
 
   // Build filters based on search params
   const filters = {
@@ -81,14 +95,8 @@ export default async function LecturePage({ searchParams }: Props) {
     ...(sp.from || sp.to
       ? {
           startTime: {
-            ...(sp.from
-              ? {
-                  gte: sp.hideold
-                    ? todayStart
-                    : new Date(`${sp.from}T00:00:00`),
-                }
-              : {}),
-            ...(sp.to ? { lte: new Date(`${sp.to}T23:59:59.999`) } : {}),
+            ...(effectiveFromDate ? { gte: effectiveFromDate } : {}),
+            ...(toDate ? { lte: toDate } : {}),
           },
         }
       : sp.hideold

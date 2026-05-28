@@ -32,10 +32,11 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { formatLongFriendlyDate } from "../date-utils";
 import { generateBookingCancelledHtml, sendMail } from "../mail";
 import { sekToOre } from "../money";
 import prisma from "../prisma";
-import { formToDbDate } from "../time-convert";
+import { dbToFormTime, formToDbDate } from "../time-convert";
 import { getProductStats, handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
@@ -456,20 +457,6 @@ async function sendCancelledMail(
   const BATCH_SIZE = 10;
   const results: { email: string; name: string; success: boolean }[] = [];
 
-  // Skapa datumobjektet en gång
-  const dateObj = new Date(lesson.startTime);
-
-  // Garantera svensk tidszon oavsett om servern står i USA eller Europa
-  const swedishDate = dateObj.toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-  });
-
-  const swedishTime = dateObj.toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   for (let i = 0; i < uniqueStudents.length; i += BATCH_SIZE) {
     const batch = uniqueStudents.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(
@@ -482,7 +469,9 @@ async function sendCancelledMail(
         // Nu använder vi de färdigformaterade, tidszonssäkrade strängarna
         const text = `Hej ${student.name}, din bokade lektion${
           lesson.course?.name ? ` i ${lesson.course.name}` : ""
-        } den ${swedishDate} kl ${swedishTime} har blivit inställd. Ditt tillfälle har återställts. `;
+        } den ${formatLongFriendlyDate(new Date(lesson.startTime))} kl ${dbToFormTime(
+          new Date(lesson.startTime),
+        )} har blivit inställd. Ditt tillfälle har återställts. `;
 
         const result = await sendMail(student.email, subject, html, text);
 

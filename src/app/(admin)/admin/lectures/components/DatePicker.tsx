@@ -13,6 +13,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  endOfStockholmDay,
+  parseStockholmDateInput,
+  startOfStockholmDay,
+} from "@/lib/date-utils";
 
 interface Props {
   from?: string | null;
@@ -22,20 +27,16 @@ interface Props {
 
 const parseDateParam = (value?: string | null) => {
   if (!value) return undefined;
-  const parsed = new Date(value);
+  const parsed = parseStockholmDateInput(value);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
 const startOfDay = (value: Date) => {
-  const next = new Date(value);
-  next.setHours(0, 0, 0, 0);
-  return next;
+  return startOfStockholmDay(value);
 };
 
 const endOfDay = (value: Date) => {
-  const next = new Date(value);
-  next.setHours(23, 59, 59, 999);
-  return next;
+  return endOfStockholmDay(value);
 };
 
 export function DatePickerWithRange({ filterSetter, from, to }: Props) {

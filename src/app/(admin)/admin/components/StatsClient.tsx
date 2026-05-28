@@ -1,5 +1,6 @@
 "use client";
 
+import { addDays } from "date-fns";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getTerminsStats, type TerminStats } from "@/lib/actions/admin-stats";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { formatDateToInputStr, startOfStockholmDay } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { StatsChart } from "./StatsChart";
 import { StatsFilter } from "./StatsFilter";
@@ -40,11 +41,8 @@ function formatDate(date: string | null) {
 }
 
 function getDefaultDateRange() {
-  const from = new Date();
-  from.setDate(from.getDate() - 30);
-
-  const to = new Date();
-  to.setDate(to.getDate() + 30);
+  const from = addDays(startOfStockholmDay(new Date()), -30);
+  const to = addDays(startOfStockholmDay(new Date()), 30);
 
   return {
     from: formatDateToInputStr(from),

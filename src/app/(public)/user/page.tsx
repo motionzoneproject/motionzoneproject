@@ -191,8 +191,8 @@ export default async function Page() {
                             .filter((b) => b.purchaseItemId === pi.id)
                             .sort(
                               (a, b) =>
-                                a.lesson.startTime.getUTCDate() -
-                                b.lesson.startTime.getUTCDate(),
+                                a.lesson.startTime.getTime() -
+                                b.lesson.startTime.getTime(),
                             );
 
                           return (

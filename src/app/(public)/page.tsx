@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import JsonLd from "@/components/seo/JsonLd";
 import StudioLocation from "@/components/studio-location";
 import { getStartPageContent } from "@/lib/actions/start-page-actions";
+import { startOfStockholmDay } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import Events from "./start/Events";
 import Features from "./start/Features";
@@ -39,8 +40,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = startOfStockholmDay(new Date());
 
   const [events, startPageContent] = await Promise.all([
     prisma.event.findMany({

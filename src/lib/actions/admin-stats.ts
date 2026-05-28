@@ -1,9 +1,15 @@
 "use server";
 
+import { addDays } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
-import { formatDateToInputStr } from "../date-utils";
+import {
+  endOfStockholmDateInput,
+  formatDateToInputStr,
+  parseStockholmDateInput,
+  startOfStockholmDay,
+} from "../date-utils";
 
 const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID"] as const;
 
@@ -128,17 +134,17 @@ function parseCustomDateRange(
 ): ParsedDateRange | null {
   if (!from || !to) return null;
 
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
+  const fromDate = parseStockholmDateInput(from);
+  const toDate = parseStockholmDateInput(to);
 
   if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
     return null;
   }
 
-  fromDate.setHours(0, 0, 0, 0);
-  toDate.setHours(23, 59, 59, 999);
-
-  return { from: fromDate, to: toDate };
+  return {
+    from: fromDate,
+    to: endOfStockholmDateInput(to),
+  };
 }
 
 function buildCourseWhere(terminId?: string | null): Prisma.CourseWhereInput {
@@ -321,11 +327,7 @@ function doesRangeOverlap(
 }
 
 function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return formatDateToInputStr(date);
 }
 
 function getTimelineRange(
@@ -337,19 +339,17 @@ function getTimelineRange(
 
   // Om det finns faktisk data, använd dess faktiska span
   if (allDates.length > 0) {
-    const dataFrom = new Date(Math.min(...allDates.map((d) => d.getTime())));
-    dataFrom.setHours(0, 0, 0, 0);
-
-    const dataTo = new Date(Math.max(...allDates.map((d) => d.getTime())));
-    dataTo.setHours(0, 0, 0, 0);
+    const dataFrom = startOfStockholmDay(
+      new Date(Math.min(...allDates.map((d) => d.getTime()))),
+    );
+    const dataTo = startOfStockholmDay(
+      new Date(Math.max(...allDates.map((d) => d.getTime()))),
+    );
 
     // Om selectedPeriod finns, utvidga spannet så terminens period alltid visas
     if (selectedPeriod) {
-      const periodFrom = new Date(selectedPeriod.from);
-      periodFrom.setHours(0, 0, 0, 0);
-
-      const periodTo = new Date(selectedPeriod.to);
-      periodTo.setHours(0, 0, 0, 0);
+      const periodFrom = parseStockholmDateInput(selectedPeriod.from);
+      const periodTo = parseStockholmDateInput(selectedPeriod.to);
 
       return {
         from: dataFrom < periodFrom ? dataFrom : periodFrom,
@@ -362,13 +362,10 @@ function getTimelineRange(
 
   // Ingen data alls — visa åtminstone terminens period om den finns
   if (selectedPeriod) {
-    const from = new Date(selectedPeriod.from);
-    from.setHours(0, 0, 0, 0);
-
-    const to = new Date(selectedPeriod.to);
-    to.setHours(0, 0, 0, 0);
-
-    return { from, to };
+    return {
+      from: parseStockholmDateInput(selectedPeriod.from),
+      to: parseStockholmDateInput(selectedPeriod.to),
+    };
   }
 
   return null;
@@ -399,9 +396,9 @@ function buildDailyTimeline(
     StatsTimelinePoint & { orderIds: Set<string> }
   >();
 
-  const cursor = new Date(range.from);
+  let cursor = parseStockholmDateInput(formatDateToInputStr(range.from));
 
-  while (cursor <= range.to) {
+  while (cursor.getTime() <= range.to.getTime()) {
     const key = toDateKey(cursor);
     timelineMap.set(key, {
       date: key,
@@ -410,7 +407,7 @@ function buildDailyTimeline(
       bookings: 0,
       orderIds: new Set<string>(),
     });
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = addDays(cursor, 1);
   }
 
   for (const item of orderItems) {

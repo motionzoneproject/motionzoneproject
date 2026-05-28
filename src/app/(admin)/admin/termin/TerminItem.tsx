@@ -7,7 +7,7 @@ import {
   getSchemaItems,
   type SchemaItemWithCourseStudioLessons,
 } from "@/lib/actions/admin";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { formatDateToInputStr, startOfStockholmDay } from "@/lib/date-utils";
 import DeleteTerminBtn from "./components/DeleteTerminBtn";
 import ToggleTerminActiveBtn from "./components/ToggleTerminActiveBtn";
 import EditTerminForm from "./forms/EditTerminForm";
@@ -20,7 +20,7 @@ interface Props {
 }
 
 function isTerminActive(termin: Termin): boolean {
-  const today = new Date();
+  const today = startOfStockholmDay(new Date());
   return today >= termin.startDate && today <= termin.endDate;
 }
 

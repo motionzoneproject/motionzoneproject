@@ -2,9 +2,10 @@
 
 import { Resend } from "resend";
 import type { Course, Lesson } from "@/generated/prisma/client";
-import { formatDateToInputStr } from "./date-utils";
+import { formatDateToInputStr, formatLongFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import { getOrderStatusLabel } from "./order-status";
+import { dbToFormTime } from "./time-convert";
 
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
@@ -153,23 +154,9 @@ export async function generateBookingCancelledHtml(
   lesson: CancelledLessonMailLesson,
   student: CancelledLessonMailStudent,
 ) {
-  const lessonDate = new Date(lesson.startTime).toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const startTime = new Date(lesson.startTime).toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const endTime = new Date(lesson.endTime).toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const lessonDate = formatLongFriendlyDate(new Date(lesson.startTime));
+  const startTime = dbToFormTime(new Date(lesson.startTime));
+  const endTime = dbToFormTime(new Date(lesson.endTime));
   const courseName = lesson.course?.name ?? "din kurs";
 
   return `

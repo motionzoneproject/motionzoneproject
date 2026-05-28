@@ -1,5 +1,6 @@
 "use client";
 
+import { addDays } from "date-fns";
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -32,6 +33,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { StatsTimelinePoint } from "@/lib/actions/admin-stats";
+import {
+  formatDateToInputStr,
+  parseStockholmDateInput,
+} from "@/lib/date-utils";
 import { formatPrice, oreToSek } from "@/lib/money";
 
 type Granularity = "day" | "week" | "month";
@@ -65,48 +70,43 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
+
 function parseDayKey(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+  return parseStockholmDateInput(value);
 }
 
 function toDayKey(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return formatDateToInputStr(date);
 }
 
 function getWeekStart(date: Date) {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
+  const start = parseStockholmDateInput(formatDateToInputStr(date));
   const weekday = (start.getDay() + 6) % 7;
-  start.setDate(start.getDate() - weekday);
-  return start;
+  return addDays(start, -weekday);
 }
 
 function getWeekEnd(weekStart: Date) {
-  const end = new Date(weekStart);
-  end.setDate(end.getDate() + 6);
-  return end;
+  return addDays(weekStart, 6);
 }
 
 function getMonthStart(date: Date) {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  start.setHours(0, 0, 0, 0);
+  const [year, month] = formatDateToInputStr(date).split("-");
+  const start = parseStockholmDateInput(`${year}-${month}-01`);
   return start;
 }
 
 function formatAxisLabel(date: Date, granularity: Granularity) {
   if (granularity === "month") {
     return new Intl.DateTimeFormat("sv-SE", {
+      timeZone: STOCKHOLM_TIME_ZONE,
       month: "short",
       year: "2-digit",
     }).format(date);
   }
 
   return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: STOCKHOLM_TIME_ZONE,
     day: "numeric",
     month: "short",
   }).format(date);
@@ -115,6 +115,7 @@ function formatAxisLabel(date: Date, granularity: Granularity) {
 function formatFullLabel(date: Date, granularity: Granularity) {
   if (granularity === "day") {
     return new Intl.DateTimeFormat("sv-SE", {
+      timeZone: STOCKHOLM_TIME_ZONE,
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -125,9 +126,11 @@ function formatFullLabel(date: Date, granularity: Granularity) {
   if (granularity === "week") {
     const weekEnd = getWeekEnd(date);
     return `${new Intl.DateTimeFormat("sv-SE", {
+      timeZone: STOCKHOLM_TIME_ZONE,
       day: "numeric",
       month: "long",
     }).format(date)} - ${new Intl.DateTimeFormat("sv-SE", {
+      timeZone: STOCKHOLM_TIME_ZONE,
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -135,6 +138,7 @@ function formatFullLabel(date: Date, granularity: Granularity) {
   }
 
   return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: STOCKHOLM_TIME_ZONE,
     month: "long",
     year: "numeric",
   }).format(date);

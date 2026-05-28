@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { adminGetOrder } from "@/lib/actions/orders";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import {
+  formatDateToInputStr,
+  formatLongFriendlyDateTime,
+  parseStockholmDateInput,
+} from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 
@@ -66,8 +70,10 @@ type OrderDetail = {
 
 function calculateAge(dob: string | Date | null | undefined) {
   if (!dob) return null;
-  const birthDate = new Date(dob);
-  const today = new Date();
+  const birthDate = parseStockholmDateInput(
+    formatDateToInputStr(new Date(dob)),
+  );
+  const today = parseStockholmDateInput(formatDateToInputStr(new Date()));
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -466,7 +472,7 @@ export default function OrderDetailsClient() {
               </div>
               <div className="text-right shrink-0">
                 <div className="font-medium">
-                  {formatDateToInputStr(new Date(ev.createdAt))}
+                  {formatLongFriendlyDateTime(new Date(ev.createdAt))}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Ändrad av: {ev.changedBy?.email ?? ev.changedByUserId}

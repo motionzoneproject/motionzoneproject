@@ -1,5 +1,6 @@
 "use client";
 
+import { addDays } from "date-fns";
 import {
   ArrowLeft,
   BookOpen,
@@ -46,7 +47,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { formatDateToInputStr, startOfStockholmDay } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 
 export function AppSidebar() {
@@ -57,9 +58,8 @@ export function AppSidebar() {
 
   const formatDate = (date: Date) => formatDateToInputStr(date);
 
-  const today = new Date();
-  const in7 = new Date();
-  in7.setDate(in7.getDate() + 7);
+  const today = startOfStockholmDay(new Date());
+  const in7 = addDays(today, 7);
   const from = formatDate(today);
   const to = formatDate(in7);
 
