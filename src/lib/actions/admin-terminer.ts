@@ -88,7 +88,6 @@ async function CreateLessons(
           timeZone,
         );
 
-        // FIX 1: Konvertera TZDate till standard JS-Date för att Prisma ska acceptera det
         lessonsToCreate.push({
           startTime: new Date(combinedStartTime.getTime()),
           endTime: new Date(combinedEndTime.getTime()),
@@ -109,14 +108,14 @@ async function CreateLessons(
       };
     }
 
-    const results = await db.lesson.createMany({
+    const _results = await db.lesson.createMany({
       data: lessonsToCreate,
       skipDuplicates: true,
     });
 
     return {
       success: true,
-      msg: `Successfully created ${results.count} lessons.`,
+      msg: `Lektioner skapade`,
     };
   } catch (e) {
     console.error(e);
