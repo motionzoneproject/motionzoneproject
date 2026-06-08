@@ -9,6 +9,7 @@ import {
   adminAddCourseToSchemaSchema,
   adminAddTerminSchema,
 } from "@/validations/adminforms";
+import { endOfStockholmDay } from "../date-utils";
 import prisma from "../prisma";
 import { formToDbDate, getZonedHoursMinutes } from "../time-convert";
 import { isAdminRole } from "./admin";
@@ -458,6 +459,11 @@ export async function editTermin(
           if (!validStart || !validEnd)
             throw new Error("ValidStart eller ValidEnd är null");
 
+          // Slutdatumet är inklusivt: CreateLessons skapar lektioner ända t.o.m.
+          // periodens sista dag (på klockslaget). Jämför därför mot slutet av den
+          // dagen, annars flaggas sista dagens lektion felaktigt som "utanför".
+          const validEndInclusive = endOfStockholmDay(validEnd);
+
           const affectedBookings = await tx.booking.findMany({
             where: {
               lesson: {
@@ -465,7 +471,7 @@ export async function editTermin(
                 startTime: { gte: now }, // Så baara från nu. historik behålls.
                 OR: [
                   { startTime: { lt: validStart } },
-                  { startTime: { gt: validEnd } },
+                  { startTime: { gt: validEndInclusive } },
                 ],
               },
             },
@@ -486,7 +492,7 @@ export async function editTermin(
               startTime: { gte: now },
               OR: [
                 { startTime: { lt: validStart } },
-                { startTime: { gt: validEnd } },
+                { startTime: { gt: validEndInclusive } },
               ],
             },
           });
@@ -541,7 +547,8 @@ export async function checkTerminDateChange(
 
     const now = new Date(new TZDate(new Date(), timeZone).getTime());
     const targetStart = formToDbDate(newStartStr);
-    const targetEnd = formToDbDate(newEndStr);
+    // Inklusivt slutdatum: lektioner på sista dagen ligger inom perioden.
+    const targetEndInclusive = endOfStockholmDay(formToDbDate(newEndStr));
 
     const affectedBookings = await prisma.booking.count({
       where: {
@@ -554,7 +561,7 @@ export async function checkTerminDateChange(
           },
           OR: [
             { startTime: { lt: targetStart } },
-            { startTime: { gt: targetEnd } },
+            { startTime: { gt: targetEndInclusive } },
           ],
         },
         cancelled: false,
