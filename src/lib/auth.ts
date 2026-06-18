@@ -16,6 +16,7 @@ export const auth = betterAuth({
     "http://localhost:3000",
     "https://dev.motionzoneworld.com",
     "https://motionzoneworld.com",
+    "https://www.motionzoneworld.com",
   ],
   // Throttle credential and password-reset endpoints so a single IP
   // can't brute-force them. The defaults (100/min) stay for everything
