@@ -171,10 +171,12 @@ export default function MediaAdmin({
     const payload = {
       type: values.type,
       title: values.title.trim(),
-      title_en: values.title_en.trim() || null,
+      title_en: (values.title_en ?? "").trim() || null,
       caption: values.type === "IMAGE" ? values.title.trim() : undefined,
       caption_en:
-        values.type === "IMAGE" ? values.title_en.trim() || null : undefined,
+        values.type === "IMAGE"
+          ? (values.title_en ?? "").trim() || null
+          : undefined,
       description: values.description || null,
       description_en: values.description_en || null,
       eventId: values.eventId || null,
