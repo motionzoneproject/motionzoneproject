@@ -110,7 +110,7 @@ export function LegalPageForm({
                 <FormLabel>Innehåll ({formLang})</FormLabel>
                 <FormControl>
                   <RichTextEditor
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Skriv sidans innehåll..."
                   />
