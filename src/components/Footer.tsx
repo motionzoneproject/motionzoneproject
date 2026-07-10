@@ -131,10 +131,10 @@ const Footer = () => {
                   <Mail className="w-3.5 h-3.5 text-brand" />
                 </div>
                 <Link
-                  href="mailto:sophiebretonesh@gmail.com"
+                  href="mailto: motionzonevaxjo@gmail.com"
                   className="text-sm text-muted-foreground hover:text-brand transition-colors duration-200"
                 >
-                  sophiebretonesh@gmail.com
+                  motionzonevaxjo@gmail.com
                 </Link>
               </li>
             </ul>
