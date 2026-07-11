@@ -5,7 +5,11 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { formToDbDate } from "@/lib/time-convert";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
-import { UserDetailsSchema, UserPasswordSchema } from "@/validations/userforms";
+import {
+  UserDetailsSchema,
+  UserEmailSchema,
+  UserPasswordSchema,
+} from "@/validations/userforms";
 
 type SignUpValues = z.infer<typeof SignUpFormSchema>;
 
@@ -174,7 +178,47 @@ export async function changePassword(values: ChangePasswordValues) {
     const errorMessage =
       error instanceof Error
         ? error.message
-        : "Ett oväntat fel inträffade vid uppdatering";
+        : "Ett oväntat fel inträffade vid lösenordsbyte";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+type ChangeMailValues = z.infer<typeof UserEmailSchema>;
+
+export async function changeMail(values: ChangeMailValues) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({
+    headers: reqHeaders,
+  });
+  if (!session) return { success: false, error: "Ej inloggad." };
+
+  if (session.user.email !== values.currentEmail)
+    return { success: false, error: "Ogiltigt e-postadress" };
+
+  try {
+    const validated = await UserEmailSchema.parseAsync(values);
+
+    const res = await auth.api.changeEmail({
+      body: {
+        newEmail: validated.email,
+      },
+      headers: reqHeaders,
+    });
+
+    if (!res) {
+      return { success: false, error: "Kunde inte ändra mailen via api." };
+    }
+
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("Change email error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade vid mailbyte";
     return {
       success: false,
       error: errorMessage,

@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { UserDetails } from "@/generated/prisma/client";
-import { changeDetails } from "@/lib/actions/auth";
+import { changeDetails } from "@/lib/actions/auth-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { UserDetailsSchema } from "@/validations/userforms";
