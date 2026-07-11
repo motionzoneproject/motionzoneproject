@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { AddEventBtn } from "./components/AddEventBtn";
@@ -59,10 +60,10 @@ export default async function EventsPage({
                     : event.headline}
                 </TableCell>
                 <TableCell>
-                  {event.startDate.toLocaleDateString("sv-SE")}{" "}
+                  {formatDateToInputStr(event.startDate)}{" "}
                   {event.endDate &&
                     event.endDate.getTime() > event.startDate.getTime() &&
-                    ` - ${event.endDate.toLocaleDateString("sv-SE")}`}
+                    ` - ${formatDateToInputStr(event.endDate)}`}
                 </TableCell>
                 <TableCell className="flex justify-end gap-2">
                   <ToggleEventStartpageBtn

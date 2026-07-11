@@ -47,8 +47,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, Studio, Termin } from "@/generated/prisma/client";
-import { addCoursetoSchema } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { addCoursetoSchema } from "@/lib/actions/admin-terminer";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { getCourseName, getVeckodag, getWeekdays } from "@/lib/tools";
 import { adminAddCourseToSchemaSchema } from "@/validations/adminforms";
 
@@ -73,8 +73,8 @@ export default function AddCourseToSchemaForm({
     defaultValues: {
       courseId: "",
       studio: "",
-      customEndDate: termin.endDate.toISOString().split("T")[0],
-      customStartDate: termin.startDate.toISOString().split("T")[0],
+      customEndDate: formatDateToInputStr(termin.endDate),
+      customStartDate: formatDateToInputStr(termin.startDate),
       day: "MONDAY",
       timeStart: "01:00",
       timeEnd: "02:00",
@@ -83,8 +83,8 @@ export default function AddCourseToSchemaForm({
 
   const [formLang, setFormLang] = useState(initialLang);
 
-  const terminStartValue = termin.startDate.toISOString().split("T")[0];
-  const terminEndValue = termin.endDate.toISOString().split("T")[0];
+  const terminStartValue = formatDateToInputStr(termin.startDate);
+  const terminEndValue = formatDateToInputStr(termin.endDate);
 
   const [isOpen, setIsOpen] = useState(false);
   const [useTerminStart, setUseTerminStart] = useState(true);
@@ -114,6 +114,7 @@ export default function AddCourseToSchemaForm({
       ...values,
       customStartDate: useTerminStart ? undefined : values.customStartDate,
       customEndDate: useTerminEnd ? undefined : values.customEndDate,
+      studio: values.studio === "none" ? undefined : values.studio,
     };
     const res = await addCoursetoSchema(termin.id, payload);
 
@@ -138,8 +139,8 @@ export default function AddCourseToSchemaForm({
           <DialogTitle>Lägg till kurstillfälle</DialogTitle>
           <DialogDescription>
             Ange vilken veckodag samt mellan vilka tider du vill lägga in
-            tillfället. Tillfället blir då bokningsbart av kunder som köpt
-            tillgång till kursen.
+            tillfället. Lektioner kommer skapas i perioden, och tillfället blir
+            då bokningsbart av kunder som köpt tillgång till kursen.
           </DialogDescription>
         </DialogHeader>
 
@@ -281,6 +282,7 @@ export default function AddCourseToSchemaForm({
                             onCheckedChange={(checked) => {
                               const isChecked = checked === true;
                               setUseTerminStart(isChecked);
+
                               if (isChecked) {
                                 customStartBackupRef.current =
                                   form.getValues("customStartDate") ?? "";
@@ -292,14 +294,12 @@ export default function AddCourseToSchemaForm({
                                     shouldValidate: true,
                                   },
                                 );
-                              } else if (customStartBackupRef.current) {
+                              } else {
                                 form.setValue(
                                   "customStartDate",
-                                  customStartBackupRef.current,
-                                  {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  },
+                                  customStartBackupRef.current ||
+                                    terminStartValue,
+                                  { shouldDirty: true, shouldValidate: true },
                                 );
                               }
                             }}
@@ -313,7 +313,7 @@ export default function AddCourseToSchemaForm({
                         <Input
                           type="date"
                           {...field}
-                          value={formatDateToInput(field.value)}
+                          value={formatDateToInputStr(field.value)}
                           onChange={field.onChange}
                           disabled={useTerminStart}
                         />
@@ -348,14 +348,11 @@ export default function AddCourseToSchemaForm({
                                   shouldDirty: true,
                                   shouldValidate: true,
                                 });
-                              } else if (customEndBackupRef.current) {
+                              } else {
                                 form.setValue(
                                   "customEndDate",
-                                  customEndBackupRef.current,
-                                  {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  },
+                                  customEndBackupRef.current || terminEndValue,
+                                  { shouldDirty: true, shouldValidate: true },
                                 );
                               }
                             }}
@@ -369,7 +366,7 @@ export default function AddCourseToSchemaForm({
                         <Input
                           type="date"
                           {...field}
-                          value={formatDateToInput(field.value)}
+                          value={formatDateToInputStr(field.value)}
                           onChange={field.onChange}
                           disabled={useTerminEnd}
                         />

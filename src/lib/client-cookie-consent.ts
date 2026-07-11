@@ -7,6 +7,7 @@ import {
   type CookieConsentValue,
   parseCookieConsent,
 } from "./cookie-consent.shared";
+import { formatDateToInputStr } from "./date-utils";
 
 type CookieStoreLike = {
   get(name: string): Promise<{ value?: string } | null>;
@@ -47,7 +48,7 @@ export async function writeClientCookieConsent(
   const value: CookieConsentValue = {
     necessary: true,
     preferences,
-    accepted_at: new Date().toISOString(),
+    accepted_at: formatDateToInputStr(new Date()),
     version: COOKIE_CONSENT_VERSION,
   };
   const encoded = encodeURIComponent(JSON.stringify(value));

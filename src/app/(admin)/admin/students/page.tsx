@@ -2,6 +2,7 @@ import { PaginationBar } from "@/components/PaginationBar";
 import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import StudentsFilter from "./components/StudentsFilter";
 import StudentTableClient from "./components/StudentTableClient";
@@ -230,8 +231,8 @@ function buildStudentSummaries(
             lessonId: booking.lessonId,
             purchaseItemId: item.id,
             courseName: item.course.name,
-            startTime: booking.lesson.startTime.toISOString(),
-            endTime: booking.lesson.endTime.toISOString(),
+            startTime: formatDateToInputStr(booking.lesson.startTime),
+            endTime: formatDateToInputStr(booking.lesson.endTime),
           });
         }
 

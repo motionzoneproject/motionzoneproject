@@ -39,14 +39,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
 import { bulkCancelLessons } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
 import { adminBulkCancelLessonsSchema } from "@/validations/adminforms";
 
 type FormInput = z.input<typeof adminBulkCancelLessonsSchema>;
 type FormOutput = z.output<typeof adminBulkCancelLessonsSchema>;
-
-const toDateInput = (value: Date) => value.toISOString().slice(0, 10);
 
 interface Props {
   courses: Course[];
@@ -63,8 +61,8 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(adminBulkCancelLessonsSchema),
     defaultValues: {
-      from: toDateInput(new Date()),
-      to: toDateInput(new Date()),
+      from: formatDateToInputStr(new Date()),
+      to: formatDateToInputStr(new Date()),
       courseIds: [],
       message: "Lov",
       message_en: "Holiday",
@@ -97,8 +95,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
   }, [filteredCourses, form, useAllCourses]);
 
   async function onSubmit(values: FormInput) {
-    const parsed = await adminBulkCancelLessonsSchema.parseAsync(values);
-    const res = await bulkCancelLessons(parsed);
+    const res = await bulkCancelLessons(values);
 
     if (!res.success) {
       toast.error(res.msg);
@@ -110,8 +107,8 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
     setSelectedTerminId("all");
     setUseAllCourses(true);
     form.reset({
-      from: toDateInput(new Date()),
-      to: toDateInput(new Date()),
+      from: formatDateToInputStr(new Date()),
+      to: formatDateToInputStr(new Date()),
       courseIds: [],
       message: "Lov",
       message_en: "Holiday",
@@ -159,7 +156,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>
@@ -178,7 +175,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

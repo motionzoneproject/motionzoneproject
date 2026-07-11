@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-import { sv } from "date-fns/locale";
 import { Clock, MapPin } from "lucide-react";
 import {
   Card,
@@ -8,7 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+import { formatLongFriendlyDate } from "@/lib/date-utils";
+import { dbToFormTime } from "@/lib/time-convert";
 import { cn } from "@/lib/utils";
 import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../lectures/components/EditLesson";
@@ -51,9 +50,7 @@ export function LessonCarousel({
             >
               <CardHeader className="pb-2">
                 <div className="text-sm text-muted-foreground capitalize">
-                  {format(new Date(lesson.startTime), "EEEE d MMMM", {
-                    locale: sv,
-                  })}
+                  {formatLongFriendlyDate(new Date(lesson.startTime))}
                 </div>
                 <CardTitle className="text-lg leading-tight line-clamp-2">
                   {lesson.course.name}
@@ -63,8 +60,8 @@ export function LessonCarousel({
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {format(new Date(lesson.startTime), "HH:mm")} -{" "}
-                    {format(new Date(lesson.endTime), "HH:mm")}
+                    {dbToFormTime(new Date(lesson.startTime))} -{" "}
+                    {dbToFormTime(new Date(lesson.endTime))}
                   </span>
                 </div>
                 {lesson.schemaItem.studio && (

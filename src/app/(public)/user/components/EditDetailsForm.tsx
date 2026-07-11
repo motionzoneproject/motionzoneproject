@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { UserDetails } from "@/generated/prisma/client";
 import { changeDetails } from "@/lib/actions/auth";
-import { formatDateToInput } from "@/lib/date-utils";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { UserDetailsSchema } from "@/validations/userforms";
 
@@ -50,7 +50,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
       address: details?.address ?? "",
       postalCode: details.postalCode ?? "",
       city: details.city ?? "",
-      dateOfBirth: formatDateToInput(details.dateOfBirth),
+      dateOfBirth: formatDateToInputStr(details.dateOfBirth),
       bio: details.bio ?? "",
       allowPhotoVideo: details.allowPhotoVideo,
     },
@@ -69,7 +69,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
       address: details?.address ?? "",
       postalCode: details.postalCode ?? "",
       city: details.city ?? "",
-      dateOfBirth: formatDateToInput(details.dateOfBirth),
+      dateOfBirth: formatDateToInputStr(details.dateOfBirth),
       bio: details.bio ?? "",
       allowPhotoVideo: details.allowPhotoVideo,
     });
@@ -239,7 +239,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

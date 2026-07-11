@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Event } from "@/generated/prisma/client";
 import { editNewEvent } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEditEventSchema } from "@/validations/adminforms";
 
@@ -58,8 +58,8 @@ export default function EditEventForm({
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      startDate: formatDateToInputStr(event.startDate),
+      endDate: formatDateToInputStr(event.endDate) || "",
     },
   });
 
@@ -77,8 +77,8 @@ export default function EditEventForm({
       link: event.link,
       imageURL: event.imageURL,
       showOnStartpage: event.showOnStartpage,
-      startDate: event.startDate,
-      endDate: event.endDate ?? event.startDate,
+      startDate: formatDateToInputStr(event.startDate),
+      endDate: formatDateToInputStr(event.endDate) || "",
     });
   }, [
     isOpen,
@@ -230,7 +230,7 @@ export default function EditEventForm({
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={(e) => {
                         field.onChange(e);
                         if (!hasEndDate)
@@ -267,7 +267,7 @@ export default function EditEventForm({
                       type="date"
                       className={!hasEndDate ? "hidden" : ""}
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

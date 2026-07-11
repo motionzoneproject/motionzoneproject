@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import { getLegalPageBySlug } from "@/lib/actions/legal-actions";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { normalizeLang } from "@/locales";
 import { getDictionary } from "@/locales/get-dictionary";
 
@@ -88,7 +89,7 @@ export default async function LegalPage({ params }: Props) {
     name: title,
     url: `${SITE_URL}/${legalSlug}`,
     inLanguage: locale,
-    dateModified: page.updatedAt.toISOString(),
+    dateModified: formatDateToInputStr(page.updatedAt),
     isPartOf: {
       "@type": "WebSite",
       name: "Motion Zone Växjö",
@@ -101,12 +102,7 @@ export default async function LegalPage({ params }: Props) {
       <JsonLd data={webPageLd} />
       <h1 className="text-3xl font-bold mb-2">{title}</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        {updatedLabel}:{" "}
-        {page.updatedAt.toLocaleDateString(locale, {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
+        {updatedLabel}: {formatDateToInputStr(page.updatedAt)}
       </p>
       <div
         className="prose dark:prose-invert max-w-none"

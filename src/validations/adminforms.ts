@@ -72,8 +72,8 @@ export const adminEventSchema = z.object({
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),
-  startDate: z.coerce.date("Ogiltigt datum"),
-  endDate: z.coerce.date("Ogiltigt datum").optional(),
+  startDate: z.string().min(1, "Startdatum måste anges."), // Ändrad till string
+  endDate: z.string().optional(),
 });
 
 export const adminEditEventSchema = z.object({
@@ -85,8 +85,8 @@ export const adminEditEventSchema = z.object({
   link: z.string().optional(),
   imageURL: z.string().optional(),
   showOnStartpage: z.boolean(),
-  startDate: z.coerce.date("Ogiltigt datum"),
-  endDate: z.coerce.date("Ogiltigt datum").optional(),
+  startDate: z.string().min(1, "Startdatum måste anges."), // Ändrad till string
+  endDate: z.string().optional(),
 });
 
 export const adminAddTerminSchema = z
@@ -94,9 +94,8 @@ export const adminAddTerminSchema = z
     name: z.string().min(1, "Namn måste anges."),
     name_en: z.string().optional(),
 
-    startDate: z.coerce.date("Ogiltigt datum"),
-
-    endDate: z.coerce.date("Ogiltigt datum"),
+    startDate: z.string().min(1, "Startdatum måste anges."), // Ändrad till string
+    endDate: z.string().min(1, "Slutdatum måste anges."),
   })
 
   .refine((data) => data.endDate > data.startDate, {
@@ -141,8 +140,8 @@ export const adminLessonFormSchema = z.object({
 
 export const adminBulkCancelLessonsSchema = z
   .object({
-    from: z.coerce.date("Ogiltigt startdatum"),
-    to: z.coerce.date("Ogiltigt slutdatum"),
+    from: z.string().min(1),
+    to: z.string().min(1),
     courseIds: z.array(z.string().min(1)).min(1, "Valj minst en kurs."),
     message: z.string().trim().min(1, "Anledning maste anges."),
     message_en: z.string().optional(),

@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addNewEvent } from "@/lib/actions/admin";
-import { formatDateToInput } from "@/lib/date-utils";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminEventSchema } from "@/validations/adminforms";
 
@@ -168,7 +168,7 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
                     <Input
                       type="date"
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={(e) => {
                         field.onChange(e);
                         if (!hasEndDate)
@@ -205,7 +205,7 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
                       type="date"
                       className={!hasEndDate ? "hidden" : ""}
                       {...field}
-                      value={formatDateToInput(field.value)}
+                      value={formatDateToInputStr(field.value)}
                       onChange={field.onChange}
                     />
                   </FormControl>

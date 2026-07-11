@@ -23,6 +23,11 @@ import {
   type LessonWithCourse,
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
+import {
+  formatDateToInputStr,
+  formatFriendlyDate,
+  formatFriendlyDateTime,
+} from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
@@ -121,8 +126,9 @@ export default function BookingCal({
   // 2. Hitta lektioner för den valda dagen
   const selectedDateLessons = useMemo(() => {
     if (!date) return [];
+    const selectedDateStr = formatDateToInputStr(date);
     return lessons.filter(
-      (l) => l.startTime.toDateString() === date.toDateString(),
+      (l) => formatDateToInputStr(l.startTime) === selectedDateStr,
     );
   }, [date, lessons]);
 
@@ -183,11 +189,7 @@ export default function BookingCal({
           <CardHeader>
             <CardTitle className="text-lg">
               {date
-                ? date.toLocaleDateString(dateLocale, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })
+                ? formatFriendlyDate(date, dateLocale)
                 : t("user.booking.selectDate")}
             </CardTitle>
           </CardHeader>
@@ -272,10 +274,7 @@ export default function BookingCal({
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
-                        {lesson.startTime.toLocaleTimeString(dateLocale, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatFriendlyDateTime(lesson.startTime, dateLocale)}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {pick(lesson.course, "name", lang) as string}{" "}

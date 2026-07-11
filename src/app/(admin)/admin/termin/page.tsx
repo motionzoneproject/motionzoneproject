@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import type { Termin } from "@/generated/prisma/client";
 import { getTerminer, requireAdmin } from "@/lib/actions/admin";
+import { startOfStockholmDay } from "@/lib/date-utils";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { HideOldCheckbox } from "./components/HideOldCheckbox";
 import AddTerminForm from "./forms/AddTerminForm";
@@ -21,7 +22,7 @@ export default async function Page({
   const terminer = await getTerminer(true);
 
   function isTerminActive(termin: Termin): boolean {
-    const today = new Date();
+    const today = startOfStockholmDay(new Date());
     return today >= termin.startDate && today <= termin.endDate;
   }
 

@@ -1,7 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
-import { enGB, sv } from "date-fns/locale";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  formatDateToInputStr,
+  formatLongFriendlyDateTime,
+} from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel } from "@/lib/order-status";
 import type { AppLang } from "@/locales/config-lang";
@@ -45,7 +47,6 @@ interface OrderHistoryProps {
 export default function OrderHistory({ orders }: OrderHistoryProps) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
-  const dateLocale = lang === "en" ? enGB : sv;
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const statusLabels = {
     PAID: t("user.orderHistory.statusPaid"),
@@ -112,9 +113,7 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                     {order.id.slice(0, 8)}...
                   </td>
                   <td className="p-3">
-                    {format(new Date(order.createdAt), "d MMM yyyy", {
-                      locale: dateLocale,
-                    })}
+                    {formatDateToInputStr(new Date(order.createdAt))}
                   </td>
                   <td className="p-3">
                     {order.totalPrice != null
@@ -153,12 +152,9 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                 {t("user.orderHistory.dateLabel")}
                               </span>
                               <span>
-                                {format(
+                                {formatLongFriendlyDateTime(
                                   new Date(selectedOrder.createdAt),
-                                  "PPP p",
-                                  {
-                                    locale: dateLocale,
-                                  },
+                                  lang,
                                 )}
                               </span>
                             </div>

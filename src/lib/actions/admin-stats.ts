@@ -1,8 +1,15 @@
 "use server";
 
+import { addDays } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
+import {
+  endOfStockholmDateInput,
+  formatDateToInputStr,
+  parseStockholmDateInput,
+  startOfStockholmDay,
+} from "../date-utils";
 
 const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID"] as const;
 
@@ -127,17 +134,17 @@ function parseCustomDateRange(
 ): ParsedDateRange | null {
   if (!from || !to) return null;
 
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
+  const fromDate = parseStockholmDateInput(from);
+  const toDate = parseStockholmDateInput(to);
 
   if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
     return null;
   }
 
-  fromDate.setHours(0, 0, 0, 0);
-  toDate.setHours(23, 59, 59, 999);
-
-  return { from: fromDate, to: toDate };
+  return {
+    from: fromDate,
+    to: endOfStockholmDateInput(to),
+  };
 }
 
 function buildCourseWhere(terminId?: string | null): Prisma.CourseWhereInput {
@@ -245,12 +252,13 @@ async function getSelectedPeriod(
   terminId?: string | null,
   customDateRange?: ParsedDateRange | null,
 ): Promise<StatsPeriod | null> {
+  // 1. Hantera custom date range säkert
   if (!terminId && customDateRange) {
     return {
       id: "custom",
       name: "Vald period",
-      from: customDateRange.from.toISOString(),
-      to: customDateRange.to.toISOString(),
+      from: formatDateToInputStr(customDateRange.from), // Säkert format "YYYY-MM-DD"
+      to: formatDateToInputStr(customDateRange.to), // Säkert format "YYYY-MM-DD"
     };
   }
 
@@ -274,29 +282,38 @@ async function getSelectedPeriod(
 
   if (!termin) return null;
 
-  const from = new Date(
-    Math.min(
-      termin.startDate.getTime(),
-      ...termin.schemaItems
-        .map((item) => item.customStartDate?.getTime())
-        .filter((value): value is number => value !== undefined),
-    ),
-  );
+  // 2. Samla in alla startdatum och formatera dem till "YYYY-MM-DD" strängar
+  const startDates = [
+    formatDateToInputStr(termin.startDate),
+    ...termin.schemaItems
+      .map((item) =>
+        item.customStartDate
+          ? formatDateToInputStr(item.customStartDate)
+          : null,
+      )
+      .filter((v): v is string => v !== null),
+  ];
 
-  const to = new Date(
-    Math.max(
-      termin.endDate.getTime(),
-      ...termin.schemaItems
-        .map((item) => item.customEndDate?.getTime())
-        .filter((value): value is number => value !== undefined),
-    ),
-  );
+  // 3. Samla in alla slutdatum och formatera dem till "YYYY-MM-DD" strängar
+  const endDates = [
+    formatDateToInputStr(termin.endDate),
+    ...termin.schemaItems
+      .map((item) =>
+        item.customEndDate ? formatDateToInputStr(item.customEndDate) : null,
+      )
+      .filter((v): v is string => v !== null),
+  ];
+
+  // Eftersom strängar i formatet "YYYY-MM-DD" sorteras perfekt alfabetiskt,
+  // kan vi använda vanlig array-sortering för att hitta min/max utan tidszons-skiftningar.
+  const fromStr = startDates.sort()[0]; // Sorterar stigande, tar det tidigaste
+  const toStr = endDates.sort().reverse()[0]; // Sorterar fallande, tar det senaste
 
   return {
     id: termin.id,
     name: termin.name,
-    from: from.toISOString(),
-    to: to.toISOString(),
+    from: fromStr, // Ger exakt t.ex. "2026-01-07"
+    to: toStr, // Ger exakt t.ex. "2026-06-15"
   };
 }
 
@@ -310,11 +327,7 @@ function doesRangeOverlap(
 }
 
 function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return formatDateToInputStr(date);
 }
 
 function getTimelineRange(
@@ -326,19 +339,17 @@ function getTimelineRange(
 
   // Om det finns faktisk data, använd dess faktiska span
   if (allDates.length > 0) {
-    const dataFrom = new Date(Math.min(...allDates.map((d) => d.getTime())));
-    dataFrom.setHours(0, 0, 0, 0);
-
-    const dataTo = new Date(Math.max(...allDates.map((d) => d.getTime())));
-    dataTo.setHours(0, 0, 0, 0);
+    const dataFrom = startOfStockholmDay(
+      new Date(Math.min(...allDates.map((d) => d.getTime()))),
+    );
+    const dataTo = startOfStockholmDay(
+      new Date(Math.max(...allDates.map((d) => d.getTime()))),
+    );
 
     // Om selectedPeriod finns, utvidga spannet så terminens period alltid visas
     if (selectedPeriod) {
-      const periodFrom = new Date(selectedPeriod.from);
-      periodFrom.setHours(0, 0, 0, 0);
-
-      const periodTo = new Date(selectedPeriod.to);
-      periodTo.setHours(0, 0, 0, 0);
+      const periodFrom = parseStockholmDateInput(selectedPeriod.from);
+      const periodTo = parseStockholmDateInput(selectedPeriod.to);
 
       return {
         from: dataFrom < periodFrom ? dataFrom : periodFrom,
@@ -351,13 +362,10 @@ function getTimelineRange(
 
   // Ingen data alls — visa åtminstone terminens period om den finns
   if (selectedPeriod) {
-    const from = new Date(selectedPeriod.from);
-    from.setHours(0, 0, 0, 0);
-
-    const to = new Date(selectedPeriod.to);
-    to.setHours(0, 0, 0, 0);
-
-    return { from, to };
+    return {
+      from: parseStockholmDateInput(selectedPeriod.from),
+      to: parseStockholmDateInput(selectedPeriod.to),
+    };
   }
 
   return null;
@@ -388,9 +396,9 @@ function buildDailyTimeline(
     StatsTimelinePoint & { orderIds: Set<string> }
   >();
 
-  const cursor = new Date(range.from);
+  let cursor = parseStockholmDateInput(formatDateToInputStr(range.from));
 
-  while (cursor <= range.to) {
+  while (cursor.getTime() <= range.to.getTime()) {
     const key = toDateKey(cursor);
     timelineMap.set(key, {
       date: key,
@@ -399,7 +407,7 @@ function buildDailyTimeline(
       bookings: 0,
       orderIds: new Set<string>(),
     });
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = addDays(cursor, 1);
   }
 
   for (const item of orderItems) {
@@ -692,8 +700,9 @@ export async function getTerminsStats(
           ).size,
           bookingCount: 0,
           studentCount: 0,
-          periodStart: range.from?.toISOString() ?? null,
-          periodEnd: range.to?.toISOString() ?? null,
+
+          periodStart: range.from ? formatDateToInputStr(range.from) : null,
+          periodEnd: range.to ? formatDateToInputStr(range.to) : null,
           studentKeys: new Set<string>(),
         },
       ];

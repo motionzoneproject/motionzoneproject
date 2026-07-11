@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { adminSetRole } from "@/lib/actions/user-management";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import BanUserDialog from "./BanUserDialog";
 import EditUserDialog from "./EditUserDialog";
@@ -168,7 +169,7 @@ export default function UsersView({
                     )}
                   </td>
                   <td className="p-3 text-muted-foreground hidden lg:table-cell">
-                    {new Date(u.createdAt).toLocaleDateString("sv-SE")}
+                    {formatDateToInputStr(u.createdAt)}
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">

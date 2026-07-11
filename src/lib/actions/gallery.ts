@@ -6,6 +6,7 @@ import type { GalleryItemType } from "@/generated/prisma/client";
 import { probeImageDimensions } from "@/lib/imageUtils";
 import prisma from "@/lib/prisma";
 import { getS3Resources } from "@/lib/s3";
+import { formatDateToInputStr } from "../date-utils";
 import { isAdminRole } from "./admin";
 
 function revalidateGalleryPaths() {
@@ -76,14 +77,14 @@ export async function getActiveGalleryItems() {
     thumbnailUrl: item.thumbnailUrl ?? undefined,
     width: item.width ?? undefined,
     height: item.height ?? undefined,
-    createdAt: item.createdAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    sortDate: (item.event?.startDate ?? item.createdAt).toISOString(),
+    createdAt: formatDateToInputStr(item.createdAt),
+    updatedAt: formatDateToInputStr(item.updatedAt),
+    sortDate: formatDateToInputStr(item.event?.startDate ?? item.createdAt),
     displayOrder: item.displayOrder,
     eventId: item.event?.id,
     eventHeadline: item.event?.headline,
     eventHeadline_en: item.event?.headline_en ?? undefined,
-    eventStartDate: item.event?.startDate?.toISOString(),
+    eventStartDate: formatDateToInputStr(item.event?.startDate),
   }));
 }
 

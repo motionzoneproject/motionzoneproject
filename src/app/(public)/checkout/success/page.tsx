@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel } from "@/lib/order-status";
@@ -20,7 +21,7 @@ export default async function Page({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { lang, t } = await getDictionary();
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const { orderId: rawOrderId } = await searchParams;
   const orderId = typeof rawOrderId === "string" ? rawOrderId : undefined;
 
@@ -87,7 +88,7 @@ export default async function Page({
                       {t.checkout.success.date}
                     </span>
                     <span className="text-foreground">
-                      {new Date(order.createdAt).toLocaleString(dateLocale)}
+                      {formatDateToInputStr(order.createdAt)}
                     </span>
                   </div>
                 </CardContent>

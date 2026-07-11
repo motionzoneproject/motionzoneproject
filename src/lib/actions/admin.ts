@@ -1,5 +1,7 @@
 "use server";
 
+import { TZDate } from "@date-fns/tz";
+import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -18,14 +20,11 @@ import type {
   Studio,
   Termin,
   User,
-  Weekday,
 } from "@/generated/prisma/client";
 import {
   AddStudentToLessonForm,
   AdminProductCourseItemSchema,
   adminAddCourseSchema,
-  adminAddCourseToSchemaSchema,
-  adminAddTerminSchema,
   adminBulkCancelLessonsSchema,
   adminEditEventSchema,
   adminEventSchema,
@@ -33,10 +32,11 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { formatLongFriendlyDate } from "../date-utils";
 import { generateBookingCancelledHtml, sendMail } from "../mail";
 import { sekToOre } from "../money";
 import prisma from "../prisma";
-import { formToDbDate } from "../time-convert";
+import { dbToFormTime, formToDbDate } from "../time-convert";
 import { getProductStats, handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
@@ -144,48 +144,11 @@ export async function getAllStudios(): Promise<Studio[]> {
   return await prisma.studio.findMany();
 }
 
-export async function editNewEvent(
-  formData: z.infer<typeof adminEditEventSchema>,
-) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  const validated = await adminEditEventSchema.parseAsync(formData);
-
-  try {
-    const editedEvent = await prisma.event.update({
-      where: { id: validated.id },
-      data: {
-        headline: validated.headline,
-        headline_en: validated.headline_en,
-        description: validated.description,
-        description_en: validated.description_en,
-        imageURL: validated.imageURL ?? "",
-        link: validated.link ?? "",
-        showOnStartpage: validated.showOnStartpage,
-        startDate: new Date(validated.startDate),
-        endDate: validated.endDate ? new Date(validated.endDate) : null,
-      },
-    });
-    revalidatePath("/admin/events");
-    revalidatePath("/");
-
-    return {
-      success: true,
-      msg: `Event ${editedEvent.headline} uppdaterades.`,
-    };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte uppdatera eventet." };
-  }
-}
-
 export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Validate terminSchema.
     const validated = await adminEventSchema.parseAsync(formData);
 
     const newEvent = await prisma.event.create({
@@ -197,501 +160,61 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
-        startDate: new Date(validated.startDate),
-        endDate: validated.endDate ? new Date(validated.endDate) : null,
+        // SÄKRAD: formToDbDate tar emot strängen och låser den till svensk midnatt
+        startDate: formToDbDate(validated.startDate),
+        endDate:
+          validated.endDate && validated.endDate.trim() !== ""
+            ? formToDbDate(validated.endDate)
+            : null,
       },
     });
+
     revalidatePath("/admin/events");
     revalidatePath("/");
-    return {
-      success: true,
-      msg: `Event ${newEvent.headline} skapades.`,
-    };
+    return { success: true, msg: `Eventet "${newEvent.headline}" skapades.` };
   } catch (e) {
     console.error(e);
     return { success: false, msg: "Kunde inte skapa eventet." };
   }
 }
 
-/**
- * Creates a new "termin".
- * * @param formData - formdata for creating the new termin.
- * @returns An object with success (booleam) and a msg.
- * Returns an error msg if not admin or validation fails.
- * @auth Admin
- */
-export async function addNewTermin(
-  formData: z.infer<typeof adminAddTerminSchema>,
+export async function editNewEvent(
+  formData: z.infer<typeof adminEditEventSchema>,
 ) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
-    // Validate terminSchema.
-    const validated = await adminAddTerminSchema.parseAsync(formData);
-
-    const newSchemaItem = await prisma.termin.create({
-      data: validated, // Provar :)
-    });
-    return {
-      success: true,
-      msg: `Terminen ${newSchemaItem.name} skapades.`,
-    };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte skapa terminen." };
-  }
-}
-
-/**
- * Checks if any lessons are affected if Start/End date changes.
- * @returns Count of affected lessons.
- * @auth Admin
- */
-export async function checkTerminDateChange(
-  terminId: string,
-  newStart: Date,
-  newEnd: Date,
-) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { count: 0 };
-
-  const affectedBookings = await prisma.booking.count({
-    where: {
-      lesson: {
-        terminId: terminId,
-        OR: [{ startTime: { lt: newStart } }, { startTime: { gt: newEnd } }],
-      },
-    },
-  });
-
-  return { count: affectedBookings };
-}
-
-/**
- Updates a "termin".
- * @returns An object with success (boolean) and a msg.
- * @auth Admin
- */
-export async function editTermin(
-  id: string,
-  formData: z.infer<typeof adminAddTerminSchema>,
-  dateIsChanged: boolean = true,
-) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    const existingTermin = await prisma.termin.findUniqueOrThrow({
-      where: { id },
-    });
-
-    const validated = await adminAddTerminSchema.parseAsync(formData);
-
-    const newStartDate = dateIsChanged
-      ? new Date(validated.startDate)
-      : existingTermin.startDate;
-    const newEndDate = dateIsChanged
-      ? new Date(validated.endDate)
-      : existingTermin.endDate;
-
-    const result = await prisma.$transaction(async (tx) => {
-      // 2. Uppdatera själva terminen
-      const updatedTermin = await tx.termin.update({
-        where: { id },
-        data: validated, // Såhär borde vi göra på alla ställen där det går. I framtiden.
-      });
-
-      if (dateIsChanged) {
-        // 2. Hämta alla schemaItems för att synka lektioner
-        const schemaItems = await tx.schemaItem.findMany({
-          where: { terminId: id },
-          include: {
-            course: true,
-          },
-        });
-
-        // 4. Hantera bokningar och lektioner som hamnar utanför de nya tidsramarna
-        for (const item of schemaItems) {
-          // Kollar om schemaItem följer terminens datum:
-          const followsStart = item.customStartDate === null;
-          const followsEnd = item.customEndDate === null;
-
-          const validStart = followsStart ? newStartDate : item.customStartDate;
-          const validEnd = followsEnd ? newEndDate : item.customEndDate;
-
-          if (!validStart || !validEnd)
-            throw new Error("ValidStart eller ValidEnd är null");
-
-          // Hämta de boknignar som ev berörs:
-          const affectedBookings = await tx.booking.findMany({
-            where: {
-              lesson: {
-                schemaItemId: item.id,
-                OR: [
-                  { startTime: { lt: validStart } },
-                  { startTime: { gt: validEnd } },
-                ],
-              },
-            },
-            select: { id: true, purchaseItemId: true },
-          });
-
-          for (const booking of affectedBookings) {
-            if (!booking.purchaseItemId) continue; // Ska visserligen alltid finnas...
-
-            const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-            if (!clipResult.success) {
-              throw new Error(clipResult.msg || "Clip update failed.");
-            }
-          }
-
-          // Städa bort lektioner utanför intervallet:
-          await tx.lesson.deleteMany({
-            where: {
-              schemaItemId: item.id,
-              OR: [
-                { startTime: { lt: validStart } },
-                { startTime: { gt: validEnd } },
-              ],
-            },
-          });
-        }
-
-        // 5. Skapa nya lektioner för de datum som ev tillkommit ()
-        const WEEKDAY_MAP: Record<string, number> = {
-          MONDAY: 1,
-          TUESDAY: 2,
-          WEDNESDAY: 3,
-          THURSDAY: 4,
-          FRIDAY: 5,
-          SATURDAY: 6,
-          SUNDAY: 0,
-        };
-
-        // Hämta kvarvarande lektioner efter raderingssteget
-        const remainingLessons = await tx.lesson.findMany({
-          where: { schemaItemId: { in: schemaItems.map((i) => i.id) } },
-          select: { schemaItemId: true, startTime: true },
-        });
-
-        const remainingSet = new Set(
-          remainingLessons.map(
-            (l) => `${l.schemaItemId}:${l.startTime.getTime()}`,
-          ),
-        );
-
-        const lessonsToCreate = [];
-
-        for (const item of schemaItems) {
-          const targetDay = WEEKDAY_MAP[item.weekday];
-
-          const followsStart = item.customStartDate === null;
-          const followsEnd = item.customEndDate === null;
-
-          const actualStart = followsStart
-            ? newStartDate
-            : item.customStartDate;
-          const actualEnd = followsEnd ? newEndDate : item.customEndDate;
-
-          if (!actualStart)
-            throw new Error(`SchemaItem ${item.id} saknar customStartDate.`);
-          if (!actualEnd)
-            throw new Error(`SchemaItem ${item.id} saknar customEndDate.`);
-
-          const currentDate = new Date(actualStart.getTime());
-
-          const startHours = item.timeStart.getHours();
-          const startMinutes = item.timeStart.getMinutes();
-          const endHours = item.timeEnd.getHours();
-          const endMinutes = item.timeEnd.getMinutes();
-
-          while (currentDate <= actualEnd) {
-            currentDate.setHours(0, 0, 0, 0);
-
-            if (currentDate.getDay() === targetDay) {
-              const combinedStartTime = new Date(currentDate.getTime());
-              combinedStartTime.setHours(startHours, startMinutes, 0, 0);
-
-              // Kolla om lektionen redan finns (så vi inte skapar dubbletter)
-              const exists = remainingSet.has(
-                `${item.id}:${combinedStartTime.getTime()}`,
-              );
-
-              if (!exists) {
-                const combinedEndTime = new Date(currentDate.getTime());
-                combinedEndTime.setHours(endHours, endMinutes, 0, 0);
-
-                lessonsToCreate.push({
-                  startTime: combinedStartTime,
-                  endTime: combinedEndTime,
-                  terminId: id,
-                  courseId: item.courseId,
-                  teacherId: item.course.teacherId,
-                  schemaItemId: item.id,
-                });
-              }
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        }
-
-        if (lessonsToCreate.length > 0) {
-          await tx.lesson.createMany({
-            data: lessonsToCreate,
-          });
-        }
-      }
-
-      return updatedTermin;
-    });
-
-    revalidatePath("/admin/courses");
-
-    return {
-      success: true,
-      msg: `Terminen "${result.name}" har uppdaterats. ${dateIsChanged ? "Eventuella lektioner och bokningar utanför perioden har raderats och bokningar har återställts till eleverna." : ""}`,
-    };
-  } catch (e) {
-    console.error("Fel vid editTermin:", e);
-    const msg =
-      e instanceof Error ? e.message : "Ett fel uppstod vid uppdatering.";
-    return { success: false, msg };
-  }
-}
-
-/**
-  Creating schemaitems and lessons when adding a course to a termin week schema.
- * @auth Admin
- */
-export async function addCoursetoSchema(
-  terminId: string,
-  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
-): Promise<{
-  success: boolean;
-  msg: string;
-}> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
-
-    const getCourse = await prisma.course.findUnique({
-      where: { id: validated.courseId },
-    });
-
-    if (!getCourse) throw new Error("Course was not found.");
-
-    const studioId = validated.studio?.trim() || undefined;
-
-    if (studioId) {
-      const studioExist = await prisma.studio.findUnique({
-        where: { id: studioId },
-        select: { id: true },
-      });
-      if (!studioExist)
-        throw new Error(`Studio with id ${validated.studio} was not found.`);
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      const termin = await tx.termin.findUnique({ where: { id: terminId } });
-      if (!termin) throw new Error("No termin.");
-
-      // const finalStartDate = validated.customStartDate
-      //   ? new Date(validated.customStartDate)
-      //   : termin.startDate;
-      // const finalEndDate = validated.customEndDate
-      //   ? new Date(validated.customEndDate)
-      //   : termin.endDate;
-
-      const finalStartDate = validated.customStartDate
-        ? new Date(validated.customStartDate)
-        : null; // <-- null istället för termin.startDate
-
-      const finalEndDate = validated.customEndDate
-        ? new Date(validated.customEndDate)
-        : null;
-
-      const newSchemaItem = await tx.schemaItem.create({
-        data: {
-          terminId,
-          studioId: studioId ?? null,
-          courseId: validated.courseId,
-          timeStart: formToDbDate(validated.timeStart),
-          timeEnd: formToDbDate(validated.timeEnd),
-          customStartDate: finalStartDate,
-          customEndDate: finalEndDate,
-          weekday: validated.day as Weekday,
-        },
-        include: { course: true, termin: true },
-      });
-
-      const lessons = await createLessons(newSchemaItem.id, tx);
-
-      if (!lessons.success) {
-        throw new Error(
-          "Inga lektioner kunde skapas inom denna termin. Kontrollera startDate och endDate så de täcker bokningsbara dagar.",
-        );
-      }
-
-      return { newSchemaItem, lessonsMsg: lessons.msg };
-    });
-
-    return {
-      success: true,
-      msg: `Kursen ${result.newSchemaItem.course.name} lades till i terminen ${result.newSchemaItem.termin.name}. ${result.lessonsMsg}`,
-    };
-  } catch (e) {
-    console.error(e);
-    const msg = e instanceof Error ? e.message : "Ett oväntat fel uppstod.";
-    return { success: false, msg };
-  }
-}
-
-/**
-  Edit schemaitems and lessons when editing a course in a termin week schema.
- * @auth Admin
- */
-export async function editCourseInSchema(
-  terminId: string,
-  schemaItemId: string,
-  formData: z.infer<typeof adminAddCourseToSchemaSchema>,
-): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    const validated = await adminAddCourseToSchemaSchema.parseAsync(formData);
-
-    const getCourse = await prisma.course.findUnique({
-      where: { id: validated.courseId },
-    });
-
-    if (!getCourse) throw new Error("Course was not found.");
-
-    const termin = await prisma.termin.findUnique({ where: { id: terminId } });
-    if (!termin) throw new Error("No termin.");
-
-    const finalStartDate = validated.customStartDate
-      ? new Date(validated.customStartDate)
-      : null;
-    const finalEndDate = validated.customEndDate
-      ? new Date(validated.customEndDate)
-      : null;
-
-    const studioId = validated.studio?.trim() || undefined;
-
-    if (studioId) {
-      const studioExist = await prisma.studio.findUnique({
-        where: { id: studioId },
-        select: { id: true },
-      });
-      if (!studioExist)
-        throw new Error(`Studio with id ${validated.studio} was not found.`);
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      const updatedSchemaItem = await tx.schemaItem.update({
-        where: { id: schemaItemId },
-        data: {
-          terminId,
-          studioId: studioId ?? null,
-          courseId: validated.courseId,
-          timeStart: formToDbDate(validated.timeStart),
-          timeEnd: formToDbDate(validated.timeEnd),
-          customStartDate: finalStartDate,
-          customEndDate: finalEndDate,
-          weekday: validated.day as Weekday,
-        },
-        include: { course: true, termin: true },
-      });
-
-      await tx.lesson.deleteMany({
-        where: { schemaItemId: updatedSchemaItem.id },
-      });
-
-      return updatedSchemaItem;
-    });
-
-    const lessons = await createLessons(schemaItemId);
-
-    if (!lessons.success) {
-      throw new Error(
-        "Kunde inte generera nya lektioner. Kontrollera dina datum.",
-      );
-    }
-
-    revalidatePath("/admin/termin");
-    revalidatePath("/admin/courses");
-
-    return {
-      success: true,
-      msg: `Kursen ${result.course.name} har uppdaterats i ${result.termin.name}. ${lessons.msg}`,
-    };
-  } catch (e) {
-    console.error(e);
-    const msg = e instanceof Error ? e.message : "Ett oväntat fel uppstod.";
-    return { success: false, msg };
-  }
-}
-
-/**
- * Removes schemaItems and lessons (and bookings) when deleting a course from a termin week schema and restoring clips to customers.
- * @returns Success (boolean) and a message.
- * @auth Admin
- */
-export async function delSchemaItem(
-  id: string,
-): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // Hämta ev bokningar som är gjorda i kursen.
-    const bookings = await prisma.booking.findMany({
-      where: {
-        lesson: { schemaItemId: id },
-        cancelled: false,
-      },
-      select: {
-        id: true,
-        purchaseItemId: true,
+    const validated = await adminEditEventSchema.parseAsync(formData);
+
+    const editedEvent = await prisma.event.update({
+      where: { id: validated.id },
+      data: {
+        headline: validated.headline,
+        headline_en: validated.headline_en,
+        description: validated.description,
+        description_en: validated.description_en,
+        imageURL: validated.imageURL ?? "",
+        link: validated.link ?? "",
+        showOnStartpage: validated.showOnStartpage,
+        // SÄKRAD: formToDbDate ser till att datumet inte hoppar bakåt till föregående kväll
+        startDate: formToDbDate(validated.startDate),
+        endDate:
+          validated.endDate && validated.endDate.trim() !== ""
+            ? formToDbDate(validated.endDate)
+            : null,
       },
     });
 
-    // Vi sparar resultatet från transaktionen i en variabel
-    const result = await prisma.$transaction(async (tx) => {
-      if (bookings.length > 0) {
-        for (const booking of bookings) {
-          if (!booking.purchaseItemId) continue;
-
-          // Sköts via handleClips:
-          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
-        }
-      }
-
-      const del = await tx.schemaItem.delete({
-        where: { id },
-        select: { course: { select: { name: true } } },
-      });
-
-      return {
-        success: true,
-        msg: `${del.course.name} och dess bokningar togs bort. ${bookings.length} klipp har återställts.`,
-      };
-    });
-
-    return result;
+    revalidatePath("/admin/events");
+    revalidatePath("/");
+    return {
+      success: true,
+      msg: `Eventet "${editedEvent.headline}" uppdaterades.`,
+    };
   } catch (e) {
     console.error(e);
-    return {
-      success: false,
-      msg: "Ett fel uppstod vid radering av schemaposten.",
-    };
+    return { success: false, msg: "Kunde inte uppdatera eventet." };
   }
 }
 
@@ -714,67 +237,6 @@ export async function delEvent(
     return {
       success: false,
       msg: "Ett fel uppstod vid radering av eventet.",
-    };
-  }
-}
-
-/**
- * Removes an entire termin.
- * @returns Success (boolean) and a message.
- * @auth Admin
- */
-export async function delTermin(
-  id: string,
-): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // 1. Hitta alla aktiva bokningar kopplade till denna termin
-    const bookings = await prisma.booking.findMany({
-      where: {
-        lesson: { terminId: id },
-        cancelled: false, // Hmm, ska vi verkligen ignorera detta? Kommer ligga onödiga bokningar. Eller just det, ja för annars betalas inställda bokningar tillbaka. Ev. fix för att inte ha onödig data i db.
-      },
-      select: { purchaseItemId: true },
-    });
-
-    // 2. Kör transaktionen
-    const result = await prisma.$transaction(async (tx) => {
-      // Återställ alla klipp
-      if (bookings.length > 0) {
-        for (const booking of bookings) {
-          if (!booking.purchaseItemId) continue;
-
-          // Via handleClips :)
-          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
-        }
-      }
-
-      // Radera terminen (triggar cascade för resten)
-      const deletedTermin = await tx.termin.delete({
-        where: { id },
-        select: { name: true },
-      });
-
-      return deletedTermin.name;
-    });
-
-    revalidatePath("/admin/termins");
-
-    return {
-      success: true,
-      msg: `Terminen ${result} och ${bookings.length} tillhörande bokningar raderades. Klipp har återställts.`,
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      success: false,
-      msg: "Kunde inte radera terminen. Kontrollera om den har aktiva kopplingar som hindrar radering.",
     };
   }
 }
@@ -972,115 +434,11 @@ export async function editCourse(
   }
 }
 
-// *
-
-/**
- * Creating lessons bases on a schemaItem.
- * @returns Success (boolean) and a message.
- */
-async function createLessons(
-  schemaItemId: string,
-  tx?: Prisma.TransactionClient,
-): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // Hämtar all data vi behöver.
-
-    // Behöver vi validatera någonting här? ev. fix.
-
-    const db = tx ?? prisma;
-
-    const schemaItm = await db.schemaItem.findUnique({
-      where: { id: schemaItemId },
-      include: { termin: true, course: true },
-    });
-
-    if (!schemaItm) throw new Error("schemaItm kunde inte hittas.");
-
-    const WEEKDAY_MAP: Record<Weekday, number> = {
-      MONDAY: 1,
-      TUESDAY: 2,
-      WEDNESDAY: 3,
-      THURSDAY: 4,
-      FRIDAY: 5,
-      SATURDAY: 6,
-      SUNDAY: 0,
-    };
-
-    const targetDay = WEEKDAY_MAP[schemaItm?.weekday]; // Få targetday som rätt nummer.
-
-    const startDate = schemaItm.customStartDate ?? schemaItm.termin.startDate; // Hanterar redan null korrekt
-    const endDate = schemaItm.customEndDate ?? schemaItm.termin.endDate; // Hanterar redan null korrekt.
-    const teacherId = schemaItm.course.teacherId;
-
-    const lessonsToCreate = []; // Dessa lessions ska skapas.
-
-    const currentDate = new Date(startDate.getTime());
-    const startHours = schemaItm.timeStart.getHours();
-    const startMinutes = schemaItm.timeStart.getMinutes();
-    const endHours = schemaItm.timeEnd.getHours();
-    const endMinutes = schemaItm.timeEnd.getMinutes();
-
-    /// Så nu loopar vi igenom alla targetdays inom den perioden:
-
-    while (currentDate <= endDate) {
-      currentDate.setHours(0, 0, 0, 0);
-
-      // Jämför veckodag (getDay() returnerar 0-6)
-      if (currentDate.getDay() === targetDay) {
-        // Skapa startTime: Kombinera matchande datum med tidskomponenten
-        const combinedStartTime = new Date(currentDate.getTime());
-        combinedStartTime.setHours(startHours, startMinutes, 0, 0); // Sätt tid, nollställ sek/ms
-
-        // Skapa endTime: Kombinera matchande datum med tidskomponenten
-        const combinedEndTime = new Date(currentDate.getTime());
-        combinedEndTime.setHours(endHours, endMinutes, 0, 0);
-
-        lessonsToCreate.push({
-          startTime: combinedStartTime,
-          endTime: combinedEndTime,
-          terminId: schemaItm.termin.id,
-          courseId: schemaItm.course.id,
-          teacherId: teacherId,
-          schemaItemId: schemaItm.id, // Denna kopplar Lesson till mallen
-          // message och cancelled får standardvärden/null
-        });
-      }
-      // Gå till nästa dag
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Kontrollera om det finns något att skapa
-    if (lessonsToCreate.length === 0) {
-      return {
-        success: false,
-        msg: "No matching days found to create lessons.",
-      };
-    }
-
-    const result = await db.lesson.createMany({
-      data: lessonsToCreate,
-      skipDuplicates: true,
-    });
-
-    return {
-      success: true,
-      msg: `Successfully created ${result.count} lessons.`,
-    };
-  } catch (e) {
-    console.error(e);
-    return { success: false, msg: "Kunde inte skapa lektioner." };
-  }
-}
-
 export type MailStudentRecipient = {
   name: string;
   email: string;
 };
-
-export async function sendCancelledMail(
+async function sendCancelledMail(
   lesson: Lesson & { course?: { name: string } | null },
   students: MailStudentRecipient[],
 ): Promise<{
@@ -1107,14 +465,14 @@ export async function sendCancelledMail(
         const subject = `Inställd lektion${
           lesson.course?.name ? ` - ${lesson.course.name}` : ""
         }`;
+
+        // Nu använder vi de färdigformaterade, tidszonssäkrade strängarna
         const text = `Hej ${student.name}, din bokade lektion${
           lesson.course?.name ? ` i ${lesson.course.name}` : ""
-        } den ${new Date(lesson.startTime).toLocaleDateString("sv-SE")} kl ${new Date(
-          lesson.startTime,
-        ).toLocaleTimeString("sv-SE", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })} har blivit inställd. Ditt tillfälle har återställts. `;
+        } den ${formatLongFriendlyDate(new Date(lesson.startTime))} kl ${dbToFormTime(
+          new Date(lesson.startTime),
+        )} har blivit inställd. Ditt tillfälle har återställts. `;
+
         const result = await sendMail(student.email, subject, html, text);
 
         return {
@@ -1264,33 +622,25 @@ export async function bulkCancelLessons(
 
   try {
     const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
-    const from = new Date(validated.from);
-    from.setHours(0, 0, 0, 0);
 
-    const to = new Date(validated.to);
-    to.setHours(23, 59, 59, 999);
+    const timeZone = "Europe/Stockholm";
+    const from = new Date(
+      new TZDate(`${validated.from}T00:00:00`, timeZone).getTime(),
+    );
+    const to = new Date(
+      addDays(new TZDate(`${validated.to}T00:00:00`, timeZone), 1).getTime(),
+    );
 
     const lessons = await prisma.lesson.findMany({
       where: {
-        startTime: {
-          gte: from,
-          lte: to,
-        },
-        courseId: {
-          in: validated.courseIds,
-        },
+        startTime: { gte: from, lt: to },
+        courseId: { in: validated.courseIds },
       },
-      select: {
-        id: true,
-        cancelled: true,
-      },
+      select: { id: true, cancelled: true },
     });
 
     if (lessons.length === 0) {
-      return {
-        success: false,
-        msg: "Inga lektioner matchade ditt urval.",
-      };
+      return { success: false, msg: "Inga lektioner matchade ditt urval." };
     }
 
     const lessonIds = lessons.map((lesson) => lesson.id);
@@ -1301,16 +651,13 @@ export async function bulkCancelLessons(
     await prisma.$transaction(async (tx) => {
       if (newlyCancelledLessonIds.length > 0) {
         const bookings = await tx.booking.findMany({
-          where: {
-            lessonId: { in: newlyCancelledLessonIds },
-          },
-          select: {
-            id: true,
-            purchaseItemId: true,
-          },
+          where: { lessonId: { in: newlyCancelledLessonIds } },
+          select: { id: true, purchaseItemId: true },
         });
 
         for (const booking of bookings) {
+          if (!booking.purchaseItemId) continue;
+
           const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
           if (!clipResult.success) {
             throw new Error(clipResult.msg || "Clip update failed.");
@@ -1318,16 +665,12 @@ export async function bulkCancelLessons(
         }
 
         await tx.booking.deleteMany({
-          where: {
-            lessonId: { in: newlyCancelledLessonIds },
-          },
+          where: { lessonId: { in: newlyCancelledLessonIds } },
         });
       }
 
       await tx.lesson.updateMany({
-        where: {
-          id: { in: lessonIds },
-        },
+        where: { id: { in: lessonIds } },
         data: {
           cancelled: validated.cancelled,
           message: validated.message,
@@ -1341,7 +684,7 @@ export async function bulkCancelLessons(
 
     return {
       success: true,
-      msg: `${lessonIds.length} lektioner markerades som installda.`,
+      msg: `${lessonIds.length} lektioner markerades som inställda.`,
     };
   } catch (e) {
     console.error(e);
@@ -1903,7 +1246,6 @@ export async function getBookings(
   }
 }
 
-// Kanske flytta ut denna sen från admin, tänker att vi använder samma för bokning ifrån profilsidan också.
 export async function addUserInLesson(
   formData: z.output<typeof AddStudentToLessonForm>,
 ): Promise<{ success: boolean; msg: string }> {
@@ -1978,7 +1320,10 @@ export async function addUserInLesson(
     if (!hasClips)
       return { success: false, msg: "inga tillgängliga klipp i vald produkt" };
 
-    if (!isAdmin && lesson.startTime.getTime() < Date.now()) {
+    const timeZone = "Europe/Stockholm";
+    const now = new TZDate(new Date(), timeZone);
+
+    if (!isAdmin && lesson.startTime.getTime() < now.getTime()) {
       return {
         success: false,
         msg: "Lektionen har redan varit, ednast lärare kan lägga in bakåt i tiden.",

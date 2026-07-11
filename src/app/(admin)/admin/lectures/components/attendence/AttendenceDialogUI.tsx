@@ -16,6 +16,8 @@ import type {
   BookingWithUserAndParticipant,
   StudentWithPurchaseItemsWithCourse,
 } from "@/lib/actions/admin";
+import { formatDateToInputStr } from "@/lib/date-utils";
+import { dbToFormTime } from "@/lib/time-convert";
 import { AttendenceForm } from "./AttendenceForm";
 
 interface Props {
@@ -46,17 +48,10 @@ export function AttendeDialogUI({
           <DialogDescription>
             Lägg till eller ta bort elever från lektionen.
             <br />
-            Gäller {courseName} ({lesson.startTime.toLocaleDateString("sv-SE")}{" "}
-            {lesson.startTime.toLocaleTimeString("sv-SE", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            Gäller {courseName} ({formatDateToInputStr(lesson.startTime)}{" "}
+            {dbToFormTime(lesson.startTime)}
             {" - "}
-            {lesson.endTime.toLocaleTimeString("sv-SE", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            )
+            {dbToFormTime(lesson.endTime)})
           </DialogDescription>
         </DialogHeader>
         <AttendenceForm

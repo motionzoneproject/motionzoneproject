@@ -27,6 +27,7 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { formatFriendlyDateTime } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
 import { getDictionary } from "@/locales/get-dictionary";
@@ -190,8 +191,8 @@ export default async function Page() {
                             .filter((b) => b.purchaseItemId === pi.id)
                             .sort(
                               (a, b) =>
-                                a.lesson.startTime.getUTCDate() -
-                                b.lesson.startTime.getUTCDate(),
+                                a.lesson.startTime.getTime() -
+                                b.lesson.startTime.getTime(),
                             );
 
                           return (
@@ -234,14 +235,10 @@ export default async function Page() {
                                           <Calendar className="w-4 h-4 text-muted-foreground" />
 
                                           <p className="text-sm">
-                                            {new Date(
+                                            {formatFriendlyDateTime(
                                               b.lesson.startTime,
-                                            ).toLocaleDateString(dateLocale, {
-                                              day: "numeric",
-                                              month: "short",
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
+                                              dateLocale,
+                                            )}
                                           </p>
                                         </div>
 
