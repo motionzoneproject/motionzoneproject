@@ -122,7 +122,7 @@ export async function generateOrderConfirmationHtml(order: {
       </table>
 
       <p style="margin-top: 20px;">
-        Om du har några frågor om din beställning, är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.
+        Om du har några frågor om din beställning, är du välkommen att kontakta oss på <a href="mailto:motionzonevaxjo@gmail.com">motionzonevaxjo@gmail.com</a>.
       </p>
 
       <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
@@ -177,7 +177,7 @@ export async function generateBookingCancelledHtml(
           ? `<p><strong>Meddelande från oss:</strong><br/>${lesson.message} <br/><br/> ${lesson.message_en}</p>`
           : ""
       }
-      <p>Om du har några frågor är du välkommen att kontakta oss på <a href="mailto:info@motionzoneworld.com">info@motionzoneworld.com</a>.</p>
+      <p>Om du har några frågor är du välkommen att kontakta oss på <a href="mailto:motionzonevaxjo@gmail.com">motionzonevaxjo@gmail.com</a>.</p>
 
       <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
 
