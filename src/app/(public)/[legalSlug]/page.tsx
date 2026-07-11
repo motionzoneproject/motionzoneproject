@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LegalPage({ params }: Props) {
   const { legalSlug } = await params;
 
-  console.log("slug:" + legalSlug + LEGAL_SLUGS.includes(legalSlug));
+  console.log(`slug:${legalSlug}${LEGAL_SLUGS.includes(legalSlug)}`);
 
   if (!LEGAL_SLUGS.includes(legalSlug)) {
     notFound();
