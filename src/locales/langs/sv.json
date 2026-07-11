@@ -379,6 +379,17 @@
       "successToast": "Lösenordet ändrades.",
       "unexpected": "Ett oväntat fel uppstod."
     },
+    "editMail": {
+      "trigger": "Ändra email",
+      "title": "Ändra din mail",
+      "new": "Ny email",
+      "newPlaceholder": "Skriv ny email",
+      "submit": "Spara ändringar",
+      "submitting": "Sparar...",
+      "errorTitle": "Kunde inte ändra epost",
+      "successToast": "Emailen ändrades.",
+      "unexpected": "Ett oväntat fel uppstod."
+    },
     "teacherProfileDialog": {
       "edit": "Ändra lärarprofil",
       "create": "Skapa lärarprofil",

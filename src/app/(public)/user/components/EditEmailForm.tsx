@@ -25,24 +25,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { changePassword } from "@/lib/actions/auth-actions";
+import { changeMail } from "@/lib/actions/auth-actions";
 import { useSession } from "@/lib/session-provider";
-import { UserPasswordSchema } from "@/validations/userforms";
+import { UserEmailSchema } from "@/validations/userforms";
 
-const formSchema = UserPasswordSchema;
+const formSchema = UserEmailSchema;
 type FormValues = z.infer<typeof formSchema>;
 
-export function EditPwForm() {
+export function EditEmailForm() {
   const { t } = useTranslation();
-  const { session } = useSession();
+  const { session, user } = useSession();
   const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      oldPassword: "",
-      password: "",
-      confirmPassword: "",
+      currentEmail: user?.email ?? "",
+      email: user?.email ?? "",
     },
   });
 
@@ -52,20 +51,21 @@ export function EditPwForm() {
 
   async function onSubmit(values: FormValues) {
     try {
-      const result = await changePassword(values);
+      const result = await changeMail(values);
+
       if (!result.success) {
-        toast.error(t("user.editPw.errorTitle"), {
+        toast.error(t("user.editMail.errorTitle"), {
           description: result.error,
         });
         return;
       }
 
-      toast.success(t("user.editPw.successToast"));
+      toast.success(t("user.editMail.successToast"));
       setIsOpen(false);
       router.refresh();
     } catch (e) {
       console.error(e);
-      toast.error(t("user.editPw.unexpected"));
+      toast.error(t("user.editMail.unexpected"));
     }
   }
 
@@ -74,26 +74,25 @@ export function EditPwForm() {
       <DialogTrigger asChild>
         <Button variant="ghost" className="mx-2">
           <Pencil className="h-4 w-4" />
-          {t("user.editPw.trigger")}
+          {t("user.editMail.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[680px]">
         <DialogHeader>
-          <DialogTitle>{t("user.editPw.title")}</DialogTitle>
+          <DialogTitle>{t("user.editMail.title")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="oldPassword"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("user.editPw.current")}</FormLabel>
+                  <FormLabel>{t("user.editMail.new")}</FormLabel>
                   <FormControl>
                     <Input
-                      type="password"
-                      placeholder={t("user.editPw.currentPlaceholder")}
-                      autoComplete="given-name"
+                      type="email"
+                      placeholder={t("user.editMail.newPlaceholder")}
                       {...field}
                     />
                   </FormControl>
@@ -103,32 +102,13 @@ export function EditPwForm() {
             />
             <FormField
               control={form.control}
-              name="password"
+              name="currentEmail"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("user.editPw.new")}</FormLabel>
+                <FormItem className="hidden">
+                  <FormLabel>{t("user.editMail.confirm")}</FormLabel>
                   <FormControl>
                     <Input
-                      type="password"
-                      placeholder={t("user.editPw.newPlaceholder")}
-                      autoComplete="family-name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("user.editPw.confirm")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder={t("user.editPw.confirmPlaceholder")}
+                      type="hidden"
                       autoComplete="family-name"
                       {...field}
                     />
@@ -144,8 +124,8 @@ export function EditPwForm() {
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
               {form.formState.isSubmitting
-                ? t("user.editPw.submitting")
-                : t("user.editPw.submit")}
+                ? t("user.editMail.submitting")
+                : t("user.editMail.submit")}
             </Button>
           </form>
         </Form>

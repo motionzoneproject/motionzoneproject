@@ -379,6 +379,17 @@
       "successToast": "Password updated.",
       "unexpected": "An unexpected error occurred."
     },
+    "editMail": {
+      "trigger": "Change email",
+      "title": "Change your email",
+      "new": "New email",
+      "newPlaceholder": "Enter new email",
+      "submit": "Save changes",
+      "submitting": "Saving...",
+      "errorTitle": "Could not change email",
+      "successToast": "Email changed.",
+      "unexpected": "An unexpected error occurred."
+    },
     "teacherProfileDialog": {
       "edit": "Edit teacher profile",
       "create": "Create teacher profile",
