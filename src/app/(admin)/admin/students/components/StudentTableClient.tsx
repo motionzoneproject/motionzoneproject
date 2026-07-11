@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import EditParticipantForm from "@/components/EditParticipantForm";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -48,6 +49,14 @@ function getStudentEmail(student: StudentSummary) {
     student.participant?.email ||
     student.participant?.addedBy.email ||
     student.user.email
+  );
+}
+
+function getAllowPhotoVideo(student: StudentSummary) {
+  return (
+    student.participant?.allowPhotoVideo ??
+    student.user.details?.allowPhotoVideo ??
+    false
   );
 }
 
@@ -628,6 +637,7 @@ export default function StudentTableClient({
                 />
               </TableHead>
               <TableHead>Namn</TableHead>
+              <TableHead>Tillåter visas</TableHead>
               <TableHead>Detaljer</TableHead>
               <TableHead>Köpare</TableHead>
               <TableHead>Kurser</TableHead>
@@ -650,6 +660,13 @@ export default function StudentTableClient({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell>
+                  {getAllowPhotoVideo(student) ? (
+                    <Badge variant="default">Ja</Badge>
+                  ) : (
+                    <Badge variant="destructive">Nej</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   <DetailsDialog
                     id={student.participantId ?? student.userId}

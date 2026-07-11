@@ -4,6 +4,285 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { isAdminRole } from "./admin";
 
+type AdminStudentLinkedUser = {
+  id: string;
+  name: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  dateOfBirth: string | null;
+  bio: string | null;
+  bioEn: string | null;
+  allowPhotoVideo: boolean | null;
+};
+
+type AdminStudentAddedParticipant = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  allowPhotoVideo: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+  linkedUser: AdminStudentLinkedUser | null;
+};
+
+export type AdminStudentDetails = {
+  id: string;
+  type: "user" | "participant";
+  name: string;
+  email: string | null;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  dateOfBirth: string | null;
+  bio: string | null;
+  bioEn: string | null;
+  allowPhotoVideo: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+  customer: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  linkedUser: AdminStudentLinkedUser | null;
+  addedParticipants: AdminStudentAddedParticipant[];
+};
+
+function toIsoString(value: Date | null | undefined) {
+  return value ? value.toISOString() : null;
+}
+
+function mapLinkedUser(
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    details: {
+      firstName: string | null;
+      lastName: string | null;
+      phoneNumber: string | null;
+      address: string | null;
+      postalCode: string | null;
+      city: string | null;
+      dateOfBirth: Date | null;
+      bio: string | null;
+      bio_en: string | null;
+      allowPhotoVideo: boolean;
+    } | null;
+  } | null,
+): AdminStudentLinkedUser | null {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    firstName: user.details?.firstName ?? null,
+    lastName: user.details?.lastName ?? null,
+    phone: user.details?.phoneNumber ?? null,
+    address: user.details?.address ?? null,
+    postalCode: user.details?.postalCode ?? null,
+    city: user.details?.city ?? null,
+    dateOfBirth: toIsoString(user.details?.dateOfBirth),
+    bio: user.details?.bio ?? null,
+    bioEn: user.details?.bio_en ?? null,
+    allowPhotoVideo: user.details?.allowPhotoVideo ?? null,
+  };
+}
+
+export async function getAdminStudentDetails(input: {
+  id: string;
+  isParticipant: boolean;
+}): Promise<
+  | { success: true; details: AdminStudentDetails }
+  | { success: false; error: string }
+> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return { success: false, error: "Ingen behörighet." };
+
+  try {
+    if (input.isParticipant) {
+      const participant = await prisma.participant.findUnique({
+        where: { id: input.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          allowPhotoVideo: true,
+          createdAt: true,
+          updatedAt: true,
+          addedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              details: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  phoneNumber: true,
+                  address: true,
+                  postalCode: true,
+                  city: true,
+                  dateOfBirth: true,
+                  bio: true,
+                  bio_en: true,
+                  allowPhotoVideo: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!participant) {
+        return { success: false, error: "Deltagaren hittades inte." };
+      }
+
+      return {
+        success: true,
+        details: {
+          id: participant.id,
+          type: "participant",
+          name: participant.name,
+          email: participant.email,
+          phone: participant.phone,
+          firstName: null,
+          lastName: null,
+          address: null,
+          postalCode: null,
+          city: null,
+          dateOfBirth: null,
+          bio: null,
+          bioEn: null,
+          allowPhotoVideo: participant.allowPhotoVideo,
+          createdAt: toIsoString(participant.createdAt),
+          updatedAt: toIsoString(participant.updatedAt),
+          customer: participant.addedBy,
+          linkedUser: mapLinkedUser(participant.user),
+          addedParticipants: [],
+        },
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: input.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+        details: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            address: true,
+            postalCode: true,
+            city: true,
+            dateOfBirth: true,
+            bio: true,
+            bio_en: true,
+            allowPhotoVideo: true,
+          },
+        },
+        addedParticipants: {
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            allowPhotoVideo: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                details: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    phoneNumber: true,
+                    address: true,
+                    postalCode: true,
+                    city: true,
+                    dateOfBirth: true,
+                    bio: true,
+                    bio_en: true,
+                    allowPhotoVideo: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return { success: false, error: "Användaren hittades inte." };
+    }
+
+    return {
+      success: true,
+      details: {
+        id: user.id,
+        type: "user",
+        name: user.name,
+        email: user.email,
+        phone: user.details?.phoneNumber ?? null,
+        firstName: user.details?.firstName ?? null,
+        lastName: user.details?.lastName ?? null,
+        address: user.details?.address ?? null,
+        postalCode: user.details?.postalCode ?? null,
+        city: user.details?.city ?? null,
+        dateOfBirth: toIsoString(user.details?.dateOfBirth),
+        bio: user.details?.bio ?? null,
+        bioEn: user.details?.bio_en ?? null,
+        allowPhotoVideo: user.details?.allowPhotoVideo ?? false,
+        createdAt: toIsoString(user.createdAt),
+        updatedAt: toIsoString(user.updatedAt),
+        customer: null,
+        linkedUser: null,
+        addedParticipants: user.addedParticipants.map((participant) => ({
+          id: participant.id,
+          name: participant.name,
+          email: participant.email,
+          phone: participant.phone,
+          allowPhotoVideo: participant.allowPhotoVideo,
+          createdAt: toIsoString(participant.createdAt),
+          updatedAt: toIsoString(participant.updatedAt),
+          linkedUser: mapLinkedUser(participant.user),
+        })),
+      },
+    };
+  } catch (error) {
+    console.error("getAdminStudentDetails error:", error);
+    return { success: false, error: "Kunde inte hämta detaljer." };
+  }
+}
+
 export async function adminUpdatePurchaseRemainingCount(input: {
   purchaseId: string;
   purchaseItemId?: string;

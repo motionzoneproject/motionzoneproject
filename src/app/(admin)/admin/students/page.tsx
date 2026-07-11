@@ -17,6 +17,7 @@ type StudentUserSummary = {
     address: string | null;
     postalCode: string | null;
     city: string | null;
+    allowPhotoVideo: boolean;
   } | null;
 };
 
@@ -96,6 +97,7 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
             address: true;
             postalCode: true;
             city: true;
+            allowPhotoVideo: true;
           };
         };
       };
@@ -434,6 +436,7 @@ export default async function Page({
               address: true,
               postalCode: true,
               city: true,
+              allowPhotoVideo: true,
             },
           },
         },
