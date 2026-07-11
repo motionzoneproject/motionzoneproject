@@ -652,8 +652,8 @@ export default function StudentTableClient({
                 <TableCell className="font-medium">{student.name}</TableCell>
                 <TableCell className="font-medium">
                   <DetailsDialog
-                    id={student.participant?.id ?? student.userId}
-                    isParticipant={!!student.participant}
+                    id={student.participantId ?? student.userId}
+                    isParticipant={!!student.participantId}
                   />
                 </TableCell>
                 <TableCell>{student.customerName ?? "-"}</TableCell>
