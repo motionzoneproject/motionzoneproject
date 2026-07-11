@@ -36,6 +36,7 @@ import {
 import { removeUserFromLesson } from "@/lib/actions/admin";
 import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
 import type { StudentSummary } from "../page";
+import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
 import type { SelectedStudent, StudentsSelectedType } from "./studentSelection";
@@ -627,6 +628,7 @@ export default function StudentTableClient({
                 />
               </TableHead>
               <TableHead>Namn</TableHead>
+              <TableHead>Detaljer</TableHead>
               <TableHead>Köpare</TableHead>
               <TableHead>Kurser</TableHead>
               <TableHead>Terminer</TableHead>
@@ -648,6 +650,12 @@ export default function StudentTableClient({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell className="font-medium">
+                  <DetailsDialog
+                    id={student.participant?.id ?? student.userId}
+                    isParticipant={!!student.participant}
+                  />
+                </TableCell>
                 <TableCell>{student.customerName ?? "-"}</TableCell>
                 <TableCell>
                   <CoursesDialog student={student} />
