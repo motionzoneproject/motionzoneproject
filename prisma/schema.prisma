@@ -448,6 +448,8 @@ model Order {
   status       OrderStatus        @default(PENDING_PAYMENT)
   statusEvents OrderStatusEvent[]
 
+  payMethod Int @default(1) // 1 = Faktura hela beloppet, 2 = 2 delbetalningar, 3 = 3 delbetalningar
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
