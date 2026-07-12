@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { adminSetRole } from "@/lib/actions/user-management";
 import { useSession } from "@/lib/session-provider";
+import { DetailsDialog } from "../students/components/DetailsDialog";
 import BanUserDialog from "./BanUserDialog";
 import EditUserDialog from "./EditUserDialog";
 
@@ -108,6 +109,7 @@ export default function UsersView({
               </th>
               <th className="p-3 text-left font-medium">Roll</th>
               <th className="p-3 text-left font-medium">Status</th>
+              <th className="p-3 text-left font-medium">Alla detaljer</th>
               <th className="p-3 text-left font-medium hidden lg:table-cell">
                 Registrerad
               </th>
@@ -166,6 +168,9 @@ export default function UsersView({
                         Aktiv
                       </Badge>
                     )}
+                  </td>
+                  <td>
+                    <DetailsDialog id={u.id} isParticipant={false} />
                   </td>
                   <td className="p-3 text-muted-foreground hidden lg:table-cell">
                     {new Date(u.createdAt).toLocaleDateString("sv-SE")}
