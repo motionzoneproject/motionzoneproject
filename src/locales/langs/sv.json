@@ -200,6 +200,8 @@
       "thanks": "Tack för din beställning, {{name}}.",
       "orderNumber": "Ordernummer:",
       "status": "Status:",
+      "paymethod": "Betalningsmetod:",
+      "note": "Notering:",
       "date": "Datum:",
       "colProduct": "Produkt",
       "colUnitPrice": "Pris/st",

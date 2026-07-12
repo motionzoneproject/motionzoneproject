@@ -8,6 +8,7 @@ import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel } from "@/lib/order-status";
 import { getOrderById } from "@/lib/orders";
+import { getPayMethodTxt } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 
 export const metadata: Metadata = {
@@ -90,6 +91,22 @@ export default async function Page({
                     <span className="text-foreground">
                       {formatDateToInputStr(order.createdAt)}
                     </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {t.checkout.success.paymethod}
+                    </span>
+                    <span className="text-foreground">
+                      {getPayMethodTxt(order.payMethod, "sv")}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {t.checkout.success.note}
+                    </span>
+                    <span className="text-foreground">{order.note}</span>
                   </div>
                 </CardContent>
               </Card>

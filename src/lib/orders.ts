@@ -15,9 +15,10 @@ export async function createOrder(
     items: OrderItemInput[];
     postalcode?: string;
     note?: string; // optional note to include in first status event
+    paymethod?: number;
   },
 ) {
-  const { userId, items, postalcode, note } = params;
+  const { userId, items, postalcode, note, paymethod } = params;
 
   if (!items || items.length === 0) throw new Error("No items provided");
 
@@ -30,6 +31,8 @@ export async function createOrder(
     data: {
       userId,
       postalcode,
+      note,
+      payMethod: paymethod || 1,
       totalPrice: total,
       // default status is PENDING_PAYMENT per schema
     },

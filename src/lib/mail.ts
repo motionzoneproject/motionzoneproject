@@ -6,6 +6,7 @@ import { formatDateToInputStr, formatLongFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import { getOrderStatusLabel } from "./order-status";
 import { dbToFormTime } from "./time-convert";
+import { getPayMethodTxt } from "./tools";
 
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
@@ -66,6 +67,8 @@ export async function generateOrderConfirmationHtml(order: {
   id: string;
   totalPrice: number;
   status: string;
+  payMethod: number;
+  note: string | null;
   createdAt: Date | string;
   user: { name: string; email: string };
   orderItems: {
@@ -100,6 +103,8 @@ export async function generateOrderConfirmationHtml(order: {
         <p><strong>Ordernummer:</strong> ${order.id}</p>
         <p><strong>Datum:</strong> ${formatDateToInputStr(order.createdAt)}</p>
         <p><strong>Status:</strong> ${getOrderStatusLabel(order.status, { PENDING_PAYMENT: "Inväntar betalning" })}</p>
+        <p><strong>Betalningsmetod:</strong> ${getPayMethodTxt(order.payMethod)}</p>
+        <p><strong>Notering:</strong> ${order.note}</p>
       </div>
 
       <table style="width: 100%; border-collapse: collapse;">

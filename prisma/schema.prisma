@@ -450,6 +450,8 @@ model Order {
 
   payMethod Int @default(1) // 1 = Faktura hela beloppet, 2 = 2 delbetalningar, 3 = 3 delbetalningar
 
+  note String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

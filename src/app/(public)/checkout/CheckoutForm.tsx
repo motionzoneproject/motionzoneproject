@@ -77,6 +77,7 @@ export default function CheckoutForm({
   const { t } = useTranslation();
   const router = useRouter();
   const [note, setNote] = useState("");
+  const [paymethod, setPaymethod] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Expanded items (each qty gets its own slot)
@@ -160,6 +161,7 @@ export default function CheckoutForm({
         items: orderItems,
         postalcode: userDetails?.postalCode || undefined,
         note,
+        paymethod: Number(paymethod),
       });
 
       toast.success(t("checkout.form.orderCreated"));
@@ -347,9 +349,13 @@ export default function CheckoutForm({
 
           <div className="space-y-2 pt-4 border-t">
             <Label htmlFor="paymethod" className="mb-4">
-              {t("checkout.form.method")}
+              {t("checkout.form.method")} ({paymethod})
             </Label>
-            <RadioGroup defaultValue="1" className="w-fit">
+            <RadioGroup
+              defaultValue="1"
+              className="w-fit"
+              onValueChange={(e) => setPaymethod(e)}
+            >
               <Field orientation="horizontal">
                 <RadioGroupItem value="1" id="paymethod-r1" />
                 <FieldContent>

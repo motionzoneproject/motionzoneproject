@@ -72,3 +72,18 @@ export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") => {
       return day; // Returnerar originalsträngen om ingen matchning hittas
   }
 };
+
+export function getPayMethodTxt(n: number, lang: "sv" | "en" = "sv") {
+  if (lang === "sv")
+    return n === 1
+      ? "Faktura, hela beloppet"
+      : n === 2
+        ? "Delbetalning x 2 + 45kr avgift / faktura"
+        : "Delbetalning x 3 + 45kr avgift / faktura";
+  if (lang === "en")
+    return n === 1
+      ? "Invoice, full amount"
+      : n === 2
+        ? "Installments x 2 + 45 SEK fee / invoice"
+        : "Installments x 3 + 45 SEK fee / invoice";
+}

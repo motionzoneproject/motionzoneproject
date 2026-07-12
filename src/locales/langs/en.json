@@ -200,6 +200,8 @@
       "thanks": "Thank you for your order, {{name}}.",
       "orderNumber": "Order number:",
       "status": "Status:",
+      "paymethod": "Payment method:",
+      "note": "Note:",
       "date": "Date:",
       "colProduct": "Product",
       "colUnitPrice": "Unit price",

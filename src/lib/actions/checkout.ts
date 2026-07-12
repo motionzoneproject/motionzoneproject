@@ -18,11 +18,12 @@ export async function createCheckout(params: {
   items: CheckoutItem[];
   postalcode?: string;
   note?: string;
+  paymethod?: number;
 }) {
   const session = await getSessionData();
   if (!session) throw new Error("Unauthorized");
 
-  const { items, postalcode, note } = params;
+  const { items, postalcode, note, paymethod } = params;
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("No items provided");
   }
@@ -111,6 +112,7 @@ export async function createCheckout(params: {
         items: serverItems,
         postalcode,
         note,
+        paymethod,
       });
 
       return order;
