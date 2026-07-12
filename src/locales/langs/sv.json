@@ -184,7 +184,14 @@
       "errorTitle": "Ett fel uppstod",
       "errorGeneric": "Ett fel uppstod",
       "missingNameForProduct": "Ange namn för deltagare på {{name}}",
-      "missingParticipantForProduct": "Välj deltagare för {{name}}"
+      "missingParticipantForProduct": "Välj deltagare för {{name}}",
+      "method": "Betalningsmetod:",
+      "1": "Faktura",
+      "1description": "Hela beloppet",
+      "2": "Delbetalning x 2",
+      "2description": "Två delbetalningar + 45kr avgift / faktura",
+      "3": "Delbetalning x 3",
+      "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
     "success": {
       "metaTitle": "Tack för din beställning",

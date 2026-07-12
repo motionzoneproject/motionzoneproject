@@ -184,7 +184,14 @@
       "errorTitle": "Something went wrong",
       "errorGeneric": "Something went wrong",
       "missingNameForProduct": "Enter a name for the participant on {{name}}",
-      "missingParticipantForProduct": "Select a participant for {{name}}"
+      "missingParticipantForProduct": "Select a participant for {{name}}",
+      "method": "Payment method:",
+      "1": "Invoice",
+      "1description": "Full amount",
+      "2": "Installments x 2",
+      "2description": "Two installments + 45 SEK fee per invoice",
+      "3": "Installments x 3",
+      "3description": "Three installments + 45 SEK fee per invoice"
     },
     "success": {
       "metaTitle": "Thank you for your order",

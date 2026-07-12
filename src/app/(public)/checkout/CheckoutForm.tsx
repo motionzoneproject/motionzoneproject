@@ -13,8 +13,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -336,6 +343,47 @@ export default function CheckoutForm({
                 </div>
               );
             })}
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <Label htmlFor="paymethod" className="mb-4">
+              {t("checkout.form.method")}
+            </Label>
+            <RadioGroup defaultValue="1" className="w-fit">
+              <Field orientation="horizontal">
+                <RadioGroupItem value="1" id="paymethod-r1" />
+                <FieldContent>
+                  <FieldLabel htmlFor="desc-r1">
+                    {t("checkout.form.1")}
+                  </FieldLabel>
+                  <FieldDescription>
+                    {t("checkout.form.1description")}
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+              <Field orientation="horizontal">
+                <RadioGroupItem value="2" id="paymethod-r2" />
+                <FieldContent>
+                  <FieldLabel htmlFor="desc-r2">
+                    {t("checkout.form.2")}
+                  </FieldLabel>
+                  <FieldDescription>
+                    {t("checkout.form.2description")}
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+              <Field orientation="horizontal">
+                <RadioGroupItem value="3" id="paymethod-r3" />
+                <FieldContent>
+                  <FieldLabel htmlFor="desc-r3">
+                    {t("checkout.form.3")}
+                  </FieldLabel>
+                  <FieldDescription>
+                    {t("checkout.form.3description")}
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            </RadioGroup>
           </div>
 
           <div className="space-y-2 pt-4 border-t">
