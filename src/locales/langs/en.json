@@ -162,7 +162,7 @@
     },
     "form": {
       "title": "Complete purchase & Participants",
-      "intro": "Here you can also choose whether a product is for you or for, e.g., a family member by adding participants. Bookings for you and your participants are then made on your profile page. If you buy a course you are automatically booked into upcoming lessons from today's date as far as your clips last.",
+      "intro": "Here you can also choose whether a product is for yourself or, for example, a family member by adding participants. Bookings for you and your participants are then managed on the profile page. If you purchase a course, you will be automatically booked into all the lessons included in the course.",
       "whoAttends": "Who is attending?",
       "myself": "Myself",
       "selectExistingOrNew": "Choose an existing or add a new one",
