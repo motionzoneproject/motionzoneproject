@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
+import { getPayMethodTxt } from "@/lib/tools";
 
 type OrderLite = {
   id: string;
@@ -31,6 +32,8 @@ type OrderLite = {
       }[]
     | null;
   totalPrice: unknown;
+  payMethod: number;
+  note: string | null;
   createdAt: string | Date;
   status?: OrderStatus;
 };
@@ -249,6 +252,9 @@ export default function OrdersView({
               <th className="p-3 text-left font-medium">Produkter</th>
               <th className="p-3 text-left font-medium">Total</th>
               <th className="p-3 text-left font-medium">Status</th>
+              <th className="p-3 text-left font-medium">
+                Betalningsalternativ
+              </th>
               <th className="p-3 text-left font-medium">Detaljer</th>
               <th className="p-3 text-left font-medium">Åtgärder</th>
             </tr>
@@ -345,6 +351,7 @@ export default function OrdersView({
                       {getStatusLabel(o.status || "PENDING_PAYMENT")}
                     </span>
                   </td>
+                  <td className="p-3">{getPayMethodTxt(o.payMethod, "sv")}</td>
                   <td className="p-3">
                     <Link
                       href={createOrderDetailHref(o.id)}

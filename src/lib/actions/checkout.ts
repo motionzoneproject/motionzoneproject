@@ -123,6 +123,9 @@ export async function createCheckout(params: {
   // Try to send confirmation email
   try {
     const fullOrder = await getOrderById(order.id);
+
+    // ev. fix: vi kanske ska skicka en kopia även till motionzone?
+
     if (fullOrder?.user.email) {
       const html = await generateOrderConfirmationHtml(fullOrder);
       await sendMail(
@@ -130,6 +133,25 @@ export async function createCheckout(params: {
         `Orderbekräftelse - Order #${order.id}`,
         html,
       );
+
+      fullOrder.orderItems.map(async (it) => {
+        if (
+          it.participant?.email !== fullOrder.user.email &&
+          it.participant?.email
+        ) {
+          // Här kan vi skicka till deltagaren med? ja.
+
+          const html = await generateOrderConfirmationHtml({
+            ...fullOrder,
+          });
+
+          await sendMail(
+            it.participant?.email,
+            `Orderbekräftelse, kopia till deltagare - Order #${order.id}`,
+            html,
+          );
+        }
+      });
     }
   } catch (emailError) {
     // We don't want to fail the checkout if the email fails, but we should log it

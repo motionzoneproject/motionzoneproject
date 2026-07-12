@@ -12,6 +12,7 @@ import {
 } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
+import { getPayMethodTxt } from "@/lib/tools";
 
 type OrderItemLite = {
   id: string;
@@ -66,6 +67,8 @@ type OrderDetail = {
   status?: OrderStatus;
   orderItems?: OrderItemLite[];
   statusEvents?: StatusEventLite[];
+  payMethod: number;
+  note: string | null;
 };
 
 function calculateAge(dob: string | Date | null | undefined) {
@@ -201,21 +204,35 @@ export default function OrderDetailsClient() {
                 <span className="text-muted-foreground">Totalbelopp:</span>
                 <span className="font-bold text-lg">{formatPrice(total)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Skapad:</span>
-                <span>{formatDateToInputStr(new Date(order.createdAt))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Uppdaterad:</span>
-                <span>{formatDateToInputStr(new Date(order.updatedAt))}</span>
-              </div>
-              <div className="pt-2 border-t">
-                <span className="text-muted-foreground block mb-1">
-                  Order ID:
+              <div className="">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Skapad:</span>
+                  <span>{formatDateToInputStr(new Date(order.createdAt))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Uppdaterad:</span>
+                  <span>{formatDateToInputStr(new Date(order.updatedAt))}</span>
+                </div>
+                <div className="pt-2 border-t">
+                  <span className="text-muted-foreground block mb-1">
+                    Order ID:
+                  </span>
+                  <code className="text-[10px] bg-muted p-1 rounded block break-all mb-2">
+                    {order.id}
+                  </code>
+                </div>
+                <span className="text-muted-foreground mb-3">
+                  Betalningsalternativ:
                 </span>
-                <code className="text-[10px] bg-muted p-1 rounded block break-all">
-                  {order.id}
-                </code>
+                <br />
+                <span className="font-bold text-sm">
+                  {getPayMethodTxt(order.payMethod, "sv")}
+                </span>
+              </div>
+              <div className="">
+                <span className="text-muted-foreground mb-3">Notering:</span>
+                <br />
+                <span className="text-sm">{order.note}</span>
               </div>
             </div>
           </div>

@@ -73,6 +73,7 @@ export async function generateOrderConfirmationHtml(order: {
   user: { name: string; email: string };
   orderItems: {
     product: { name: string };
+    participant?: { name: string } | null;
     count: number;
     price: number;
   }[];
@@ -83,7 +84,7 @@ export async function generateOrderConfirmationHtml(order: {
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${
         item.product.name
-      }</td>
+      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.count
       }</td>
