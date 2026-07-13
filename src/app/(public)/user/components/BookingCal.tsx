@@ -29,6 +29,7 @@ import {
   formatFriendlyDateTime,
 } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
+import { dbToFormTime } from "@/lib/time-convert";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
 import BookBtn from "./BookBtn";
@@ -274,7 +275,8 @@ export default function BookingCal({
                   >
                     <div className="flex-1 min-w-0 pr-3">
                       <p className="font-semibold">
-                        {formatFriendlyDateTime(lesson.startTime, dateLocale)}
+                        {formatFriendlyDateTime(lesson.startTime, dateLocale)} -{" "}
+                        {dbToFormTime(lesson.endTime)}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {pick(lesson.course, "name", lang) as string}{" "}
