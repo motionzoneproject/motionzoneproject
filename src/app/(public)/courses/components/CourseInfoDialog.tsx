@@ -110,9 +110,6 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
               )}
               <div className="space-y-1">
                 <p>{course.teacher.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {course.teacher.email}
-                </p>
                 {course.teacher.teacherProfile?.description && (
                   <p className="text-muted-foreground whitespace-pre-line mt-1 leading-relaxed">
                     {
