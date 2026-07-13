@@ -18,6 +18,7 @@ type StudentUserSummary = {
     address: string | null;
     postalCode: string | null;
     city: string | null;
+    allowPhotoVideo: boolean;
   } | null;
 };
 
@@ -97,6 +98,7 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
             address: true;
             postalCode: true;
             city: true;
+            allowPhotoVideo: true;
           };
         };
       };
@@ -107,6 +109,7 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
         name: true;
         email: true;
         phone: true;
+        userId: true;
         allowPhotoVideo: true;
         addedBy: {
           select: {
@@ -177,32 +180,34 @@ function buildStudentSummaries(
   >();
 
   for (const purchase of purchasesWithData) {
-    const studentKey = purchase.participantId
-      ? `participant:${purchase.participantId}`
+    const participant =
+      purchase.participant?.userId === purchase.userId
+        ? null
+        : purchase.participant;
+    const studentKey = participant
+      ? `participant:${participant.id}`
       : `user:${purchase.userId}`;
 
     const existing = studentMap.get(studentKey) ?? {
       studentKey,
       userId: purchase.user.id,
-      participantId: purchase.participant?.id ?? null,
-      name: purchase.participant?.name ?? purchase.user.name,
-      customerName: purchase.participant
-        ? purchase.participant.addedBy.name
-        : null,
+      participantId: participant?.id ?? null,
+      name: participant?.name ?? purchase.user.name,
+      customerName: participant ? participant.addedBy.name : null,
       user: {
         id: purchase.user.id,
         name: purchase.user.name,
         email: purchase.user.email,
         details: purchase.user.details,
       },
-      participant: purchase.participant
+      participant: participant
         ? {
-            id: purchase.participant.id,
-            name: purchase.participant.name,
-            email: purchase.participant.email,
-            phone: purchase.participant.phone,
-            allowPhotoVideo: purchase.participant.allowPhotoVideo,
-            addedBy: purchase.participant.addedBy,
+            id: participant.id,
+            name: participant.name,
+            email: participant.email,
+            phone: participant.phone,
+            allowPhotoVideo: participant.allowPhotoVideo,
+            addedBy: participant.addedBy,
           }
         : null,
       courses: [],
@@ -432,6 +437,7 @@ export default async function Page({
               address: true,
               postalCode: true,
               city: true,
+              allowPhotoVideo: true,
             },
           },
         },
@@ -442,6 +448,7 @@ export default async function Page({
           name: true,
           email: true,
           phone: true,
+          userId: true,
           allowPhotoVideo: true,
           addedBy: {
             select: {
