@@ -169,6 +169,7 @@
       "selectPlaceholder": "Välj deltagare",
       "newPerson": "+ Ny person",
       "name": "Namn*",
+      "dateOfBirth": "Födelsedatum",
       "namePlaceholder": "Fullständigt namn",
       "emailOptional": "E-post (valfri)",
       "emailPlaceholder": "epost@exempel.se",

@@ -169,6 +169,7 @@
       "selectPlaceholder": "Select participant",
       "newPerson": "+ New person",
       "name": "Name*",
+      "dateOfBirth": "Date of birth",
       "namePlaceholder": "Full name",
       "emailOptional": "Email (optional)",
       "emailPlaceholder": "email@example.com",

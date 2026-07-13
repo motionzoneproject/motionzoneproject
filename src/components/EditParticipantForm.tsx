@@ -26,11 +26,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { updateParticipant } from "@/lib/actions/participants";
+import { formatDateToInputStr } from "@/lib/date-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Namn måste vara minst 2 tecken"),
   email: z.string().email("Ogiltig e-post").or(z.literal("")),
   phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
   allowPhotoVideo: z.boolean(),
 });
 
@@ -38,8 +40,9 @@ interface EditParticipantFormProps {
   participant: {
     id: string;
     name: string;
-    email: string | null;
-    phone: string | null;
+    email?: string | null;
+    phone?: string | null;
+    dateOfBirth?: Date | string | null;
     allowPhotoVideo: boolean;
   };
 }
@@ -56,6 +59,7 @@ export default function EditParticipantForm({
       name: participant.name,
       email: participant.email || "",
       phone: participant.phone || "",
+      dateOfBirth: formatDateToInputStr(participant.dateOfBirth),
       allowPhotoVideo: participant.allowPhotoVideo,
     },
   });
@@ -67,6 +71,7 @@ export default function EditParticipantForm({
       name: participant.name,
       email: participant.email || "",
       phone: participant.phone || "",
+      dateOfBirth: formatDateToInputStr(participant.dateOfBirth),
       allowPhotoVideo: participant.allowPhotoVideo,
     });
   }, [
@@ -75,6 +80,7 @@ export default function EditParticipantForm({
     participant.name,
     participant.email,
     participant.phone,
+    participant.dateOfBirth,
     participant.allowPhotoVideo,
   ]);
 
@@ -82,6 +88,7 @@ export default function EditParticipantForm({
     try {
       await updateParticipant(participant.id, {
         ...values,
+        dateOfBirth: values.dateOfBirth || undefined,
         email: values.email || undefined,
       });
       toast.success("Deltagare uppdaterad!");
@@ -142,6 +149,19 @@ export default function EditParticipantForm({
                   <FormLabel>Telefon (valfri)</FormLabel>
                   <FormControl>
                     <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Födelsedatum (valfri)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="date" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
