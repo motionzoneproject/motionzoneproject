@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMyParticipants } from "@/lib/actions/participants";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { readCart } from "@/lib/cart";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
 import { getDictionary } from "@/locales/get-dictionary";
@@ -61,7 +62,15 @@ export default async function Page() {
         email: session.user.email,
       },
       userDetails,
-      existingParticipants,
+      existingParticipants: existingParticipants.map((p) => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        dateOfBirth: p.dateOfBirth ? formatDateToInputStr(p.dateOfBirth) : null,
+        allowPhotoVideo: p.allowPhotoVideo,
+        userId: p.userId,
+      })),
     };
   }
 
