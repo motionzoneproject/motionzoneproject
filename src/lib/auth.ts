@@ -36,6 +36,10 @@ export const auth = betterAuth({
   },
   plugins: [adminPlugin()],
   user: {
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: true,
+    },
     additionalFields: {
       role: {
         type: "string",

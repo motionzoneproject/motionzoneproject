@@ -37,6 +37,11 @@ export const AdminEditUserSchema = z.object({
   city: z.string().trim().min(1, "Ort krävs").or(z.literal("")),
 });
 
+export const UserEmailSchema = z.object({
+  currentEmail: z.email("Ogiltig e-postadress").max(250),
+  email: z.email("Ogiltig e-postadress").max(250),
+});
+
 export const UserPasswordSchema = z
   .object({
     oldPassword: z

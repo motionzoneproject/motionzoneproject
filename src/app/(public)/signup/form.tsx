@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { signUpWithDetails } from "@/lib/actions/auth";
+import { signUpWithDetails } from "@/lib/actions/auth-actions";
 import { authClient } from "@/lib/auth-client";
 import { SignUpFormSchema } from "@/validations/betterauthforms";
 

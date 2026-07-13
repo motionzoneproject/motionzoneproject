@@ -35,6 +35,7 @@ import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
 import { DelBookBtn } from "./components/DelBookBtn";
 import { EditDetailsForm } from "./components/EditDetailsForm";
+import { EditEmailForm } from "./components/EditEmailForm";
 import { EditPwForm } from "./components/EditPwForm";
 import OrderHistory from "./components/OrderHistory";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
@@ -394,6 +395,7 @@ export default async function Page() {
             <div className="my-4 md:flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
               {userDetails && <EditDetailsForm details={userDetails} />}
               <EditPwForm />
+              <EditEmailForm />
               {user?.role === "admin" && userWithTeacherProfile && (
                 <TeacherProfileDialog user={userWithTeacherProfile} />
               )}
