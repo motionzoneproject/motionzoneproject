@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
@@ -8,9 +9,9 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 // TODO: customer to fill in real legal entity name and org number below.
-const COMPANY = "Motion Zone Växjö AB (org.nr ÅÅÅÅÅÅ-ÅÅÅÅ)";
+const COMPANY = "Motion Zone Växjö AB (org.nr 559528-5148)";
 // TODO: customer to confirm contact email used for data subject requests.
-const CONTACT_EMAIL = "info@motionzonevaxjo.se";
+const CONTACT_EMAIL = "motionzonevaxjo@gmail.com";
 
 const integritetspolicySv = `
 <h2>Integritetspolicy</h2>

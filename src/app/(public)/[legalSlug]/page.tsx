@@ -10,7 +10,10 @@ import { getDictionary } from "@/locales/get-dictionary";
 
 const LEGAL_SLUGS = ["integritetspolicy", "cookiepolicy", "kopvillkor"];
 
-const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+const SITE_URL =
+  typeof window !== "undefined"
+    ? window.location.origin
+    : (process.env.SITE_URL ?? "http://localhost:3000");
 
 type Props = {
   params: Promise<{ legalSlug: string }>;
@@ -59,6 +62,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LegalPage({ params }: Props) {
   const { legalSlug } = await params;
+
+  console.log(`slug:${legalSlug}${LEGAL_SLUGS.includes(legalSlug)}`);
 
   if (!LEGAL_SLUGS.includes(legalSlug)) {
     notFound();
