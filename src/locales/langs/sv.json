@@ -162,7 +162,7 @@
     },
     "form": {
       "title": "Slutför köp & Deltagare",
-      "intro": "Här kan du också välja om en produkt är till dig eller t.ex en familjemedlem genom att lägga till deltagare. Bokningar för dig och dina deltagare sker sedan på profilsidan. Om du köper en kurs så bokas du automatiskt på kommande lektioner från dagens datum så långt klippen räcker.",
+      "intro": "Här kan du också välja om en produkt är till dig eller till exempel en familjemedlem genom att lägga till deltagare. Bokningar för dig och dina deltagare hanteras sedan på profilsidan. Om du köper en kurs bokas du automatiskt in på samtliga lektioner som ingår i kursen.",
       "whoAttends": "Vilka ska delta?",
       "myself": "Jag själv",
       "selectExistingOrNew": "Välj befintlig eller lägg till ny",
