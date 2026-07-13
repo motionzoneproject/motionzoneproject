@@ -6,6 +6,7 @@ import { formatDateToInputStr, formatLongFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import { getOrderStatusLabel } from "./order-status";
 import { dbToFormTime } from "./time-convert";
+import { getPayMethodTxt } from "./tools";
 
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
@@ -66,10 +67,13 @@ export async function generateOrderConfirmationHtml(order: {
   id: string;
   totalPrice: number;
   status: string;
+  payMethod: number;
+  note: string | null;
   createdAt: Date | string;
   user: { name: string; email: string };
   orderItems: {
     product: { name: string };
+    participant?: { name: string } | null;
     count: number;
     price: number;
   }[];
@@ -80,7 +84,7 @@ export async function generateOrderConfirmationHtml(order: {
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${
         item.product.name
-      }</td>
+      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.count
       }</td>
@@ -100,6 +104,8 @@ export async function generateOrderConfirmationHtml(order: {
         <p><strong>Ordernummer:</strong> ${order.id}</p>
         <p><strong>Datum:</strong> ${formatDateToInputStr(order.createdAt)}</p>
         <p><strong>Status:</strong> ${getOrderStatusLabel(order.status, { PENDING_PAYMENT: "Inväntar betalning" })}</p>
+        <p><strong>Betalningsmetod:</strong> ${getPayMethodTxt(order.payMethod)}</p>
+        <p><strong>Notering:</strong> ${order.note}</p>
       </div>
 
       <table style="width: 100%; border-collapse: collapse;">

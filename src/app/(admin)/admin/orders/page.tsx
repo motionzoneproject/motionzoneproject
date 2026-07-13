@@ -40,6 +40,8 @@ type OrderLite = {
   totalPrice: unknown;
   createdAt: string | Date;
   status?: OrderStatus;
+  payMethod: number;
+  note: string | null;
 };
 
 async function getOrders(): Promise<OrderLite[]> {
