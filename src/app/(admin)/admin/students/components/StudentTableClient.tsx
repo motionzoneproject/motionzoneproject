@@ -218,8 +218,8 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
               <div className="space-y-1 text-sm">
                 <div className="font-medium">{booking.courseName}</div>
                 <div className="text-muted-foreground">
-                  {formatFriendlyDateTime(new Date(booking.startTime))} -{" "}
-                  {dbToFormTime(new Date(booking.endTime))}
+                  {formatFriendlyDateTime(booking.startTime, "sv-SE")} -{" "}
+                  {dbToFormTime(booking.endTime)}
                 </div>
               </div>
               <Button

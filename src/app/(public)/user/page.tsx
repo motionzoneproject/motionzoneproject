@@ -30,6 +30,7 @@ import { getSessionData } from "@/lib/actions/sessiondata";
 import { formatFriendlyDateTime } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
+import { dbToFormTime } from "@/lib/time-convert";
 import { getDictionary } from "@/locales/get-dictionary";
 import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
@@ -239,7 +240,8 @@ export default async function Page() {
                                             {formatFriendlyDateTime(
                                               b.lesson.startTime,
                                               dateLocale,
-                                            )}
+                                            )}{" "}
+                                            - {dbToFormTime(b.lesson.endTime)}
                                           </p>
                                         </div>
 

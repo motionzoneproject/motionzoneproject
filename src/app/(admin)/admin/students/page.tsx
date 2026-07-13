@@ -40,8 +40,8 @@ type StudentBookingSummary = {
   lessonId: string;
   purchaseItemId: string;
   courseName: string;
-  startTime: string;
-  endTime: string;
+  startTime: Date;
+  endTime: Date;
 };
 
 type StudentPurchaseItemSummary = {
@@ -236,8 +236,8 @@ function buildStudentSummaries(
             lessonId: booking.lessonId,
             purchaseItemId: item.id,
             courseName: item.course.name,
-            startTime: formatDateToInputStr(booking.lesson.startTime),
-            endTime: formatDateToInputStr(booking.lesson.endTime),
+            startTime: booking.lesson.startTime,
+            endTime: booking.lesson.endTime,
           });
         }
 
@@ -272,7 +272,9 @@ function buildStudentSummaries(
         a.name.localeCompare(b.name, "sv"),
       ),
       bookings: Array.from(bookingMap.values()).sort((a, b) =>
-        a.startTime.localeCompare(b.startTime),
+        formatDateToInputStr(a.startTime).localeCompare(
+          formatDateToInputStr(b.startTime),
+        ),
       ),
       purchases: student.purchases.sort((a, b) =>
         a.product.name.localeCompare(b.product.name, "sv"),
