@@ -35,6 +35,7 @@ import {
   getOrCreateParticipant,
   type ParticipantData,
 } from "@/lib/actions/participants";
+import { formatDateToInputStr } from "@/lib/date-utils";
 
 type CheckoutFormProps = {
   items: {
@@ -57,6 +58,7 @@ type CheckoutFormProps = {
     name: string;
     email?: string | null;
     phone?: string | null;
+    dateOfBirth?: string | null;
     allowPhotoVideo: boolean;
     userId?: string | null;
   }[];
@@ -139,6 +141,18 @@ export default function CheckoutForm({
             setIsSubmitting(false);
             return;
           }
+
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (
+            !slot.customData.dateOfBirth ||
+            !dateRegex.test(slot.customData.dateOfBirth) ||
+            Number.isNaN(new Date(slot.customData.dateOfBirth).getTime())
+          ) {
+            throw new Error(
+              `Ogiltigt eller saknat födelsedatum för deltagare till ${it.name}.`,
+            );
+          }
+
           const p = await getOrCreateParticipant(slot.customData);
           participantId = p.id;
         } else {
@@ -264,6 +278,10 @@ export default function CheckoutForm({
                                     name: e.target.value,
                                     email: slot.customData?.email || "",
                                     phone: slot.customData?.phone || "",
+                                    dateOfBirth:
+                                      formatDateToInputStr(
+                                        slot.customData?.dateOfBirth,
+                                      ) || "",
                                     allowPhotoVideo:
                                       slot.customData?.allowPhotoVideo || false,
                                   },
@@ -286,6 +304,10 @@ export default function CheckoutForm({
                                     name: slot.customData?.name || "",
                                     email: e.target.value,
                                     phone: slot.customData?.phone || "",
+                                    dateOfBirth:
+                                      formatDateToInputStr(
+                                        slot.customData?.dateOfBirth,
+                                      ) || "",
                                     allowPhotoVideo:
                                       slot.customData?.allowPhotoVideo || false,
                                   },
@@ -306,7 +328,38 @@ export default function CheckoutForm({
                                   customData: {
                                     name: slot.customData?.name || "",
                                     email: slot.customData?.email || "",
+                                    dateOfBirth:
+                                      formatDateToInputStr(
+                                        slot.customData?.dateOfBirth,
+                                      ) || "",
                                     phone: e.target.value,
+                                    allowPhotoVideo:
+                                      slot.customData?.allowPhotoVideo || false,
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label
+                              className="text-xs"
+                              htmlFor={`dateOfBirth-${key}`}
+                            >
+                              {t("checkout.form.dateOfBirth")}
+                            </Label>
+                            <Input
+                              id={`dateOfBirth-${key}`}
+                              type="date"
+                              value={slot.customData?.dateOfBirth || ""}
+                              onChange={(e) =>
+                                updateSlot(key, {
+                                  customData: {
+                                    name: slot.customData?.name || "",
+                                    email: slot.customData?.email || "",
+                                    dateOfBirth:
+                                      formatDateToInputStr(e.target.value) ||
+                                      "",
+                                    phone: slot.customData?.phone,
                                     allowPhotoVideo:
                                       slot.customData?.allowPhotoVideo || false,
                                   },
@@ -325,6 +378,10 @@ export default function CheckoutForm({
                                   customData: {
                                     name: slot.customData?.name || "",
                                     email: slot.customData?.email || "",
+                                    dateOfBirth:
+                                      formatDateToInputStr(
+                                        slot.customData?.dateOfBirth,
+                                      ) || "",
                                     phone: slot.customData?.phone || "",
                                     allowPhotoVideo: !!val,
                                   },

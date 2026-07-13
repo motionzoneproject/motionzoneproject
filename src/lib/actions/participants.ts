@@ -1,12 +1,14 @@
 "use server";
 
 import prisma from "../prisma";
+import { formToDbDate } from "../time-convert";
 import { getSessionData } from "./sessiondata";
 
 export type ParticipantData = {
   name: string;
   email?: string;
   phone?: string;
+  dateOfBirth?: string;
   allowPhotoVideo: boolean;
   userId?: string;
 };
@@ -52,6 +54,7 @@ export async function getOrCreateParticipant(data: ParticipantData) {
       name: data.name,
       email: data.email,
       phone: data.phone,
+      dateOfBirth: formToDbDate(data.dateOfBirth || ""),
       allowPhotoVideo: data.allowPhotoVideo,
       userId: userId,
       addedByUserId: session.user.id,
