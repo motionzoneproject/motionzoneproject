@@ -549,6 +549,8 @@ model Participant {
   addedByUserId String
   addedBy       User   @relation("AddedParticipants", fields: [addedByUserId], references: [id])
 
+  dateOfBirth     DateTime?
+
   orderItems OrderItem[]
   purchases  Purchase[]
 
