@@ -1,5 +1,6 @@
 "use server";
 
+import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
@@ -111,6 +112,7 @@ export async function createPurchaseFromOrder(orderId: string) {
       include: {
         orderItems: {
           include: {
+            participant: true,
             product: {
               include: {
                 courses: true,
@@ -118,6 +120,7 @@ export async function createPurchaseFromOrder(orderId: string) {
             },
           },
         },
+        user: true,
       },
     });
 
@@ -175,6 +178,31 @@ export async function createPurchaseFromOrder(orderId: string) {
       }
 
       purchaseResults.push(purchase.id);
+    }
+
+    // Skicka ett "Godkänd order"-mail
+    try {
+      const emails = new Set<string>();
+      if (order.user.email) {
+        emails.add(order.user.email);
+      }
+      for (const item of order.orderItems) {
+        if (item.participant?.email) {
+          emails.add(item.participant.email);
+        }
+      }
+
+      for (const email of emails) {
+        const mailHTML = await generateOrderApprovedHtml(order);
+        await sendMail(
+          email,
+          `Din order är godkänd - Order #${order.id}`,
+          mailHTML,
+        );
+      }
+    } catch (emailError) {
+      // Logga felet men låt inte transaktionen misslyckas p.g.a. mailproblem
+      console.error("Kunde inte skicka godkännandemail för order:", emailError);
     }
 
     return {
