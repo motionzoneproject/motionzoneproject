@@ -58,12 +58,7 @@ export async function sendMail(
   }
 }
 
-/**
- * Generates an HTML template for order confirmation.
- * @param order The order data (with user and orderItems)
- * @returns HTML string
- */
-export async function generateOrderConfirmationHtml(order: {
+type OrderForEmail = {
   id: string;
   totalPrice: number;
   status: string;
@@ -77,7 +72,14 @@ export async function generateOrderConfirmationHtml(order: {
     count: number;
     price: number;
   }[];
-}) {
+};
+
+/**
+ * Generates an HTML template for order confirmation.
+ * @param order The order data (with user and orderItems)
+ * @returns HTML string
+ */
+export async function generateOrderConfirmationHtml(order: OrderForEmail) {
   const itemsHtml = order.orderItems
     .map(
       (item) => `
@@ -129,6 +131,70 @@ export async function generateOrderConfirmationHtml(order: {
 
       <p style="margin-top: 20px;">
         Om du har några frågor om din beställning, är du välkommen att kontakta oss på <a href="mailto:motionzonevaxjo@gmail.com">motionzonevaxjo@gmail.com</a>.
+      </p>
+
+      <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;" />
+      <p style="font-size: 12px; color: #888; text-align: center;">
+        Detta är ett automatiskt mejl. Du behöver inte svara på det.
+      </p>
+    </div>
+  `;
+}
+
+/**
+ * Generates an HTML template for an approved order.
+ * @param order The order data (with user and orderItems)
+ * @returns HTML string
+ */
+export async function generateOrderApprovedHtml(order: OrderForEmail) {
+  const itemsHtml = order.orderItems
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${
+        item.product.name
+      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
+        item.count
+      }</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatPrice(item.price)}</td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  return `
+    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+      <h2 style="color: #4CAF50; text-align: center;">Din order är godkänd!</h2>
+      <p>Goda nyheter! Din order <strong>#${order.id}</strong> har blivit godkänd och produkterna är nu skapade!</p>
+      Logga in på webbsidan med kontot ${order.user.email}, och gå till profil-sidan för att hantera bokningar och se dina köpta produkter.
+     <p><strong>Varmt välkommen! 🕺💃</strong></p>
+      
+
+      <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Ordersammanfattning</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background-color: #eee;">
+            <th style="padding: 10px; text-align: left;">Produkt</th>
+            <th style="padding: 10px; text-align: center;">Antal</th>
+            <th style="padding: 10px; text-align: right;">Pris</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold;">Totalt:</td>
+            <td style="padding: 10px; text-align: right; font-weight: bold; color: #ed212d;">${formatPrice(order.totalPrice)}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <p style="margin-top: 20px;">
+        Om du har några frågor, är du välkommen att kontakta oss på <a href="mailto:motionzonevaxjo@gmail.com">motionzonevaxjo@gmail.com</a>.
       </p>
 
       <p>Med vänliga hälsningar,<br/>Motion Zone Teamet</p>
