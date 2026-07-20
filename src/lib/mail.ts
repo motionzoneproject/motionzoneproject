@@ -168,9 +168,10 @@ export async function generateOrderApprovedHtml(order: OrderForEmail) {
   return `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
       <h2 style="color: #4CAF50; text-align: center;">Din order är godkänd!</h2>
-      <p>Hej ${order.user.name || "Kunde"},</p>
-      <p>Goda nyheter! Din order med nummer <strong>${order.id}</strong> har blivit godkänd.</p>
-      <p>Du kan nu logga in på din profilsida för att se dina köpta produkter och hantera dina bokningar. Klicka på knappen nedan för att komma direkt till din profil.</p>
+      <p>Goda nyheter! Din order <strong>#${order.id}</strong> har blivit godkänd och produkterna är nu skapade!</p>
+      Logga in på webbsidan med kontot ${order.user.email}, och gå till profil-sidan för att hantera bokningar och se dina köpta produkter.
+     <p><strong>Varmt välkommen! 🕺💃</strong></p>
+      
 
       <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Ordersammanfattning</h3>
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
