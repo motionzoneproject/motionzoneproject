@@ -36,6 +36,13 @@ export function formatDateToInputStr(date: unknown): string {
   }
 
   if (typeof date === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    const parsedDate = new Date(date);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return formatDateToInputStr(parsedDate);
+    }
     return date;
   }
 

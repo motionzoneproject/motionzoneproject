@@ -33,6 +33,9 @@ export const AdminEditUserSchema = z.object({
     .min(5, "Ogiltigt telefonnummer")
     .or(z.literal("")),
   address: z.string().trim().min(5, "Adressen är för kort").or(z.literal("")),
+  dateOfBirth: z
+    .string()
+    .regex(/^$|^\d{4}-\d{2}-\d{2}$/, "Ogiltigt datum (ÅÅÅÅ-MM-DD)"),
   postalCode: z.string().trim().min(5, "Ogiltigt postnummer").or(z.literal("")),
   city: z.string().trim().min(1, "Ort krävs").or(z.literal("")),
 });

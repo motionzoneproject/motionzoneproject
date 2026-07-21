@@ -100,6 +100,9 @@ export async function updateParticipant(
       phone: data.phone,
       allowPhotoVideo: data.allowPhotoVideo,
       userId: userId !== undefined ? userId : undefined,
+      dateOfBirth: data.dateOfBirth
+        ? formToDbDate(data.dateOfBirth)
+        : undefined,
     },
   });
 }

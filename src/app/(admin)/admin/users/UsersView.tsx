@@ -15,31 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminSetRole } from "@/lib/actions/user-management";
+import { adminSetRole, type UserRow } from "@/lib/actions/user-management";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { DetailsDialog } from "../students/components/DetailsDialog";
+import StudentUserEditDialog from "../students/components/StudentUserEditDialog";
 import BanUserDialog from "./BanUserDialog";
-import EditUserDialog from "./EditUserDialog";
-
-type UserRow = {
-  id: string;
-  name: string;
-  email: string;
-  role: string | null;
-  banned: boolean | null;
-  banReason: string | null;
-  banExpires: string | null;
-  createdAt: string;
-  details: {
-    firstName: string | null;
-    lastName: string | null;
-    phoneNumber: string | null;
-    address: string | null;
-    postalCode: string | null;
-    city: string | null;
-  } | null;
-};
 
 export default function UsersView({
   users,
@@ -178,7 +159,7 @@ export default function UsersView({
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <EditUserDialog user={u} />
+                      <StudentUserEditDialog user={u} />
                       {!isSelf(u.id) && (
                         <BanUserDialog
                           userId={u.id}
