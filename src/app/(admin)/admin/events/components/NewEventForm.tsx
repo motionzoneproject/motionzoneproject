@@ -9,6 +9,7 @@ import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,7 +23,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { addNewEvent } from "@/lib/actions/admin";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { uploadImageFromBlob } from "@/lib/uploads";
@@ -127,7 +127,11 @@ export default function NewEventForm({ onSuccess, initialLang = "sv" }: Props) {
                 <FormItem>
                   <FormLabel>Beskrivning ({formLang})</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <RichTextEditor
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Skriv eventbeskrivning..."
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -9,6 +9,7 @@ import { toast } from "sonner"; // Assuming you use sonner for toasts
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Assuming you have a Textarea component
 import {
   createTeacher,
   type TeacherWithProfile,
@@ -228,11 +228,10 @@ export function TeacherForm({
               <FormItem>
                 <FormLabel>Beskrivning ({formLang})</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Längre beskrivning om läraren..."
-                    className="min-h-[120px]"
-                    {...field}
+                  <RichTextEditor
                     value={field.value || ""}
+                    onChange={field.onChange}
+                    placeholder="Skriv lärarens biografi..."
                   />
                 </FormControl>
                 <FormMessage />
