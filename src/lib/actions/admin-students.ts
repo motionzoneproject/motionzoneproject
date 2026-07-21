@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { formatDateToInputStr } from "../date-utils";
 import { isAdminRole } from "./admin";
 
 type AdminStudentLinkedUser = {
@@ -25,6 +26,7 @@ type AdminStudentAddedParticipant = {
   name: string;
   email: string | null;
   phone: string | null;
+  dateOfBirth?: string | null;
   allowPhotoVideo: boolean;
   createdAt: string | null;
   updatedAt: string | null;
@@ -58,7 +60,7 @@ export type AdminStudentDetails = {
 };
 
 function toIsoString(value: Date | null | undefined) {
-  return value ? value.toISOString() : null;
+  return value ? formatDateToInputStr(value) : null;
 }
 
 function mapLinkedUser(
@@ -92,7 +94,7 @@ function mapLinkedUser(
     address: user.details?.address ?? null,
     postalCode: user.details?.postalCode ?? null,
     city: user.details?.city ?? null,
-    dateOfBirth: toIsoString(user.details?.dateOfBirth),
+    dateOfBirth: formatDateToInputStr(user.details?.dateOfBirth),
     bio: user.details?.bio ?? null,
     bioEn: user.details?.bio_en ?? null,
     allowPhotoVideo: user.details?.allowPhotoVideo ?? null,
@@ -109,6 +111,8 @@ export async function getAdminStudentDetails(input: {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, error: "Ingen behörighet." };
 
+  console.log("Running...");
+
   try {
     if (input.isParticipant) {
       const participant = await prisma.participant.findUnique({
@@ -121,6 +125,7 @@ export async function getAdminStudentDetails(input: {
           allowPhotoVideo: true,
           createdAt: true,
           updatedAt: true,
+          dateOfBirth: true,
           addedBy: {
             select: {
               id: true,
@@ -156,6 +161,11 @@ export async function getAdminStudentDetails(input: {
         return { success: false, error: "Deltagaren hittades inte." };
       }
 
+      console.log(
+        "Particpant dateOfBirth: " +
+          formatDateToInputStr(participant.dateOfBirth),
+      );
+
       return {
         success: true,
         details: {
@@ -169,7 +179,9 @@ export async function getAdminStudentDetails(input: {
           address: null,
           postalCode: null,
           city: null,
-          dateOfBirth: null,
+          dateOfBirth: participant.dateOfBirth
+            ? formatDateToInputStr(participant.dateOfBirth)
+            : null,
           bio: null,
           bioEn: null,
           allowPhotoVideo: participant.allowPhotoVideo,
@@ -212,6 +224,7 @@ export async function getAdminStudentDetails(input: {
             email: true,
             phone: true,
             allowPhotoVideo: true,
+            dateOfBirth: true,
             createdAt: true,
             updatedAt: true,
             user: {
@@ -271,6 +284,7 @@ export async function getAdminStudentDetails(input: {
           email: participant.email,
           phone: participant.phone,
           allowPhotoVideo: participant.allowPhotoVideo,
+          dateOfBirth: toIsoString(participant.dateOfBirth),
           createdAt: toIsoString(participant.createdAt),
           updatedAt: toIsoString(participant.updatedAt),
           linkedUser: mapLinkedUser(participant.user),

@@ -3,6 +3,12 @@
 import { List } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import type { AdminStudentDetails } from "@/lib/actions/admin-students";
 import { getAdminStudentDetails } from "@/lib/actions/admin-students";
+import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 
 interface Props {
   id: string;
@@ -75,12 +82,14 @@ function OptionalDateRow({
   label,
   value,
   includeTime = false,
+  optional = true,
 }: {
   label: string;
   value: string | null | undefined;
   includeTime?: boolean;
+  optional?: boolean;
 }) {
-  if (!value) return null;
+  if (!value && optional) return null;
   return <DetailRow label={label} value={formatDate(value, includeTime)} />;
 }
 
@@ -105,7 +114,7 @@ function LinkedUserDetails({
   user: NonNullable<AdminStudentDetails["linkedUser"]>;
 }) {
   return (
-    <DetailSection title="Kopplad användare">
+    <DetailSection title="Kopplad användare (köpare)">
       <DetailRow label="Namn" value={user.name} />
       <DetailRow label="E-post" value={user.email} />
       <OptionalTextRow label="Förnamn" value={user.firstName} />
@@ -143,6 +152,16 @@ function ParticipantCard({
           label="Tillåter bilder/filmer"
           value={<ConsentBadge value={participant.allowPhotoVideo} />}
         />
+        {participant.dateOfBirth ? (
+          <OptionalTextRow
+            label="Födelsedatum"
+            value={`${formatDateToInputStr(participant.dateOfBirth)} (${calculateAge(
+              participant.dateOfBirth,
+            )} år)`}
+          />
+        ) : (
+          ""
+        )}
         <OptionalDateRow
           label="Skapad"
           value={participant.createdAt}
@@ -154,9 +173,6 @@ function ParticipantCard({
           includeTime
         />
       </div>
-      {participant.linkedUser ? (
-        <LinkedUserDetails user={participant.linkedUser} />
-      ) : null}
     </div>
   );
 }
@@ -167,16 +183,34 @@ function AddedParticipantsList({
   participants: AdminStudentDetails["addedParticipants"];
 }) {
   return (
-    <DetailSection title="Tillagda deltagare">
-      {participants.length > 0 ? (
-        participants.map((participant) => (
-          <ParticipantCard key={participant.id} participant={participant} />
-        ))
-      ) : (
-        <div className="text-muted-foreground text-sm">
-          Användaren har inte lagt till några deltagare.
-        </div>
-      )}
+    <DetailSection title={`Tillagda deltagare ( ${participants.length} st )`}>
+      <Accordion type="single" collapsible>
+        {participants.length > 0 ? (
+          participants.map((participant) => {
+            return (
+              <AccordionItem
+                value={participant.id}
+                className="gap-1 rounded border bg-muted/20 p-1 "
+                key={participant.id}
+              >
+                <AccordionTrigger className="text-sm hover:no-underline hover:font-bold">
+                  👤 {participant.name}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ParticipantCard
+                    key={participant.id}
+                    participant={participant}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })
+        ) : (
+          <div className="text-muted-foreground text-sm">
+            Användaren har inte lagt till några deltagare.
+          </div>
+        )}
+      </Accordion>
     </DetailSection>
   );
 }
@@ -202,7 +236,16 @@ function StudentDetailsContent({ details }: { details: AdminStudentDetails }) {
         <OptionalTextRow label="Adress" value={details.address} />
         <OptionalTextRow label="Postnummer" value={details.postalCode} />
         <OptionalTextRow label="Ort" value={details.city} />
-        <OptionalDateRow label="Födelsedatum" value={details.dateOfBirth} />
+        {details.dateOfBirth ? (
+          <OptionalTextRow
+            label="Födelsedatum"
+            value={`${formatDateToInputStr(details.dateOfBirth)} (${calculateAge(
+              details.dateOfBirth,
+            )} år)`}
+          />
+        ) : (
+          ""
+        )}
         <OptionalTextRow label="Bio" value={details.bio} />
         <OptionalTextRow label="Bio (EN)" value={details.bioEn} />
         <DetailRow
@@ -218,7 +261,7 @@ function StudentDetailsContent({ details }: { details: AdminStudentDetails }) {
         </DetailSection>
       ) : null}
 
-      {details.linkedUser ? (
+      {details.type === "participant" && details.linkedUser ? (
         <LinkedUserDetails user={details.linkedUser} />
       ) : null}
 

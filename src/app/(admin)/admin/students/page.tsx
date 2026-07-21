@@ -180,10 +180,8 @@ function buildStudentSummaries(
   >();
 
   for (const purchase of purchasesWithData) {
-    const participant =
-      purchase.participant?.userId === purchase.userId
-        ? null
-        : purchase.participant;
+    const participant = purchase.participantId ? purchase.participant : null;
+
     const studentKey = participant
       ? `participant:${participant.id}`
       : `user:${purchase.userId}`;

@@ -42,6 +42,45 @@ export function formatDateToInputStr(date: unknown): string {
   return "";
 }
 
+export function calculateAge(dateOfBirth: unknown): number | null {
+  if (!dateOfBirth) {
+    return null;
+  }
+
+  let birthDate: Date;
+
+  if (dateOfBirth instanceof Date) {
+    birthDate = dateOfBirth;
+  } else if (typeof dateOfBirth === "string") {
+    birthDate = new Date(dateOfBirth);
+  } else {
+    return null;
+  }
+
+  if (Number.isNaN(birthDate.getTime())) {
+    return null;
+  }
+
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  // Sanity check - orimliga värden (framtida datum, felaktig indata etc.)
+  if (age < 0 || age > 150) {
+    return null;
+  }
+
+  return age;
+}
+
 export function formatFriendlyDate(date: Date, locale: string = "sv-SE") {
   const formatter = new Intl.DateTimeFormat(locale, {
     timeZone: STOCKHOLM_TIME_ZONE,
