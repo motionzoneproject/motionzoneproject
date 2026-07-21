@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
-import { RichTextEditor } from "@/components/RichTextEditor";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import VideoInput from "@/components/VideoInput";
 import {
   createGalleryItem,
@@ -700,11 +701,7 @@ export default function MediaAdmin({
                   <FormItem>
                     <FormLabel>Beskrivning ({formLang})</FormLabel>
                     <FormControl>
-                      <RichTextEditor
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        placeholder="Skriv beskrivning..."
-                      />
+                      <Textarea {...field} value={field.value ?? ""} rows={3} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

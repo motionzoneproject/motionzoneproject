@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "isomorphic-dompurify";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import { useId } from "react";
@@ -61,7 +62,15 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {pick(course, "description", lang) as string}
+            <div
+              className="prose dark:prose-invert max-w-none"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(
+                  pick(course, "description", lang) as string,
+                ),
+              }}
+            />
           </DialogDescription>
         </DialogHeader>
 
@@ -111,15 +120,19 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
               <div className="space-y-1">
                 <p>{course.teacher.name}</p>
                 {course.teacher.teacherProfile?.description && (
-                  <p className="text-muted-foreground whitespace-pre-line mt-1 leading-relaxed">
-                    {
-                      pick(
-                        course.teacher.teacherProfile,
-                        "description",
-                        lang,
-                      ) as string
-                    }
-                  </p>
+                  <div
+                    className="prose dark:prose-invert max-w-none"
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(
+                        pick(
+                          course.teacher.teacherProfile,
+                          "description",
+                          lang,
+                        ) as string,
+                      ),
+                    }}
+                  />
                 )}
               </div>
             </div>

@@ -1,3 +1,4 @@
+import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image";
 import {
   Dialog,
@@ -68,7 +69,13 @@ const LarareProfile = async () => {
                       <span className="font-semibold block mb-2">
                         {specialty}
                       </span>
-                      <span className="whitespace-pre-wrap">{description}</span>
+                      <div
+                        className="prose dark:prose-invert max-w-none whitespace-pre-line"
+                        // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(description),
+                        }}
+                      />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>

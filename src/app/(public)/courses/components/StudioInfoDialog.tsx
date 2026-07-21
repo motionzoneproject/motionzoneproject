@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "isomorphic-dompurify";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import { useId } from "react";
@@ -43,7 +44,13 @@ export function StudioInfoDialog({ studio }: StudioInfoDialogProps) {
         <DialogHeader>
           <DialogTitle>{studioName}</DialogTitle>
           <DialogDescription className="whitespace-pre-line">
-            {studioDescription}
+            <div
+              className="prose dark:prose-invert max-w-none"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(studioDescription),
+              }}
+            />
           </DialogDescription>
         </DialogHeader>
 

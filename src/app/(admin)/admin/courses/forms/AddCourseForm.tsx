@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { Style, User } from "@/generated/prisma/client";
 import { addNewCourse } from "@/lib/actions/admin";
 import { useSession } from "@/lib/session-provider";
@@ -207,7 +207,11 @@ export default function AddCourseForm({
                       <FormLabel>Beskrivning ({formLang})</FormLabel>
 
                       <FormControl>
-                        <Textarea {...field} />
+                        <RichTextEditor
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="Skriv kursbeskrivning..."
+                        />
                       </FormControl>
 
                       <FormMessage />
