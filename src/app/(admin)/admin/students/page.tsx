@@ -19,6 +19,7 @@ type StudentUserSummary = {
     postalCode: string | null;
     city: string | null;
     allowPhotoVideo: boolean;
+    dateOfBirth: Date | null;
   } | null;
 };
 
@@ -28,6 +29,7 @@ type StudentParticipantSummary = {
   email: string | null;
   phone: string | null;
   allowPhotoVideo: boolean;
+  dateOfBirth: Date | null;
   addedBy: {
     id: string;
     name: string;
@@ -70,6 +72,7 @@ export type StudentSummary = {
   participantId: string | null;
   name: string;
   customerName: string | null;
+  dateOfBirth: Date | null;
   user: StudentUserSummary;
   participant: StudentParticipantSummary | null;
   courses: { id: string; name: string }[];
@@ -99,6 +102,7 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
             postalCode: true;
             city: true;
             allowPhotoVideo: true;
+            dateOfBirth: true;
           };
         };
       };
@@ -111,6 +115,7 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
         phone: true;
         userId: true;
         allowPhotoVideo: true;
+        dateOfBirth: true;
         addedBy: {
           select: {
             id: true;
@@ -192,6 +197,9 @@ function buildStudentSummaries(
       participantId: participant?.id ?? null,
       name: participant?.name ?? purchase.user.name,
       customerName: participant ? participant.addedBy.name : null,
+      dateOfBirth: participant
+        ? participant.dateOfBirth
+        : (purchase.user.details?.dateOfBirth ?? null),
       user: {
         id: purchase.user.id,
         name: purchase.user.name,
@@ -205,6 +213,7 @@ function buildStudentSummaries(
             email: participant.email,
             phone: participant.phone,
             allowPhotoVideo: participant.allowPhotoVideo,
+            dateOfBirth: participant.dateOfBirth,
             addedBy: participant.addedBy,
           }
         : null,
@@ -438,6 +447,7 @@ export default async function Page({
               postalCode: true,
               city: true,
               allowPhotoVideo: true,
+              dateOfBirth: true,
             },
           },
         },
@@ -450,6 +460,7 @@ export default async function Page({
           phone: true,
           userId: true,
           allowPhotoVideo: true,
+          dateOfBirth: true,
           addedBy: {
             select: {
               id: true,

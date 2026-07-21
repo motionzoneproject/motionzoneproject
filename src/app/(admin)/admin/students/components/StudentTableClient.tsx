@@ -36,7 +36,11 @@ import {
 } from "@/components/ui/table";
 import { removeUserFromLesson } from "@/lib/actions/admin";
 import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
-import { formatFriendlyDateTime } from "@/lib/date-utils";
+import {
+  calculateAge,
+  formatDateToInputStr,
+  formatFriendlyDateTime,
+} from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
@@ -625,6 +629,7 @@ export default function StudentTableClient({
                 />
               </TableHead>
               <TableHead>Namn</TableHead>
+              <TableHead>Ålder</TableHead>
               <TableHead>Tillåter visas</TableHead>
               <TableHead>Detaljer</TableHead>
               <TableHead>Köpare</TableHead>
@@ -648,6 +653,15 @@ export default function StudentTableClient({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell className="font-medium">
+                  {student.dateOfBirth ? (
+                    <span title={formatDateToInputStr(student.dateOfBirth)}>
+                      {calculateAge(student.dateOfBirth)} år
+                    </span>
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
                 <TableCell>
                   {getAllowPhotoVideo(student) ? (
                     <Badge variant="default">Ja</Badge>
