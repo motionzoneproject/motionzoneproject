@@ -44,7 +44,7 @@ export function StudioInfoDialog({ studio }: StudioInfoDialogProps) {
         <DialogHeader>
           <DialogTitle>{studioName}</DialogTitle>
           <DialogDescription className="whitespace-pre-line">
-            <div
+            <span
               className="prose dark:prose-invert max-w-none"
               // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
               dangerouslySetInnerHTML={{
