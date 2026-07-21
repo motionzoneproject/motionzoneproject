@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { adminGetOrder } from "@/lib/actions/orders";
+import { adminGetOrder, deleteOrder } from "@/lib/actions/orders";
 import {
   formatDateToInputStr,
   formatLongFriendlyDateTime,
@@ -88,6 +88,7 @@ function calculateAge(dob: string | Date | null | undefined) {
 const getStatusLabel = (status: string) => getOrderStatusLabel(status);
 
 export default function OrderDetailsClient() {
+  const router = useRouter();
   const sp = useSearchParams();
   const orderId = sp.get("orderId")?.trim() || "";
   const backToOrdersHref = useMemo(() => {
@@ -99,7 +100,28 @@ export default function OrderDetailsClient() {
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [_isPending, startTransition] = useTransition();
+
+  const handleDelete = async () => {
+    if (
+      !window.confirm(
+        "Är du säker på att du vill ta bort denna order? Alla kopplade köp och bokningar kommer också att raderas permanent.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsDeleting(true);
+      await deleteOrder(orderId);
+      router.push(backToOrdersHref);
+    } catch (err) {
+      setIsDeleting(false);
+      alert(
+        (err as { message?: string })?.message || "Kunde inte ta bort order.",
+      );
+    }
+  };
 
   useEffect(() => {
     if (!orderId) return;
@@ -180,12 +202,22 @@ export default function OrderDetailsClient() {
             Hanterar detaljer för order och kundprofil
           </p>
         </div>
-        <Link
-          href={backToOrdersHref}
-          className="text-sm font-medium text-blue-600 hover:underline"
-        >
-          ← Tillbaka till listan
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="px-3 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/30 rounded text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {isDeleting ? "Tar bort..." : "Ta bort order"}
+          </button>
+          <Link
+            href={backToOrdersHref}
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
+            ← Tillbaka till listan
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -45,6 +45,7 @@ export default function OrdersView({
   onApprove,
   onMarkPaid,
   onCancel,
+  onDelete,
 }: {
   orders: OrderLite[];
   defaultStatus: string;
@@ -52,6 +53,7 @@ export default function OrdersView({
   onApprove: (formData: FormData) => void;
   onMarkPaid: (formData: FormData) => void;
   onCancel: (formData: FormData) => void;
+  onDelete: (formData: FormData) => void;
 }) {
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
@@ -406,6 +408,27 @@ export default function OrdersView({
                           </SubmitButton>
                         </form>
                       )}
+                      <form
+                        action={onDelete}
+                        onSubmit={(e) => {
+                          if (
+                            !window.confirm(
+                              "Är du säker på att du vill ta bort denna order? Alla kopplade köp och bokningar kommer också att raderas permanent.",
+                            )
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <input type="hidden" name="orderId" value={o.id} />
+                        <SubmitButton
+                          className="px-3 py-1 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/30 rounded text-xs font-medium transition-colors"
+                          pendingText="..."
+                        >
+                          Ta bort
+                        </SubmitButton>
+                      </form>
                     </div>
                   </td>
                 </tr>
