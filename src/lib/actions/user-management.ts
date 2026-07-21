@@ -30,6 +30,7 @@ export type UserRow = {
     postalCode: string | null;
     city: string | null;
     dateOfBirth: Date | null;
+    allowPhotoVideo: boolean;
   } | null;
 };
 
@@ -81,6 +82,7 @@ export async function getUsers(
             postalCode: true,
             city: true,
             dateOfBirth: true,
+            allowPhotoVideo: true,
           },
         },
       },
@@ -124,6 +126,7 @@ export async function adminUpdateUserDetails(
           postalCode: nullIfEmpty(values.postalCode),
           city: nullIfEmpty(values.city),
           dateOfBirth,
+          allowPhotoVideo: values.allowPhotoVideo,
         },
         create: {
           userId,
@@ -134,6 +137,7 @@ export async function adminUpdateUserDetails(
           postalCode: nullIfEmpty(values.postalCode),
           city: nullIfEmpty(values.city),
           dateOfBirth,
+          allowPhotoVideo: values.allowPhotoVideo,
         },
       }),
     ]);

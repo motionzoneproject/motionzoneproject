@@ -631,7 +631,7 @@ export default function StudentTableClient({
               </TableHead>
               <TableHead>Namn</TableHead>
               <TableHead>Ålder</TableHead>
-              <TableHead>Tillåter visas</TableHead>
+              <TableHead>Bild/Video</TableHead>
               <TableHead>Detaljer</TableHead>
               <TableHead>Köpare</TableHead>
               <TableHead>Kurser</TableHead>

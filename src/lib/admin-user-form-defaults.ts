@@ -5,6 +5,7 @@ type UserDetailsShape = {
   address: string | null;
   postalCode: string | null;
   dateOfBirth?: string | null;
+  allowPhotoVideo?: boolean | null;
   city: string | null;
 };
 
@@ -46,5 +47,6 @@ export function getAdminUserFormDefaults(user: UserForAdminForm) {
     address: user.details?.address ?? "",
     postalCode: user.details?.postalCode ?? "",
     city: user.details?.city ?? "",
+    allowPhotoVideo: user.details?.allowPhotoVideo ?? false,
   };
 }

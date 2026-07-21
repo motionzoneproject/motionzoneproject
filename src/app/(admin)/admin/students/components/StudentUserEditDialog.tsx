@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ type UserForEdit = {
     postalCode: string | null;
     city: string | null;
     dateOfBirth: Date | string | null;
+    allowPhotoVideo?: boolean | null;
   } | null;
 };
 
@@ -207,6 +209,26 @@ export default function StudentUserEditDialog({ user }: { user: UserForEdit }) {
                     <Input {...field} type="date" />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="allowPhotoVideo"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Godkänner foto/video för sociala medier
+                    </FormLabel>
+                  </div>
                 </FormItem>
               )}
             />
