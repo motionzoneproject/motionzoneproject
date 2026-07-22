@@ -234,7 +234,10 @@ export default async function Page() {
                                         className="flex items-center justify-between w-full p-3 rounded-lg bg-background border"
                                       >
                                         <div className="flex items-center gap-3">
-                                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                                          <Calendar
+                                            local="sv"
+                                            className="w-4 h-4 text-muted-foreground"
+                                          />
 
                                           <p className="text-sm">
                                             {formatFriendlyDateTime(

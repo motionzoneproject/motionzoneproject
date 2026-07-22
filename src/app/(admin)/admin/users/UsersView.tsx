@@ -15,31 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminSetRole } from "@/lib/actions/user-management";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { adminSetRole, type UserRow } from "@/lib/actions/user-management";
+import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { useSession } from "@/lib/session-provider";
 import { DetailsDialog } from "../students/components/DetailsDialog";
+import StudentUserEditDialog from "../students/components/StudentUserEditDialog";
 import BanUserDialog from "./BanUserDialog";
-import EditUserDialog from "./EditUserDialog";
-
-type UserRow = {
-  id: string;
-  name: string;
-  email: string;
-  role: string | null;
-  banned: boolean | null;
-  banReason: string | null;
-  banExpires: string | null;
-  createdAt: string;
-  details: {
-    firstName: string | null;
-    lastName: string | null;
-    phoneNumber: string | null;
-    address: string | null;
-    postalCode: string | null;
-    city: string | null;
-  } | null;
-};
 
 export default function UsersView({
   users,
@@ -104,6 +85,8 @@ export default function UsersView({
           <thead>
             <tr className="bg-muted/50 text-muted-foreground border-b">
               <th className="p-3 text-left font-medium">Namn</th>
+              <th className="p-3 text-left font-medium">Ålder</th>
+              <th className="p-3 text-left font-medium">Bild/Video</th>
               <th className="p-3 text-left font-medium">E-post</th>
               <th className="p-3 text-left font-medium hidden md:table-cell">
                 Telefon
@@ -121,7 +104,7 @@ export default function UsersView({
             {users.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={10}
                   className="p-6 text-center text-muted-foreground"
                 >
                   Inga användare hittades.
@@ -134,6 +117,18 @@ export default function UsersView({
                     {u.details?.firstName || u.details?.lastName
                       ? `${u.details.firstName ?? ""} ${u.details.lastName ?? ""}`.trim()
                       : u.name}
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {u.details?.dateOfBirth
+                      ? calculateAge(u.details.dateOfBirth)
+                      : "—"}
+                  </td>
+                  <td className="p-3">
+                    {u.details?.allowPhotoVideo ? (
+                      <Badge variant="default">Ja</Badge>
+                    ) : (
+                      <Badge variant="destructive">Nej</Badge>
+                    )}
                   </td>
                   <td className="p-3 text-muted-foreground">{u.email}</td>
                   <td className="p-3 text-muted-foreground hidden md:table-cell">
@@ -178,7 +173,7 @@ export default function UsersView({
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <EditUserDialog user={u} />
+                      <StudentUserEditDialog user={u} />
                       {!isSelf(u.id) && (
                         <BanUserDialog
                           userId={u.id}

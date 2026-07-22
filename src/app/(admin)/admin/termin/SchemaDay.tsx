@@ -62,7 +62,7 @@ export default function SchemaDay({
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border px-2 py-0.5 inline-flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />{" "}
+                      <Calendar local="sv" className="h-3 w-3" />{" "}
                       {formatDateToInputStr(
                         itm.customStartDate || termin.startDate,
                       )}

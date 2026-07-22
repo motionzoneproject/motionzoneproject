@@ -1,6 +1,6 @@
 "use client";
 
-import { addDays, format } from "date-fns";
+import { addDays, isValid } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
 import type { DateRange } from "react-day-picker";
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/popover";
 import {
   endOfStockholmDay,
+  formatDateToInputStr,
+  formatShortFriendlyDate,
   parseStockholmDateInput,
   startOfStockholmDay,
 } from "@/lib/date-utils";
@@ -28,7 +30,7 @@ interface Props {
 const parseDateParam = (value?: string | null) => {
   if (!value) return undefined;
   const parsed = parseStockholmDateInput(value);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+  return isValid(parsed) ? parsed : undefined;
 };
 
 const startOfDay = (value: Date) => {
@@ -61,8 +63,8 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
 
   const updateFilters = React.useCallback(
     (range?: DateRange) => {
-      const rangeFrom = range?.from ? format(range.from, "yyyy-MM-dd") : "";
-      const rangeTo = range?.to ? format(range.to, "yyyy-MM-dd") : "";
+      const rangeFrom = range?.from ? formatDateToInputStr(range.from) : "";
+      const rangeTo = range?.to ? formatDateToInputStr(range.to) : "";
 
       if (!useDateFilter) {
         fs("from", "");
@@ -100,11 +102,11 @@ export function DatePickerWithRange({ filterSetter, from, to }: Props) {
               {date?.from ? (
                 date.to ? (
                   <>
-                    {format(date.from, "LLL dd, y")} -{" "}
-                    {format(date.to, "LLL dd, y")}
+                    {formatShortFriendlyDate(date.from)} -{" "}
+                    {formatShortFriendlyDate(date.to)}
                   </>
                 ) : (
-                  format(date.from, "LLL dd, y")
+                  formatShortFriendlyDate(date.from)
                 )
               ) : (
                 <span>Välj datum</span>

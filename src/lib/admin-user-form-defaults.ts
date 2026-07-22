@@ -4,6 +4,8 @@ type UserDetailsShape = {
   phoneNumber: string | null;
   address: string | null;
   postalCode: string | null;
+  dateOfBirth?: string | null;
+  allowPhotoVideo?: boolean | null;
   city: string | null;
 };
 
@@ -41,8 +43,10 @@ export function getAdminUserFormDefaults(user: UserForAdminForm) {
     firstName: withFallback(user.details?.firstName, fallbackName.firstName),
     lastName: withFallback(user.details?.lastName, fallbackName.lastName),
     phoneNumber: user.details?.phoneNumber ?? "",
+    dateOfBirth: user.details?.dateOfBirth ?? "",
     address: user.details?.address ?? "",
     postalCode: user.details?.postalCode ?? "",
     city: user.details?.city ?? "",
+    allowPhotoVideo: user.details?.allowPhotoVideo ?? false,
   };
 }

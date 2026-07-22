@@ -5,6 +5,7 @@ import type z from "zod";
 import type { AdminEditUserSchema } from "@/validations/userforms";
 import { auth } from "../auth";
 import prisma from "../prisma";
+import { formToDbDate } from "../time-convert";
 import { isAdminRole } from "./admin";
 
 const nullIfEmpty = (value: string) => {
@@ -28,6 +29,8 @@ export type UserRow = {
     address: string | null;
     postalCode: string | null;
     city: string | null;
+    dateOfBirth: Date | null;
+    allowPhotoVideo: boolean;
   } | null;
 };
 
@@ -78,6 +81,8 @@ export async function getUsers(
             address: true,
             postalCode: true,
             city: true,
+            dateOfBirth: true,
+            allowPhotoVideo: true,
           },
         },
       },
@@ -102,6 +107,9 @@ export async function adminUpdateUserDetails(
 
   try {
     const fullName = `${values.firstName} ${values.lastName}`.trim();
+    const dateOfBirth = values.dateOfBirth
+      ? formToDbDate(values.dateOfBirth)
+      : null;
 
     await prisma.$transaction([
       prisma.user.update({
@@ -117,6 +125,8 @@ export async function adminUpdateUserDetails(
           address: nullIfEmpty(values.address),
           postalCode: nullIfEmpty(values.postalCode),
           city: nullIfEmpty(values.city),
+          dateOfBirth,
+          allowPhotoVideo: values.allowPhotoVideo,
         },
         create: {
           userId,
@@ -126,6 +136,8 @@ export async function adminUpdateUserDetails(
           address: nullIfEmpty(values.address),
           postalCode: nullIfEmpty(values.postalCode),
           city: nullIfEmpty(values.city),
+          dateOfBirth,
+          allowPhotoVideo: values.allowPhotoVideo,
         },
       }),
     ]);

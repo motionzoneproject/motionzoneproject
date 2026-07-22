@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,11 +27,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { adminUpdateUserDetails } from "@/lib/actions/user-management";
 import { getAdminUserFormDefaults } from "@/lib/admin-user-form-defaults";
+import { formatDateToInputStr } from "@/lib/date-utils";
 import { AdminEditUserSchema } from "@/validations/userforms";
 
 type FormValues = z.infer<typeof AdminEditUserSchema>;
 
-type User = {
+type UserForEdit = {
   id: string;
   name: string;
   details: {
@@ -40,23 +42,43 @@ type User = {
     address: string | null;
     postalCode: string | null;
     city: string | null;
+    dateOfBirth: Date | string | null;
+    allowPhotoVideo?: boolean | null;
   } | null;
 };
 
-export default function StudentUserEditDialog({ user }: { user: User }) {
+export default function StudentUserEditDialog({ user }: { user: UserForEdit }) {
   const id = useId();
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(AdminEditUserSchema),
-    defaultValues: getAdminUserFormDefaults(user),
+    defaultValues: getAdminUserFormDefaults({
+      ...user,
+      details: user.details
+        ? {
+            ...user.details,
+            dateOfBirth: formatDateToInputStr(user.details.dateOfBirth),
+          }
+        : null,
+    }),
   });
 
   useEffect(() => {
     if (!isOpen) return;
 
-    form.reset(getAdminUserFormDefaults(user));
+    form.reset(
+      getAdminUserFormDefaults({
+        ...user,
+        details: user.details
+          ? {
+              ...user.details,
+              dateOfBirth: formatDateToInputStr(user.details.dateOfBirth),
+            }
+          : null,
+      }),
+    );
   }, [form, isOpen, user]);
 
   async function onSubmit(values: FormValues) {
@@ -176,6 +198,40 @@ export default function StudentUserEditDialog({ user }: { user: User }) {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Födelsedatum</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="date" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="allowPhotoVideo"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Godkänner foto/video för sociala medier
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end gap-2 pt-2">
               <Button

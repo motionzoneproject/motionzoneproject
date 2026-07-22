@@ -1,100 +1,93 @@
 import { TZDate } from "@date-fns/tz";
-import { addDays } from "date-fns";
+import { addDays, differenceInYears, format, isValid } from "date-fns";
+import { enGB, type Locale, sv } from "date-fns/locale";
 
 const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
 
-export function formatDateToInputStr(date: unknown): string {
+const LOCALES: Record<string, Locale> = {
+  "sv-SE": sv,
+  "en-GB": enGB,
+};
+
+function resolveLocale(locale: string): Locale {
+  return LOCALES[locale] ?? sv;
+}
+
+export function formatDateToInputStr(
+  date: Date | string | null | undefined,
+): string {
   if (!date) {
     return "";
   }
 
-  if (date instanceof Date) {
-    if (Number.isNaN(date.getTime())) {
+  if (typeof date === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+
+    const parsed = new Date(date);
+    if (!isValid(parsed)) {
       return "";
     }
-
-    const formatter = new Intl.DateTimeFormat("sv-SE", {
-      timeZone: STOCKHOLM_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const parts = formatter.formatToParts(date);
-    const year = parts.find((p) => p.type === "year")?.value;
-    const month = parts.find((p) => p.type === "month")?.value;
-    const day = parts.find((p) => p.type === "day")?.value;
-
-    // Fallback om formatering misslyckas istället för undefined-undefined-undefined
-    if (!year || !month || !day) {
-      throw new Error(
-        `formatDateToInputStr: Kunde inte formatera datum "${date.toISOString()}"`,
-      );
-    }
-
-    return `${year}-${month}-${day}`;
+    date = parsed;
   }
 
-  if (typeof date === "string") {
-    return date;
+  if (!isValid(date)) {
+    return "";
   }
 
-  return "";
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "yyyy-MM-dd");
+}
+
+export function calculateAge(
+  dateOfBirth: Date | string | null | undefined,
+): number | null {
+  if (!dateOfBirth) {
+    return null;
+  }
+
+  const birthDate =
+    dateOfBirth instanceof Date ? dateOfBirth : new Date(dateOfBirth);
+
+  if (!isValid(birthDate)) {
+    return null;
+  }
+
+  const age = differenceInYears(new Date(), birthDate);
+
+  if (age < 0 || age > 150) {
+    return null;
+  }
+
+  return age;
 }
 
 export function formatFriendlyDate(date: Date, locale: string = "sv-SE") {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    timeZone: STOCKHOLM_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
-  return formatter.format(date);
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "EEEE d MMMM", { locale: resolveLocale(locale) });
 }
 
 export function formatFriendlyDateTime(date: Date, locale: string = "sv-SE") {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    timeZone: STOCKHOLM_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "EEEE d MMMM HH:mm", {
+    locale: resolveLocale(locale),
   });
-
-  return formatter.format(date);
 }
 
 export function formatLongFriendlyDate(date: Date, locale: string = "sv-SE") {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    timeZone: STOCKHOLM_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  return formatter.format(date);
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "EEEE d MMMM yyyy", { locale: resolveLocale(locale) });
 }
 
 export function formatLongFriendlyDateTime(
   date: Date,
   locale: string = "sv-SE",
 ) {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    timeZone: STOCKHOLM_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "EEEE d MMMM yyyy HH:mm", {
+    locale: resolveLocale(locale),
   });
-
-  return formatter.format(date);
 }
 
 export function parseStockholmDateInput(dateInput: string): Date {
@@ -111,6 +104,11 @@ export function startOfStockholmDay(date: Date): Date {
 
 export function endOfStockholmDay(date: Date): Date {
   return endOfStockholmDateInput(formatDateToInputStr(date));
+}
+
+export function formatShortFriendlyDate(date: Date, locale: string = "sv-SE") {
+  const tzDate = new TZDate(date, STOCKHOLM_TIME_ZONE);
+  return format(tzDate, "d MMM yyyy", { locale: resolveLocale(locale) });
 }
 
 export const MONTHS_SHORT_SV = [

@@ -27,7 +27,7 @@ export default async function UsersPage({
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Användare</h1>
       <UsersView
-        users={JSON.parse(JSON.stringify(users))}
+        users={users}
         total={total}
         page={page}
         pageSize={PAGE_SIZE}
