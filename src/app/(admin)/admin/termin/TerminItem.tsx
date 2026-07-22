@@ -55,7 +55,7 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
           ) : null}
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Calendar local="sv" className="h-4 w-4 text-muted-foreground" />
           {formatDateToInputStr(termin.startDate)} –{" "}
           {formatDateToInputStr(termin.endDate)}
         </div>

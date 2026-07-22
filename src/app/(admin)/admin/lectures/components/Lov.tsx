@@ -123,7 +123,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" className="gap-1">
-          <Calendar className="h-4 w-4" />
+          <Calendar local="sv" className="h-4 w-4" />
           <span>Ställ in flera lektioner</span>
         </Button>
       </DialogTrigger>
