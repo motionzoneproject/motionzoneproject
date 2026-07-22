@@ -81,7 +81,6 @@ export default function AddCourseForm({
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const _isBusy = form.formState.isSubmitting || form.formState.isValidating;
 
   useEffect(() => {
     if (!isOpen) form.reset();

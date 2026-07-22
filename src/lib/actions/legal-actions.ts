@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type { LegalPage } from "@/generated/prisma/client";
 import { adminLegalPageSchema } from "@/validations/adminforms";
+import { sanitizeRichText } from "../dom-sanitize";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
 
@@ -40,15 +41,15 @@ export async function updateLegalPage(
       update: {
         title: validated.title,
         title_en: validated.title_en,
-        content: validated.content,
-        content_en: validated.content_en,
+        content: await sanitizeRichText(validated.content),
+        content_en: await sanitizeRichText(validated.content_en),
       },
       create: {
         slug: validated.slug,
         title: validated.title,
         title_en: validated.title_en,
-        content: validated.content,
-        content_en: validated.content_en,
+        content: await sanitizeRichText(validated.content),
+        content_en: await sanitizeRichText(validated.content_en),
       },
     });
 

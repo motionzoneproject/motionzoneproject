@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { sendMail } from "@/lib/mail";
+import { sanitizeRichText } from "../dom-sanitize";
 import { isAdminRole } from "./admin";
 
 const recipientSchema = z.object({
@@ -113,7 +114,7 @@ export async function sendStudentNewsletter(input: {
       name: names.join(", "),
     }));
 
-    const contentHtml = validated.content;
+    const contentHtml = await sanitizeRichText(validated.content);
     const contentText = htmlToPlainText(validated.content);
 
     // Send in batches of 10 to avoid overwhelming the API (fixes #228)

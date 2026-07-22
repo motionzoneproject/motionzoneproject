@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type { Style } from "@/generated/prisma/client";
 import { adminStyleSchema } from "@/validations/adminforms";
+import { sanitizeRichText } from "../dom-sanitize";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
 
@@ -36,9 +37,9 @@ export async function createStyle(formData: z.infer<typeof adminStyleSchema>) {
     await prisma.style.create({
       data: {
         name: validated.name,
-        description: validated.description,
+        description: await sanitizeRichText(validated.description),
         name_en: validated.name_en,
-        description_en: validated.description_en,
+        description_en: await await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -69,9 +70,9 @@ export async function updateStyle(
       where: { id },
       data: {
         name: validated.name,
-        description: validated.description,
+        description: await sanitizeRichText(validated.description),
         name_en: validated.name_en,
-        description_en: validated.description_en,
+        description_en: await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
