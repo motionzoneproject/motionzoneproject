@@ -111,8 +111,6 @@ export async function getAdminStudentDetails(input: {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, error: "Ingen behörighet." };
 
-  console.log("Running...");
-
   try {
     if (input.isParticipant) {
       const participant = await prisma.participant.findUnique({
@@ -160,11 +158,6 @@ export async function getAdminStudentDetails(input: {
       if (!participant) {
         return { success: false, error: "Deltagaren hittades inte." };
       }
-
-      console.log(
-        "Particpant dateOfBirth: " +
-          formatDateToInputStr(participant.dateOfBirth),
-      );
 
       return {
         success: true,

@@ -159,7 +159,6 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
       }
 
       const result = await updateStartPageContent(resolved);
-      console.log(JSON.stringify(result));
 
       if (result.success) {
         // Best-effort cleanup of replaced S3 images
