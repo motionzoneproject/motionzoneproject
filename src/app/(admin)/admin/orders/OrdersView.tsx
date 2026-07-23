@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useFormStatus } from "react-dom";
 import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
@@ -19,6 +19,7 @@ type OrderLite = {
     details?: {
       firstName?: string | null;
       lastName?: string | null;
+      dateOfBirth?: string | Date | null;
     } | null;
   } | null;
   orderItems?:
@@ -27,6 +28,8 @@ type OrderLite = {
         product: { name: string };
         participant?: {
           id: string;
+          dateOfBirth: string | Date | null;
+          email: string;
           name: string;
         } | null;
       }[]
@@ -272,11 +275,13 @@ export default function OrdersView({
             )}
             {paginatedOrders.map((o) => {
               const participants = Array.from(
-                new Set(
-                  o.orderItems
-                    ?.map((oi) => oi.participant?.name)
-                    .filter(Boolean),
-                ),
+                // Vi gör en map istället för att få med all data vi behöver:
+                new Map(
+                  (o.orderItems ?? [])
+                    .map((oi) => oi.participant)
+                    .filter((p): p is NonNullable<typeof p> => !!p)
+                    .map((p) => [p.id, p]),
+                ).values(),
               );
 
               return (
@@ -298,7 +303,11 @@ export default function OrdersView({
                           ? `${o.user.details.firstName ?? ""} ${
                               o.user.details.lastName ?? ""
                             }`.trim()
-                          : (o.user?.email ?? o.userId)}
+                          : (o.user?.email ?? o.userId)}{" "}
+                        (
+                        {o.user?.details &&
+                          calculateAge(o.user?.details.dateOfBirth)}{" "}
+                        år)
                       </span>
                       {o.user?.details?.firstName && (
                         <span className="text-xs text-muted-foreground">
@@ -311,12 +320,15 @@ export default function OrdersView({
                     <div className="flex flex-wrap gap-1">
                       {participants.length > 0 ? (
                         participants.map((p, i) => (
-                          <span
-                            key={`${o.id}-p-${i}`}
-                            className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-[10px] font-medium"
-                          >
-                            {p}
-                          </span>
+                          <div key={`${o.id}-p-${i}`}>
+                            <span>
+                              {p.name} ({calculateAge(p.dateOfBirth)} år)
+                            </span>
+                            <br />
+                            <span className="text-xs text-muted-foreground">
+                              {p.email}
+                            </span>
+                          </div>
                         ))
                       ) : (
                         <span className="text-muted-foreground italic text-xs">

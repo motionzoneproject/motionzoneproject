@@ -23,6 +23,7 @@ type OrderItemLite = {
   participant?: {
     name: string;
     email?: string | null;
+    dateOfBirth?: string | Date | null;
     phone?: string | null;
     allowPhotoVideo: boolean;
   } | null;
@@ -45,6 +46,7 @@ type OrderDetail = {
     email?: string | null;
     role?: string | null;
     image?: string | null;
+    dateOfBirth?: string | Date | null; // Hamnar här om det är en deltagare.
     banned?: boolean | null;
     banReason?: string | null;
     createdAt?: string | Date | null;
@@ -408,8 +410,9 @@ export default function OrderDetailsClient() {
                             <span className="text-[10px] bg-brand text-white px-1.5 py-0.5 rounded uppercase font-bold">
                               Deltagare
                             </span>
-                            <span className="text-xs text-brand font-semibold">
-                              {it.participant.name}
+                            <span className="text-sm text-brand font-semibold">
+                              {it.participant.name} (
+                              {calculateAge(it.participant.dateOfBirth)} år)
                             </span>
                             {it.participant.allowPhotoVideo ? (
                               <span title="Foto OK" className="text-xs">
