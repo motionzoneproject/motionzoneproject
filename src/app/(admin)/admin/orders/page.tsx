@@ -30,10 +30,13 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
+        id?: string;
         product: { name: string };
         participant?: {
           id: string;
           name: string;
+          email: string;
+          dateOfBirth: string | Date | null;
         } | null;
       }[]
     | null;
