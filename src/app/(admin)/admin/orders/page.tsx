@@ -113,10 +113,6 @@ export default async function Page({
     const res = await deleteOrder(orderId);
     revalidatePath("/admin/orders");
 
-    if (!res.success) {
-      console.error(res);
-    }
-
     return res.success;
   }
 
