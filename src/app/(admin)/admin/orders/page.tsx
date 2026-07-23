@@ -107,11 +107,17 @@ export default async function Page({
     revalidatePath("/admin/orders");
   }
 
-  async function onDelete(formData: FormData) {
+  async function onDelete(orderId: string): Promise<boolean> {
     "use server";
-    const orderId = String(formData.get("orderId"));
-    await deleteOrder(orderId);
+
+    const res = await deleteOrder(orderId);
     revalidatePath("/admin/orders");
+
+    if (!res.success) {
+      console.error(res);
+    }
+
+    return res.success;
   }
 
   return (

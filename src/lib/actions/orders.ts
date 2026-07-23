@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
@@ -329,6 +330,8 @@ export async function deleteOrder(orderId: string) {
     await tx.order.delete({
       where: { id: order.id },
     });
+
+    revalidatePath("/admin/orders");
 
     return { success: true };
   });

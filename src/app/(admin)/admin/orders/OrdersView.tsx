@@ -1,15 +1,16 @@
 "use client";
 
+import { CheckIcon, DollarSignIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { useFormStatus } from "react-dom";
 import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
+import DeleteOrderBtn from "./components/DeleteOrderBtn";
 
 type OrderLite = {
   id: string;
@@ -53,7 +54,7 @@ export default function OrdersView({
   onApprove: (formData: FormData) => void;
   onMarkPaid: (formData: FormData) => void;
   onCancel: (formData: FormData) => void;
-  onDelete: (formData: FormData) => void;
+  onDelete: (orderId: string) => boolean | Promise<boolean>;
 }) {
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
@@ -169,23 +170,6 @@ export default function OrdersView({
     }
   };
 
-  function SubmitButton({
-    children,
-    className,
-    pendingText,
-  }: {
-    children: React.ReactNode;
-    className: string;
-    pendingText: string;
-  }) {
-    const { pending } = useFormStatus();
-    return (
-      <button type="submit" disabled={pending} className={className}>
-        {pending ? pendingText : children}
-      </button>
-    );
-  }
-
   return (
     <>
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -258,7 +242,9 @@ export default function OrdersView({
                 Betalningsalternativ
               </th>
               <th className="p-3 text-left font-medium">Detaljer</th>
-              <th className="p-3 text-left font-medium">Åtgärder</th>
+              <th className="p-3 text-left font-medium min-w-[260px]">
+                Åtgärder
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -363,72 +349,64 @@ export default function OrdersView({
                     </Link>
                   </td>
                   <td className="p-3">
-                    <div className="flex gap-2">
-                      {active !== "PENDING" &&
-                        ["PAID"].includes(o.status || "") && (
-                          <form
-                            action={onApprove}
-                            className="flex items-center gap-2"
-                          >
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        {active !== "PENDING" &&
+                          ["PAID"].includes(o.status || "") && (
+                            <form action={onApprove}>
+                              <input
+                                type="hidden"
+                                name="orderId"
+                                value={o.id}
+                              />
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
+                              >
+                                <CheckIcon className="h-3.5 w-3.5" />
+                                Godkänn
+                              </Button>
+                            </form>
+                          )}
+
+                        {active !== "APPROVED" &&
+                          ["PENDING_PAYMENT"].includes(o.status || "") && (
+                            <form action={onMarkPaid}>
+                              <input
+                                type="hidden"
+                                name="orderId"
+                                value={o.id}
+                              />
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="h-7 px-2.5 text-xs gap-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400 shadow-none"
+                              >
+                                <DollarSignIcon className="h-3.5 w-3.5" />
+                                Betald
+                              </Button>
+                            </form>
+                          )}
+
+                        {["PENDING_PAYMENT"].includes(o.status || "") && (
+                          <form action={onCancel}>
                             <input type="hidden" name="orderId" value={o.id} />
-                            <SubmitButton
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
-                              pendingText="..."
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none"
                             >
-                              Godkänn
-                            </SubmitButton>
+                              <XIcon className="h-3.5 w-3.5" />
+                              Avbryt
+                            </Button>
                           </form>
                         )}
-                      {active !== "APPROVED" &&
-                        ["PENDING_PAYMENT"].includes(o.status || "") && (
-                          <form
-                            action={onMarkPaid}
-                            className="flex items-center gap-2"
-                          >
-                            <input type="hidden" name="orderId" value={o.id} />
-                            <SubmitButton
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
-                              pendingText="..."
-                            >
-                              Betald
-                            </SubmitButton>
-                          </form>
-                        )}
-                      {["PENDING_PAYMENT"].includes(o.status || "") && (
-                        <form
-                          action={onCancel}
-                          className="flex items-center gap-2"
-                        >
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <SubmitButton
-                            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-medium transition-colors"
-                            pendingText="..."
-                          >
-                            Avbryt
-                          </SubmitButton>
-                        </form>
-                      )}
-                      <form
-                        action={onDelete}
-                        onSubmit={(e) => {
-                          if (
-                            !window.confirm(
-                              "Är du säker på att du vill ta bort denna order? Alla kopplade köp och bokningar kommer också att raderas permanent.",
-                            )
-                          ) {
-                            e.preventDefault();
-                          }
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <input type="hidden" name="orderId" value={o.id} />
-                        <SubmitButton
-                          className="px-3 py-1 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/30 rounded text-xs font-medium transition-colors"
-                          pendingText="..."
-                        >
-                          Ta bort
-                        </SubmitButton>
-                      </form>
+                      </div>
+
+                      <div className="w-px h-5 bg-border" />
+
+                      <DeleteOrderBtn orderId={o.id} onDelete={onDelete} />
                     </div>
                   </td>
                 </tr>
