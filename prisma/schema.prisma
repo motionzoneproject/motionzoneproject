@@ -264,6 +264,19 @@ enum ProductType {
   CLIP // Klippkort (gäller valfria kurser i systemet)
 }
 
+model Category {
+  id      String  @id @default(uuid())
+  name    String
+  name_en String?
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("category")
+}
+
 model Product {
   id String @id @default(uuid())
 
@@ -290,7 +303,13 @@ model Product {
   maxCustomer        Int     @default(0) // För att säkra att inte för många köper produkten. Så blir som en "platser kvar"
   unlimitedCustomers Boolean @default(false) // Obegränsat antal köp.
 
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+
   imageURL String?
+
+
 
   active Boolean @default(true) // Om produkten är aktiv (synlig för kunder)
 
