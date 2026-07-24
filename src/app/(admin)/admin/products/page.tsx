@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
+import { getCategories } from "@/lib/actions/server-actions";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import AddProductForm from "./components/AddProductForm";
@@ -107,6 +108,8 @@ export default async function Page({
     take: ITEMS_PER_PAGE,
   });
 
+  const categories = await getCategories();
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -119,7 +122,7 @@ export default async function Page({
             </div>
           </div>
         </div>
-        <AddProductForm />
+        <AddProductForm categories={categories} />
       </div>
       <ProductFilter
         lang={lang}

@@ -748,6 +748,7 @@ export async function addNewProduct(
         unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
+        categoryId: validated.categoryId || null,
       },
     });
 
@@ -813,6 +814,7 @@ export async function editProduct(
         unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
+        categoryId: validated.categoryId || null,
       },
     });
 
