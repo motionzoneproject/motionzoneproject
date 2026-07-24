@@ -5,6 +5,7 @@ import {
   approveOrder,
   cancelOrder,
   createPurchaseFromOrder,
+  deleteOrder,
   markOrderPaid,
 } from "@/lib/actions/orders";
 import prisma from "@/lib/prisma";
@@ -109,6 +110,15 @@ export default async function Page({
     revalidatePath("/admin/orders");
   }
 
+  async function onDelete(orderId: string): Promise<boolean> {
+    "use server";
+
+    const res = await deleteOrder(orderId);
+    revalidatePath("/admin/orders");
+
+    return res.success;
+  }
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Ordrar</h1>
@@ -119,6 +129,7 @@ export default async function Page({
         onApprove={onApprove}
         onMarkPaid={onMarkPaid}
         onCancel={onCancel}
+        onDelete={onDelete}
       />
     </div>
   );

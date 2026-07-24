@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
@@ -274,4 +275,64 @@ export async function getUserOrder(orderId: string) {
   }
 
   return order;
+}
+
+export async function deleteOrder(orderId: string) {
+  await requireAdmin();
+
+  if (!orderId?.trim()) {
+    throw new Error("Giltigt orderId saknas");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new Error("Ordern hittades inte");
+    }
+
+    // 1. Hämta alla purchases kopplade till ordern
+    const purchases = await tx.purchase.findMany({
+      where: { orderId: order.id },
+      select: { id: true },
+    });
+    const purchaseIds = purchases.map((p) => p.id);
+
+    if (purchaseIds.length > 0) {
+      // 2. Hämta alla purchaseItems kopplade till dessa purchases
+      const purchaseItems = await tx.purchaseItem.findMany({
+        where: { purchaseId: { in: purchaseIds } },
+        select: { id: true },
+      });
+      const purchaseItemIds = purchaseItems.map((pi) => pi.id);
+
+      // 3. Ta bort alla bokningar kopplade till dessa purchaseItems
+      if (purchaseItemIds.length > 0) {
+        await tx.booking.deleteMany({
+          where: { purchaseItemId: { in: purchaseItemIds } },
+        });
+      }
+
+      // 4. Ta bort alla purchaseItems för dessa purchases
+      await tx.purchaseItem.deleteMany({
+        where: { purchaseId: { in: purchaseIds } },
+      });
+
+      // 5. Ta bort alla purchases för denna order
+      await tx.purchase.deleteMany({
+        where: { id: { in: purchaseIds } },
+      });
+    }
+
+    // 6. Ta bort själva ordern (kaskaderar OrderItem och OrderStatusEvent)
+    await tx.order.delete({
+      where: { id: order.id },
+    });
+
+    revalidatePath("/admin/orders");
+
+    return { success: true };
+  });
 }
