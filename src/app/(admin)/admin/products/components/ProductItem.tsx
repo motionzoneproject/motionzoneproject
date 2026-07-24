@@ -75,6 +75,7 @@ export default async function ProductItem({ product, lang }: Props) {
           />
           <EditProductForm
             categories={categories}
+            categoryId={product.categoryId ?? ""}
             imageURL={product.imageURL ?? ""}
             unlimitedCustomers={product.unlimitedCustomers ?? false}
             maxCustomers={product.maxCustomer}

@@ -68,6 +68,7 @@ interface Props {
   imageURL: string;
   initialLang?: "sv" | "en";
   categories: Category[];
+  categoryId?: string;
 }
 
 export default function EditProductForm({
@@ -84,6 +85,7 @@ export default function EditProductForm({
   maxCustomers,
   initialLang = "sv",
   categories,
+  categoryId,
 }: Props) {
   const id = useId();
   const form = useForm<EditProductFormInput, unknown, EditProductFormOutput>({
@@ -99,6 +101,7 @@ export default function EditProductForm({
       price: oreToSek(price),
       clipCount: clipCount,
       maxCustomers: maxCustomers,
+      categoryId: categoryId || undefined,
       imageURL: imageURL,
     },
   });
@@ -121,6 +124,7 @@ export default function EditProductForm({
       name_en,
       price: oreToSek(price),
       clipCount,
+      categoryId,
       maxCustomers,
       imageURL,
     });
@@ -128,6 +132,7 @@ export default function EditProductForm({
     isOpen,
     form,
     clipcard,
+    categoryId,
     unlimitedCustomers,
     description,
     name,
