@@ -33,6 +33,7 @@ import {
 import type { Prisma } from "@/generated/prisma/client";
 import { addToCart } from "@/lib/actions/cart";
 import { getProductStats } from "@/lib/actions/purchase-actions";
+import { getCategories } from "@/lib/actions/server-actions";
 import { getStyles } from "@/lib/actions/style-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
@@ -51,6 +52,7 @@ const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 interface Props {
   searchParams: Promise<{
     page?: string;
+    category?: string;
     q?: string;
     adult?: string;
     style?: string;
@@ -93,7 +95,7 @@ export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const { lang, t } = await getDictionary();
   const publicStyles = (await getStyles(lang)).filter((style) => style.active);
-
+  const categories = await getCategories();
   const linkedCourseFilter: Prisma.CourseWhereInput = {
     ...(sp.adult
       ? {
@@ -110,12 +112,32 @@ export default async function Page({ searchParams }: Props) {
   // Build filters based on search params
   const filters = {
     active: true as const,
+    ...(sp.category ? { categoryId: sp.category } : {}),
     ...(sp.q
       ? {
-          name: {
-            contains: sp.q,
-            mode: "insensitive" as const,
-          },
+          OR: [
+            { name: { contains: sp.q, mode: "insensitive" as const } },
+            { name_en: { contains: sp.q, mode: "insensitive" as const } },
+            {
+              courses: {
+                some: {
+                  course: {
+                    OR: [
+                      {
+                        name: { contains: sp.q, mode: "insensitive" as const },
+                      },
+                      {
+                        name_en: {
+                          contains: sp.q,
+                          mode: "insensitive" as const,
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
         }
       : {}),
     ...(Object.keys(linkedCourseFilter).length > 0
@@ -346,7 +368,9 @@ export default async function Page({ searchParams }: Props) {
             </span>
           </h1>
           <p className="text-muted-foreground mb-4">{t.coursesPage.intro}</p>
-          <CoursesFilter styles={publicStyles} />
+          <br />
+
+          <CoursesFilter categories={categories} styles={publicStyles} />
         </div>
       </section>
 

@@ -72,7 +72,7 @@
     "noProducts": "No products match the current filters.",
     "filter": {
       "title": "Filter",
-      "searchLabel": "Search product name",
+      "searchLabel": "Search product/course name",
       "searchPlaceholder": "Search...",
       "styleLabel": "Dance style",
       "stylePlaceholder": "Select dance style",

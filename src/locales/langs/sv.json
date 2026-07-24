@@ -72,7 +72,7 @@
     "noProducts": "Inga produkter hittades med nuvarande filter.",
     "filter": {
       "title": "Filter",
-      "searchLabel": "Sök produktnamn",
+      "searchLabel": "Sök produkt/kurs-namn",
       "searchPlaceholder": "Sök...",
       "styleLabel": "Dansstil",
       "stylePlaceholder": "Välj dansstil",

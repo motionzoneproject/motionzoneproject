@@ -24,13 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Style } from "@/generated/prisma/client";
+import type { Category, Style } from "@/generated/prisma/client";
+import { CategoryFilter } from "./CategoryFilter";
 
 interface CoursesFilterProps {
   styles: Style[];
+  categories: Category[];
 }
 
-export function CoursesFilter({ styles }: CoursesFilterProps) {
+export function CoursesFilter({ styles, categories }: CoursesFilterProps) {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -83,6 +85,9 @@ export function CoursesFilter({ styles }: CoursesFilterProps) {
 
   return (
     <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm">
+      <div>
+        <CategoryFilter categories={categories} />
+      </div>
       {/* Toggle button */}
       <button
         type="button"
