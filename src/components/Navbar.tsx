@@ -3,31 +3,81 @@
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { Category } from "@/generated/prisma/client";
 import CartIcon from "./CartIcon";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { ModeToggle } from "./mode-toggle";
 import NavBarAuth from "./Navbar-auth";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 
-export default function NavBar() {
+interface NavBarProps {
+  categories: Category[];
+}
+
+interface NavLink {
+  href: string;
+  label: string;
+  isCategory: boolean;
+  categoryId: string | null;
+}
+
+export default function NavBar({ categories }: NavBarProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
-  const { t } = useTranslation();
-  const navLinks = [
-    { href: "/", label: t("nav.home") },
-    { href: "/courses", label: t("nav.courses") },
-    { href: "/about", label: t("nav.about") },
-    { href: "/gallery", label: t("nav.gallery") },
+  const searchParams = useSearchParams();
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language.startsWith("en");
+
+  const activeCategory = searchParams.get("category");
+
+  const allCoursesLabel = isEnglish ? "All courses" : "Alla kurser";
+
+  const navLinks: NavLink[] = [
+    { href: "/", label: t("nav.home"), isCategory: false, categoryId: null },
+    {
+      href: "/courses",
+      label: allCoursesLabel,
+      isCategory: false,
+      categoryId: null,
+    },
+    ...categories.map((category) => ({
+      href: `/courses?category=${category.id}`,
+      label: isEnglish ? (category.name_en ?? category.name) : category.name,
+      isCategory: true,
+      categoryId: category.id,
+    })),
+    {
+      href: "/about",
+      label: t("nav.about"),
+      isCategory: false,
+      categoryId: null,
+    },
+    {
+      href: "/gallery",
+      label: t("nav.gallery"),
+      isCategory: false,
+      categoryId: null,
+    },
   ];
+
+  const isLinkActive = (link: NavLink) => {
+    if (link.isCategory) {
+      return pathname === "/courses" && activeCategory === link.categoryId;
+    }
+    if (link.href === "/courses") {
+      return pathname === "/courses" && !activeCategory;
+    }
+    return pathname === link.href;
+  };
 
   return (
     <header className="w-full sticky top-0 z-50 border-b border-brand/10 bg-background/85 backdrop-blur-xl">
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 py-3">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 py-3">
         {/* Logo */}
-        <Link href="/" className="flex items-center group">
+        <Link href="/" className="flex items-center group shrink-0">
           <Image
             src="/logo-dark.png"
             alt="MotionZone Växjö"
@@ -46,17 +96,17 @@ export default function NavBar() {
           />
         </Link>
 
-        {/* Desktop Navigation */}
-        <ul className="hidden md:flex items-center gap-1">
+        {/* Desktop Navigation - tar upp mellanrummet och wrappar internt om det blir trångt */}
+        <ul className="hidden md:flex flex-1 flex-wrap items-center justify-center gap-x-1 gap-y-1 mx-2">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = isLinkActive(link);
             return (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 group inline-block hover:bg-brand/8 hover:text-brand ${
+                  className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group inline-block hover:bg-brand/8 hover:text-brand whitespace-nowrap ${
                     isActive ? "text-brand" : "text-muted-foreground"
-                  }`}
+                  } `}
                 >
                   {link.label}
                   {isActive && (
@@ -69,7 +119,7 @@ export default function NavBar() {
         </ul>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3 shrink-0">
           <div className="hover:scale-110 transition-transform duration-200 mr-2">
             <CartIcon />
           </div>
@@ -129,7 +179,7 @@ export default function NavBar() {
               {/* Nav Links */}
               <nav className="flex-1 px-3 py-3">
                 {navLinks.map((link) => {
-                  const isActive = pathname === link.href;
+                  const isActive = isLinkActive(link);
                   return (
                     <Link
                       key={link.href}
@@ -139,7 +189,7 @@ export default function NavBar() {
                         isActive
                           ? "text-brand bg-brand/5"
                           : "text-muted-foreground"
-                      }`}
+                      } `}
                     >
                       {link.label}
                     </Link>
