@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type { Studio } from "@/generated/prisma/client";
 import { adminStudioSchema } from "@/validations/adminforms";
+import { sanitizeRichText } from "../dom-sanitize";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
 
@@ -39,8 +40,8 @@ export async function createStudio(
       data: {
         name: validated.name,
         name_en: validated.name_en,
-        description: validated.description,
-        description_en: validated.description_en,
+        description: await sanitizeRichText(validated.description),
+        description_en: await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },
@@ -72,8 +73,8 @@ export async function updateStudio(
       data: {
         name: validated.name,
         name_en: validated.name_en,
-        description: validated.description,
-        description_en: validated.description_en,
+        description: await sanitizeRichText(validated.description),
+        description_en: await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl ?? "",
         active: validated.active ?? true,
       },

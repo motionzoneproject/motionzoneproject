@@ -11,6 +11,7 @@ import type z from "zod";
 import ImageInput from "@/components/ImageInput";
 import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,7 +33,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { addNewProduct } from "@/lib/actions/admin";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
@@ -160,10 +160,10 @@ export default function AddProductForm({
                     <FormItem>
                       <FormLabel>Beskrivning ({formLang})</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Beskriv produkten..."
-                          className="min-h-[120px]"
-                          {...field}
+                        <RichTextEditor
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="Skriv produktbeskrivning..."
                         />
                       </FormControl>
                       <FormMessage />

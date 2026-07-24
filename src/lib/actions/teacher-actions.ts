@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type z from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { adminTeacherSchema } from "@/validations/adminforms";
+import { sanitizeRichText } from "../dom-sanitize";
 import prisma from "../prisma";
 import { getSessionData } from "./sessiondata";
 
@@ -55,9 +56,9 @@ export async function createTeacher(
         userId: validated.userId,
         name: validated.name,
         specialty: validated.specialty ?? "",
-        description: validated.description ?? "",
+        description: await sanitizeRichText(validated.description),
         specialty_en: validated.specialty_en ?? "",
-        description_en: validated.description_en ?? "",
+        description_en: await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl,
         active: validated.active ?? true,
       },
@@ -95,9 +96,9 @@ export async function updateTeacher(
         userId: validated.userId,
         name: validated.name,
         specialty: validated.specialty ?? "",
-        description: validated.description ?? "",
+        description: await sanitizeRichText(validated.description),
         specialty_en: validated.specialty_en ?? "",
-        description_en: validated.description_en ?? "",
+        description_en: await sanitizeRichText(validated.description_en),
         imageUrl: validated.imageUrl,
         active: validated.active ?? true,
       },

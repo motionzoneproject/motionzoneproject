@@ -33,6 +33,7 @@ import {
 } from "@/validations/adminforms";
 import { auth } from "../auth";
 import { formatLongFriendlyDate } from "../date-utils";
+import { sanitizeRichText } from "../dom-sanitize";
 import { generateBookingCancelledHtml, sendMail } from "../mail";
 import { sekToOre } from "../money";
 import prisma from "../prisma";
@@ -155,8 +156,8 @@ export async function addNewEvent(formData: z.infer<typeof adminEventSchema>) {
       data: {
         headline: validated.headline,
         headline_en: validated.headline_en,
-        description: validated.description,
-        description_en: validated.description_en,
+        description: await sanitizeRichText(validated.description),
+        description_en: await sanitizeRichText(validated.description_en),
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -192,8 +193,8 @@ export async function editNewEvent(
       data: {
         headline: validated.headline,
         headline_en: validated.headline_en,
-        description: validated.description,
-        description_en: validated.description_en,
+        description: await sanitizeRichText(validated.description),
+        description_en: await sanitizeRichText(validated.description_en),
         imageURL: validated.imageURL ?? "",
         link: validated.link ?? "",
         showOnStartpage: validated.showOnStartpage,
@@ -346,8 +347,8 @@ export async function addNewCourse(
         level: validated.level,
         level_en: validated.level_en,
         adult: validated.adult,
-        description: validated.description,
-        description_en: validated.description_en,
+        description: await sanitizeRichText(validated.description),
+        description_en: await sanitizeRichText(validated.description_en),
         teacherId: validated.teacherid,
       },
     });
@@ -406,8 +407,8 @@ export async function editCourse(
           level: validated.level,
           level_en: validated.level_en,
           adult: validated.adult,
-          description: validated.description,
-          description_en: validated.description_en,
+          description: await sanitizeRichText(validated.description),
+          description_en: await sanitizeRichText(validated.description_en),
           teacherId: validated.teacherid,
         },
         where: { id },
@@ -739,9 +740,9 @@ export async function addNewProduct(
     const newProd = await prisma.product.create({
       data: {
         name: validated.name,
-        description: validated.description,
+        description: await sanitizeRichText(validated.description),
         name_en: validated.name_en,
-        description_en: validated.description_en,
+        description_en: await sanitizeRichText(validated.description_en),
         price: sekToOre(validated.price),
         maxCustomer: unlimitedCustomers ? 0 : validated.maxCustomers,
         unlimitedCustomers,
@@ -804,9 +805,9 @@ export async function editProduct(
       where: { id },
       data: {
         name: validated.name,
-        description: validated.description,
+        description: await sanitizeRichText(validated.description),
         name_en: validated.name_en,
-        description_en: validated.description_en,
+        description_en: await sanitizeRichText(validated.description_en),
         price: sekToOre(validated.price),
         maxCustomer: maxCustomers,
         unlimitedCustomers,

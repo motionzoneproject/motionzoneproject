@@ -1,3 +1,4 @@
+import DOMPurify from "isomorphic-dompurify";
 import type { Metadata } from "next";
 import Image from "next/image";
 import DansStilar from "@/components/dans-stilar";
@@ -121,9 +122,15 @@ export default async function About() {
                         />
                       )}
                       <h3 className="text-lg font-semibold">{studioName}</h3>
-                      <p className="mt-2 text-muted-foreground">
-                        {studioDescription}
-                      </p>
+                      <div className="mt-2 text-muted-foreground whitespace-pre-line">
+                        <div
+                          className="prose dark:prose-invert max-w-none"
+                          // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(studioDescription),
+                          }}
+                        />
+                      </div>
                     </div>
                   );
                 })}

@@ -1,3 +1,4 @@
+import DOMPurify from "isomorphic-dompurify";
 import {
   Book,
   CalendarDays,
@@ -488,7 +489,15 @@ export default async function Page({ searchParams }: Props) {
                                 "description",
                                 lang,
                               ) as string;
-                              return desc ? ` – ${desc}` : "";
+                              return (
+                                <div
+                                  className="prose dark:prose-invert max-w-none whitespace-pre-line"
+                                  // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                                  dangerouslySetInnerHTML={{
+                                    __html: DOMPurify.sanitize(desc),
+                                  }}
+                                />
+                              );
                             })()}
                           </AccordionContent>
                         </AccordionItem>

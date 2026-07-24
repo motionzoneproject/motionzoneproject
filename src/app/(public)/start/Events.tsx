@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "isomorphic-dompurify";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -132,9 +133,17 @@ export default function Events({ events }: EventsProps) {
                     {pick(currentEvent, "headline", lang) as string}
                   </h3>
 
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {pick(currentEvent, "description", lang) as string}
-                  </p>
+                  <div className="text-muted-foreground text-sm leading-relaxed">
+                    <div
+                      className="max-w-none"
+                      // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(
+                          pick(currentEvent, "description", lang) as string,
+                        ),
+                      }}
+                    />
+                  </div>
 
                   <div className="space-y-2 pt-4 border-t border-white/10">
                     <div className="flex items-center gap-3 text-sm text-foreground">

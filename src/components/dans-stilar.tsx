@@ -1,5 +1,5 @@
 "use client";
-
+import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image";
 import { useTranslation } from "react-i18next";
 import {
@@ -65,7 +65,13 @@ const DansStilar = ({ styles }: DansStilarProps) => {
                   <DialogHeader>
                     <DialogTitle>{styleName}</DialogTitle>
                     <DialogDescription className="text-base mt-2 whitespace-pre-wrap">
-                      {styleDescription}
+                      <div
+                        className="prose dark:prose-invert max-w-none whitespace-pre-line"
+                        // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap content sanitized through DOMPurify on the line above
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(styleDescription),
+                        }}
+                      />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
