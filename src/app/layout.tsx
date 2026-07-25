@@ -6,7 +6,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import NavBar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { getCategories } from "@/lib/actions/server-actions";
+import { getCategories } from "@/lib/actions/category-actions";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
 import { LocalizationProvider, normalizeLang } from "@/locales";

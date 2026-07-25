@@ -32,8 +32,8 @@ import {
 } from "@/components/ui/card";
 import type { Prisma } from "@/generated/prisma/client";
 import { addToCart } from "@/lib/actions/cart";
+import { getCategories } from "@/lib/actions/category-actions";
 import { getProductStats } from "@/lib/actions/purchase-actions";
-import { getCategories } from "@/lib/actions/server-actions";
 import { getStyles } from "@/lib/actions/style-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";

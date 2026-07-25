@@ -152,6 +152,12 @@ export const adminBulkCancelLessonsSchema = z
     path: ["to"],
   });
 
+export const adminCategorySchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Namn måste anges."),
+  name_en: z.string().optional(),
+});
+
 export const adminProductSchema = z
   .object({
     name: z.string().min(1),

@@ -9,10 +9,11 @@ import {
 } from "@/components/ui/table";
 import type { Prisma, ProductType } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
-import { getCategories } from "@/lib/actions/server-actions";
+import { getCategories } from "@/lib/actions/category-actions";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import AddProductForm from "./components/AddProductForm";
+import ManageCategoriesDialog from "./components/ManageCategoryDIalog";
 import ProductFilter from "./components/ProductFilter";
 import ProductItem from "./components/ProductItem";
 
@@ -122,6 +123,7 @@ export default async function Page({
             </div>
           </div>
         </div>
+        <ManageCategoriesDialog categories={categories} />
         <AddProductForm categories={categories} />
       </div>
       <ProductFilter
