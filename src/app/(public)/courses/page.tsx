@@ -44,6 +44,7 @@ import { getCourseName, getVeckodag } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
+import { InfoDialog } from "./components/InfoDialog";
 import { StudioInfoDialog } from "./components/StudioInfoDialog";
 import { StyleInfoDialog } from "./components/StyleInfoDialog";
 
@@ -360,33 +361,22 @@ export default async function Page({ searchParams }: Props) {
 
       <section className="border-b border-border py-8 text-center">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight mb-2 animate-fade-in-left [animation-delay:200ms]">
-            {t.coursesPage.titleLine1}
-            <span className="font-serif italic text-brand-light">
-              {" "}
-              {t.coursesPage.titleAccent}
-            </span>
-          </h1>
-          <p className="text-muted-foreground mb-4">{t.coursesPage.intro}</p>
-          <br />
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h1 className="text-3xl md:text-4xl font-light text-foreground leading-[1.1] tracking-tight animate-fade-in-left [animation-delay:200ms]">
+              {t.coursesPage.titleLine1}
+              <span className="font-serif italic text-brand-light">
+                {" "}
+                {t.coursesPage.titleAccent}
+              </span>
+            </h1>
+            <InfoDialog intro={t.coursesPage.intro} />
+          </div>
 
           <CoursesFilter categories={categories} styles={publicStyles} />
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-6 md:px-8 py-6 md:py-8">
-        <div className="flex items-center gap-2 mb-4">
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ backgroundColor: "#8f5ccf26" }}
-          >
-            <ShoppingBag className="w-4 h-4" style={{ color: "#8f5ccf" }} />
-          </div>
-          <p className="font-bold text-foreground">
-            {t.coursesPage.ourProducts}
-          </p>
-        </div>
-
         {totalProducts > 0 ? (
           <>
             {/* Results count */}

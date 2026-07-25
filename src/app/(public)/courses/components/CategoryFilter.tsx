@@ -4,6 +4,7 @@ import { LayoutGrid } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { Label } from "@/components/ui/label";
 import type { Category } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
 
@@ -41,14 +42,14 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
   );
 
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm p-2 mx-2 mb-2">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-brand/15">
+    <div>
+      <div className="flex items-center gap-2 my-2 ">
+        <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-brand/12">
           <LayoutGrid className="w-3.5 h-3.5 text-brand" />
         </div>
-        <span className="text-sm font-semibold text-foreground">
+        <Label className="text-xs font-medium text-muted-foreground">
           {isEnglish ? "Categories" : "Kategorier"}
-        </span>
+        </Label>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -62,7 +63,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
               : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70",
           )}
         >
-          {isEnglish ? "All" : "Alla"}
+          {isEnglish ? "All courses" : "Alla kurser"}
         </button>
         {categories.map((category) => (
           <button

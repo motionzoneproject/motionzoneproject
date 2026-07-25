@@ -85,9 +85,6 @@ export function CoursesFilter({ styles, categories }: CoursesFilterProps) {
 
   return (
     <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm">
-      <div>
-        <CategoryFilter categories={categories} />
-      </div>
       {/* Toggle button */}
       <button
         type="button"
@@ -114,6 +111,9 @@ export function CoursesFilter({ styles, categories }: CoursesFilterProps) {
       {/* Filter content */}
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-border">
+          <div>
+            <CategoryFilter categories={categories} />
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-3">
             {/* Search Field */}
             <div>
