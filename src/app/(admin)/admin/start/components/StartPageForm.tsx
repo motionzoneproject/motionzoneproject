@@ -43,29 +43,35 @@ const IMAGE_FIELDS = [
 ] as const satisfies ReadonlyArray<keyof FormValues>;
 
 async function resolveImageField(
-  current: string,
-  original: string,
+  current: string | undefined,
+  original: string | null | undefined,
 ): Promise<{ url: string; oldUrl: string | null }> {
-  // Case 1: user picked a new file — upload blob and replace
-  if (current.startsWith("blob:")) {
-    const res = await fetch(current);
+  const currentValue = current ?? "";
+  const originalValue = original ?? "";
+
+  // Fall 1: användaren valde en ny fil — ladda upp blob och ersätt
+  if (currentValue.startsWith("blob:")) {
+    const res = await fetch(currentValue);
     const blob = await res.blob();
     const uploaded = await uploadImageFromBlob(blob);
-    URL.revokeObjectURL(current);
-    // Queue old S3 URL for deletion if it changed
+    URL.revokeObjectURL(currentValue);
     const oldUrl =
-      original && original !== uploaded && original.startsWith("http")
-        ? original
+      originalValue &&
+      originalValue !== uploaded &&
+      originalValue.startsWith("http")
+        ? originalValue
         : null;
     return { url: uploaded, oldUrl };
   }
 
-  // Case 2: user cleared the image (reset to a local default path) — delete old S3 object
+  // Fall 2: användaren rensade bilden (eller inget valt) — ta bort gammal S3-bild om den fanns
   const oldUrl =
-    original && original !== current && original.startsWith("http")
-      ? original
+    originalValue &&
+    originalValue !== currentValue &&
+    originalValue.startsWith("http")
+      ? originalValue
       : null;
-  return { url: current, oldUrl };
+  return { url: currentValue, oldUrl };
 }
 
 async function removeOldImage(url: string) {
@@ -132,18 +138,25 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
       feature3Title_en: content.feature3Title_en ?? "",
       feature3Description: content.feature3Description ?? "",
       feature3Description_en: content.feature3Description_en ?? "",
+      image1: content.image1 ?? "",
+      image2: content.image2 ?? "",
+      image3: content.image3 ?? "",
     },
   });
+
+  const OPTIONAL_IMAGE_FIELDS = ["image1", "image2", "image3"] as const;
 
   async function onSubmit(values: FormValues) {
     setIsPending(true);
     try {
-      // Resolve all image fields that are blob URLs
-      const originals: Record<string, string> = {
+      const originals: Record<string, string | null | undefined> = {
         heroImage: content.heroImage,
         feature1Image: content.feature1Image,
         feature2Image: content.feature2Image,
         feature3Image: content.feature3Image,
+        image1: content.image1,
+        image2: content.image2,
+        image3: content.image3,
       };
 
       const resolved = { ...values };
@@ -158,10 +171,18 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
         if (oldUrl) toDelete.push(oldUrl);
       }
 
+      for (const field of OPTIONAL_IMAGE_FIELDS) {
+        const { url, oldUrl } = await resolveImageField(
+          values[field],
+          originals[field],
+        );
+        resolved[field] = url || undefined;
+        if (oldUrl) toDelete.push(oldUrl);
+      }
+
       const result = await updateStartPageContent(resolved);
 
       if (result.success) {
-        // Best-effort cleanup of replaced S3 images
         await Promise.all(toDelete.map(removeOldImage));
         toast.success(result.msg);
         router.refresh();
@@ -326,6 +347,46 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                 {/*  */}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Bildsektion ───────────────────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bildsektion</CardTitle>
+            <FormDescription>
+              Visas som en egen sektion på startsidan, en bild per rad. Valfritt
+              att fylla i — lämna tomt om du inte vill visa någon bild där.
+            </FormDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(["image1", "image2", "image3"] as const).map(
+                (fieldName, index) => (
+                  <FormField
+                    key={fieldName}
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bild {index + 1}</FormLabel>
+                        <FormControl>
+                          <ImageInput
+                            previewClassName="h-48 w-full object-cover rounded"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            defaultValue=""
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ),
+              )}
             </div>
           </CardContent>
         </Card>

@@ -293,4 +293,9 @@ export const adminStartPageSchema = z.object({
   feature2Description_en: z.string().min(1, "Beskrivning måste anges."),
   feature3Title_en: z.string().min(1, "Titel måste anges."),
   feature3Description_en: z.string().min(1, "Beskrivning måste anges."),
+
+  // Image section (NYTT)
+  image1: z.string().optional(),
+  image2: z.string().optional(),
+  image3: z.string().optional(),
 });
