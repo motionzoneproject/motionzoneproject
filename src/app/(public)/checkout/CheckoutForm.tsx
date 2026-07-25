@@ -70,6 +70,11 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
+/** Normalize a name for fuzzy duplicate comparison */
+function normalizeName(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 export default function CheckoutForm({
   items,
   user,
@@ -114,6 +119,50 @@ export default function CheckoutForm({
       [key]: { ...prev[key], ...data },
     }));
   };
+
+  /**
+   * Returns duplicate warnings for a given slot's typed name.
+   * Checks against:
+   *  1. The logged-in user's own name
+   *  2. existingParticipants from the database
+   *  3. Other slots in this same order that already have a name
+   */
+  function getDuplicateWarning(
+    currentKey: string,
+    typedName: string,
+    currentSlots: Record<string, SlotData>,
+  ): {
+    type: "db" | "slot" | "self";
+    match: { id?: string; name: string; slotKey?: string };
+  } | null {
+    const normalized = normalizeName(typedName);
+    if (!normalized) return null;
+
+    // Check against the logged-in user's name
+    if (normalizeName(user.name) === normalized) {
+      return { type: "self", match: { name: user.name } };
+    }
+
+    // Check against existing DB participants
+    const dbMatch = otherParticipants.find(
+      (p) => normalizeName(p.name) === normalized,
+    );
+    if (dbMatch) {
+      return { type: "db", match: { id: dbMatch.id, name: dbMatch.name } };
+    }
+
+    // Check against other slots in the same form that have a custom name
+    for (const [slotKey, slot] of Object.entries(currentSlots)) {
+      if (slotKey === currentKey) continue;
+      if (slot.isSelf) continue;
+      const otherName = slot.customData?.name || "";
+      if (otherName && normalizeName(otherName) === normalized) {
+        return { type: "slot", match: { name: otherName, slotKey } };
+      }
+    }
+
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,6 +257,13 @@ export default function CheckoutForm({
             {flattenedItems.map((it, idx) => {
               const key = `slot-${idx}`;
               const slot = slots[key] || { isSelf: false };
+              const isNewForm =
+                slot.participantId === "new" || !slot.participantId;
+              const typedName = slot.customData?.name || "";
+              const dupWarning =
+                !slot.isSelf && isNewForm
+                  ? getDuplicateWarning(key, typedName, slots)
+                  : null;
 
               return (
                 <div
@@ -261,10 +317,9 @@ export default function CheckoutForm({
                         </Select>
                       </div>
 
-                      {(slot.participantId === "new" ||
-                        !slot.participantId) && (
+                      {isNewForm && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
-                          <div className="space-y-1">
+                          <div className="space-y-1 sm:col-span-2">
                             <Label className="text-xs" htmlFor={`name-${key}`}>
                               {t("checkout.form.name")}
                             </Label>
@@ -288,6 +343,56 @@ export default function CheckoutForm({
                                 })
                               }
                             />
+
+                            {/* ── Duplicate warning banner ── */}
+                            {dupWarning && (
+                              <div className="mt-2 flex flex-col gap-2 rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300 animate-in fade-in slide-in-from-top-1">
+                                <p className="text-xs font-medium">
+                                  {dupWarning.type === "slot"
+                                    ? t("checkout.form.duplicateWarningSlot", {
+                                        name: dupWarning.match.name,
+                                      })
+                                    : t("checkout.form.duplicateWarningDb", {
+                                        name: dupWarning.match.name,
+                                      })}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {dupWarning.type === "db" &&
+                                    dupWarning.match.id && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          updateSlot(key, {
+                                            participantId: dupWarning.match.id,
+                                            customData: undefined,
+                                          })
+                                        }
+                                        className="rounded bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-300 transition-colors dark:bg-amber-800 dark:text-amber-100 dark:hover:bg-amber-700"
+                                      >
+                                        {t(
+                                          "checkout.form.duplicateUseExisting",
+                                          { name: dupWarning.match.name },
+                                        )}
+                                      </button>
+                                    )}
+                                  {dupWarning.type === "self" && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateSlot(key, {
+                                          isSelf: true,
+                                          customData: undefined,
+                                          participantId: undefined,
+                                        })
+                                      }
+                                      className="rounded bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-300 transition-colors dark:bg-amber-800 dark:text-amber-100 dark:hover:bg-amber-700"
+                                    >
+                                      {t("checkout.form.duplicateUseSelf")}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs" htmlFor={`email-${key}`}>
