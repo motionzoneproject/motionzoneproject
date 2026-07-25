@@ -737,6 +737,17 @@ export async function addNewProduct(
     const validated = await adminProductSchema.parseAsync(formData);
     const unlimitedCustomers = validated.unlimitedCustomers === true;
 
+    const trimmedCategoryId = validated.categoryId?.trim() || undefined;
+
+    let validCategory: string | undefined;
+    if (trimmedCategoryId) {
+      const cat = await prisma.category.findUnique({
+        where: { id: trimmedCategoryId },
+        select: { id: true },
+      });
+      validCategory = cat?.id;
+    }
+
     const newProd = await prisma.product.create({
       data: {
         name: validated.name,
@@ -748,6 +759,7 @@ export async function addNewProduct(
         unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
+        categoryId: validCategory,
       },
     });
 
@@ -801,6 +813,17 @@ export async function editProduct(
       }
     }
 
+    const trimmedCategoryId = validated.categoryId?.trim() || undefined;
+
+    let validCategory: string | undefined;
+    if (trimmedCategoryId) {
+      const cat = await prisma.category.findUnique({
+        where: { id: trimmedCategoryId },
+        select: { id: true },
+      });
+      validCategory = cat?.id;
+    }
+
     const newProd = await prisma.product.update({
       where: { id },
       data: {
@@ -813,6 +836,7 @@ export async function editProduct(
         unlimitedCustomers,
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
+        categoryId: validCategory,
       },
     });
 

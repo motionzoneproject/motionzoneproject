@@ -33,6 +33,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Category } from "@/generated/prisma/client";
 import { addNewProduct } from "@/lib/actions/admin";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
@@ -44,8 +52,10 @@ type CourseFormOutput = z.output<typeof formSchema>;
 
 export default function AddProductForm({
   initialLang = "sv",
+  categories,
 }: {
   initialLang?: "sv" | "en";
+  categories: Category[];
 }) {
   const form = useForm<CourseFormInput, unknown, CourseFormOutput>({
     resolver: zodResolver(formSchema),
@@ -60,6 +70,7 @@ export default function AddProductForm({
       clipCount: 0,
       unlimitedCustomers: true,
       maxCustomers: 1,
+      categoryId: "",
     },
   });
 
@@ -147,6 +158,35 @@ export default function AddProductForm({
                       <FormControl>
                         <Input placeholder="Namnge produkten" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kategori</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Ingen kategori" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Ingen kategori</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

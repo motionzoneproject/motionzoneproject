@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "courses": "Courses",
+    "allCourses": "All courses",
     "about": "About us",
     "gallery": "Gallery",
     "openMenu": "Open menu",
@@ -72,7 +73,9 @@
     "noProducts": "No products match the current filters.",
     "filter": {
       "title": "Filter",
-      "searchLabel": "Search product name",
+      "categoryLabel": "Categories",
+      "categoryAll": "All courses",
+      "searchLabel": "Search product/course name",
       "searchPlaceholder": "Search...",
       "styleLabel": "Dance style",
       "stylePlaceholder": "Select dance style",

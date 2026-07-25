@@ -152,6 +152,11 @@ export const adminBulkCancelLessonsSchema = z
     path: ["to"],
   });
 
+export const adminCategorySchema = z.object({
+  name: z.string().min(1, "Namn måste anges."),
+  name_en: z.string().optional(),
+});
+
 export const adminProductSchema = z
   .object({
     name: z.string().min(1),
@@ -160,6 +165,7 @@ export const adminProductSchema = z
     description_en: z.string().optional(),
     imageURL: z.string().optional(),
     unlimitedCustomers: z.coerce.boolean().optional(),
+    categoryId: z.string().optional(), // NYTT
     maxCustomers: z.coerce.number().int().nonnegative(),
     price: z.coerce
       .number()

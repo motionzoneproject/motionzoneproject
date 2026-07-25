@@ -2,6 +2,7 @@
   "nav": {
     "home": "Hem",
     "courses": "Kurser",
+    "allCourses": "Alla kurser",
     "about": "Om oss",
     "gallery": "Galleri",
     "openMenu": "Öppna meny",
@@ -72,7 +73,9 @@
     "noProducts": "Inga produkter hittades med nuvarande filter.",
     "filter": {
       "title": "Filter",
-      "searchLabel": "Sök produktnamn",
+      "categoryLabel": "Kategorier",
+      "categoryAll": "Alla kurser",
+      "searchLabel": "Sök produkt/kurs-namn",
       "searchPlaceholder": "Sök...",
       "styleLabel": "Dansstil",
       "stylePlaceholder": "Välj dansstil",

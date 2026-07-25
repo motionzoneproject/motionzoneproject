@@ -2,6 +2,7 @@ import { EyeOffIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
+import { getCategories } from "@/lib/actions/category-actions";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { formatPrice } from "@/lib/money";
 import prisma from "@/lib/prisma";
@@ -22,6 +23,8 @@ export default async function ProductItem({ product, lang }: Props) {
     where: { productId: product.id },
     include: { course: true },
   });
+
+  const categories = await getCategories();
 
   const productTypeLabel =
     product.type === "CLIP"
@@ -71,6 +74,8 @@ export default async function ProductItem({ product, lang }: Props) {
             active={product.active}
           />
           <EditProductForm
+            categories={categories}
+            categoryId={product.categoryId ?? ""}
             imageURL={product.imageURL ?? ""}
             unlimitedCustomers={product.unlimitedCustomers ?? false}
             maxCustomers={product.maxCustomer}

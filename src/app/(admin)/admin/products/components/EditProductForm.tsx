@@ -35,6 +35,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Category } from "@/generated/prisma/client";
 import { editProduct } from "@/lib/actions/admin";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { oreToSek } from "@/lib/money";
@@ -59,6 +67,8 @@ interface Props {
   maxCustomers: number;
   imageURL: string;
   initialLang?: "sv" | "en";
+  categories: Category[];
+  categoryId?: string;
 }
 
 export default function EditProductForm({
@@ -74,6 +84,8 @@ export default function EditProductForm({
   imageURL,
   maxCustomers,
   initialLang = "sv",
+  categories,
+  categoryId,
 }: Props) {
   const id = useId();
   const form = useForm<EditProductFormInput, unknown, EditProductFormOutput>({
@@ -89,6 +101,7 @@ export default function EditProductForm({
       price: oreToSek(price),
       clipCount: clipCount,
       maxCustomers: maxCustomers,
+      categoryId: categoryId || undefined,
       imageURL: imageURL,
     },
   });
@@ -111,6 +124,7 @@ export default function EditProductForm({
       name_en,
       price: oreToSek(price),
       clipCount,
+      categoryId,
       maxCustomers,
       imageURL,
     });
@@ -118,6 +132,7 @@ export default function EditProductForm({
     isOpen,
     form,
     clipcard,
+    categoryId,
     unlimitedCustomers,
     description,
     name,
@@ -240,6 +255,35 @@ export default function EditProductForm({
                       <FormControl>
                         <Input placeholder="Namnge produkten" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kategori</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Ingen kategori" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Ingen kategori</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -24,13 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Style } from "@/generated/prisma/client";
+import type { Category, Style } from "@/generated/prisma/client";
+import { CategoryFilter } from "./CategoryFilter";
 
 interface CoursesFilterProps {
   styles: Style[];
+  categories: Category[];
 }
 
-export function CoursesFilter({ styles }: CoursesFilterProps) {
+export function CoursesFilter({ styles, categories }: CoursesFilterProps) {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -109,6 +111,9 @@ export function CoursesFilter({ styles }: CoursesFilterProps) {
       {/* Filter content */}
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-border">
+          <div>
+            <CategoryFilter categories={categories} />
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-3">
             {/* Search Field */}
             <div>
