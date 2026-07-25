@@ -33,13 +33,11 @@ export default function NavBar({ categories }: NavBarProps) {
 
   const activeCategory = searchParams.get("category");
 
-  const allCoursesLabel = isEnglish ? "All courses" : "Alla kurser";
-
   const navLinks: NavLink[] = [
     { href: "/", label: t("nav.home"), isCategory: false, categoryId: null },
     {
       href: "/courses",
-      label: allCoursesLabel,
+      label: t("nav.allCourses"),
       isCategory: false,
       categoryId: null,
     },

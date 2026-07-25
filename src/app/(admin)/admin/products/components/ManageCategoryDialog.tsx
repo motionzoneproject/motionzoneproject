@@ -243,11 +243,7 @@ export default function ManageCategoriesDialog({ categories }: Props) {
               })}
             </div>
 
-            <div
-              className={`rounded-lg border-t pt-4 mt-2 ${
-                editingCategory ? "" : ""
-              }`}
-            >
+            <div className={`rounded-lg border-t pt-4 mt-2`}>
               {editingCategory && (
                 <div className="flex items-center justify-between mb-3 rounded-md bg-brand/10 border border-brand/30 px-3 py-2">
                   <p className="text-sm font-medium text-brand">

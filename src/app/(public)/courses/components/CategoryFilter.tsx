@@ -13,11 +13,11 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ categories }: CategoryFilterProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language.startsWith("en");
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  const isEnglish = i18n.language.startsWith("en");
 
   const activeCategory = searchParams.get("category") || "all";
 
@@ -48,7 +48,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
           <LayoutGrid className="w-3.5 h-3.5 text-brand" />
         </div>
         <Label className="text-xs font-medium text-muted-foreground">
-          {isEnglish ? "Categories" : "Kategorier"}
+          {t("coursesPage.filter.categoryLabel")}
         </Label>
       </div>
 
@@ -63,7 +63,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
               : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70",
           )}
         >
-          {isEnglish ? "All courses" : "Alla kurser"}
+          {t("coursesPage.filter.categoryAll")}
         </button>
         {categories.map((category) => (
           <button

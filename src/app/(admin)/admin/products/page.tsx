@@ -13,7 +13,7 @@ import { getCategories } from "@/lib/actions/category-actions";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import AddProductForm from "./components/AddProductForm";
-import ManageCategoriesDialog from "./components/ManageCategoryDIalog";
+import ManageCategoriesDialog from "./components/ManageCategoryDialog";
 import ProductFilter from "./components/ProductFilter";
 import ProductItem from "./components/ProductItem";
 
