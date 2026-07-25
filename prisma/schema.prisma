@@ -691,6 +691,13 @@ model StartPageContent {
   heroSubtext       String @default("Upplev dansen på ett helt nytt sätt. Vår studio erbjuder kurser för alla åldrar och nivåer med professionella instruktörer.")
   heroSubtext_en      String? @default("Discover dance in a new way. Our studio offers courses for all ages and levels with professional instructors.")
 
+
+  //Image section
+  image1 String?
+  image2 String?
+  image3 String?
+
+
   // Features section header
   featuresTitle   String @default("Varför Motion Zone?")
   featuresTitle_en   String? @default("Why Motion Zone?")

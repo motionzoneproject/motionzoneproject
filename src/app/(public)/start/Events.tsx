@@ -6,6 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import Lightbox from "yet-another-react-lightbox";
+import Captions from "yet-another-react-lightbox/plugins/captions";
+import "yet-another-react-lightbox/plugins/captions.css";
+import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/ui/button";
 import type { Event } from "@/generated/prisma/client";
 import { formatDateToInputStr } from "@/lib/date-utils";
@@ -32,11 +36,18 @@ const accentGradients = [
   },
 ];
 
+// Captions-pluginet renderar ren text, inte HTML — så vi strippar taggarna
+// från det sanerade TipTap-innehållet innan det skickas till lightboxen.
+function stripHtml(html: string): string {
+  return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }).trim();
+}
+
 export default function Events({ events }: EventsProps) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
   const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -69,6 +80,32 @@ export default function Events({ events }: EventsProps) {
 
   const currentEvent = events[currentEventIndex];
   const accent = accentGradients[currentEventIndex % accentGradients.length];
+
+  const eventTitle = pick(currentEvent, "headline", lang) as string;
+  const eventDescriptionText = stripHtml(
+    pick(currentEvent, "description", lang) as string,
+  );
+
+  const eventDateText = `${formatDateToInputStr(currentEvent.startDate)}${
+    currentEvent.endDate &&
+    !isSameDay(currentEvent.endDate, currentEvent.startDate)
+      ? ` - ${formatDateToInputStr(currentEvent.endDate)}`
+      : ""
+  }`;
+
+  const eventDescription = [eventDescriptionText, eventDateText]
+    .filter(Boolean)
+    .join(" · ");
+
+  const slides = currentEvent.imageURL
+    ? [
+        {
+          src: currentEvent.imageURL,
+          title: eventTitle,
+          description: eventDescription || undefined,
+        },
+      ]
+    : [];
 
   return (
     <section
@@ -111,16 +148,21 @@ export default function Events({ events }: EventsProps) {
                 <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent z-10" />
 
                 {currentEvent.imageURL && (
-                  <div className="relative overflow-hidden h-52">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    className="relative overflow-hidden h-52 w-full cursor-zoom-in"
+                    aria-label="Visa bilden i full storlek"
+                  >
                     <Image
                       src={currentEvent.imageURL}
-                      alt={pick(currentEvent, "headline", lang) as string}
+                      alt={eventTitle}
                       width={500}
                       height={300}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent opacity-60" />
-                  </div>
+                  </button>
                 )}
 
                 <div className="p-6 relative space-y-4">
@@ -130,7 +172,7 @@ export default function Events({ events }: EventsProps) {
                   />
 
                   <h3 className="text-xl font-bold text-foreground">
-                    {pick(currentEvent, "headline", lang) as string}
+                    {eventTitle}
                   </h3>
 
                   <div className="text-muted-foreground text-sm leading-relaxed">
@@ -202,6 +244,14 @@ export default function Events({ events }: EventsProps) {
           )}
         </div>
       </div>
+
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        slides={slides}
+        plugins={[Captions]}
+        captions={{ descriptionTextAlign: "center", descriptionMaxLines: 3 }}
+      />
     </section>
   );
 }

@@ -59,6 +59,11 @@ const defaults: Omit<StartPageContent, "updatedAt"> = {
 
   feature3Title_en: "Modern studios",
   feature3Description_en: "Our studios have great sound for music and mirrors.",
+
+  // Image section (NYTT)
+  image1: null,
+  image2: null,
+  image3: null,
 };
 
 export async function getStartPageContent(): Promise<StartPageContent> {

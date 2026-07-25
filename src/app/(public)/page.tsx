@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import Events from "./start/Events";
 import Features from "./start/Features";
 import Hero from "./start/Hero";
+import ImageSection from "./start/ImageSection";
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 
@@ -94,6 +95,7 @@ export default async function Page() {
     <div className="flex-1 bg-background">
       <JsonLd data={[organizationLd, localBusinessLd]} />
       <Hero content={startPageContent} />
+      <ImageSection content={startPageContent} />
       <Features content={startPageContent} />
       <Events events={events} />
       <StudioLocation />
