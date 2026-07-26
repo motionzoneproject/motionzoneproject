@@ -43,7 +43,7 @@ const IMAGE_FIELDS = [
 ] as const satisfies ReadonlyArray<keyof FormValues>;
 
 async function resolveImageField(
-  current: string | undefined,
+  current: string | null | undefined,
   original: string | null | undefined,
 ): Promise<{ url: string; oldUrl: string | null }> {
   const currentValue = current ?? "";
@@ -176,10 +176,9 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
           values[field],
           originals[field],
         );
-        resolved[field] = url || undefined;
+        resolved[field] = url === "" ? null : url;
         if (oldUrl) toDelete.push(oldUrl);
       }
-
       const result = await updateStartPageContent(resolved);
 
       if (result.success) {

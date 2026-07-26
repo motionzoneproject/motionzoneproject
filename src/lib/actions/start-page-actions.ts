@@ -82,10 +82,17 @@ export async function updateStartPageContent(
   try {
     const validated = await adminStartPageSchema.parseAsync(formData);
 
+    const dataToSave = {
+      ...validated,
+      image1: validated.image1 || null,
+      image2: validated.image2 || null,
+      image3: validated.image3 || null,
+    };
+
     await prisma.startPageContent.upsert({
       where: { id: "singleton" },
-      update: validated,
-      create: { id: "singleton", ...validated },
+      update: dataToSave,
+      create: { id: "singleton", ...dataToSave },
     });
 
     revalidatePath("/");
