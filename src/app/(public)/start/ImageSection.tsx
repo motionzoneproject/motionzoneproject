@@ -2,9 +2,15 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Lightbox from "yet-another-react-lightbox";
+import Captions from "yet-another-react-lightbox/plugins/captions";
+import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/styles.css";
 import type { StartPageContent } from "@/generated/prisma/client";
+import { pick } from "@/lib/i18n/pick";
+import type { AppLang } from "@/locales/config-lang";
+import { normalizeLang } from "@/locales/config-lang";
 
 type ImageSectionProps = {
   content: StartPageContent;
@@ -25,16 +31,58 @@ const cardAccents = [
   },
 ] as const;
 
+type ImageItem = {
+  src: string;
+  headline: string;
+  description: string;
+};
+
 export default function ImageSection({ content }: ImageSectionProps) {
-  const images = [content.image1, content.image2, content.image3].filter(
-    (src): src is string => Boolean(src),
-  );
+  const { i18n } = useTranslation();
+  const lang: AppLang = normalizeLang(i18n.language);
+
+  const rawImages: {
+    src: string | null;
+    headlineKey: "image1Headline" | "image2Headline" | "image3Headline";
+    descriptionKey:
+      | "image1Description"
+      | "image2Description"
+      | "image3Description";
+  }[] = [
+    {
+      src: content.image1,
+      headlineKey: "image1Headline",
+      descriptionKey: "image1Description",
+    },
+    {
+      src: content.image2,
+      headlineKey: "image2Headline",
+      descriptionKey: "image2Description",
+    },
+    {
+      src: content.image3,
+      headlineKey: "image3Headline",
+      descriptionKey: "image3Description",
+    },
+  ];
+
+  const images: ImageItem[] = rawImages
+    .filter((item): item is typeof item & { src: string } => Boolean(item.src))
+    .map((item) => ({
+      src: item.src,
+      headline: (pick(content, item.headlineKey, lang) as string) ?? "",
+      description: (pick(content, item.descriptionKey, lang) as string) ?? "",
+    }));
 
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   if (images.length === 0) return null;
 
-  const slides = images.map((src) => ({ src }));
+  const slides = images.map((image) => ({
+    src: image.src,
+    title: image.headline || undefined,
+    description: image.description || undefined,
+  }));
 
   return (
     <>
@@ -48,10 +96,10 @@ export default function ImageSection({ content }: ImageSectionProps) {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 md:px-12 relative z-10 space-y-10">
-          {images.map((src, index) => {
+          {images.map((image, index) => {
             const accent = cardAccents[index % cardAccents.length];
             return (
-              <div key={src} className="group relative">
+              <div key={image.src} className="group relative">
                 <div
                   className={`absolute -inset-1 bg-linear-to-r ${accent.accentGradient} rounded-2xl blur-lg opacity-20 group-hover:opacity-50 transition duration-500`}
                 />
@@ -64,13 +112,28 @@ export default function ImageSection({ content }: ImageSectionProps) {
                 >
                   <div className="relative w-full aspect-[16/10] md:aspect-[16/9]">
                     <Image
-                      src={src}
-                      alt=""
+                      src={image.src}
+                      alt={image.headline}
                       fill
                       sizes="(max-width: 768px) 100vw, 768px"
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-linear-to-t from-slate-900/40 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 via-transparent to-transparent" />
+
+                    {(image.headline || image.description) && (
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        {image.headline && (
+                          <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
+                            {image.headline}
+                          </h3>
+                        )}
+                        {image.description && (
+                          <p className="text-white/80 text-sm max-w-xl">
+                            {image.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
@@ -86,6 +149,8 @@ export default function ImageSection({ content }: ImageSectionProps) {
         close={() => setLightboxIndex(-1)}
         index={lightboxIndex}
         slides={slides}
+        plugins={[Captions]}
+        captions={{ descriptionTextAlign: "center", descriptionMaxLines: 3 }}
       />
     </>
   );

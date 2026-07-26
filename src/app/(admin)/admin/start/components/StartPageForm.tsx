@@ -43,7 +43,7 @@ const IMAGE_FIELDS = [
 ] as const satisfies ReadonlyArray<keyof FormValues>;
 
 async function resolveImageField(
-  current: string | undefined,
+  current: string | null | undefined,
   original: string | null | undefined,
 ): Promise<{ url: string; oldUrl: string | null }> {
   const currentValue = current ?? "";
@@ -139,8 +139,20 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
       feature3Description: content.feature3Description ?? "",
       feature3Description_en: content.feature3Description_en ?? "",
       image1: content.image1 ?? "",
+      image1Headline: content.image1Headline ?? "",
+      image1Headline_en: content.image1Headline_en ?? "",
+      image1Description: content.image1Description ?? "",
+      image1Description_en: content.image1Description_en ?? "",
       image2: content.image2 ?? "",
+      image2Headline: content.image2Headline ?? "",
+      image2Headline_en: content.image2Headline_en ?? "",
+      image2Description: content.image2Description ?? "",
+      image2Description_en: content.image2Description_en ?? "",
       image3: content.image3 ?? "",
+      image3Headline: content.image3Headline ?? "",
+      image3Headline_en: content.image3Headline_en ?? "",
+      image3Description: content.image3Description ?? "",
+      image3Description_en: content.image3Description_en ?? "",
     },
   });
 
@@ -176,10 +188,9 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
           values[field],
           originals[field],
         );
-        resolved[field] = url || undefined;
+        resolved[field] = url === "" ? null : url;
         if (oldUrl) toDelete.push(oldUrl);
       }
-
       const result = await updateStartPageContent(resolved);
 
       if (result.success) {
@@ -352,6 +363,7 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
         </Card>
 
         {/* ── Bildsektion ───────────────────────────────────────────────── */}
+        {/* ── Bildsektion ───────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle>Bildsektion</CardTitle>
@@ -360,33 +372,109 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
               att fylla i — lämna tomt om du inte vill visa någon bild där.
             </FormDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(["image1", "image2", "image3"] as const).map(
-                (fieldName, index) => (
-                  <FormField
-                    key={fieldName}
-                    control={form.control}
-                    name={fieldName}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bild {index + 1}</FormLabel>
-                        <FormControl>
-                          <ImageInput
-                            previewClassName="h-48 w-full object-cover rounded"
-                            value={field.value ?? ""}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            name={field.name}
-                            defaultValue=""
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ),
-              )}
+              {(
+                [
+                  {
+                    n: 1,
+                    label: "Bild 1",
+                    imageField: "image1",
+                    headlineField: "image1Headline",
+                    headlineFieldEn: "image1Headline_en",
+                    descField: "image1Description",
+                    descFieldEn: "image1Description_en",
+                  },
+                  {
+                    n: 2,
+                    label: "Bild 2",
+                    imageField: "image2",
+                    headlineField: "image2Headline",
+                    headlineFieldEn: "image2Headline_en",
+                    descField: "image2Description",
+                    descFieldEn: "image2Description_en",
+                  },
+                  {
+                    n: 3,
+                    label: "Bild 3",
+                    imageField: "image3",
+                    headlineField: "image3Headline",
+                    headlineFieldEn: "image3Headline_en",
+                    descField: "image3Description",
+                    descFieldEn: "image3Description_en",
+                  },
+                ] as const
+              ).map((item) => (
+                <Card key={item.n}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{item.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={item.imageField}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bild</FormLabel>
+                          <FormControl>
+                            <ImageInput
+                              previewClassName="h-48 w-full object-cover rounded"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              defaultValue=""
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={
+                        lang === "en"
+                          ? item.headlineFieldEn
+                          : item.headlineField
+                      }
+                      key={`${item.headlineField}-${lang}`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rubrik ({lang}, valfritt)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ""}
+                              placeholder="T.ex. Vår studio"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={lang === "en" ? item.descFieldEn : item.descField}
+                      key={`${item.descField}-${lang}`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Beskrivning ({lang}, valfritt)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              rows={2}
+                              {...field}
+                              value={field.value ?? ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </CardContent>
         </Card>

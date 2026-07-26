@@ -62,8 +62,20 @@ const defaults: Omit<StartPageContent, "updatedAt"> = {
 
   // Image section (NYTT)
   image1: null,
+  image1Headline: null,
+  image1Headline_en: null,
+  image1Description: null,
+  image1Description_en: null,
   image2: null,
+  image2Headline: null,
+  image2Headline_en: null,
+  image2Description: null,
+  image2Description_en: null,
   image3: null,
+  image3Headline: null,
+  image3Headline_en: null,
+  image3Description: null,
+  image3Description_en: null,
 };
 
 export async function getStartPageContent(): Promise<StartPageContent> {
@@ -82,10 +94,29 @@ export async function updateStartPageContent(
   try {
     const validated = await adminStartPageSchema.parseAsync(formData);
 
+    const dataToSave = {
+      ...validated,
+      image1: validated.image1 || null,
+      image1Headline: validated.image1Headline || null,
+      image1Headline_en: validated.image1Headline_en || null,
+      image1Description: validated.image1Description || null,
+      image1Description_en: validated.image1Description_en || null,
+      image2: validated.image2 || null,
+      image2Headline: validated.image2Headline || null,
+      image2Headline_en: validated.image2Headline_en || null,
+      image2Description: validated.image2Description || null,
+      image2Description_en: validated.image2Description_en || null,
+      image3: validated.image3 || null,
+      image3Headline: validated.image3Headline || null,
+      image3Headline_en: validated.image3Headline_en || null,
+      image3Description: validated.image3Description || null,
+      image3Description_en: validated.image3Description_en || null,
+    };
+
     await prisma.startPageContent.upsert({
       where: { id: "singleton" },
-      update: validated,
-      create: { id: "singleton", ...validated },
+      update: dataToSave,
+      create: { id: "singleton", ...dataToSave },
     });
 
     revalidatePath("/");
