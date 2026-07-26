@@ -296,6 +296,18 @@ export const adminStartPageSchema = z.object({
 
   // Image section (NYTT)
   image1: z.string().nullable().optional(),
+  image1Headline: z.string().nullable().optional(),
+  image1Headline_en: z.string().nullable().optional(),
+  image1Description: z.string().nullable().optional(),
+  image1Description_en: z.string().nullable().optional(),
   image2: z.string().nullable().optional(),
+  image2Headline: z.string().nullable().optional(),
+  image2Headline_en: z.string().nullable().optional(),
+  image2Description: z.string().nullable().optional(),
+  image2Description_en: z.string().nullable().optional(),
   image3: z.string().nullable().optional(),
+  image3Headline: z.string().nullable().optional(),
+  image3Headline_en: z.string().nullable().optional(),
+  image3Description: z.string().nullable().optional(),
+  image3Description_en: z.string().nullable().optional(),
 });
