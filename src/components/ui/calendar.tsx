@@ -162,17 +162,108 @@ function Calendar({
           );
         },
         DayButton: CalendarDayButton,
-        WeekNumber: ({ children, ...props }) => {
+        MonthGrid: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div className={cn("w-full border-collapse", className)} {...props} />
+        ),
+        Weekdays: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div className={cn("flex", className)} {...props} />
+        ),
+        Weekday: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div
+            className={cn(
+              "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] select-none flex items-center justify-center",
+              className,
+            )}
+            {...props}
+          />
+        ),
+        WeekNumberHeader: ({
+          className,
+          ...props
+        }: React.ComponentProps<"div">) => (
+          <div
+            className={cn(
+              "select-none flex items-center justify-end pr-2 size-(--cell-size) text-[0.8rem] tabular-nums",
+              className,
+            )}
+            {...props}
+          />
+        ),
+        Weeks: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div className={cn(className)} {...props} />
+        ),
+        Week: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div
+            className={cn("flex w-full mt-2 items-center", className)}
+            {...props}
+          />
+        ),
+        Day: ({ className, ...props }: React.ComponentProps<"div">) => (
+          <div className={cn(className)} {...props} />
+        ),
+        WeekNumber: ({
+          children,
+          className,
+          ...props
+        }: React.ComponentProps<"div"> & { children?: React.ReactNode }) => {
           return (
-            <td {...props}>
-              <div className="flex size-(--cell-size) items-center justify-center text-center">
-                {children}
-              </div>
-            </td>
+            <div
+              className={cn(
+                "flex size-(--cell-size) items-center justify-end pr-2 text-center text-[0.8rem] tabular-nums text-muted-foreground",
+                className,
+              )}
+              {...props}
+            >
+              {children}
+            </div>
           );
         },
         ...components,
       }}
+      // replaced table with div, it works better with flex.
+      // components={{
+      //   Root: ({ className, rootRef, ...props }) => {
+      //     return (
+      //       <div
+      //         data-slot="calendar"
+      //         ref={rootRef}
+      //         className={cn(className)}
+      //         {...props}
+      //       />
+      //     );
+      //   },
+      //   Chevron: ({ className, orientation, ...props }) => {
+      //     if (orientation === "left") {
+      //       return (
+      //         <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+      //       );
+      //     }
+
+      //     if (orientation === "right") {
+      //       return (
+      //         <ChevronRightIcon
+      //           className={cn("size-4", className)}
+      //           {...props}
+      //         />
+      //       );
+      //     }
+
+      //     return (
+      //       <ChevronDownIcon className={cn("size-4", className)} {...props} />
+      //     );
+      //   },
+      //   DayButton: CalendarDayButton,
+      //   WeekNumber: ({ children, ...props }) => {
+      //     return (
+      //       <td {...props}>
+      //         <div className="flex size-(--cell-size) items-center justify-center text-center">
+      //           {children}
+      //         </div>
+      //       </td>
+      //     );
+      //   },
+      //   ...components,
+      // }}
       {...props}
     />
   );
