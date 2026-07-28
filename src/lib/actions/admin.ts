@@ -739,13 +739,13 @@ export async function addNewProduct(
 
     const trimmedCategoryId = validated.categoryId?.trim() || undefined;
 
-    let validCategory: string | undefined;
+    let validCategory: string | null = null;
     if (trimmedCategoryId) {
       const cat = await prisma.category.findUnique({
         where: { id: trimmedCategoryId },
         select: { id: true },
       });
-      validCategory = cat?.id;
+      validCategory = cat?.id || null;
     }
 
     const newProd = await prisma.product.create({
@@ -813,15 +813,16 @@ export async function editProduct(
       }
     }
 
-    const trimmedCategoryId = validated.categoryId?.trim() || undefined;
+    const trimmedCategoryId = validated.categoryId?.trim() || null;
 
-    let validCategory: string | undefined;
+    let validCategory: string | null = null;
+
     if (trimmedCategoryId) {
       const cat = await prisma.category.findUnique({
         where: { id: trimmedCategoryId },
         select: { id: true },
       });
-      validCategory = cat?.id;
+      validCategory = cat?.id || null;
     }
 
     const newProd = await prisma.product.update({
