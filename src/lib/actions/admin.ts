@@ -813,15 +813,15 @@ export async function editProduct(
       }
     }
 
-    const trimmedCategoryId = validated.categoryId?.trim() || undefined;
+    const trimmedCategoryId = validated.categoryId?.trim();
 
-    let validCategory: string | undefined;
+    let validCategory: string | null = null;
     if (trimmedCategoryId) {
       const cat = await prisma.category.findUnique({
         where: { id: trimmedCategoryId },
         select: { id: true },
       });
-      validCategory = cat?.id;
+      validCategory = cat?.id ?? null;
     }
 
     const newProd = await prisma.product.update({

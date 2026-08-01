@@ -76,6 +76,15 @@ export default function AddProductForm({
 
   const [formLang, setFormLang] = useState(initialLang);
 
+  const errors = form.formState.errors;
+  useEffect(() => {
+    if (errors.name || errors.description) {
+      setFormLang("sv");
+    } else if (errors.name_en || errors.description_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
+
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -148,20 +157,37 @@ export default function AddProductForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-2 p-2 rounded-xl"
               >
-                <FormField
-                  control={form.control}
-                  name={formLang === "en" ? "name_en" : "name"}
-                  key={`name-${formLang}`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Namn ({formLang})</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Namnge produkten" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className={formLang === "sv" ? "block" : "hidden"}>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Namn (sv)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Namnge produkten" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className={formLang === "en" ? "block" : "hidden"}>
+                  <FormField
+                    control={form.control}
+                    name="name_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Namn (en)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Namnge produkten" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
@@ -192,24 +218,45 @@ export default function AddProductForm({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name={formLang === "en" ? "description_en" : "description"}
-                  key={`description-${formLang}`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Beskrivning ({formLang})</FormLabel>
-                      <FormControl>
-                        <RichTextEditor
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          placeholder="Skriv produktbeskrivning..."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className={formLang === "sv" ? "block" : "hidden"}>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Beskrivning (sv)</FormLabel>
+                        <FormControl>
+                          <RichTextEditor
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            placeholder="Skriv produktbeskrivning..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className={formLang === "en" ? "block" : "hidden"}>
+                  <FormField
+                    control={form.control}
+                    name="description_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Beskrivning (en)</FormLabel>
+                        <FormControl>
+                          <RichTextEditor
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            placeholder="Skriv produktbeskrivning..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}

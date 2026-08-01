@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -69,6 +69,15 @@ export default function ManageCategoriesDialog({ categories }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", name_en: "" },
   });
+
+  const errors = form.formState.errors;
+  useEffect(() => {
+    if (errors.name) {
+      setFormLang("sv");
+    } else if (errors.name_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   const startEdit = (category: Category) => {
     setEditingCategory(category);
@@ -274,20 +283,37 @@ export default function ManageCategoriesDialog({ categories }: Props) {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-2"
                 >
-                  <FormField
-                    control={form.control}
-                    name={formLang === "en" ? "name_en" : "name"}
-                    key={`name-${formLang}`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Namn ({formLang})</FormLabel>
-                        <FormControl>
-                          <Input placeholder="T.ex. Balett" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className={formLang === "sv" ? "block" : "hidden"}>
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Namn (sv)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="T.ex. Balett" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className={formLang === "en" ? "block" : "hidden"}>
+                    <FormField
+                      control={form.control}
+                      name="name_en"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Namn (en)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="T.ex. Ballet" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="flex gap-2">
                     <Button type="submit" variant="ghost" className="flex-1">
