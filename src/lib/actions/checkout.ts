@@ -28,6 +28,19 @@ export async function createCheckout(params: {
     throw new Error("No items provided");
   }
 
+  // Prevent duplicate registrations of the same participant to the same product in a single checkout
+  const seenRegistrations = new Set<string>();
+  for (const itm of items) {
+    const participantKey = itm.participantId || "self";
+    const registrationKey = `${itm.productId}-${participantKey}`;
+    if (seenRegistrations.has(registrationKey)) {
+      throw new Error(
+        "Samma deltagare kan inte anmälas flera gånger till samma produkt.",
+      );
+    }
+    seenRegistrations.add(registrationKey);
+  }
+
   const pCountTotal = new Map();
   const serverItems: {
     productId: string;

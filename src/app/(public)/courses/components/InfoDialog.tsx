@@ -37,7 +37,7 @@ export function InfoDialog({ intro }: CoursesInfoDialogProps) {
           {intro}
         </p>
         <DialogFooter>
-          <DialogClose>
+          <DialogClose asChild>
             <Button variant="ghost">Stäng</Button>
           </DialogClose>
         </DialogFooter>
