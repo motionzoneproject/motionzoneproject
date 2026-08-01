@@ -33,19 +33,36 @@ export default async function Page() {
     const ids = cart.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: ids }, active: true },
-      select: { id: true, name: true, name_en: true, price: true },
+      include: {
+        courses: {
+          include: { course: true },
+        },
+      },
     });
 
     const byId = new Map(products.map((p) => [p.id, p]));
 
-    const items = cart.items.map((it) => {
+    const items = cart.items.flatMap((it) => {
       const p = byId.get(it.productId);
-      return {
-        productId: it.productId,
-        name: p ? (pick(p, "name", lang) as string) : t.common.unknown,
-        qty: it.qty,
-        price: p?.price ?? 0,
-      };
+
+      if (!p) {
+        return [];
+      }
+
+      return [
+        {
+          product: p,
+          productId: it.productId,
+          name: pick(p, "name", lang) as string,
+          qty: it.qty,
+          price: p.price,
+          // Courses available for SelectPack (only relevant when maxCourses is set)
+          courses: p.courses.map((pc) => ({
+            courseId: pc.courseId,
+            courseName: pick(pc.course, "name", lang) as string,
+          })),
+        },
+      ];
     });
 
     const userDetails = await prisma.userDetails.findUnique({

@@ -293,7 +293,7 @@ model Product {
   courses ProductOnCourse[] // Här specificeras varje kurs och hur många tillfällen som man får tillgång till när man köper en produkt. Om klippkort sätts count till 0.
 
   expireFixedDate        DateTime? // Om den ska ha ett sista datum.
-  expireDaysFromPurchase Int? // Om det ska gälla en viss tid. Då kan expireDate
+  expireDaysFromPurchase Int? // Om det ska gälla en viss tid.
 
   type       ProductType @default(COURSE)
   // useTotalCount Boolean @default(false) // Tagit bort useTotalCount nu när type-logiken är fullt migrerad.
