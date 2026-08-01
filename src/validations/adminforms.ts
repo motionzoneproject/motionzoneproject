@@ -173,6 +173,8 @@ export const adminProductSchema = z
       .nonnegative("Priset får inte vara negativt"),
     clipcard: z.coerce.boolean().optional(), //Det riktig engelska ordet är clipboard, men jag gillade det inte.
     clipCount: z.coerce.number().int().nonnegative(),
+    autobook: z.coerce.boolean(),
+    maxCourses: z.coerce.number().int().min(1).nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.clipcard && data.clipCount < 1) {

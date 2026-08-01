@@ -760,6 +760,8 @@ export async function addNewProduct(
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
         categoryId: validCategory,
+        autobook: validated.autobook,
+        maxCourses: validated.maxCourses,
       },
     });
 
