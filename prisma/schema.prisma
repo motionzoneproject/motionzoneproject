@@ -241,6 +241,10 @@ model Course {
 
   purchaseItems PurchaseItem[]
 
+  orderItemsSelections OrderItemCourseSelection[]
+
+
+
   // terminId String? 
   // termin Termin? @relation(fields: [terminId], references: [id], onDelete: SetNull)
   // Detta är om man bara ska kunna ha en kurs på en termin.
@@ -309,7 +313,9 @@ model Product {
 
   imageURL String?
 
+  autobook Boolean @default(false) // Om kunden automatiskt ska bokas in eller inte (ej för klippkort eller paket med maxCourses)
 
+  maxCourses Int? // För paket där kunden får välja ur ett urval (urvalet är productOnCourse). Null är obegränsat och då kan kunden boka in sig på alla kurser som är kopplade viaa productOnCourse
 
   active Boolean @default(true) // Om produkten är aktiv (synlig för kunder)
 
@@ -443,6 +449,8 @@ model OrderItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  courseSelections OrderItemCourseSelection[]
+
   @@index([orderId])
   @@index([productId])
   @@index([participantId])
@@ -477,6 +485,23 @@ model Order {
   @@index([userId])
   @@map("order")
 }
+
+model OrderItemCourseSelection {
+  id          String    @id @default(uuid())
+
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([orderItemId, courseId])
+  @@map("order_item_course_selection")
+}
+
+
 
 model Event {
   id String @id @default(uuid())
