@@ -443,7 +443,18 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     const purchaseItem = await prisma.purchaseItem.findUnique({
       where: { id: purchaseItemId },
       include: {
-        purchase: true,
+        purchase: {
+          include: {
+            product: {
+              select: {
+                autobook: true,
+                maxCourses: true,
+                type: true,
+                courses: { select: { courseId: true } },
+              },
+            },
+          },
+        },
         course: true,
       },
     });
@@ -452,6 +463,30 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     const purchase = purchaseItem.purchase;
     const course = purchaseItem.course;
     const participantId = purchase.participantId;
+    const product = purchase.product;
+
+    // 1. Produkten måste ha autobokning aktiverad.
+    if (!product.autobook) return [];
+
+    // 2. Klippkort med fler än 1 kopplad kurs stödjer inte autobokning.
+    // (autobook borde redan vara false i det läget via updateProductType,
+    // men vi dubbelkollar här som ett extra säkerhetsnät.)
+    if (product.type === "CLIP" && product.courses.length > 1) return [];
+
+    // 3. Om produkten begränsar antal valbara kurser (maxCourses satt),
+    // autoboka bara den/de kurser kunden faktiskt valde vid köpet.
+    if (product.maxCourses !== null) {
+      const selection = await prisma.orderItemCourseSelection.findUnique({
+        where: {
+          orderItemId_courseId: {
+            orderItemId: purchaseItem.orderItemId,
+            courseId: course.id,
+          },
+        },
+        select: { id: true },
+      });
+      if (!selection) return [];
+    }
 
     // Säkerhetscheck: admin får boka för andra, övriga bara för sina egna köp.
     const isAdmin = sessionUser.role === "admin";
