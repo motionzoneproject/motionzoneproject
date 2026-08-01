@@ -295,7 +295,13 @@ export default function AddProductForm({
                   control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem
+                      className={
+                        form.watch("unlimitedCustomers") === true
+                          ? "hidden"
+                          : ""
+                      }
+                    >
                       <FormLabel>Max antal kunder:</FormLabel>
 
                       <FormControl>
@@ -358,7 +364,7 @@ export default function AddProductForm({
                         <Input
                           disabled={form.watch("clipcard") === false}
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
                           {...field}
                           value={
@@ -368,6 +374,10 @@ export default function AddProductForm({
                                 ? ""
                                 : String(field.value)
                           }
+                          onChange={(e) => {
+                            const parsed = Number(e.target.value);
+                            field.onChange(Number.isNaN(parsed) ? 1 : parsed);
+                          }}
                         />
                       </FormControl>
 

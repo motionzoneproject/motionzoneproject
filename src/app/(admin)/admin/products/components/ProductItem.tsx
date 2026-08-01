@@ -74,7 +74,10 @@ export default async function ProductItem({ product, lang }: Props) {
             active={product.active}
           />
           <EditProductForm
+            initialLang={lang}
             categories={categories}
+            autobook={product.autobook ?? false}
+            maxCourses={product.maxCourses ?? null}
             categoryId={product.categoryId ?? ""}
             imageURL={product.imageURL ?? ""}
             unlimitedCustomers={product.unlimitedCustomers ?? false}
