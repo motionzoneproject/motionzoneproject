@@ -22,7 +22,25 @@ export async function updateOrderStatus(
   const adminUserId = await requireAdmin();
 
   return prisma.$transaction(async (tx) => {
-    const current = await tx.order.findUnique({ where: { id: orderId } });
+    const current = await tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                courses: {
+                  select: { courseId: true },
+                },
+              },
+            },
+            courseSelections: {
+              select: { courseId: true },
+            },
+          },
+        },
+      },
+    });
 
     if (!current) throw new Error("Order not found");
     if (current.status === toStatus) return { success: true };
@@ -31,6 +49,43 @@ export async function updateOrderStatus(
       ["APPROVED", "PAID"].includes(current.status)
     ) {
       throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
+    }
+
+    if (toStatus === "APPROVED") {
+      for (const item of current.orderItems) {
+        const maxCourses = item.product.maxCourses;
+        if (maxCourses == null) continue;
+
+        const selectedCourseIds = item.courseSelections.map(
+          (sel) => sel.courseId,
+        );
+        const uniqueSelectedIds = new Set(selectedCourseIds);
+
+        if (selectedCourseIds.length !== maxCourses) {
+          throw new Error(
+            `Du måste välja exakt ${maxCourses} olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+          );
+        }
+
+        if (uniqueSelectedIds.size !== selectedCourseIds.length) {
+          throw new Error(
+            `Du måste välja olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+          );
+        }
+
+        const validCourseIds = new Set(
+          item.product.courses.map((link) => link.courseId),
+        );
+        const invalidCourseId = selectedCourseIds.find(
+          (courseId) => !validCourseIds.has(courseId),
+        );
+
+        if (invalidCourseId) {
+          throw new Error(
+            `En vald kurs i "${item.product.name}" finns inte kopplad till produkten och kan därför inte godkännas.`,
+          );
+        }
+      }
     }
 
     const updated = await tx.order.update({
