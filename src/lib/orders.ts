@@ -116,7 +116,13 @@ export async function getOrderById(orderId: string) {
     include: {
       user: true,
       orderItems: {
-        include: { product: true, participant: true },
+        include: {
+          product: true,
+          participant: true,
+          courseSelections: {
+            include: { course: { select: { id: true, name: true } } },
+          },
+        },
       },
     },
   });

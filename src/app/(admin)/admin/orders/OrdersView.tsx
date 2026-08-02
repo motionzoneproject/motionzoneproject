@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
+import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
 type OrderLite = {
   id: string;
@@ -26,13 +27,24 @@ type OrderLite = {
   orderItems?:
     | {
         id?: string;
-        product: { name: string };
+        product: {
+          name: string;
+          maxCourses?: number | null;
+          courses?:
+            | {
+                courseId: string;
+                courseName?: string | null;
+                course?: { id: string; name: string } | null;
+              }[]
+            | null;
+        };
         participant?: {
           id: string;
           dateOfBirth: string | Date | null;
           email: string;
           name: string;
         } | null;
+        courseSelections?: { course: { id: string; name: string } }[] | null;
       }[]
     | null;
   totalPrice: unknown;
@@ -50,6 +62,7 @@ export default function OrdersView({
   onMarkPaid,
   onCancel,
   onDelete,
+  onSavePackage,
 }: {
   orders: OrderLite[];
   defaultStatus: string;
@@ -58,6 +71,10 @@ export default function OrdersView({
   onMarkPaid: (formData: FormData) => void;
   onCancel: (formData: FormData) => void;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
+  onSavePackage: (
+    orderItemId: string,
+    selectedCourseIds: string[],
+  ) => Promise<{ success: boolean }> | { success: boolean };
 }) {
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
@@ -239,6 +256,7 @@ export default function OrdersView({
               <th className="p-3 text-left font-medium">Beställare</th>
               <th className="p-3 text-left font-medium">Deltagare</th>
               <th className="p-3 text-left font-medium">Produkter</th>
+              <th className="p-3 text-left font-medium">Paket</th>
               <th className="p-3 text-left font-medium">Total</th>
               <th className="p-3 text-left font-medium">Status</th>
               <th className="p-3 text-left font-medium">
@@ -337,6 +355,80 @@ export default function OrdersView({
                           + {(o.orderItems?.length || 0) - 2} till...
                         </span>
                       )}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-1 max-w-[260px]">
+                      {(o.orderItems ?? []).flatMap((oi) => {
+                        const courseOptions =
+                          oi.product.courses?.map((link) => ({
+                            courseId: link.courseId,
+                            courseName:
+                              link.courseName ??
+                              link.course?.name ??
+                              "Okänd kurs",
+                          })) ?? [];
+                        const selections =
+                          oi.courseSelections
+                            ?.map((sel) => sel.course.name)
+                            .filter(Boolean) ?? [];
+
+                        if (
+                          oi.product.maxCourses == null ||
+                          courseOptions.length === 0
+                        ) {
+                          return [
+                            <span
+                              key={`${oi.id}-empty`}
+                              className="text-[11px] text-muted-foreground italic"
+                            >
+                              {oi.product.maxCourses != null
+                                ? "Inga paketval tillgängliga"
+                                : "—"}
+                            </span>,
+                          ];
+                        }
+
+                        const selectedIds =
+                          oi.courseSelections?.map((sel) => sel.course.id) ??
+                          [];
+                        const canEdit = o.status !== "APPROVED";
+
+                        return [
+                          <div
+                            key={`${oi.id}-pack`}
+                            className="flex flex-col gap-1.5 rounded-md border bg-muted/30 p-2"
+                          >
+                            {selections.length === 0 ? (
+                              <span className="text-[11px] text-muted-foreground italic">
+                                Inga paketval sparade
+                              </span>
+                            ) : (
+                              selections.map((courseName) => (
+                                <span
+                                  key={`${oi.id}-${courseName}`}
+                                  className="truncate text-[11px]"
+                                >
+                                  {courseName}
+                                </span>
+                              ))
+                            )}
+                            <OrderPackageDialog
+                              orderItemId={oi.id ?? ""}
+                              productName={oi.product.name}
+                              maxCourses={oi.product.maxCourses}
+                              courses={courseOptions}
+                              selected={selectedIds}
+                              onSave={async (orderItemId, next) => {
+                                await onSavePackage(orderItemId, next);
+                              }}
+                              disabled={!canEdit}
+                              readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
+                              triggerLabel="Ändra paket"
+                            />
+                          </div>,
+                        ];
+                      })}
                     </div>
                   </td>
                   <td className="p-3 font-semibold">

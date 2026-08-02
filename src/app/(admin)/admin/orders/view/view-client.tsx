@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { adminGetOrder, deleteOrder } from "@/lib/actions/orders";
+import { OrderPackageEditor } from "@/app/(admin)/admin/orders/components/OrderPackageEditor";
+import {
+  adminGetOrder,
+  deleteOrder,
+  updateOrderItemCourseSelections,
+} from "@/lib/actions/orders";
 import {
   formatDateToInputStr,
   formatLongFriendlyDateTime,
@@ -19,7 +24,17 @@ type OrderItemLite = {
   price: unknown;
   count: number;
   productId: string;
-  product?: { name?: string | null } | null;
+  product?: {
+    name?: string | null;
+    maxCourses?: number | null;
+    courses?:
+      | {
+          courseId: string;
+          courseName?: string | null;
+          course?: { name?: string | null } | null;
+        }[]
+      | null;
+  } | null;
   participant?: {
     name: string;
     email?: string | null;
@@ -27,6 +42,11 @@ type OrderItemLite = {
     phone?: string | null;
     allowPhotoVideo: boolean;
   } | null;
+  courseSelections?:
+    | {
+        course: { id: string; name: string };
+      }[]
+    | null;
 };
 
 type StatusEventLite = {
@@ -103,6 +123,11 @@ export default function OrderDetailsClient() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [packageSelections, setPackageSelections] = useState<
+    Record<string, string[]>
+  >({});
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
+  const [packageError, setPackageError] = useState<string | null>(null);
   const [_isPending, startTransition] = useTransition();
 
   const handleDelete = async () => {
@@ -131,6 +156,14 @@ export default function OrderDetailsClient() {
       try {
         const data = await adminGetOrder(orderId);
         setOrder(data);
+        setPackageSelections(
+          Object.fromEntries(
+            (data?.orderItems ?? []).map((it) => [
+              it.id,
+              (it.courseSelections ?? []).map((sel) => sel.course.id),
+            ]),
+          ),
+        );
         setError(null);
       } catch (e) {
         const msg =
@@ -139,6 +172,44 @@ export default function OrderDetailsClient() {
       }
     });
   }, [orderId]);
+
+  const handleSavePackage = async (
+    orderItemId: string,
+    selectedOverride?: string[],
+  ) => {
+    const selected = selectedOverride ?? packageSelections[orderItemId] ?? [];
+    setSavingItemId(orderItemId);
+    setPackageError(null);
+
+    try {
+      const result = await updateOrderItemCourseSelections(
+        orderItemId,
+        selected,
+      );
+
+      if (!result.success) {
+        throw new Error("Kunde inte spara paketvalet.");
+      }
+
+      const data = await adminGetOrder(orderId);
+      setOrder(data);
+      setPackageSelections(
+        Object.fromEntries(
+          (data?.orderItems ?? []).map((it) => [
+            it.id,
+            (it.courseSelections ?? []).map((sel) => sel.course.id),
+          ]),
+        ),
+      );
+    } catch (e) {
+      const msg =
+        (e as { message?: string })?.message ||
+        "Kunde inte uppdatera paketval.";
+      setPackageError(msg);
+    } finally {
+      setSavingItemId(null);
+    }
+  };
 
   if (!orderId) {
     return (
@@ -430,6 +501,13 @@ export default function OrderDetailsClient() {
               {(order.orderItems || []).map((it) => {
                 const unit = Number(it.price ?? 0);
                 const sum = unit * (it.count ?? 0);
+                const packCourses =
+                  it.product?.courses?.map((course) => ({
+                    courseId: course.courseId,
+                    courseName:
+                      course.courseName ?? course.course?.name ?? "Okänd kurs",
+                  })) ?? [];
+                const selectedPack = packageSelections[it.id] ?? [];
                 return (
                   <tr key={it.id} className="hover:bg-muted/30">
                     <td className="px-4 py-3">
@@ -461,6 +539,28 @@ export default function OrderDetailsClient() {
                             Kund själv
                           </span>
                         )}
+                        {it.product?.maxCourses != null &&
+                          packCourses.length > 0 && (
+                            <div className="mt-3 space-y-2 rounded-md border bg-muted/30 p-2">
+                              <OrderPackageEditor
+                                orderItemId={it.id}
+                                productName={it.product?.name ?? it.productId}
+                                maxCourses={it.product.maxCourses}
+                                courses={packCourses}
+                                selected={selectedPack}
+                                onSave={async (orderItemId, next) => {
+                                  setPackageSelections((prev) => ({
+                                    ...prev,
+                                    [orderItemId]: next,
+                                  }));
+                                  await handleSavePackage(orderItemId, next);
+                                }}
+                                isSaving={savingItemId === it.id}
+                                disabled={order.status === "APPROVED"}
+                                readOnlyMessage="Paketvalet går inte att ändra för en godkänd order."
+                              />
+                            </div>
+                          )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -489,6 +589,12 @@ export default function OrderDetailsClient() {
       </div>
 
       {/* Status History */}
+      {packageError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {packageError}
+        </div>
+      )}
+
       <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
         <div className="bg-muted/50 px-4 py-3 border-b">
           <h2 className="font-semibold">Statushistorik & Logg</h2>
