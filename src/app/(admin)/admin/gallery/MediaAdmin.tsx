@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -325,6 +325,16 @@ export default function MediaAdmin({
     }
   };
 
+  const errors = form.formState.errors;
+
+  useEffect(() => {
+    if (errors.title || errors.description) {
+      setFormLang("sv");
+    } else if (errors.title_en || errors.description_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
+
   return (
     <div className="w-full bg-background p-4 text-foreground">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -618,12 +628,16 @@ export default function MediaAdmin({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="text-sm">
-            Formulärspråk:{" "}
-            <LanguageSwitcherInput
-              value={formLang ?? "sv"}
-              setValue={(value) => setFormLang(value)}
-            />
+          <div className="sticky top-4 z-50 flex justify-end pointer-events-none -mb-6">
+            <div className="pointer-events-auto flex border-2 items-center gap-2 rounded-full border-brand/70 bg-background/50 pl-3 pr-2.5 py-2.5 shadow-sm backdrop-blur-sm mr-2">
+              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                Språk:
+              </span>
+              <LanguageSwitcherInput
+                value={formLang ?? "sv"}
+                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+              />
+            </div>
           </div>
 
           <Form {...form}>
@@ -677,17 +691,19 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name={formLang === "en" ? "title_en" : "title"}
-                key={`title-${formLang}`}
+                name="title"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className={formLang === "en" ? "hidden" : ""}>
                     <FormLabel>
+                      {" "}
                       {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
                       )
                     </FormLabel>
+
                     <FormControl>
                       <Input {...field} value={field.value ?? ""} />
                     </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}
@@ -695,14 +711,51 @@ export default function MediaAdmin({
 
               <FormField
                 control={form.control}
-                name={formLang === "en" ? "description_en" : "description"}
-                key={`description-${formLang}`}
+                name="title_en"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beskrivning ({formLang})</FormLabel>
+                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                    <FormLabel>
+                      {" "}
+                      {currentType === "IMAGE" ? "Rubrik" : "Titel"} ({formLang}
+                      )
+                    </FormLabel>
+
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className={formLang === "en" ? "hidden" : ""}>
+                    <FormLabel>Beskrivning (sv)</FormLabel>
+
                     <FormControl>
                       <Textarea {...field} value={field.value ?? ""} rows={3} />
                     </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description_en"
+                render={({ field }) => (
+                  <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                    <FormLabel>Beskrivning (en)</FormLabel>
+
+                    <FormControl>
+                      <Textarea {...field} value={field.value ?? ""} rows={3} />
+                    </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}

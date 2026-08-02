@@ -107,18 +107,18 @@ export default function AddCourseForm({
   const errors = form.formState.errors;
 
   useEffect(() => {
-    if (!isOpen) {
-      setFormLang(initialLang);
-    }
-  }, [initialLang, isOpen]);
-
-  useEffect(() => {
     if (errors.name || errors.description || errors.level) {
       setFormLang("sv");
     } else if (errors.name_en || errors.description_en || errors.level_en) {
       setFormLang("en");
     }
   }, [errors]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormLang(initialLang);
+    }
+  }, [initialLang, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>

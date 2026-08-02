@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -120,6 +120,16 @@ export default function ManageCategoriesDialog({ categories }: Props) {
     }
     setPendingDelete(null);
   }
+
+  const errors = form.formState.errors;
+
+  useEffect(() => {
+    if (errors.name) {
+      setFormLang("sv");
+    } else if (errors.name_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   return (
     <Dialog
@@ -243,7 +253,7 @@ export default function ManageCategoriesDialog({ categories }: Props) {
               })}
             </div>
 
-            <div className={`rounded-lg border-t pt-4 mt-2`}>
+            <div>
               {editingCategory && (
                 <div className="flex items-center justify-between mb-3 rounded-md bg-brand/10 border border-brand/30 px-3 py-2">
                   <p className="text-sm font-medium text-brand">
@@ -261,12 +271,16 @@ export default function ManageCategoriesDialog({ categories }: Props) {
                 </div>
               )}
 
-              <div className="text-sm my-2">
-                Formulärspråk:{" "}
-                <LanguageSwitcherInput
-                  value={formLang}
-                  setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
-                />
+              <div className="sticky  z-50 flex justify-end pointer-events-none ">
+                <div className="pointer-events-auto flex border-2 items-center gap-2 rounded-full border-brand/70 bg-background/50 pl-3 pr-2.5 py-2.5 shadow-sm backdrop-blur-sm mr-2">
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Språk:
+                  </span>
+                  <LanguageSwitcherInput
+                    value={formLang ?? "sv"}
+                    setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+                  />
+                </div>
               </div>
 
               <Form {...form}>
@@ -276,13 +290,26 @@ export default function ManageCategoriesDialog({ categories }: Props) {
                 >
                   <FormField
                     control={form.control}
-                    name={formLang === "en" ? "name_en" : "name"}
-                    key={`name-${formLang}`}
+                    name="name"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Namn ({formLang})</FormLabel>
+                      <FormItem className={formLang === "en" ? "hidden" : ""}>
+                        <FormLabel>Kursnamn (sv)</FormLabel>
                         <FormControl>
-                          <Input placeholder="T.ex. Balett" {...field} />
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="name_en"
+                    render={({ field }) => (
+                      <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                        <FormLabel>Kursnamn (en)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

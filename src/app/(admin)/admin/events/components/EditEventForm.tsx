@@ -130,6 +130,7 @@ export default function EditEventForm({
   );
 
   const [formLang, setFormLang] = useState(initialLang);
+  const errors = form.formState.errors;
 
   useEffect(() => {
     if (isOpen) {
@@ -137,15 +138,27 @@ export default function EditEventForm({
     }
   }, [initialLang, isOpen]);
 
+  useEffect(() => {
+    if (errors.headline || errors.description) {
+      setFormLang("sv");
+    } else if (errors.headline_en || errors.description_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
+
   return (
     <Card>
       <CardContent>
-        <div className="p2 text-sm">
-          Formulärspråk:{" "}
-          <LanguageSwitcherInput
-            value={formLang ?? "sv"}
-            setValue={(e) => setFormLang(e)}
-          />
+        <div className="sticky top-4 z-50 flex justify-end pointer-events-none -mb-6">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-brand/70 bg-background/50 px-3 py-2 shadow-sm backdrop-blur-sm">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              Språk:
+            </span>
+            <LanguageSwitcherInput
+              value={formLang ?? "sv"}
+              setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+            />
+          </div>
         </div>
 
         <Form {...form}>
@@ -168,11 +181,10 @@ export default function EditEventForm({
 
             <FormField
               control={form.control}
-              name={formLang === "en" ? "headline_en" : "headline"}
-              key={`headline-${formLang}`}
+              name="headline"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rubrik ({formLang})</FormLabel>
+                <FormItem className={formLang === "en" ? "hidden" : ""}>
+                  <FormLabel>Rubrik (sv)</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -183,16 +195,47 @@ export default function EditEventForm({
 
             <FormField
               control={form.control}
-              name={formLang === "en" ? "description_en" : "description"}
-              key={`description-${formLang}`}
+              name="headline_en"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Beskrivning ({formLang})</FormLabel>
+                <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                  <FormLabel>Rubrik (en)</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem className={formLang === "en" ? "hidden" : ""}>
+                  <FormLabel>Beskrivning (sv)</FormLabel>
                   <FormControl>
                     <RichTextEditor
                       value={field.value || ""}
                       onChange={field.onChange}
                       placeholder="Skriv eventbeskrivning..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description_en"
+              render={({ field }) => (
+                <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                  <FormLabel>Beskrivning (en)</FormLabel>
+                  <FormControl>
+                    <RichTextEditor
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Write event description..."
                     />
                   </FormControl>
                   <FormMessage />
