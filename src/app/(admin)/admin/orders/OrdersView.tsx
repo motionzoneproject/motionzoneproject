@@ -2,8 +2,9 @@
 
 import { CheckIcon, DollarSignIcon, XIcon } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
@@ -76,8 +77,11 @@ export default function OrdersView({
     selectedCourseIds: string[],
   ) => Promise<{ success: boolean }> | { success: boolean };
 }) {
+  const router = useRouter();
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+  const [_, startTransition] = useTransition();
   const searchInput = sp.get("q")?.toLowerCase() || "";
   const participantId = sp.get("participantId") || "";
   const requestedPage = Math.max(1, Number(sp.get("page")) || 1);
@@ -174,6 +178,25 @@ export default function OrdersView({
   ];
 
   const getStatusLabel = (status: string) => getOrderStatusLabel(status);
+
+  const handleApprove = async (orderId: string) => {
+    const formData = new FormData();
+    formData.set("orderId", orderId);
+
+    setApprovingOrderId(orderId);
+
+    try {
+      await onApprove(formData);
+      router.refresh();
+    } catch (error) {
+      const message =
+        (error as { message?: string })?.message ||
+        "Kunde inte godkänna ordern.";
+      toast.error(message);
+    } finally {
+      setApprovingOrderId(null);
+    }
+  };
 
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -457,21 +480,22 @@ export default function OrdersView({
                       <div className="flex items-center gap-1.5">
                         {active !== "PENDING" &&
                           ["PAID"].includes(o.status || "") && (
-                            <form action={onApprove}>
-                              <input
-                                type="hidden"
-                                name="orderId"
-                                value={o.id}
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
-                              >
-                                <CheckIcon className="h-3.5 w-3.5" />
-                                Godkänn
-                              </Button>
-                            </form>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
+                              disabled={approvingOrderId === o.id}
+                              onClick={() => {
+                                startTransition(() => {
+                                  void handleApprove(o.id);
+                                });
+                              }}
+                            >
+                              <CheckIcon className="h-3.5 w-3.5" />
+                              {approvingOrderId === o.id
+                                ? "Godkänner…"
+                                : "Godkänn"}
+                            </Button>
                           )}
 
                         {active !== "APPROVED" &&
