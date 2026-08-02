@@ -104,12 +104,21 @@ export default function AddCourseForm({
   const maxAgeTrim: string = String(maxAgeValue ?? "").trim();
 
   const [formLang, setFormLang] = useState(initialLang);
+  const errors = form.formState.errors;
 
   useEffect(() => {
     if (!isOpen) {
       setFormLang(initialLang);
     }
   }, [initialLang, isOpen]);
+
+  useEffect(() => {
+    if (errors.name || errors.description || errors.level) {
+      setFormLang("sv");
+    } else if (errors.name_en || errors.description_en || errors.level_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -145,11 +154,24 @@ export default function AddCourseForm({
               >
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "name_en" : "name"}
-                  key={`name-${formLang}`}
+                  name="name"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Kursnamn ({formLang})</FormLabel>
+                    <FormItem className={formLang === "en" ? "hidden" : ""}>
+                      <FormLabel>Kursnamn (sv)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name_en"
+                  render={({ field }) => (
+                    <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                      <FormLabel>Kursnamn (en)</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -202,11 +224,30 @@ export default function AddCourseForm({
 
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "description_en" : "description"}
-                  key={`description-${formLang}`}
+                  name="description"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Beskrivning ({formLang})</FormLabel>
+                    <FormItem className={formLang === "en" ? "hidden" : ""}>
+                      <FormLabel>Beskrivning (sv)</FormLabel>
+
+                      <FormControl>
+                        <RichTextEditor
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="Skriv kursbeskrivning..."
+                        />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description_en"
+                  render={({ field }) => (
+                    <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                      <FormLabel>Beskrivning (en)</FormLabel>
 
                       <FormControl>
                         <RichTextEditor
@@ -313,11 +354,26 @@ export default function AddCourseForm({
 
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "level_en" : "level"}
-                  key={`level-${formLang}`}
+                  name="level"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nivå ({formLang})</FormLabel>
+                    <FormItem className={formLang === "en" ? "hidden" : ""}>
+                      <FormLabel>Nivå (sv)</FormLabel>
+
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="level_en"
+                  render={({ field }) => (
+                    <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                      <FormLabel>Nivå (en)</FormLabel>
 
                       <FormControl>
                         <Input {...field} />
