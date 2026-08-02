@@ -127,14 +127,17 @@ export default function AddCourseForm({
 
         <Card>
           <CardContent>
-            <div className="p2 text-sm">
-              Formulärspråk:{" "}
-              <LanguageSwitcherInput
-                value={formLang ?? "sv"}
-                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
-              />
+            <div className="sticky top-4 z-50 flex justify-end pointer-events-none -mb-6">
+              <div className="pointer-events-auto flex border-2 items-center gap-2 rounded-full border-brand/70 bg-background/50 pl-3 pr-2.5 py-2.5 shadow-sm backdrop-blur-sm mr-2">
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  Språk:
+                </span>
+                <LanguageSwitcherInput
+                  value={formLang ?? "sv"}
+                  setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+                />
+              </div>
             </div>
-
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
