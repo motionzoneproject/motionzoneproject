@@ -12,6 +12,8 @@ export type CheckoutItem = {
   productId: string;
   count: number;
   participantId?: string | null;
+  /** Required when product.maxCourses is set – the courses the customer chose */
+  selectedCourseIds?: string[];
 };
 
 export async function createCheckout(params: {
@@ -34,6 +36,7 @@ export async function createCheckout(params: {
     count: number;
     participantId?: string | null;
     price: number;
+    selectedCourseIds?: string[];
   }[] = [];
 
   // Gör en transaction här då.
@@ -59,6 +62,34 @@ export async function createCheckout(params: {
             productId: itm.productId,
           });
           throw new Error("Kunde inte verifiera tillgänglighet just nu.");
+        }
+
+        // Server-side validation of course selections for products with maxCourses
+        if (p.maxCourses != null) {
+          const selected = itm.selectedCourseIds ?? [];
+          if (selected.length !== p.maxCourses) {
+            throw new Error(
+              `Du måste välja exakt ${p.maxCourses} kurser för "${p.name}".`,
+            );
+          }
+          if (new Set(selected).size !== selected.length) {
+            throw new Error(
+              `Du kan inte välja samma kurs flera gånger för "${p.name}".`,
+            );
+          }
+          // Verify all selected courses actually belong to this product
+          const linkedCourses = await tx.productOnCourse.findMany({
+            where: { productId: p.id },
+            select: { courseId: true },
+          });
+          const validIds = new Set(linkedCourses.map((c) => c.courseId));
+          for (const cId of selected) {
+            if (!validIds.has(cId)) {
+              throw new Error(
+                `En vald kurs tillhör inte produkten "${p.name}". Vänligen ladda om sidan och försök igen.`,
+              );
+            }
+          }
         }
 
         if (
@@ -104,6 +135,7 @@ export async function createCheckout(params: {
           count: itm.count,
           participantId: itm.participantId,
           price: p.price,
+          selectedCourseIds: itm.selectedCourseIds,
         });
       }
 

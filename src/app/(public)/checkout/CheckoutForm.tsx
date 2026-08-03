@@ -30,19 +30,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { Product } from "@/generated/prisma/client";
 import { createCheckout } from "@/lib/actions/checkout";
 import {
   getOrCreateParticipant,
   type ParticipantData,
 } from "@/lib/actions/participants";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import { SelectPack } from "./components/SelectPack";
 
-type CheckoutFormProps = {
+export type CheckoutFormProps = {
   items: {
+    product: Product;
     productId: string;
     name: string;
     qty: number;
     price: number;
+    /** Available courses for SelectPack (populated when maxCourses is set) */
+    courses: { courseId: string; courseName: string }[];
   }[];
   user: {
     id: string;
@@ -101,6 +106,19 @@ export default function CheckoutForm({
       flattenedItems.map((_, idx) => [
         `slot-${idx}`,
         { isSelf: idx === 0 }, // Default only THE first item in cart to self
+      ]),
+    ),
+  );
+
+  // Course selections per slot (for PACK products with maxCourses set)
+  // key: slot key, value: array of selected courseIds (length === maxCourses)
+  const [courseSelections, setCourseSelections] = useState<
+    Record<string, string[]>
+  >(
+    Object.fromEntries(
+      flattenedItems.map((it, idx) => [
+        `slot-${idx}`,
+        Array.from({ length: it.product.maxCourses ?? 0 }, () => ""),
       ]),
     ),
   );
@@ -212,11 +230,35 @@ export default function CheckoutForm({
           return;
         }
 
+        // Validate course selections for PACK products with maxCourses
+        const maxCourses = it.product.maxCourses;
+        let selectedCourseIds: string[] | undefined;
+        if (maxCourses != null) {
+          const picked = (courseSelections[key] ?? []).filter(Boolean);
+          if (picked.length !== maxCourses) {
+            toast.error(
+              `Du måste välja ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"} för "${it.name}".`,
+            );
+            setIsSubmitting(false);
+            return;
+          }
+          // Check for duplicate selections
+          if (new Set(picked).size !== picked.length) {
+            toast.error(
+              `Du kan inte välja samma kurs flera gånger för "${it.name}".`,
+            );
+            setIsSubmitting(false);
+            return;
+          }
+          selectedCourseIds = picked;
+        }
+
         orderItems.push({
           productId: it.productId,
           count: 1, // We treat each as 1 count since we gave each a participant
           price: it.price,
           participantId,
+          selectedCourseIds,
         });
       }
 
@@ -264,6 +306,7 @@ export default function CheckoutForm({
                 !slot.isSelf && isNewForm
                   ? getDuplicateWarning(key, typedName, slots)
                   : null;
+              const maxCourses = it.product.maxCourses;
 
               return (
                 <div
@@ -502,6 +545,23 @@ export default function CheckoutForm({
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Course selection for PACK products with maxCourses */}
+                  {maxCourses != null && it.courses.length > 0 && (
+                    <div className="pt-2 border-t border-dashed">
+                      <SelectPack
+                        maxCourses={maxCourses}
+                        courses={it.courses}
+                        selected={courseSelections[key] ?? []}
+                        onChange={(sel) =>
+                          setCourseSelections((prev) => ({
+                            ...prev,
+                            [key]: sel,
+                          }))
+                        }
+                      />
                     </div>
                   )}
                 </div>

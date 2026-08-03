@@ -71,6 +71,11 @@ type OrderForEmail = {
     participant?: { name: string } | null;
     count: number;
     price: number;
+    courseSelections?:
+      | {
+          course?: { name?: string | null } | null;
+        }[]
+      | null;
   }[];
 };
 
@@ -79,6 +84,20 @@ type OrderForEmail = {
  * @param order The order data (with user and orderItems)
  * @returns HTML string
  */
+function getCourseSelectionSummary(item: OrderForEmail["orderItems"][number]) {
+  const selections = item.courseSelections ?? [];
+  const names = selections
+    .map((sel) => sel.course?.name)
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
+
+  if (names.length === 0) return "";
+
+  return `<div style="margin-top: 6px; font-size: 12px; color: #555;">Paket: ${names.join(", ")}</div>`;
+}
+
 export async function generateOrderConfirmationHtml(order: OrderForEmail) {
   const itemsHtml = order.orderItems
     .map(
@@ -86,7 +105,9 @@ export async function generateOrderConfirmationHtml(order: OrderForEmail) {
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${
         item.product.name
-      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}</td>
+      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}
+        ${getCourseSelectionSummary(item)}
+      </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.count
       }</td>
@@ -155,7 +176,9 @@ export async function generateOrderApprovedHtml(order: OrderForEmail) {
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${
         item.product.name
-      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}</td>
+      } ${item.participant?.name ? `(deltagare: ${item.participant.name})` : ` `}
+        ${getCourseSelectionSummary(item)}
+      </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.count
       }</td>

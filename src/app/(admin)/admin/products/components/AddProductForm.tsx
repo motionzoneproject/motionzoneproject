@@ -71,6 +71,8 @@ export default function AddProductForm({
       unlimitedCustomers: true,
       maxCustomers: 1,
       categoryId: "",
+      autobook: false,
+      maxCourses: null,
     },
   });
 
@@ -101,10 +103,18 @@ export default function AddProductForm({
       }
     }
 
+    const normalizedMaxCourses =
+      typeof values.maxCourses === "number" &&
+      Number.isFinite(values.maxCourses) &&
+      values.maxCourses >= 1
+        ? Math.trunc(values.maxCourses)
+        : null;
+
     const payload = await formSchema.parseAsync({
       ...values,
       imageURL: finalImageURL,
       maxCustomers: values.unlimitedCustomers ? 0 : values.maxCustomers,
+      maxCourses: normalizedMaxCourses,
     });
 
     const res = await addNewProduct(payload);
@@ -116,6 +126,14 @@ export default function AddProductForm({
       toast.error(res.msg);
     }
   }
+
+  const clipcard = form.watch("clipcard");
+
+  useEffect(() => {
+    if (clipcard) {
+      form.setValue("autobook", false);
+    }
+  }, [clipcard, form.setValue]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -277,7 +295,13 @@ export default function AddProductForm({
                   control={form.control}
                   name="maxCustomers"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem
+                      className={
+                        form.watch("unlimitedCustomers") === true
+                          ? "hidden"
+                          : ""
+                      }
+                    >
                       <FormLabel>Max antal kunder:</FormLabel>
 
                       <FormControl>
@@ -340,7 +364,7 @@ export default function AddProductForm({
                         <Input
                           disabled={form.watch("clipcard") === false}
                           type="number"
-                          min="0"
+                          min="1"
                           step="1"
                           {...field}
                           value={
@@ -350,12 +374,85 @@ export default function AddProductForm({
                                 ? ""
                                 : String(field.value)
                           }
+                          onChange={(e) => {
+                            const parsed = Number(e.target.value);
+                            field.onChange(Number.isNaN(parsed) ? 1 : parsed);
+                          }}
                         />
                       </FormControl>
 
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+                <FormField
+                  control={form.control}
+                  name="autobook"
+                  render={({ field }) => (
+                    <FormItem
+                      className={form.watch("clipcard") ? "hidden" : ""}
+                    >
+                      <FormLabel>Autobokning</FormLabel>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) =>
+                            field.onChange(
+                              checked === true && !form.watch("clipcard"),
+                            )
+                          }
+                          className="w-6 h-6"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maxCourses"
+                  render={({ field }) => {
+                    const limitEnabled =
+                      field.value !== null && field.value !== undefined;
+
+                    return (
+                      <FormItem>
+                        <FormLabel>Begränsa antal valbara kurser</FormLabel>
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <Checkbox
+                            checked={limitEnabled}
+                            onCheckedChange={(checked) => {
+                              if (checked === true) {
+                                field.onChange(1);
+                              } else {
+                                field.onChange(null); // Nollställ direkt, inte bara vid submit
+                              }
+                            }}
+                            className="w-6 h-6"
+                          />
+                          <span className="text-sm">Begränsa till:</span>
+                        </div>
+
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            disabled={!limitEnabled}
+                            value={limitEnabled ? String(field.value) : ""}
+                            onChange={(e) => {
+                              const parsed = Number(e.target.value);
+                              field.onChange(Number.isNaN(parsed) ? 1 : parsed);
+                            }}
+                          />
+                        </FormControl>
+
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {isBusy ? (

@@ -2,8 +2,9 @@
 
 import { CheckIcon, DollarSignIcon, XIcon } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
@@ -11,6 +12,7 @@ import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
+import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
 type OrderLite = {
   id: string;
@@ -26,13 +28,24 @@ type OrderLite = {
   orderItems?:
     | {
         id?: string;
-        product: { name: string };
+        product: {
+          name: string;
+          maxCourses?: number | null;
+          courses?:
+            | {
+                courseId: string;
+                courseName?: string | null;
+                course?: { id: string; name: string } | null;
+              }[]
+            | null;
+        };
         participant?: {
           id: string;
           dateOfBirth: string | Date | null;
           email: string;
           name: string;
         } | null;
+        courseSelections?: { course: { id: string; name: string } }[] | null;
       }[]
     | null;
   totalPrice: unknown;
@@ -50,6 +63,7 @@ export default function OrdersView({
   onMarkPaid,
   onCancel,
   onDelete,
+  onSavePackage,
 }: {
   orders: OrderLite[];
   defaultStatus: string;
@@ -58,9 +72,16 @@ export default function OrdersView({
   onMarkPaid: (formData: FormData) => void;
   onCancel: (formData: FormData) => void;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
+  onSavePackage: (
+    orderItemId: string,
+    selectedCourseIds: string[],
+  ) => Promise<{ success: boolean }> | { success: boolean };
 }) {
+  const router = useRouter();
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+  const [_, startTransition] = useTransition();
   const searchInput = sp.get("q")?.toLowerCase() || "";
   const participantId = sp.get("participantId") || "";
   const requestedPage = Math.max(1, Number(sp.get("page")) || 1);
@@ -158,6 +179,25 @@ export default function OrdersView({
 
   const getStatusLabel = (status: string) => getOrderStatusLabel(status);
 
+  const handleApprove = async (orderId: string) => {
+    const formData = new FormData();
+    formData.set("orderId", orderId);
+
+    setApprovingOrderId(orderId);
+
+    try {
+      await onApprove(formData);
+      router.refresh();
+    } catch (error) {
+      const message =
+        (error as { message?: string })?.message ||
+        "Kunde inte godkänna ordern.";
+      toast.error(message);
+    } finally {
+      setApprovingOrderId(null);
+    }
+  };
+
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "PENDING_PAYMENT":
@@ -239,6 +279,7 @@ export default function OrdersView({
               <th className="p-3 text-left font-medium">Beställare</th>
               <th className="p-3 text-left font-medium">Deltagare</th>
               <th className="p-3 text-left font-medium">Produkter</th>
+              <th className="p-3 text-left font-medium">Paket</th>
               <th className="p-3 text-left font-medium">Total</th>
               <th className="p-3 text-left font-medium">Status</th>
               <th className="p-3 text-left font-medium">
@@ -339,6 +380,80 @@ export default function OrdersView({
                       )}
                     </div>
                   </td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-1 max-w-[260px]">
+                      {(o.orderItems ?? []).flatMap((oi) => {
+                        const courseOptions =
+                          oi.product.courses?.map((link) => ({
+                            courseId: link.courseId,
+                            courseName:
+                              link.courseName ??
+                              link.course?.name ??
+                              "Okänd kurs",
+                          })) ?? [];
+                        const selections =
+                          oi.courseSelections
+                            ?.map((sel) => sel.course.name)
+                            .filter(Boolean) ?? [];
+
+                        if (
+                          oi.product.maxCourses == null ||
+                          courseOptions.length === 0
+                        ) {
+                          return [
+                            <span
+                              key={`${oi.id}-empty`}
+                              className="text-[11px] text-muted-foreground italic"
+                            >
+                              {oi.product.maxCourses != null
+                                ? "Inga paketval tillgängliga"
+                                : "—"}
+                            </span>,
+                          ];
+                        }
+
+                        const selectedIds =
+                          oi.courseSelections?.map((sel) => sel.course.id) ??
+                          [];
+                        const canEdit = o.status !== "APPROVED";
+
+                        return [
+                          <div
+                            key={`${oi.id}-pack`}
+                            className="flex flex-col gap-1.5 rounded-md border bg-muted/30 p-2"
+                          >
+                            {selections.length === 0 ? (
+                              <span className="text-[11px] text-muted-foreground italic">
+                                Inga paketval sparade
+                              </span>
+                            ) : (
+                              selections.map((courseName) => (
+                                <span
+                                  key={`${oi.id}-${courseName}`}
+                                  className="truncate text-[11px]"
+                                >
+                                  {courseName}
+                                </span>
+                              ))
+                            )}
+                            <OrderPackageDialog
+                              orderItemId={oi.id ?? ""}
+                              productName={oi.product.name}
+                              maxCourses={oi.product.maxCourses}
+                              courses={courseOptions}
+                              selected={selectedIds}
+                              onSave={async (orderItemId, next) => {
+                                await onSavePackage(orderItemId, next);
+                              }}
+                              disabled={!canEdit}
+                              readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
+                              triggerLabel="Ändra paket"
+                            />
+                          </div>,
+                        ];
+                      })}
+                    </div>
+                  </td>
                   <td className="p-3 font-semibold">
                     {formatPrice(Number(o.totalPrice))}
                   </td>
@@ -365,21 +480,22 @@ export default function OrdersView({
                       <div className="flex items-center gap-1.5">
                         {active !== "PENDING" &&
                           ["PAID"].includes(o.status || "") && (
-                            <form action={onApprove}>
-                              <input
-                                type="hidden"
-                                name="orderId"
-                                value={o.id}
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
-                              >
-                                <CheckIcon className="h-3.5 w-3.5" />
-                                Godkänn
-                              </Button>
-                            </form>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
+                              disabled={approvingOrderId === o.id}
+                              onClick={() => {
+                                startTransition(() => {
+                                  void handleApprove(o.id);
+                                });
+                              }}
+                            >
+                              <CheckIcon className="h-3.5 w-3.5" />
+                              {approvingOrderId === o.id
+                                ? "Godkänner…"
+                                : "Godkänn"}
+                            </Button>
                           )}
 
                         {active !== "APPROVED" &&

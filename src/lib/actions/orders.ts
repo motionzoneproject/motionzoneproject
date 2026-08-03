@@ -22,7 +22,25 @@ export async function updateOrderStatus(
   const adminUserId = await requireAdmin();
 
   return prisma.$transaction(async (tx) => {
-    const current = await tx.order.findUnique({ where: { id: orderId } });
+    const current = await tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                courses: {
+                  select: { courseId: true },
+                },
+              },
+            },
+            courseSelections: {
+              select: { courseId: true },
+            },
+          },
+        },
+      },
+    });
 
     if (!current) throw new Error("Order not found");
     if (current.status === toStatus) return { success: true };
@@ -31,6 +49,43 @@ export async function updateOrderStatus(
       ["APPROVED", "PAID"].includes(current.status)
     ) {
       throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
+    }
+
+    if (toStatus === "APPROVED") {
+      for (const item of current.orderItems) {
+        const maxCourses = item.product.maxCourses;
+        if (maxCourses == null) continue;
+
+        const selectedCourseIds = item.courseSelections.map(
+          (sel) => sel.courseId,
+        );
+        const uniqueSelectedIds = new Set(selectedCourseIds);
+
+        if (selectedCourseIds.length !== maxCourses) {
+          throw new Error(
+            `Du måste välja exakt ${maxCourses} olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+          );
+        }
+
+        if (uniqueSelectedIds.size !== selectedCourseIds.length) {
+          throw new Error(
+            `Du måste välja olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+          );
+        }
+
+        const validCourseIds = new Set(
+          item.product.courses.map((link) => link.courseId),
+        );
+        const invalidCourseId = selectedCourseIds.find(
+          (courseId) => !validCourseIds.has(courseId),
+        );
+
+        if (invalidCourseId) {
+          throw new Error(
+            `En vald kurs i "${item.product.name}" finns inte kopplad till produkten och kan därför inte godkännas.`,
+          );
+        }
+      }
     }
 
     const updated = await tx.order.update({
@@ -78,12 +133,99 @@ export async function adminGetOrder(orderId: string) {
     where: { id },
     include: {
       user: { include: { details: true } },
-      orderItems: { include: { product: true, participant: true } },
+      orderItems: {
+        include: {
+          product: {
+            include: {
+              courses: {
+                include: { course: { select: { id: true, name: true } } },
+              },
+            },
+          },
+          participant: true,
+          courseSelections: {
+            include: { course: { select: { id: true, name: true } } },
+          },
+        },
+      },
       statusEvents: {
         include: { changedBy: true },
         orderBy: { createdAt: "asc" },
       },
     },
+  });
+}
+
+export async function updateOrderItemCourseSelections(
+  orderItemId: string,
+  selectedCourseIds: string[],
+) {
+  await requireAdmin();
+
+  const id = orderItemId?.trim();
+  if (!id) throw new Error("Giltigt orderItemId saknas.");
+
+  const normalized = Array.from(
+    new Set((selectedCourseIds ?? []).filter(Boolean).map((x) => x.trim())),
+  );
+
+  return prisma.$transaction(async (tx) => {
+    const orderItem = await tx.orderItem.findUnique({
+      where: { id },
+      include: {
+        product: {
+          include: {
+            courses: { select: { courseId: true } },
+          },
+        },
+      },
+    });
+
+    if (!orderItem) throw new Error("Orderitem hittades inte.");
+    if (orderItem.product.maxCourses == null) {
+      throw new Error("Den här produkten är inte ett paket med kursval.");
+    }
+
+    const maxCourses = orderItem.product.maxCourses;
+    if (normalized.length !== maxCourses) {
+      throw new Error(
+        `Du måste välja exakt ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"}.`,
+      );
+    }
+
+    const validCourseIds = new Set(
+      orderItem.product.courses.map((link) => link.courseId),
+    );
+
+    for (const courseId of normalized) {
+      if (!validCourseIds.has(courseId)) {
+        throw new Error(
+          "En vald kurs finns inte kopplad till produkten och kan därför inte sparas.",
+        );
+      }
+    }
+
+    await tx.orderItemCourseSelection.deleteMany({
+      where: { orderItemId: id },
+    });
+
+    if (normalized.length > 0) {
+      await tx.orderItemCourseSelection.createMany({
+        data: normalized.map((courseId) => ({
+          orderItemId: id,
+          courseId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders/view");
+
+    return {
+      success: true,
+      selectedCourseIds: normalized,
+    };
   });
 }
 
@@ -114,6 +256,13 @@ export async function createPurchaseFromOrder(orderId: string) {
         orderItems: {
           include: {
             participant: true,
+            courseSelections: {
+              include: {
+                course: {
+                  select: { name: true },
+                },
+              },
+            },
             product: {
               include: {
                 courses: true,
@@ -155,8 +304,18 @@ export async function createPurchaseFromOrder(orderId: string) {
         },
       });
 
+      const selectedCourseIds = new Set(
+        (orderItem.courseSelections ?? []).map((sel) => sel.courseId),
+      );
+      const coursesToCreate =
+        orderItem.product.maxCourses != null && selectedCourseIds.size > 0
+          ? orderItem.product.courses.filter((pc) =>
+              selectedCourseIds.has(pc.courseId),
+            )
+          : orderItem.product.courses;
+
       // 4. Skapa PurchaseItems för kurserna i denna produkt
-      const itemPromises = orderItem.product.courses.map((pc) =>
+      const itemPromises = coursesToCreate.map((pc) =>
         tx.purchaseItem.create({
           data: {
             purchaseId: purchase.id,

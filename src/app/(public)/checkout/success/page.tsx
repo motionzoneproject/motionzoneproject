@@ -134,12 +134,13 @@ export default async function Page({
                     const productName = it.product
                       ? (pick(it.product, "name", lang) as string)
                       : it.productId;
+                    const selections = it.courseSelections ?? [];
                     return (
                       <div
                         key={it.id}
                         className="grid grid-cols-4 gap-2 px-6 py-3 border-b border-border text-sm"
                       >
-                        <span>
+                        <span className="col-span-2">
                           {productName}
                           <span className="block text-xs text-muted-foreground">
                             {it.participant?.name
@@ -152,12 +153,22 @@ export default async function Page({
                                   t.checkout.success.participantSelf,
                                 )}
                           </span>
+                          {selections.length > 0 && (
+                            <ul className="mt-1 space-y-0.5">
+                              {selections.map((s) => (
+                                <li
+                                  key={s.courseId}
+                                  className="text-xs text-muted-foreground flex items-center gap-1"
+                                >
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
+                                  {s.course.name}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </span>
                         <span className="text-right text-muted-foreground">
                           {formatPrice(unit, lang)}
-                        </span>
-                        <span className="text-right text-muted-foreground">
-                          {it.count}
                         </span>
                         <span className="text-right font-medium text-foreground">
                           {formatPrice(sum, lang)}
@@ -165,6 +176,7 @@ export default async function Page({
                       </div>
                     );
                   })}
+
                   <div className="grid grid-cols-4 gap-2 px-6 py-3 font-semibold text-foreground">
                     <span className="col-span-3 text-right">
                       {t.checkout.success.total}

@@ -760,6 +760,8 @@ export async function addNewProduct(
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
         categoryId: validCategory,
+        autobook: validated.autobook,
+        maxCourses: validated.maxCourses,
       },
     });
 
@@ -838,6 +840,8 @@ export async function editProduct(
         totalCount: validated.clipCount,
         imageURL: validated.imageURL,
         categoryId: validCategory,
+        autobook: validated.autobook,
+        maxCourses: validated.maxCourses,
       },
     });
 
@@ -1014,7 +1018,6 @@ export async function isCourseInProduct(
 }
 
 export type PrismaTx = Prisma.TransactionClient;
-
 // Uppdaterar product.type baserat på om det är klippkort eller hur många kurser som är kopplade.
 export async function updateProductType(
   productId: string,
@@ -1027,6 +1030,8 @@ export async function updateProductType(
     select: {
       id: true,
       type: true,
+      autobook: true,
+      maxCourses: true,
       courses: { select: { courseId: true } },
     },
   });
@@ -1042,10 +1047,23 @@ export async function updateProductType(
       ? "PACK"
       : "COURSE";
 
-  if (product.type !== nextType) {
+  // Autobokning och kursbegränsning är bara tillåtet på klippkort om det
+  // finns exakt 1 kopplad kurs. Fler kurser gör kombinationen ogiltig, så
+  // vi nollställer dem tyst här istället för att blockera anropet.
+  const shouldClearAutobookSettings =
+    nextType === "CLIP" &&
+    product.courses.length > 1 &&
+    (product.autobook || product.maxCourses !== null);
+
+  const typeChanged = product.type !== nextType;
+
+  if (typeChanged || shouldClearAutobookSettings) {
     await client.product.update({
       where: { id: product.id },
-      data: { type: nextType },
+      data: {
+        ...(typeChanged ? { type: nextType } : {}),
+        ...(shouldClearAutobookSettings ? { autobook: false } : {}),
+      },
     });
   }
 

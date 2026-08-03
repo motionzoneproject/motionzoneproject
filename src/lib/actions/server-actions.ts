@@ -68,31 +68,56 @@ export async function getUserLessons(): Promise<{
   if (!user) return { success: false, msg: "No valid user session" };
 
   try {
-    // 1. Hitta alla courseId som användaren har köpt (där det finns klipp kvar)
-    // Inkludera både där användaren har köpt själv, och där användaren är deltagare på någon annans köp.
+    // 1. Find all purchaseItems the user has access to
     const userPurchases = await prisma.purchaseItem.findMany({
       where: {
         OR: [
           { purchase: { userId: user.id } },
           { purchase: { participant: { userId: user.id } } },
         ],
-        // remainingCount: { gt: 0 }, // fixed: Lektionerna skall synas ändå, så detta får kollas i boka-delen istället.
       },
-      select: { courseId: true },
+      select: {
+        courseId: true,
+        orderItemId: true,
+        orderItem: {
+          select: {
+            id: true,
+            product: { select: { maxCourses: true } },
+            courseSelections: { select: { courseId: true } },
+          },
+        },
+      },
     });
 
-    const courseIds = userPurchases.map((p) => p.courseId);
+    if (userPurchases.length === 0) {
+      return { success: true, msg: "Inga aktiva kurser hittades", lessons: [] };
+    }
 
+    // 2. Build the set of courseIds the user can access.
+    //    For products with maxCourses set, only include courses from OrderItemCourseSelection.
+    //    For all other products, include the purchaseItem's own courseId.
+    const courseIdSet = new Set<string>();
+    for (const pi of userPurchases) {
+      const maxCourses = pi.orderItem?.product?.maxCourses;
+      if (maxCourses != null) {
+        // Only courses the customer explicitly chose
+        for (const sel of pi.orderItem?.courseSelections ?? []) {
+          courseIdSet.add(sel.courseId);
+        }
+      } else {
+        courseIdSet.add(pi.courseId);
+      }
+    }
+
+    const courseIds = Array.from(courseIdSet);
     if (courseIds.length === 0) {
       return { success: true, msg: "Inga aktiva kurser hittades", lessons: [] };
     }
 
-    // 2. Hämta alla lektioner för dessa kurser
+    // 3. Fetch all lessons for these courses
     const lessons = await prisma.lesson.findMany({
       where: {
         courseId: { in: courseIds },
-        // cancelled: false, // Vi visar nog bara lektioner som inte är inställda. Fel.
-        // startTime: { gte: new Date() } // Valfritt: Visa bara framtida lektioner. Nej man kanske vill se sina tidigare boknignar.
       },
       include: { course: true },
       orderBy: { startTime: "asc" },
@@ -443,7 +468,18 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     const purchaseItem = await prisma.purchaseItem.findUnique({
       where: { id: purchaseItemId },
       include: {
-        purchase: true,
+        purchase: {
+          include: {
+            product: {
+              select: {
+                autobook: true,
+                maxCourses: true,
+                type: true,
+                courses: { select: { courseId: true } },
+              },
+            },
+          },
+        },
         course: true,
       },
     });
@@ -452,6 +488,30 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     const purchase = purchaseItem.purchase;
     const course = purchaseItem.course;
     const participantId = purchase.participantId;
+    const product = purchase.product;
+
+    // 1. Produkten måste ha autobokning aktiverad.
+    if (!product.autobook) return [];
+
+    // 2. Klippkort med fler än 1 kopplad kurs stödjer inte autobokning.
+    // (autobook borde redan vara false i det läget via updateProductType,
+    // men vi dubbelkollar här som ett extra säkerhetsnät.)
+    if (product.type === "CLIP" && product.courses.length > 1) return [];
+
+    // 3. Om produkten begränsar antal valbara kurser (maxCourses satt),
+    // autoboka bara den/de kurser kunden faktiskt valde vid köpet.
+    if (product.maxCourses !== null) {
+      const selection = await prisma.orderItemCourseSelection.findUnique({
+        where: {
+          orderItemId_courseId: {
+            orderItemId: purchaseItem.orderItemId,
+            courseId: course.id,
+          },
+        },
+        select: { id: true },
+      });
+      if (!selection) return [];
+    }
 
     // Säkerhetscheck: admin får boka för andra, övriga bara för sina egna köp.
     const isAdmin = sessionUser.role === "admin";

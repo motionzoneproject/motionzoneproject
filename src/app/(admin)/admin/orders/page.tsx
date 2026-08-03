@@ -7,6 +7,7 @@ import {
   createPurchaseFromOrder,
   deleteOrder,
   markOrderPaid,
+  updateOrderItemCourseSelections,
 } from "@/lib/actions/orders";
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
@@ -32,13 +33,28 @@ type OrderLite = {
   orderItems?:
     | {
         id?: string;
-        product: { name: string };
+        product: {
+          name: string;
+          maxCourses?: number | null;
+          courses?:
+            | {
+                courseId: string;
+                courseName?: string | null;
+                course?: { id: string; name: string } | null;
+              }[]
+            | null;
+        };
         participant?: {
           id: string;
           name: string;
           email: string;
           dateOfBirth: string | Date | null;
         } | null;
+        courseSelections?:
+          | {
+              course: { id: string; name: string };
+            }[]
+          | null;
       }[]
     | null;
   totalPrice: unknown;
@@ -55,7 +71,21 @@ async function getOrders(): Promise<OrderLite[]> {
     orderBy: [{ createdAt: "desc" }],
     include: {
       user: { include: { details: true } },
-      orderItems: { include: { product: true, participant: true } },
+      orderItems: {
+        include: {
+          product: {
+            include: {
+              courses: {
+                include: { course: { select: { id: true, name: true } } },
+              },
+            },
+          },
+          participant: true,
+          courseSelections: {
+            include: { course: { select: { id: true, name: true } } },
+          },
+        },
+      },
     },
   })) as unknown as OrderLite[];
   return orders;
@@ -119,6 +149,22 @@ export default async function Page({
     return res.success;
   }
 
+  async function onSavePackage(
+    orderItemId: string,
+    selectedCourseIds: string[],
+  ): Promise<{ success: boolean }> {
+    "use server";
+
+    const result = await updateOrderItemCourseSelections(
+      orderItemId,
+      selectedCourseIds,
+    );
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders/view");
+
+    return { success: result.success };
+  }
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Ordrar</h1>
@@ -130,6 +176,7 @@ export default async function Page({
         onMarkPaid={onMarkPaid}
         onCancel={onCancel}
         onDelete={onDelete}
+        onSavePackage={onSavePackage}
       />
     </div>
   );
