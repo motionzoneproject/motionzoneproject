@@ -44,7 +44,7 @@ export default function LanguageSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-brand/20 p-0.5">
+    <div className="flex items-center justify-center gap-1 rounded-lg border border-brand/20 bg-muted/40 p-1">
       {allLangs.map((lang) => {
         const isActive = currentLang === lang.value;
         return (
@@ -54,13 +54,13 @@ export default function LanguageSwitcher() {
             disabled={isLoading}
             onClick={() => handleChange(lang.value)}
             title={lang.label}
-            className={`flex items-center justify-center w-8 h-7 rounded-md text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center w-9 h-7 rounded-md text-xs font-medium transition-all duration-200 ${
               isLoading
                 ? "bg-gray-800 text-gray-500"
                 : isActive
-                  ? "bg-brand/10 scale-105"
-                  : "opacity-50 hover:opacity-100 hover:bg-brand/5"
-            } `}
+                  ? "bg-brand text-white shadow-sm scale-105"
+                  : "text-muted-foreground opacity-60 hover:opacity-100 hover:bg-brand/10"
+            }`}
             aria-label={t("language.switchTo", { language: lang.label })}
             aria-pressed={isActive}
           >

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -55,6 +55,15 @@ export function StudioForm({
   });
 
   const [formLang, setFormLang] = useState(initialLang);
+  const errors = form.formState.errors;
+
+  useEffect(() => {
+    if (errors.name || errors.description) {
+      setFormLang("sv");
+    } else if (errors.name_en || errors.description_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   async function onSubmit(values: z.infer<typeof adminStudioSchema>) {
     setIsPending(true);
@@ -124,22 +133,25 @@ export function StudioForm({
 
   return (
     <div>
-      <div className="p2 text-sm my-2">
-        Formulärspråk:{" "}
-        <LanguageSwitcherInput
-          value={formLang ?? "sv"}
-          setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
-        />
+      <div className="sticky top-4 z-50 flex justify-end pointer-events-none -mb-6">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-brand/70 bg-background/50 px-3 py-2 shadow-sm backdrop-blur-sm">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            Språk:
+          </span>
+          <LanguageSwitcherInput
+            value={formLang ?? "sv"}
+            setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+          />
+        </div>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name={formLang === "en" ? "name_en" : "name"}
-            key={`name-${formLang}`}
+            name="name"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Namn ({formLang})</FormLabel>
+              <FormItem className={formLang === "en" ? "hidden" : ""}>
+                <FormLabel>Namn (sv)</FormLabel>
                 <FormControl>
                   <Input placeholder="t.ex. Studio 1" {...field} />
                 </FormControl>
@@ -150,16 +162,47 @@ export function StudioForm({
 
           <FormField
             control={form.control}
-            name={formLang === "en" ? "description_en" : "description"}
-            key={`description-${formLang}`}
+            name="name_en"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Beskrivning ({formLang})</FormLabel>
+              <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                <FormLabel>Namn (en)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Studio 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem className={formLang === "en" ? "hidden" : ""}>
+                <FormLabel>Beskrivning (sv)</FormLabel>
                 <FormControl>
                   <RichTextEditor
                     value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Skriv beskrivning..."
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description_en"
+            render={({ field }) => (
+              <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                <FormLabel>Beskrivning (en)</FormLabel>
+                <FormControl>
+                  <RichTextEditor
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    placeholder="Write description..."
                   />
                 </FormControl>
                 <FormMessage />

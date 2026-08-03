@@ -3,11 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import ImageInput from "@/components/ImageInput";
+import LanguageSwitcherInput from "@/components/LanguageSwitcherInput";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +30,7 @@ import { adminStartPageSchema } from "@/validations/adminforms";
 
 type StartPageFormProps = {
   content: StartPageContent;
-  lang: "sv" | "en";
+  lang: "sv" | "en"; // används nu bara som initialt värde för formLang
 };
 
 type FormValues = z.infer<typeof adminStartPageSchema>;
@@ -104,6 +105,7 @@ const IMAGE_DEFAULTS = {
 export function StartPageForm({ content, lang }: StartPageFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
+  const [formLang, setFormLang] = useState<"sv" | "en">(lang);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(adminStartPageSchema),
@@ -155,6 +157,25 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
       image3Description_en: content.image3Description_en ?? "",
     },
   });
+
+  const errors = form.formState.errors;
+
+  // Byt automatiskt till det språk som har valideringsfel, precis som i AddCourseForm.
+  // Generisk variant (utan att räkna upp varje fältpar): sv-fel pfrioriteras,
+  // annars visas en om det bara finns fel på _en-fält.
+  useEffect(() => {
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length === 0) return;
+
+    const hasSvError = errorKeys.some((key) => !key.endsWith("_en"));
+    const hasEnError = errorKeys.some((key) => key.endsWith("_en"));
+
+    if (hasSvError) {
+      setFormLang("sv");
+    } else if (hasEnError) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   const OPTIONAL_IMAGE_FIELDS = ["image1", "image2", "image3"] as const;
 
@@ -211,6 +232,18 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="sticky top-40 z-40 flex justify-end pointer-events-none">
+          <div className="pointer-events-auto flex border-2 items-center gap-2 rounded-full border-brand/70 bg-background/50 pl-3 pr-2.5 py-2.5 shadow-sm backdrop-blur-sm mr-2">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              Språk:
+            </span>
+            <LanguageSwitcherInput
+              value={formLang ?? "sv"}
+              setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+            />
+          </div>
+        </div>
+
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
@@ -218,10 +251,6 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left column – background image preview */}
-
-              {/* do this so i get some space */}
-
               <FormField
                 control={form.control}
                 name="heroImage"
@@ -243,16 +272,15 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                 )}
               />
 
-              {/* Right column – all text fields */}
               <div className="space-y-4">
                 <FormField
                   control={form.control}
-                  name={lang === "en" ? "heroLabel_en" : "heroLabel"}
-                  key={`heroLabel-${lang}`}
+                  name={formLang === "en" ? "heroLabel_en" : "heroLabel"}
+                  key={`heroLabel-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Etikett (liten text ovan rubriken) ({lang}){" "}
+                        Etikett (liten text ovan rubriken) ({formLang}){" "}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -265,20 +293,16 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   )}
                 />
 
-                {/*  */}
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {/*  */}
-
                   <FormField
                     control={form.control}
                     name={
-                      lang === "en" ? "heroTitleLine1_en" : "heroTitleLine1"
+                      formLang === "en" ? "heroTitleLine1_en" : "heroTitleLine1"
                     }
-                    key={`heroTitleLine1-${lang}`}
+                    key={`heroTitleLine1-${formLang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – del 1 ({lang})</FormLabel>
+                        <FormLabel>Rubrik – del 1 ({formLang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Dans är" {...field} />
                         </FormControl>
@@ -287,17 +311,17 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     )}
                   />
 
-                  {/*  */}
-
                   <FormField
                     control={form.control}
                     name={
-                      lang === "en" ? "heroTitleAccent_en" : "heroTitleAccent"
+                      formLang === "en"
+                        ? "heroTitleAccent_en"
+                        : "heroTitleAccent"
                     }
-                    key={`heroTitleAccent-${lang}`}
+                    key={`heroTitleAccent-${formLang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – accent ({lang})</FormLabel>
+                        <FormLabel>Rubrik – accent ({formLang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Passion" {...field} />
                         </FormControl>
@@ -306,17 +330,15 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     )}
                   />
 
-                  {/*  */}
-
                   <FormField
                     control={form.control}
                     name={
-                      lang === "en" ? "heroTitleLine2_en" : "heroTitleLine2"
+                      formLang === "en" ? "heroTitleLine2_en" : "heroTitleLine2"
                     }
-                    key={`heroTitleLine2-${lang}`}
+                    key={`heroTitleLine2-${formLang}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rubrik – del 2 ({lang})</FormLabel>
+                        <FormLabel>Rubrik – del 2 ({formLang})</FormLabel>
                         <FormControl>
                           <Input placeholder="Och Livet i Rörelse" {...field} />
                         </FormControl>
@@ -325,8 +347,6 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     )}
                   />
                 </div>
-
-                {/*  */}
 
                 <FormDescription>
                   Visas som:{" "}
@@ -339,15 +359,13 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   </em>
                 </FormDescription>
 
-                {/*  */}
-
                 <FormField
                   control={form.control}
-                  name={lang === "en" ? "heroSubtext_en" : "heroSubtext"}
-                  key={`heroSubtext-${lang}`}
+                  name={formLang === "en" ? "heroSubtext_en" : "heroSubtext"}
+                  key={`heroSubtext-${formLang}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Brödtext ({lang})</FormLabel>
+                      <FormLabel>Brödtext ({formLang})</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>
@@ -355,14 +373,11 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     </FormItem>
                   )}
                 />
-
-                {/*  */}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* ── Bildsektion ───────────────────────────────────────────────── */}
         {/* ── Bildsektion ───────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
@@ -434,14 +449,14 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     <FormField
                       control={form.control}
                       name={
-                        lang === "en"
+                        formLang === "en"
                           ? item.headlineFieldEn
                           : item.headlineField
                       }
-                      key={`${item.headlineField}-${lang}`}
+                      key={`${item.headlineField}-${formLang}`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Rubrik ({lang}, valfritt)</FormLabel>
+                          <FormLabel>Rubrik ({formLang}, valfritt)</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -456,11 +471,15 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
 
                     <FormField
                       control={form.control}
-                      name={lang === "en" ? item.descFieldEn : item.descField}
-                      key={`${item.descField}-${lang}`}
+                      name={
+                        formLang === "en" ? item.descFieldEn : item.descField
+                      }
+                      key={`${item.descField}-${formLang}`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Beskrivning ({lang}, valfritt)</FormLabel>
+                          <FormLabel>
+                            Beskrivning ({formLang}, valfritt)
+                          </FormLabel>
                           <FormControl>
                             <Textarea
                               rows={2}
@@ -480,22 +499,19 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
         </Card>
 
         {/* ── Features ──────────────────────────────────────────────────── */}
-
         <Card>
           <CardHeader>
             <CardTitle>Features-sektion</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/*  */}
-
               <FormField
                 control={form.control}
-                name={lang === "en" ? "featuresTitle_en" : "featuresTitle"}
-                key={`featuresTitle-${lang}`}
+                name={formLang === "en" ? "featuresTitle_en" : "featuresTitle"}
+                key={`featuresTitle-${formLang}`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sektionens titel ({lang})</FormLabel>
+                    <FormLabel>Sektionens titel ({formLang})</FormLabel>
                     <FormControl>
                       <Input placeholder="Varför Motion Zone?" {...field} />
                     </FormControl>
@@ -504,15 +520,15 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                 )}
               />
 
-              {/*  */}
-
               <FormField
                 control={form.control}
-                name={lang === "en" ? "featuresSubtext_en" : "featuresSubtext"}
-                key={`featuresSubtext-${lang}`}
+                name={
+                  formLang === "en" ? "featuresSubtext_en" : "featuresSubtext"
+                }
+                key={`featuresSubtext-${formLang}`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sektionens underrubrik ({lang})</FormLabel>
+                    <FormLabel>Sektionens underrubrik ({formLang})</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -520,11 +536,8 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                   </FormItem>
                 )}
               />
-
-              {/*  */}
             </div>
 
-            {/* Feature cards – horizontal grid on wider screens */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {(
                 [
@@ -538,8 +551,6 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                     <CardTitle className="text-base">{label}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/*  */}
-
                     <FormField
                       control={form.control}
                       name={`feature${n}Image`}
@@ -561,16 +572,14 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                       )}
                     />
 
-                    {/*  */}
-
                     <FormField
                       control={form.control}
                       name={`feature${n}Title`}
                       render={({ field }) => (
                         <FormItem
-                          className={`${lang === "sv" ? "" : "hidden"}`}
+                          className={`${formLang === "sv" ? "" : "hidden"}`}
                         >
-                          <FormLabel>Titel ({lang})</FormLabel>
+                          <FormLabel>Titel ({formLang})</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -583,9 +592,9 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                       name={`feature${n}Title_en`}
                       render={({ field }) => (
                         <FormItem
-                          className={`${lang === "sv" ? "hidden" : ""}`}
+                          className={`${formLang === "sv" ? "hidden" : ""}`}
                         >
-                          <FormLabel>Titel ({lang})</FormLabel>
+                          <FormLabel>Titel ({formLang})</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -594,16 +603,14 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                       )}
                     />
 
-                    {/*  */}
-
                     <FormField
                       control={form.control}
                       name={`feature${n}Description`}
                       render={({ field }) => (
                         <FormItem
-                          className={`${lang === "sv" ? "" : "hidden"}`}
+                          className={`${formLang === "sv" ? "" : "hidden"}`}
                         >
-                          <FormLabel>Beskrivning ({lang})</FormLabel>
+                          <FormLabel>Beskrivning ({formLang})</FormLabel>
                           <FormControl>
                             <Textarea rows={2} {...field} />
                           </FormControl>
@@ -617,9 +624,9 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                       name={`feature${n}Description_en`}
                       render={({ field }) => (
                         <FormItem
-                          className={`${lang === "sv" ? "hidden" : ""}`}
+                          className={`${formLang === "sv" ? "hidden" : ""}`}
                         >
-                          <FormLabel>Beskrivning ({lang})</FormLabel>
+                          <FormLabel>Beskrivning ({formLang})</FormLabel>
                           <FormControl>
                             <Textarea rows={2} {...field} />
                           </FormControl>
@@ -627,8 +634,6 @@ export function StartPageForm({ content, lang }: StartPageFormProps) {
                         </FormItem>
                       )}
                     />
-
-                    {/*  */}
                   </CardContent>
                 </Card>
               ))}

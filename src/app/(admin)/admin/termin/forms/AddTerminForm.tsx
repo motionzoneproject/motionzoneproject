@@ -54,6 +54,15 @@ export default function AddTerminForm({
     },
   });
   const [formLang, setFormLang] = useState(initialLang);
+  const errors = form.formState.errors;
+
+  useEffect(() => {
+    if (errors.name) {
+      setFormLang("sv");
+    } else if (errors.name_en) {
+      setFormLang("en");
+    }
+  }, [errors]);
 
   const router = useRouter();
 
@@ -99,12 +108,16 @@ export default function AddTerminForm({
 
         <Card>
           <CardContent>
-            <div className="p2 text-sm my-2">
-              Formulärspråk:{" "}
-              <LanguageSwitcherInput
-                value={formLang ?? "sv"}
-                setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
-              />
+            <div className="sticky top-4 z-50 flex justify-end pointer-events-none -mb-6">
+              <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-brand/70 bg-background/50 px-3 py-2 shadow-sm backdrop-blur-sm">
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  Språk:
+                </span>
+                <LanguageSwitcherInput
+                  value={formLang ?? "sv"}
+                  setValue={(e) => setFormLang(e === "en" ? "en" : "sv")}
+                />
+              </div>
             </div>
             <Form {...form}>
               <form
@@ -113,11 +126,24 @@ export default function AddTerminForm({
               >
                 <FormField
                   control={form.control}
-                  name={formLang === "en" ? "name_en" : "name"}
-                  key={`name-${formLang}`}
+                  name="name"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Namn ({formLang})</FormLabel>
+                    <FormItem className={formLang === "en" ? "hidden" : ""}>
+                      <FormLabel>Namn (sv)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name_en"
+                  render={({ field }) => (
+                    <FormItem className={formLang === "sv" ? "hidden" : ""}>
+                      <FormLabel>Namn (en)</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
