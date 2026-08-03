@@ -182,6 +182,19 @@ export default function CheckoutForm({
     return null;
   }
 
+  // Derived state: check if there are any duplicate warnings across all slots
+  const hasDuplicates = flattenedItems.some((_, idx) => {
+    const key = `slot-${idx}`;
+    const slot = slots[key] || { isSelf: false };
+    const isNewForm = slot.participantId === "new" || !slot.participantId;
+    const typedName = slot.customData?.name || "";
+    return (
+      !slot.isSelf &&
+      isNewForm &&
+      getDuplicateWarning(key, typedName, slots) !== null
+    );
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -629,7 +642,9 @@ export default function CheckoutForm({
           <div className="pt-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting || flattenedItems.length === 0 || hasDuplicates
+              }
               className="w-full bg-brand hover:bg-brand-light text-white font-medium h-12 text-lg"
             >
               {isSubmitting

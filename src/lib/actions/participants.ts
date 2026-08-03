@@ -48,6 +48,18 @@ export async function getOrCreateParticipant(data: ParticipantData) {
     if (user) userId = user.id;
   }
 
+  // Check if a participant with this name (case-insensitive) already exists for this user
+  const existingByName = await prisma.participant.findFirst({
+    where: {
+      addedByUserId: session.user.id,
+      name: {
+        equals: data.name.trim(),
+        mode: "insensitive",
+      },
+    },
+  });
+  if (existingByName) return existingByName;
+
   // Create new participant record
   return prisma.participant.create({
     data: {
