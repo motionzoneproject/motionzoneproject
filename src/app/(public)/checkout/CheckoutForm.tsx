@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle, InfoIcon, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +14,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Field,
   FieldContent,
@@ -30,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Product } from "@/generated/prisma/client";
+import type { Course, Product } from "@/generated/prisma/client";
 import { createCheckout } from "@/lib/actions/checkout";
 import {
   getOrCreateParticipant,
@@ -47,7 +56,7 @@ export type CheckoutFormProps = {
     qty: number;
     price: number;
     /** Available courses for SelectPack (populated when maxCourses is set) */
-    courses: { courseId: string; courseName: string }[];
+    courses: Course[];
   }[];
   user: {
     id: string;
@@ -91,6 +100,7 @@ export default function CheckoutForm({
   const [note, setNote] = useState("");
   const [paymethod, setPaymethod] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPartialPackDialog, setShowPartialPackDialog] = useState(false);
 
   // Expanded items (each qty gets its own slot)
   const flattenedItems = items.flatMap((it) =>
@@ -140,10 +150,6 @@ export default function CheckoutForm({
 
   /**
    * Returns duplicate warnings for a given slot's typed name.
-   * Checks against:
-   *  1. The logged-in user's own name
-   *  2. existingParticipants from the database
-   *  3. Other slots in this same order that already have a name
    */
   function getDuplicateWarning(
     currentKey: string,
@@ -156,12 +162,10 @@ export default function CheckoutForm({
     const normalized = normalizeName(typedName);
     if (!normalized) return null;
 
-    // Check against the logged-in user's name
     if (normalizeName(user.name) === normalized) {
       return { type: "self", match: { name: user.name } };
     }
 
-    // Check against existing DB participants
     const dbMatch = otherParticipants.find(
       (p) => normalizeName(p.name) === normalized,
     );
@@ -169,7 +173,6 @@ export default function CheckoutForm({
       return { type: "db", match: { id: dbMatch.id, name: dbMatch.name } };
     }
 
-    // Check against other slots in the same form that have a custom name
     for (const [slotKey, slot] of Object.entries(currentSlots)) {
       if (slotKey === currentKey) continue;
       if (slot.isSelf) continue;
@@ -182,7 +185,6 @@ export default function CheckoutForm({
     return null;
   }
 
-  // Derived state: check if there are any duplicate warnings across all slots
   const hasDuplicates = flattenedItems.some((_, idx) => {
     const key = `slot-${idx}`;
     const slot = slots[key] || { isSelf: false };
@@ -195,8 +197,27 @@ export default function CheckoutForm({
     );
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Status per paket-slot (bara produkter med maxCourses satt)
+  const packStatuses = flattenedItems
+    .map((it, idx) => {
+      const maxCourses = it.product.maxCourses;
+      if (maxCourses == null) return null;
+      const key = `slot-${idx}`;
+      const count = (courseSelections[key] ?? []).filter(Boolean).length;
+      return { key, name: it.name, count, maxCourses };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+  const emptyPacks = packStatuses.filter((p) => p.count === 0);
+  const partialPacks = packStatuses.filter(
+    (p) => p.count > 0 && p.count < p.maxCourses,
+  );
+
+  const hasEmptyPackSelection = emptyPacks.length > 0;
+
+  // Den faktiska ordersubmit-logiken, separerad från formulärets submit-event
+  // så den kan anropas antingen direkt eller efter bekräftelse i dialogen.
+  const submitOrder = async () => {
     setIsSubmitting(true);
 
     try {
@@ -209,7 +230,6 @@ export default function CheckoutForm({
         let participantId: string | null = null;
 
         if (slot.isSelf) {
-          // It's the user themselves, keep participant null.
           participantId = null;
         } else if (slot.participantId && slot.participantId !== "new") {
           participantId = slot.participantId;
@@ -243,22 +263,20 @@ export default function CheckoutForm({
           return;
         }
 
-        // Validate course selections for PACK products with maxCourses
+        // Kräver minst 1 vald kurs för paket med maxCourses satt.
+        // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
         const maxCourses = it.product.maxCourses;
         let selectedCourseIds: string[] | undefined;
         if (maxCourses != null) {
           const picked = (courseSelections[key] ?? []).filter(Boolean);
-          if (picked.length !== maxCourses) {
-            toast.error(
-              `Du måste välja ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"} för "${it.name}".`,
-            );
+          if (picked.length === 0) {
+            toast.error(t("checkout.pack.needAtLeastOne", { name: it.name }));
             setIsSubmitting(false);
             return;
           }
-          // Check for duplicate selections
           if (new Set(picked).size !== picked.length) {
             toast.error(
-              `Du kan inte välja samma kurs flera gånger för "${it.name}".`,
+              t("checkout.pack.duplicateSelection", { name: it.name }),
             );
             setIsSubmitting(false);
             return;
@@ -268,10 +286,13 @@ export default function CheckoutForm({
 
         orderItems.push({
           productId: it.productId,
-          count: 1, // We treat each as 1 count since we gave each a participant
+          count: 1,
           price: it.price,
           participantId,
           selectedCourseIds,
+          selectedCourses: it.courses.filter((c) =>
+            selectedCourseIds?.includes(c.id),
+          ),
         });
       }
 
@@ -295,6 +316,27 @@ export default function CheckoutForm({
     }
   };
 
+  const handleFormSubmit = (e: React.SubmitEvent) => {
+    e.preventDefault();
+
+    if (hasEmptyPackSelection) {
+      toast.error(t("checkout.pack.emptyBlocked"));
+      return;
+    }
+
+    if (partialPacks.length > 0) {
+      setShowPartialPackDialog(true);
+      return;
+    }
+
+    void submitOrder();
+  };
+
+  const handleConfirmPartial = async () => {
+    setShowPartialPackDialog(false);
+    await submitOrder();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -304,7 +346,7 @@ export default function CheckoutForm({
         <CardDescription className="mb-2">
           {t("checkout.form.intro")}
         </CardDescription>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleFormSubmit} className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               {t("checkout.form.whoAttends")}
@@ -400,7 +442,6 @@ export default function CheckoutForm({
                               }
                             />
 
-                            {/* ── Duplicate warning banner ── */}
                             {dupWarning && (
                               <div className="mt-2 flex flex-col gap-2 rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300 animate-in fade-in slide-in-from-top-1">
                                 <p className="text-xs font-medium">
@@ -561,7 +602,6 @@ export default function CheckoutForm({
                     </div>
                   )}
 
-                  {/* Course selection for PACK products with maxCourses */}
                   {maxCourses != null && it.courses.length > 0 && (
                     <div className="pt-2 border-t border-dashed">
                       <SelectPack
@@ -577,6 +617,22 @@ export default function CheckoutForm({
                       />
                     </div>
                   )}
+
+                  {it.product.autobook &&
+                    !(it.product.type === "CLIP" && it.courses.length > 1) && (
+                      <div className="mt-3 pt-3 border-t border-dashed">
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border/50">
+                          <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <span>
+                            <strong className="font-medium text-foreground block mb-1.5">
+                              <InfoIcon className="text-white h-4 w-4 inline m-1" />{" "}
+                              <strong>{t("checkout.autobook.title")}</strong>
+                            </strong>
+                            {t("checkout.autobook.desc")}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                 </div>
               );
             })}
@@ -643,7 +699,10 @@ export default function CheckoutForm({
             <Button
               type="submit"
               disabled={
-                isSubmitting || flattenedItems.length === 0 || hasDuplicates
+                isSubmitting ||
+                flattenedItems.length === 0 ||
+                hasDuplicates ||
+                hasEmptyPackSelection
               }
               className="w-full bg-brand hover:bg-brand-light text-white font-medium h-12 text-lg"
             >
@@ -657,6 +716,55 @@ export default function CheckoutForm({
           </div>
         </form>
       </CardContent>
+
+      {/* Bekräftelsedialog för paket med ofullständigt (men giltigt) kursval */}
+      <Dialog
+        open={showPartialPackDialog}
+        onOpenChange={setShowPartialPackDialog}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <DialogTitle>{t("checkout.pack.partialDialogTitle")}</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              {t("checkout.pack.partialDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ul className="space-y-1.5 rounded-lg border bg-muted/40 p-3 text-sm">
+            {partialPacks.map((p) => (
+              <li key={p.key} className="flex justify-between gap-2">
+                <span className="truncate">{p.name}</span>
+                <span className="text-muted-foreground shrink-0">
+                  {p.count}/{p.maxCourses}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowPartialPackDialog(false)}
+            >
+              {t("checkout.pack.partialDialogCancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmPartial}
+              disabled={isSubmitting}
+              className="bg-brand hover:bg-brand-light text-white"
+            >
+              {isSubmitting
+                ? t("checkout.form.submitting")
+                : t("checkout.pack.partialDialogContinue")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course, Termin, User } from "@/generated/prisma/client";
+import type { Category, Course, Termin, User } from "@/generated/prisma/client";
 import { getCourseName } from "@/lib/tools";
 
 const productTypes = [
@@ -28,6 +28,7 @@ interface Props {
   teachers: User[];
   terminer: Termin[];
   courses: Course[];
+  categories: Category[];
   lang: "sv" | "en";
 }
 
@@ -35,6 +36,7 @@ export default function ProductFilter({
   teachers,
   terminer,
   courses,
+  categories,
   lang,
 }: Props) {
   const searchParams = useSearchParams();
@@ -47,7 +49,11 @@ export default function ProductFilter({
   );
 
   const validParam = useCallback(
-    (param: "teacher" | "termin" | "course", value?: string | null): string => {
+    (
+      param: "teacher" | "termin" | "course" | "cat",
+      value?: string | null,
+    ): string => {
+      if (param === "cat") return value ?? "all";
       if (param === "teacher")
         return teachers.find((t) => t.id === value)?.id ?? "all";
       if (param === "termin")
@@ -86,7 +92,7 @@ export default function ProductFilter({
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
-    const sanitize = (key: "teacher" | "termin" | "course") => {
+    const sanitize = (key: "teacher" | "termin" | "course" | "cat") => {
       const value = next.get(key);
       if (!value) return;
       if (validParam(key, value) === "all") {
@@ -97,6 +103,7 @@ export default function ProductFilter({
     sanitize("teacher");
     sanitize("termin");
     sanitize("course");
+    sanitize("cat");
 
     if (next.toString() !== searchParams.toString()) {
       replace(`${pathname}?${next.toString()}`);
@@ -110,6 +117,33 @@ export default function ProductFilter({
           Sök
         </Label>
         <SearchInput className="w-full" placeholder="Sök produktnamn..." />
+      </div>
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Kategori
+        </Label>
+        <Select
+          value={params.get("cat") ?? "all"}
+          onValueChange={(value) =>
+            setFilter("cat", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj kategori" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj typ</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              {categories.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {lang === "en" ? t.name_en : t.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">

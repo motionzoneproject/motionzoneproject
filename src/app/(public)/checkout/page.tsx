@@ -57,10 +57,7 @@ export default async function Page() {
           qty: it.qty,
           price: p.price,
           // Courses available for SelectPack (only relevant when maxCourses is set)
-          courses: p.courses.map((pc) => ({
-            courseId: pc.courseId,
-            courseName: pick(pc.course, "name", lang) as string,
-          })),
+          courses: p.courses.map((c) => c.course),
         },
       ];
     });

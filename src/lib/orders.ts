@@ -120,7 +120,7 @@ export async function getOrderById(orderId: string) {
           product: true,
           participant: true,
           courseSelections: {
-            include: { course: { select: { id: true, name: true } } },
+            include: { course: true },
           },
         },
       },

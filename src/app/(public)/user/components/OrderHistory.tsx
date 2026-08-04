@@ -11,12 +11,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { Course } from "@/generated/prisma/client";
 import {
   formatDateToInputStr,
   formatLongFriendlyDateTime,
 } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel } from "@/lib/order-status";
+import { getCourseName } from "@/lib/tools";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
 
@@ -24,8 +26,10 @@ type OrderItem = {
   id: string;
   price: number | string | unknown;
   count: number;
+  courseSelections?: { course: Course }[] | null;
   product: {
     name: string;
+    maxCourses: number | null;
   };
   participant?: {
     name: string;
@@ -48,6 +52,7 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
   const statusLabels = {
     PAID: t("user.orderHistory.statusPaid"),
     PENDING_PAYMENT: t("user.orderHistory.statusPendingPayment"),
@@ -169,33 +174,86 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                               <h4 className="font-medium mb-2">
                                 {t("user.orderHistory.products")}
                               </h4>
-                              <div className="space-y-2">
-                                {selectedOrder.orderItems.map((item) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex justify-between text-sm gap-3"
-                                  >
-                                    <div>
-                                      <span>
-                                        {item.product.name} x {item.count}
-                                      </span>
-                                      <p className="text-xs text-muted-foreground">
-                                        {t(
-                                          "user.orderHistory.participantPrefix",
-                                        )}{" "}
-                                        {item.participant?.name ??
-                                          t(
-                                            "user.orderHistory.participantSelf",
+                              <div className="space-y-3">
+                                {selectedOrder.orderItems.map((item) => {
+                                  const isPackage =
+                                    item.product.maxCourses != null &&
+                                    item.product.maxCourses > 0;
+
+                                  const selections =
+                                    item.courseSelections ?? [];
+
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="text-sm space-y-1 bg-muted/30 p-2.5 rounded-md border"
+                                    >
+                                      <div className="flex justify-between items-start gap-3">
+                                        <div>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="font-medium">
+                                              {item.product.name} x {item.count}
+                                            </span>
+                                            {isPackage && (
+                                              <Badge
+                                                variant="secondary"
+                                                className="text-[10px] h-4 px-1.5 font-normal"
+                                              >
+                                                Paketval: ({selections.length}/
+                                                {item.product.maxCourses}) valda
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            {t(
+                                              "user.orderHistory.participantPrefix",
+                                            )}{" "}
+                                            {item.participant?.name ??
+                                              t(
+                                                "user.orderHistory.participantSelf",
+                                              )}
+                                          </p>
+                                        </div>
+                                        <span className="font-medium whitespace-nowrap">
+                                          {item.price != null
+                                            ? formatPrice(
+                                                Number(item.price),
+                                                lang,
+                                              )
+                                            : "-"}
+                                        </span>
+                                      </div>
+
+                                      {/* Paketval / Kurser */}
+                                      {isPackage && (
+                                        <div className="mt-2 pt-2 border-t border-dashed text-xs text-muted-foreground">
+                                          <span className="font-semibold block text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-1">
+                                            Valda kurser:
+                                          </span>
+                                          {selections.length > 0 ? (
+                                            <ul className="list-disc list-inside space-y-0.5 pl-0.5">
+                                              {selections.map((sel, idx) => (
+                                                <li
+                                                  key={sel.course.id ?? idx}
+                                                  className="text-foreground/90"
+                                                >
+                                                  {getCourseName(
+                                                    sel.course,
+                                                    lang,
+                                                  )}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          ) : (
+                                            <span className="italic text-muted-foreground/70">
+                                              Inga kurser valda än
+                                            </span>
                                           )}
-                                      </p>
+                                        </div>
+                                      )}
                                     </div>
-                                    <span>
-                                      {item.price != null
-                                        ? formatPrice(Number(item.price), lang)
-                                        : "-"}
-                                    </span>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
 

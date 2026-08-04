@@ -1,4 +1,4 @@
-import { EyeOffIcon } from "lucide-react";
+import { EyeOffIcon, MessageCircleWarningIcon } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Product } from "@/generated/prisma/client";
 import { getAllCourses, type ProdCourse } from "@/lib/actions/admin";
@@ -47,6 +47,25 @@ export default async function ProductItem({ product, lang }: Props) {
         </div>
       </TableCell>
       <TableCell>{productTypeLabel}</TableCell>
+      <TableCell>
+        {product.autobook ? (
+          <span className="text-green-500">Ja</span>
+        ) : (
+          <span className="text-gray-500">Nej</span>
+        )}
+        {product.autobook &&
+        product.type === "CLIP" &&
+        prodCourse.length > 1 ? (
+          <span className="bg-amber-300 font-bold text-red-700 ml-2 p-1 rounded">
+            <MessageCircleWarningIcon className="inline h-3 w-3" />
+            EJ MÖJLIGT
+          </span>
+        ) : (
+          ""
+        )}
+      </TableCell>
+
+      <TableCell>{product.maxCourses ?? ""}</TableCell>
       <TableCell>{formatPrice(product.price)}</TableCell>
       <TableCell>
         <AddCoursesToProductForm

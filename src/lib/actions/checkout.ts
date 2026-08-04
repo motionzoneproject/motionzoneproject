@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { Course } from "@/generated/prisma/client";
 import { clearCart } from "@/lib/cart";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
@@ -14,6 +15,7 @@ export type CheckoutItem = {
   participantId?: string | null;
   /** Required when product.maxCourses is set – the courses the customer chose */
   selectedCourseIds?: string[];
+  selectedCourses?: Course[];
 };
 
 export async function createCheckout(params: {
@@ -80,11 +82,12 @@ export async function createCheckout(params: {
         // Server-side validation of course selections for products with maxCourses
         if (p.maxCourses != null) {
           const selected = itm.selectedCourseIds ?? [];
-          if (selected.length !== p.maxCourses) {
+          if (selected.length > p.maxCourses || selected.length === 0) {
             throw new Error(
-              `Du måste välja exakt ${p.maxCourses} kurser för "${p.name}".`,
+              `Du måste välja minst 1 kurs och max ${p.maxCourses} kurser för "${p.name}".`,
             );
           }
+
           if (new Set(selected).size !== selected.length) {
             throw new Error(
               `Du kan inte välja samma kurs flera gånger för "${p.name}".`,

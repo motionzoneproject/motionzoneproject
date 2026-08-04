@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
+import type { Course } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import {
   approveOrder,
@@ -36,13 +37,7 @@ type OrderLite = {
         product: {
           name: string;
           maxCourses?: number | null;
-          courses?:
-            | {
-                courseId: string;
-                courseName?: string | null;
-                course?: { id: string; name: string } | null;
-              }[]
-            | null;
+          courses?: { course: Course }[];
         };
         participant?: {
           id: string;
@@ -52,7 +47,7 @@ type OrderLite = {
         } | null;
         courseSelections?:
           | {
-              course: { id: string; name: string };
+              course: Course;
             }[]
           | null;
       }[]
@@ -76,13 +71,13 @@ async function getOrders(): Promise<OrderLite[]> {
           product: {
             include: {
               courses: {
-                include: { course: { select: { id: true, name: true } } },
+                include: { course: true },
               },
             },
           },
           participant: true,
           courseSelections: {
-            include: { course: { select: { id: true, name: true } } },
+            include: { course: true },
           },
         },
       },
@@ -152,7 +147,7 @@ export default async function Page({
   async function onSavePackage(
     orderItemId: string,
     selectedCourseIds: string[],
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ success: boolean; msg?: string }> {
     "use server";
 
     const result = await updateOrderItemCourseSelections(
@@ -162,7 +157,7 @@ export default async function Page({
     revalidatePath("/admin/orders");
     revalidatePath("/admin/orders/view");
 
-    return { success: result.success };
+    return { success: result.success, msg: result.msg };
   }
 
   return (
