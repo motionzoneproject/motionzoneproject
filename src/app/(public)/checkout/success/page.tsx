@@ -98,7 +98,7 @@ export default async function Page({
                       {t.checkout.success.paymethod}
                     </span>
                     <span className="text-foreground">
-                      {getPayMethodTxt(order.payMethod, "sv")}
+                      {getPayMethodTxt(order.payMethod, lang)}
                     </span>
                   </div>
 
