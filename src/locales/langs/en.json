@@ -201,6 +201,22 @@
       "3": "Installments x 3",
       "3description": "Three installments + 45 SEK fee per invoice"
     },
+    "pack": {
+      "instruction": "Pick up to {{maxCourses}} courses you want to use this pack on (at least 1):",
+      "pick": "Pick a course",
+      "clear": "Deselect course",
+      "noCourse": "No course selected",
+      "infoZero": "You haven't selected any courses yet.",
+      "infoLess": "You've only selected {{count}} of {{maxCourses}} courses. If you place the order, you'll lose access to the remaining spots.",
+      "infoComplete": "You've selected {{count}} of {{maxCourses}} courses. All set!",
+      "needAtLeastOne": "You must select at least one course for \"{{name}}\".",
+      "duplicateSelection": "You can't select the same course twice for \"{{name}}\".",
+      "emptyBlocked": "You must select at least one course in every pack before you can complete the purchase.",
+      "partialDialogTitle": "Incomplete course selection",
+      "partialDialogDescription": "You haven't selected all courses for one or more packs. If you continue, you'll lose access to the remaining spots for those packs.",
+      "partialDialogCancel": "Cancel",
+      "partialDialogContinue": "Continue anyway"
+    },
     "success": {
       "metaTitle": "Thank you for your order",
       "title": "Order confirmation",

@@ -80,11 +80,12 @@ export async function createCheckout(params: {
         // Server-side validation of course selections for products with maxCourses
         if (p.maxCourses != null) {
           const selected = itm.selectedCourseIds ?? [];
-          if (selected.length !== p.maxCourses) {
+          if (selected.length > p.maxCourses || selected.length === 0) {
             throw new Error(
-              `Du måste välja exakt ${p.maxCourses} kurser för "${p.name}".`,
+              `Du måste välja minst 1 kurs och max ${p.maxCourses} kurser för "${p.name}".`,
             );
           }
+
           if (new Set(selected).size !== selected.length) {
             throw new Error(
               `Du kan inte välja samma kurs flera gånger för "${p.name}".`,

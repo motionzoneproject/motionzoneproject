@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { OrderDetail } from "@/app/(admin)/admin/orders/view/view-client";
 import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
@@ -61,9 +62,12 @@ export async function updateOrderStatus(
         );
         const uniqueSelectedIds = new Set(selectedCourseIds);
 
-        if (selectedCourseIds.length !== maxCourses) {
+        if (
+          selectedCourseIds.length > maxCourses ||
+          selectedCourseIds.length === 0
+        ) {
           throw new Error(
-            `Du måste välja exakt ${maxCourses} olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+            `Du måste välja max ${maxCourses} olika kurser för "${item.product.name}" eeller minst 1st, innan ordern kan godkännas.`,
           );
         }
 
@@ -123,7 +127,7 @@ export async function cancelOrder(orderId: string, note?: string) {
   return updateOrderStatus(orderId, "CANCELLED", note);
 }
 
-export async function adminGetOrder(orderId: string) {
+export async function adminGetOrder(orderId: string): Promise<OrderDetail> {
   "use server";
   const adminUserId = await requireAdmin();
   if (!adminUserId) throw new Error("No permission.");
@@ -138,13 +142,13 @@ export async function adminGetOrder(orderId: string) {
           product: {
             include: {
               courses: {
-                include: { course: { select: { id: true, name: true } } },
+                include: { course: true },
               },
             },
           },
           participant: true,
           courseSelections: {
-            include: { course: { select: { id: true, name: true } } },
+            include: { course: true },
           },
         },
       },
@@ -159,7 +163,7 @@ export async function adminGetOrder(orderId: string) {
 export async function updateOrderItemCourseSelections(
   orderItemId: string,
   selectedCourseIds: string[],
-) {
+): Promise<{ success: boolean; msg?: string; selectedCourseIds?: string[] }> {
   await requireAdmin();
 
   const id = orderItemId?.trim();
@@ -169,69 +173,101 @@ export async function updateOrderItemCourseSelections(
     new Set((selectedCourseIds ?? []).filter(Boolean).map((x) => x.trim())),
   );
 
-  return prisma.$transaction(async (tx) => {
-    const orderItem = await tx.orderItem.findUnique({
-      where: { id },
-      include: {
-        product: {
-          include: {
-            courses: { select: { courseId: true } },
+  try {
+    return prisma.$transaction(async (tx) => {
+      const orderItem = await tx.orderItem.findUnique({
+        where: { id },
+        include: {
+          product: {
+            include: {
+              courses: { select: { courseId: true } },
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!orderItem) throw new Error("Orderitem hittades inte.");
-    if (orderItem.product.maxCourses == null) {
-      throw new Error("Den här produkten är inte ett paket med kursval.");
-    }
+      if (!orderItem) throw new Error("Orderitem hittades inte.");
+      if (orderItem.product.maxCourses == null) {
+        throw new Error("Den här produkten är inte ett paket med kursval.");
+      }
 
-    const maxCourses = orderItem.product.maxCourses;
-    if (normalized.length !== maxCourses) {
-      throw new Error(
-        `Du måste välja exakt ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"}.`,
-      );
-    }
+      const maxCourses = orderItem.product.maxCourses;
 
-    const validCourseIds = new Set(
-      orderItem.product.courses.map((link) => link.courseId),
-    );
-
-    for (const courseId of normalized) {
-      if (!validCourseIds.has(courseId)) {
+      if (normalized.length === 0 || normalized.length > maxCourses) {
         throw new Error(
-          "En vald kurs finns inte kopplad till produkten och kan därför inte sparas.",
+          `Du måste välja max ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"}, eller minst 1`,
         );
       }
-    }
 
-    await tx.orderItemCourseSelection.deleteMany({
-      where: { orderItemId: id },
-    });
+      const validCourseIds = new Set(
+        orderItem.product.courses.map((link) => link.courseId),
+      );
 
-    if (normalized.length > 0) {
-      await tx.orderItemCourseSelection.createMany({
-        data: normalized.map((courseId) => ({
-          orderItemId: id,
-          courseId,
-        })),
-        skipDuplicates: true,
+      for (const courseId of normalized) {
+        if (!validCourseIds.has(courseId)) {
+          throw new Error(
+            "En vald kurs finns inte kopplad till produkten och kan därför inte sparas.",
+          );
+        }
+      }
+
+      await tx.orderItemCourseSelection.deleteMany({
+        where: { orderItemId: id },
       });
-    }
 
-    revalidatePath("/admin/orders");
-    revalidatePath("/admin/orders/view");
+      if (normalized.length > 0) {
+        await tx.orderItemCourseSelection.createMany({
+          data: normalized.map((courseId) => ({
+            orderItemId: id,
+            courseId,
+          })),
+          skipDuplicates: true,
+        });
+      }
 
-    return {
-      success: true,
-      selectedCourseIds: normalized,
-    };
-  });
+      revalidatePath("/admin/orders");
+      revalidatePath("/admin/orders/view");
+
+      return {
+        success: true,
+        selectedCourseIds: normalized,
+      };
+    });
+  } catch (e) {
+    return { success: false, msg: JSON.stringify(e) };
+  }
 }
 
 // kör denna när man accepterar ordern.
 export async function createPurchaseFromOrder(orderId: string) {
   await requireAdmin();
+
+  // 2. Hämta ordern (inkludera allt vi behöver för att skapa köpet)
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      orderItems: {
+        include: {
+          participant: true,
+          courseSelections: {
+            include: {
+              course: {
+                select: { name: true },
+              },
+            },
+          },
+          product: {
+            include: {
+              courses: true,
+            },
+          },
+        },
+      },
+      user: true,
+    },
+  });
+
+  if (!order) throw new Error("Order hittades inte");
 
   const result = await prisma.$transaction(async (tx) => {
     // 1. SÄKERHETSSPÄRR: Kolla om ordern redan har genererat ett köp
@@ -249,33 +285,6 @@ export async function createPurchaseFromOrder(orderId: string) {
       };
     }
 
-    // 2. Hämta ordern (inkludera allt vi behöver för att skapa köpet)
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: {
-        orderItems: {
-          include: {
-            participant: true,
-            courseSelections: {
-              include: {
-                course: {
-                  select: { name: true },
-                },
-              },
-            },
-            product: {
-              include: {
-                courses: true,
-              },
-            },
-          },
-        },
-        user: true,
-      },
-    });
-
-    if (!order) throw new Error("Order hittades inte");
-
     // Kontrollera att ordern är i rätt status för att generera köp
     if (!["APPROVED", "PAID"].includes(order.status)) {
       throw new Error("Ordern är inte godkänd/betald ännu.");
@@ -289,6 +298,25 @@ export async function createPurchaseFromOrder(orderId: string) {
       // Skapa en purchase för varje enskild enhet i count?
       // För enkelhetens skull skapar vi en purchase per orderItem rad.
       // Om användaren vill ha olika deltagare bör de ha olika rader.
+
+      const selectedCourseIds = new Set(
+        (orderItem.courseSelections ?? []).map((sel) => sel.courseId),
+      );
+
+      if (orderItem.product.maxCourses != null) {
+        if (selectedCourseIds.size === 0) {
+          throw new Error(
+            `Du måste välja minst en kurs för "${orderItem.product.name}".`,
+          );
+        }
+
+        if (selectedCourseIds.size > orderItem.product.maxCourses) {
+          throw new Error(
+            `Du måste välja max ${orderItem.product.maxCourses} kurser för "${orderItem.product.name}`,
+          );
+        }
+      }
+
       const purchase = await tx.purchase.create({
         data: {
           userId: order.userId,
@@ -304,9 +332,6 @@ export async function createPurchaseFromOrder(orderId: string) {
         },
       });
 
-      const selectedCourseIds = new Set(
-        (orderItem.courseSelections ?? []).map((sel) => sel.courseId),
-      );
       const coursesToCreate =
         orderItem.product.maxCourses != null && selectedCourseIds.size > 0
           ? orderItem.product.courses.filter((pc) =>
@@ -340,31 +365,6 @@ export async function createPurchaseFromOrder(orderId: string) {
       purchaseResults.push(purchase.id);
     }
 
-    // Skicka ett "Godkänd order"-mail
-    try {
-      const emails = new Set<string>();
-      if (order.user.email) {
-        emails.add(order.user.email);
-      }
-      for (const item of order.orderItems) {
-        if (item.participant?.email) {
-          emails.add(item.participant.email);
-        }
-      }
-
-      for (const email of emails) {
-        const mailHTML = await generateOrderApprovedHtml(order);
-        await sendMail(
-          email,
-          `Din order är godkänd - Order #${order.id}`,
-          mailHTML,
-        );
-      }
-    } catch (emailError) {
-      // Logga felet men låt inte transaktionen misslyckas p.g.a. mailproblem
-      console.error("Kunde inte skicka godkännandemail för order:", emailError);
-    }
-
     return {
       success: true,
       purchaseIds: purchaseResults,
@@ -378,6 +378,31 @@ export async function createPurchaseFromOrder(orderId: string) {
     await Promise.all(
       result.purchaseItemIdsToAutobook.map((id) => autobook(id)),
     );
+  }
+
+  // Skicka ett "Godkänd order"-mail
+  try {
+    const emails = new Set<string>();
+    if (order.user.email) {
+      emails.add(order.user.email);
+    }
+    for (const item of order.orderItems) {
+      if (item.participant?.email) {
+        emails.add(item.participant.email);
+      }
+    }
+
+    for (const email of emails) {
+      const mailHTML = await generateOrderApprovedHtml(order);
+      await sendMail(
+        email,
+        `Din order är godkänd - Order #${order.id}`,
+        mailHTML,
+      );
+    }
+  } catch (emailError) {
+    // Logga felet men låt inte transaktionen misslyckas p.g.a. mailproblem
+    console.error("Kunde inte skicka godkännandemail för order:", emailError);
   }
 
   return result;

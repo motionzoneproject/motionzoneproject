@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { OrderPackageEditor } from "@/app/(admin)/admin/orders/components/OrderPackageEditor";
+import type { Course } from "@/generated/prisma/client";
 import {
   adminGetOrder,
   deleteOrder,
@@ -17,9 +19,9 @@ import {
 } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
-import { getPayMethodTxt } from "@/lib/tools";
+import { getCourseName, getPayMethodTxt } from "@/lib/tools";
 
-type OrderItemLite = {
+export type OrderItemLite = {
   id: string;
   price: unknown;
   count: number;
@@ -31,7 +33,7 @@ type OrderItemLite = {
       | {
           courseId: string;
           courseName?: string | null;
-          course?: { name?: string | null } | null;
+          course?: Course;
         }[]
       | null;
   } | null;
@@ -44,7 +46,7 @@ type OrderItemLite = {
   } | null;
   courseSelections?:
     | {
-        course: { id: string; name: string };
+        course: Course;
       }[]
     | null;
 };
@@ -59,7 +61,7 @@ type StatusEventLite = {
   changedBy?: { email?: string | null } | null;
 };
 
-type OrderDetail = {
+export type OrderDetail = {
   id: string;
   userId: string;
   user?: {
@@ -91,7 +93,7 @@ type OrderDetail = {
   statusEvents?: StatusEventLite[];
   payMethod: number;
   note: string | null;
-};
+} | null;
 
 function calculateAge(dob: string | Date | null | undefined) {
   if (!dob) return null;
@@ -154,18 +156,22 @@ export default function OrderDetailsClient() {
     if (!orderId) return;
     startTransition(async () => {
       try {
-        const data = await adminGetOrder(orderId);
+        const data: OrderDetail = await adminGetOrder(orderId);
         setOrder(data);
         setPackageSelections(
           Object.fromEntries(
             (data?.orderItems ?? []).map((it) => [
               it.id,
-              (it.courseSelections ?? []).map((sel) => sel.course.id),
+              (it.courseSelections ?? [])
+                .map((sel) => sel.course?.id)
+                .filter((id): id is string => !!id),
             ]),
           ),
         );
         setError(null);
       } catch (e) {
+        toast.error(`Kunde inte hämta order. ${JSON.stringify(e)}`);
+
         const msg =
           (e as { message?: string })?.message || "Kunde inte hämta order.";
         setError(msg);
@@ -197,15 +203,20 @@ export default function OrderDetailsClient() {
         Object.fromEntries(
           (data?.orderItems ?? []).map((it) => [
             it.id,
-            (it.courseSelections ?? []).map((sel) => sel.course.id),
+            (it.courseSelections ?? [])
+              .map((sel) => sel.course?.id)
+              .filter((id): id is string => !!id),
           ]),
         ),
       );
+      toast.success("Paketval sparat.");
     } catch (e) {
       const msg =
         (e as { message?: string })?.message ||
         "Kunde inte uppdatera paketval.";
       setPackageError(msg);
+
+      toast.error(`Kunde inte spara paketvalen. ${msg}`);
     } finally {
       setSavingItemId(null);
     }
@@ -504,8 +515,9 @@ export default function OrderDetailsClient() {
                 const packCourses =
                   it.product?.courses?.map((course) => ({
                     courseId: course.courseId,
-                    courseName:
-                      course.courseName ?? course.course?.name ?? "Okänd kurs",
+                    courseName: course.course
+                      ? getCourseName(course.course)
+                      : "Okänd",
                   })) ?? [];
                 const selectedPack = packageSelections[it.id] ?? [];
                 return (

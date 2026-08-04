@@ -11,6 +11,7 @@ import { readCart } from "@/lib/cart";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import CartSummary from "./CartSummary";
 import CheckoutForm from "./CheckoutForm";
@@ -59,7 +60,7 @@ export default async function Page() {
           // Courses available for SelectPack (only relevant when maxCourses is set)
           courses: p.courses.map((pc) => ({
             courseId: pc.courseId,
-            courseName: pick(pc.course, "name", lang) as string,
+            courseName: getCourseName(pc.course),
           })),
         },
       ];

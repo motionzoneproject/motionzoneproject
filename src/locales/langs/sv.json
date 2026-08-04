@@ -201,6 +201,22 @@
       "3": "Delbetalning x 3",
       "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
+    "pack": {
+      "instruction": "Välj upp till {{maxCourses}} kurser du vill använda paketet på (minst 1):",
+      "pick": "Välj en kurs",
+      "clear": "Välj bort kurs",
+      "noCourse": "Ingen kurs vald",
+      "infoZero": "Du har inte valt några kurser än.",
+      "infoLess": "Du har bara valt {{count}} av {{maxCourses}} kurser. Om du lägger ordern förlorar du åtkomst till de andra platserna.",
+      "infoComplete": "Du har valt {{count}} av {{maxCourses}} kurser. Klart!",
+      "needAtLeastOne": "Du måste välja minst en kurs för \"{{name}}\".",
+      "duplicateSelection": "Du kan inte välja samma kurs flera gånger för \"{{name}}\".",
+      "emptyBlocked": "Du måste välja minst en kurs i varje paket innan du kan slutföra köpet.",
+      "partialDialogTitle": "Ofullständigt kursval",
+      "partialDialogDescription": "Du har inte valt alla kurser för ett eller flera paket. Om du fortsätter förlorar du åtkomst till de kvarvarande platserna för dessa paket.",
+      "partialDialogCancel": "Avbryt",
+      "partialDialogContinue": "Fortsätt ändå"
+    },
     "success": {
       "metaTitle": "Tack för din beställning",
       "title": "Orderbekräftelse",
