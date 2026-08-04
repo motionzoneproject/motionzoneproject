@@ -251,9 +251,7 @@ export async function createPurchaseFromOrder(orderId: string) {
           participant: true,
           courseSelections: {
             include: {
-              course: {
-                select: { name: true },
-              },
+              course: true,
             },
           },
           product: {

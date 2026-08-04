@@ -19,7 +19,7 @@ import {
 } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
-import { getCourseName, getPayMethodTxt } from "@/lib/tools";
+import { getPayMethodTxt } from "@/lib/tools";
 
 export type OrderItemLite = {
   id: string;
@@ -512,13 +512,9 @@ export default function OrderDetailsClient() {
               {(order.orderItems || []).map((it) => {
                 const unit = Number(it.price ?? 0);
                 const sum = unit * (it.count ?? 0);
-                const packCourses =
-                  it.product?.courses?.map((course) => ({
-                    courseId: course.courseId,
-                    courseName: course.course
-                      ? getCourseName(course.course)
-                      : "Okänd",
-                  })) ?? [];
+                const packCourses = (it.product?.courses ?? [])
+                  .map((c) => c.course)
+                  .filter((c): c is Course => !!c);
                 const selectedPack = packageSelections[it.id] ?? [];
                 return (
                   <tr key={it.id} className="hover:bg-muted/30">

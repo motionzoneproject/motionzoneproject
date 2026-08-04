@@ -8,7 +8,7 @@ import { pick } from "@/lib/i18n/pick";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel } from "@/lib/order-status";
 import { getOrderById } from "@/lib/orders";
-import { getPayMethodTxt } from "@/lib/tools";
+import { getCourseName, getPayMethodTxt } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 
 export const metadata: Metadata = {
@@ -161,7 +161,7 @@ export default async function Page({
                                   className="text-xs text-muted-foreground flex items-center gap-1"
                                 >
                                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
-                                  {s.course.name}
+                                  {getCourseName(s.course)}
                                 </li>
                               ))}
                             </ul>

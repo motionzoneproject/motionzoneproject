@@ -350,7 +350,7 @@ export default function OrdersView({
             {paginatedOrders.map((o) => {
               const participants = Array.from(
                 new Map(
-                  (o.orderItems ?? [])
+                  (o.orderItems ?? []) // Ensure o.orderItems is an array
                     .map((oi) => oi.participant)
                     .filter((p): p is NonNullable<typeof p> => !!p)
                     .map((p) => [p.id, p]),
@@ -425,17 +425,7 @@ export default function OrdersView({
                     <div className="flex flex-col gap-1 max-w-[260px]">
                       {(o.orderItems ?? []).map((oi) => {
                         const courseOptions =
-                          oi.product?.courses?.flatMap((c) =>
-                            c
-                              ? [
-                                  {
-                                    courseId: c.course.id,
-                                    courseName: getCourseName(c.course),
-                                  },
-                                ]
-                              : [],
-                          ) ?? [];
-
+                          oi.product.courses?.map((c) => c.course) ?? [];
                         const selections =
                           oi.courseSelections?.flatMap((sel) =>
                             sel.course ? [getCourseName(sel.course)] : [],

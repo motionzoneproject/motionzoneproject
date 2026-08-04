@@ -6,7 +6,7 @@ import { formatDateToInputStr, formatLongFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import { getOrderStatusLabel } from "./order-status";
 import { dbToFormTime } from "./time-convert";
-import { getPayMethodTxt } from "./tools";
+import { getCourseName, getPayMethodTxt } from "./tools";
 
 const DEFAULT_FROM =
   process.env.EMAIL_FROM || "Motion Zone <no-reply@motionzoneworld.com>";
@@ -73,7 +73,7 @@ type OrderForEmail = {
     price: number;
     courseSelections?:
       | {
-          course?: { name?: string | null } | null;
+          course?: Course;
         }[]
       | null;
   }[];
@@ -86,16 +86,18 @@ type OrderForEmail = {
  */
 function getCourseSelectionSummary(item: OrderForEmail["orderItems"][number]) {
   const selections = item.courseSelections ?? [];
-  const names = selections
-    .map((sel) => sel.course?.name)
-    .filter(
-      (value): value is string =>
-        typeof value === "string" && value.trim().length > 0,
-    );
+
+  const names = selections.flatMap((sel) => {
+    if (!sel.course) return [];
+    const name = getCourseName(sel.course);
+    return name?.trim() ? [name] : [];
+  });
 
   if (names.length === 0) return "";
 
-  return `<div style="margin-top: 6px; font-size: 12px; color: #555;">Paket: ${names.join(", ")}</div>`;
+  const listItems = names.map((name) => `<li>${name}</li>`).join("");
+
+  return `<div style="margin-top: 6px; font-size: 12px; color: #555;">Paketval:<ul style="margin: 4px 0 0 16px; padding: 0;">${listItems}</ul></div>`;
 }
 
 export async function generateOrderConfirmationHtml(order: OrderForEmail) {

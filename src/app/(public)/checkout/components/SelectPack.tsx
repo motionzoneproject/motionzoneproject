@@ -10,15 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface CourseOption {
-  courseId: string;
-  courseName: string;
-}
+import type { Course } from "@/generated/prisma/client";
+import { getCourseName } from "@/lib/tools";
 
 interface SelectPackProps {
   maxCourses: number;
-  courses: CourseOption[];
+  courses: Course[];
   /** Array of chosen course IDs, e.g. ["id-1", "id-2"] */
   selected: string[];
   onChange: (selected: string[]) => void;
@@ -108,11 +105,11 @@ export function SelectPack({
                   </SelectItem>
                   {courses.map((c) => (
                     <SelectItem
-                      key={c.courseId}
-                      value={c.courseId}
-                      disabled={otherSelected.includes(c.courseId)}
+                      key={c.id}
+                      value={c.id}
+                      disabled={otherSelected.includes(c.id)}
                     >
-                      {c.courseName}
+                      {getCourseName(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>

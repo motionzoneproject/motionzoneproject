@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { Course } from "@/generated/prisma/client";
 import { clearCart } from "@/lib/cart";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
@@ -14,6 +15,7 @@ export type CheckoutItem = {
   participantId?: string | null;
   /** Required when product.maxCourses is set – the courses the customer chose */
   selectedCourseIds?: string[];
+  selectedCourses?: Course[];
 };
 
 export async function createCheckout(params: {
