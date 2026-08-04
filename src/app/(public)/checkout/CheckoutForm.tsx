@@ -624,13 +624,11 @@ export default function CheckoutForm({
                         <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border/50">
                           <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                           <span>
-                            <strong className="font-medium text-foreground block mb-0.5">
-                              Automatisk bokning
+                            <strong className="font-medium text-foreground block mb-1.5">
+                              <InfoIcon className="text-white h-4 w-4 inline m-1" />{" "}
+                              <strong>{t("checkout.autobook.title")}</strong>
                             </strong>
-                            <InfoIcon className="text-white h-4 w-4 inline m-1" />
-                            När din order godkänns bokas du automatiskt in på
-                            alla kommande tillfällen i de kurser som ingår, så
-                            långt klippen räcker.
+                            {t("checkout.autobook.desc")}
                           </span>
                         </div>
                       </div>

@@ -201,6 +201,10 @@
       "3": "Installments x 3",
       "3description": "Three installments + 45 SEK fee per invoice"
     },
+    "autobook": {
+      "title": "Automatic booking",
+      "desc": "Once your order is approved, you will be automatically booked into all upcoming class sessions for the included courses, for as long as your pass credits last."
+    },
     "pack": {
       "instruction": "Pick up to {{maxCourses}} courses you want to use this pack on (at least 1):",
       "pick": "Pick a course",

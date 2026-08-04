@@ -201,6 +201,10 @@
       "3": "Delbetalning x 3",
       "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
+    "autobook": {
+      "title": "automatisk bokning",
+      "desc": "När din order godkänns bokas du automatiskt in på alla kommande kurstillfällen i de kurser som ingår, så långt som klippen räcker."
+    },
     "pack": {
       "instruction": "Välj upp till {{maxCourses}} kurser du vill använda paketet på (minst 1):",
       "pick": "Välj en kurs",
