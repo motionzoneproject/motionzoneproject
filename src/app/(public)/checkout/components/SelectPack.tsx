@@ -31,13 +31,11 @@ export function SelectPack({
 }: SelectPackProps) {
   const { t } = useTranslation();
 
-  // Skapa en fixerad array för rendering baserat på maxCourses
   const slots = Array.from({ length: maxCourses }, (_, i) => selected[i] ?? "");
 
   const updateSlot = (index: number, value: string) => {
     const nextSlots = [...slots];
     nextSlots[index] = value === "clear" ? "" : value;
-    // Behåll positionerna - filtrera INTE bort tomma strängar här.
     onChange(nextSlots);
   };
 
@@ -70,50 +68,56 @@ export function SelectPack({
         : AlertTriangle;
 
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-3 pt-2 w-full max-w-full overflow-hidden">
       <p className="text-sm text-muted-foreground">
         {t("checkout.pack.instruction", { maxCourses })}
       </p>
 
-      <div className="grid gap-2">
+      <div className="grid gap-2 w-full">
         {slots.map((currentValue, i) => {
           const id = `slot-${i}`;
-          console.log(id);
-
           const otherSelected = slots.filter((v, idx) => idx !== i && v !== "");
 
           return (
-            <div key={id} className="flex items-center gap-2">
-              <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground">
+            /* min-w-0 här gör att flex-barn tillåts krympa under sin innehållsbredd */
+            <div key={id} className="flex items-center gap-2 w-full min-w-0">
+              <span className="w-5 shrink-0 text-center text-sm font-medium text-muted-foreground">
                 {i + 1}.
               </span>
-              <Select
-                value={currentValue || EMPTY}
-                onValueChange={(val) => updateSlot(i, val === EMPTY ? "" : val)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder={t("checkout.pack.pick")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    value={EMPTY}
-                    className="text-muted-foreground italic"
-                  >
-                    {currentValue
-                      ? `-- ${t("checkout.pack.clear")} --`
-                      : t("checkout.pack.noCourse")}
-                  </SelectItem>
-                  {courses.map((c) => (
+
+              {/* min-w-0 på wrapper och trigger förhindrar overflow */}
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={currentValue || EMPTY}
+                  onValueChange={(val) =>
+                    updateSlot(i, val === EMPTY ? "" : val)
+                  }
+                >
+                  <SelectTrigger className="w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left">
+                    <SelectValue placeholder={t("checkout.pack.pick")} />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
                     <SelectItem
-                      key={c.id}
-                      value={c.id}
-                      disabled={otherSelected.includes(c.id)}
+                      value={EMPTY}
+                      className="text-muted-foreground italic text-sm"
                     >
-                      {getCourseName(c)}
+                      {currentValue
+                        ? `-- ${t("checkout.pack.clear")} --`
+                        : t("checkout.pack.noCourse")}
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {courses.map((c) => (
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        className="text-sm"
+                        disabled={otherSelected.includes(c.id)}
+                      >
+                        {getCourseName(c)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           );
         })}
