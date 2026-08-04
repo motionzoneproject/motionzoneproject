@@ -424,6 +424,9 @@ export async function getUserOrders() {
         include: {
           product: true,
           participant: true,
+          courseSelections: {
+            include: { course: true },
+          },
         },
       },
     },
