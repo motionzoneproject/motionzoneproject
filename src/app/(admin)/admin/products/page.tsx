@@ -28,6 +28,7 @@ export default async function Page({
     teacher?: string;
     termin?: string;
     course?: string;
+    cat?: string;
     lang?: string;
   }>;
 }) {
@@ -42,6 +43,7 @@ export default async function Page({
   const type = params.type as ProductType | undefined;
   const teacher = params.teacher || "";
   const termin = params.termin || "";
+  const cat = params.cat || "";
   const course = params.course || "";
   const lang: "sv" | "en" = params.lang === "en" ? "en" : "sv";
 
@@ -55,6 +57,8 @@ export default async function Page({
   const courses = await prisma.course.findMany({
     orderBy: { name: "asc" },
   });
+
+  const categories = await getCategories();
 
   // Build filter
   // Build course-relation conditions (must be combined into one `courses.some`)
@@ -87,6 +91,7 @@ export default async function Page({
         }
       : {}),
     ...(type ? { type } : {}),
+    ...(cat ? { categoryId: cat } : {}),
     ...(courseConditions.length > 0
       ? { courses: { some: { AND: courseConditions } } }
       : {}),
@@ -109,8 +114,6 @@ export default async function Page({
     take: ITEMS_PER_PAGE,
   });
 
-  const categories = await getCategories();
-
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -131,6 +134,7 @@ export default async function Page({
         teachers={teachers}
         terminer={terminer}
         courses={courses}
+        categories={categories}
       />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -143,6 +147,13 @@ export default async function Page({
             <TableRow>
               <TableHead>Produkt</TableHead>
               <TableHead>Typ</TableHead>
+              <TableHead>Autobokning</TableHead>
+              <TableHead>
+                Max kurser <br />
+                <span className="font-xs font-light italic text-muted-foreground">
+                  (valbart paket)
+                </span>
+              </TableHead>
               <TableHead>Pris</TableHead>
               <TableHead>Kurser</TableHead>
               <TableHead>Platser</TableHead>
