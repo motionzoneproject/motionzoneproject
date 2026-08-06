@@ -1,4 +1,4 @@
-import type { Weekday } from "@/generated/prisma/client";
+import type { SchemaItem, Weekday } from "@/generated/prisma/client";
 
 type CourseLike = {
   name: string;
@@ -20,13 +20,77 @@ const WEEKDAYS = [
   "SUNDAY",
 ] as const;
 
-export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
+export const getWeekdayAsShort = (day: Weekday, lang: "sv" | "en" = "sv") => {
+  if (lang === "en") {
+    switch (day) {
+      case "MONDAY":
+        return "Mon";
+      case "TUESDAY":
+        return "Tue";
+      case "WEDNESDAY":
+        return "Wed";
+      case "THURSDAY":
+        return "Thu";
+      case "FRIDAY":
+        return "Fri";
+      case "SATURDAY":
+        return "Sat";
+      case "SUNDAY":
+        return "Sun";
+      default:
+        return day;
+    }
+  } else {
+    switch (day) {
+      case "MONDAY":
+        return "Mån";
+      case "TUESDAY":
+        return "Tis";
+      case "WEDNESDAY":
+        return "Ons";
+      case "THURSDAY":
+        return "Tor";
+      case "FRIDAY":
+        return "Fre";
+      case "SATURDAY":
+        return "Lör";
+      case "SUNDAY":
+        return "Sön";
+      default:
+        return day;
+    }
+  }
+};
+
+export function getCourseName(
+  course: CourseLike,
+  lang: "sv" | "en" = "sv",
+  schemaItems?: SchemaItem[],
+) {
+  // För att kunna sortera.
+  const WEEKDAY_ORDER: Weekday[] = [
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+    "SUNDAY",
+  ];
+
+  const siDaysStr = schemaItems
+    ? Array.from(new Set(schemaItems.map((si) => si.weekday)))
+        .sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
+        .map((day) => getWeekdayAsShort(day, lang))
+        .join(", ")
+    : "";
+
   const ageRange =
     course.minAge && course.minAge > 0
       ? `${course.minAge}${
           course.maxAge && course.maxAge > 0
-            ? `–${course.maxAge} ${lang === "sv" ? ` år` : `years`}` // Använder tankstreck (–) och lägger till " år" här
-            : `+ ${lang === "sv" ? ` år` : `years`}` // Lägger till "+ år" om maxAge saknas
+            ? `–${course.maxAge} ${lang === "sv" ? `år` : `years`}` // Använder tankstreck (–) och lägger till " år" här
+            : `+ ${lang === "sv" ? `år` : `years`}` // Lägger till "+ år" om maxAge saknas
         }${course.adult ? (lang === "sv" ? ` / Vuxen` : ` / Adult`) : ""}`
       : course.adult
         ? lang === "sv"
@@ -45,7 +109,12 @@ export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
   const baseName =
     lang === "sv" ? course.name : course.name_en?.trim() || course.name; // Fallback på svenskt namn.
 
-  return `${baseName} ${ageRange} ${levelInfo}`.trim();
+  const parts = [baseName, ageRange, levelInfo]
+    .filter(Boolean)
+    .map((s) => s.trim());
+  const daysPart = siDaysStr ? `(${siDaysStr})` : "";
+
+  return [...parts, daysPart].filter(Boolean).join(" ");
 }
 
 export function getWeekdays() {
