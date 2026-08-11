@@ -6,6 +6,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import NavBar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { getCart } from "@/lib/actions/cart";
 import { getCategories } from "@/lib/actions/category-actions";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "@/lib/session-provider";
@@ -61,6 +62,8 @@ export default async function RootLayout({
 
   const categories = await getCategories();
 
+  const cartCount = await getCart();
+
   return (
     <html
       lang={lang}
@@ -85,7 +88,12 @@ export default async function RootLayout({
               >
                 Hoppa till huvudinnehållet
               </a>
-              <NavBar categories={categories ?? []} />
+              <NavBar
+                categories={categories ?? []}
+                cartCount={cartCount.items
+                  .map((item) => item.qty)
+                  .reduce((a, b) => a + b, 0)}
+              />
               {children}
               <CookieConsent />
               <Toaster richColors position="top-center" />

@@ -22,7 +22,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import {
   Card,
   CardContent,
@@ -31,7 +31,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Prisma } from "@/generated/prisma/client";
-import { addToCart } from "@/lib/actions/cart";
+
 import { getCategories } from "@/lib/actions/category-actions";
 import { getProductStats } from "@/lib/actions/purchase-actions";
 import { getStyles } from "@/lib/actions/style-actions";
@@ -42,6 +42,7 @@ import prisma from "@/lib/prisma";
 import { dbToFormTime } from "@/lib/time-convert";
 import { getCourseName, getVeckodag } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
+import { AddToCartButton } from "./components/AddToCartButton";
 import { CourseInfoDialog } from "./components/CourseInfoDialog";
 import { CoursesFilter } from "./components/CoursesFilter";
 import { InfoDialog } from "./components/InfoDialog";
@@ -95,6 +96,7 @@ export const metadata: Metadata = {
 export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const { lang, t } = await getDictionary();
+
   const publicStyles = (await getStyles(lang)).filter((style) => style.active);
   const categories = await getCategories();
   const linkedCourseFilter: Prisma.CourseWhereInput = {
@@ -650,24 +652,12 @@ export default async function Page({ searchParams }: Props) {
                     </CardContent>
 
                     <CardFooter className="pt-4 border-t">
-                      <form
-                        action={async () => {
-                          "use server";
-                          await addToCart({
-                            productId: p.id,
-                            redirectTo: "/checkout",
-                          });
-                        }}
-                        className="w-full"
-                      >
-                        <Button
-                          type="submit"
-                          disabled={p.spotsLeft === 0}
-                          className="w-full bg-brand hover:bg-brand-light text-white font-medium transition-colors duration-200"
-                        >
-                          {t.coursesPage.buyNow}
-                        </Button>
-                      </form>
+                      <AddToCartButton
+                        productId={p.id}
+                        productName={pick(p, "name", lang) as string}
+                        disabled={p.spotsLeft === 0}
+                        label={t.coursesPage.buyNow}
+                      />
                     </CardFooter>
                   </Card>
                 );

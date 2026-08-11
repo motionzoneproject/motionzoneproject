@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 interface NavBarProps {
   categories: Category[];
+  cartCount: number;
 }
 
 interface NavLink {
@@ -30,7 +31,7 @@ interface NavLink {
   categoryId: string | null;
 }
 
-export default function NavBar({ categories }: NavBarProps) {
+export default function NavBar({ categories, cartCount }: NavBarProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -202,7 +203,7 @@ export default function NavBar({ categories }: NavBarProps) {
         {/* Desktop Actions (visas först från xl:) */}
         <div className="hidden lg:flex items-center gap-3 shrink-0">
           <div className="hover:scale-110 transition-transform duration-200 mr-1">
-            <CartIcon />
+            <CartIcon count={cartCount} />
           </div>
           <ModeToggle />
           <LanguageSwitcher />
@@ -212,7 +213,7 @@ export default function NavBar({ categories }: NavBarProps) {
         {/* Mobile / Tablet Actions (upp till xl:) */}
         <div className="lg:hidden flex items-center gap-2">
           <div className="hover:scale-110 transition-transform duration-200 mr-1">
-            <CartIcon />
+            <CartIcon count={cartCount} />
           </div>
           <ModeToggle />
           <LanguageSwitcher />
