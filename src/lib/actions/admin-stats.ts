@@ -11,7 +11,7 @@ import {
   startOfStockholmDay,
 } from "../date-utils";
 
-const SUCCESSFUL_ORDER_STATUSES = ["APPROVED", "PAID"] as const;
+const SUCCESSFUL_ORDER_STATUSES = ["APPROVED"] as const;
 
 type SchemaDateRange = {
   customStartDate: Date | null;
@@ -188,7 +188,7 @@ function buildPotentialReservedOrderItemWhere(
   return {
     order: {
       status: {
-        in: ["PENDING_PAYMENT", "PAID", "APPROVED"],
+        in: ["PENDING_PAYMENT", "APPROVED"],
       },
       ...(dateRange && !terminId
         ? {

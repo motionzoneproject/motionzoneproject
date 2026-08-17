@@ -54,7 +54,6 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const statusLabels = {
-    PAID: t("user.orderHistory.statusPaid"),
     PENDING_PAYMENT: t("user.orderHistory.statusPendingPayment"),
     APPROVED: t("user.orderHistory.statusApproved"),
     CANCELLED: t("user.orderHistory.statusCancelled"),
@@ -64,8 +63,6 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
     const label = getOrderStatusLabel(status, statusLabels);
 
     switch (status) {
-      case "PAID":
-        return <Badge className="bg-green-500">{label}</Badge>;
       case "PENDING_PAYMENT":
         return <Badge variant="outline">{label}</Badge>;
       case "APPROVED":

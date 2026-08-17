@@ -79,7 +79,6 @@ export default async function Page({
                         PENDING_PAYMENT:
                           t.checkout.success.statusPendingPayment,
                         APPROVED: t.checkout.success.statusApproved,
-                        PAID: t.checkout.success.statusPaid,
                         CANCELLED: t.checkout.success.statusCancelled,
                       })}
                     </span>

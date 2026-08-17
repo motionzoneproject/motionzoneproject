@@ -473,6 +473,8 @@ model Order {
 
   // Order status lifecycle
   status       OrderStatus        @default(PENDING_PAYMENT)
+  isPaid       Boolean            @default(false)
+  paidAt       DateTime?
   statusEvents OrderStatusEvent[]
 
   payMethod Int @default(1) // 1 = Faktura hela beloppet, 2 = 2 delbetalningar, 3 = 3 delbetalningar
@@ -549,8 +551,8 @@ enum OrderStatus {
   CREATED
   PENDING_PAYMENT
   AWAITING_APPROVAL
-  PAID
   APPROVED
+  PAID
   COMPLETED
   CANCELLED
 }

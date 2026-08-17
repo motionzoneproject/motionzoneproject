@@ -7,23 +7,24 @@ import {
   cancelOrder,
   createPurchaseFromOrder,
   deleteOrder,
-  markOrderPaid,
+  setOrderPaid,
   updateOrderItemCourseSelections,
 } from "@/lib/actions/orders";
+import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
 
-type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "CANCELLED";
 const PAGE_SIZE = 10;
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type OrderStatus = "PENDING_PAYMENT" | "APPROVED" | "PAID" | "CANCELLED";
-
 type OrderLite = {
   id: string;
   userId: string;
+  isPaid: boolean;
+  paidAt?: Date | null;
   user?: {
     email?: string | null;
     details?: {
@@ -102,7 +103,6 @@ export default async function Page({
     "ALL",
     "PENDING",
     "APPROVED",
-    "PAID",
     "CANCELLED",
   ].includes(raw)
     ? (raw as StatusFilter)
@@ -119,11 +119,16 @@ export default async function Page({
     revalidatePath("/admin/orders");
   }
 
+  async function onTogglePaid(orderId: string, paid: boolean): Promise<void> {
+    "use server";
+    await setOrderPaid(orderId, paid);
+    revalidatePath("/admin/orders");
+  }
+
   async function onMarkPaid(formData: FormData) {
     "use server";
     const orderId = String(formData.get("orderId"));
-    const note = formData.get("note")?.toString();
-    await markOrderPaid(orderId, note);
+    await setOrderPaid(orderId, true);
     revalidatePath("/admin/orders");
   }
 
@@ -169,6 +174,7 @@ export default async function Page({
         pageSize={PAGE_SIZE}
         onApprove={onApprove}
         onMarkPaid={onMarkPaid}
+        onTogglePaid={onTogglePaid}
         onCancel={onCancel}
         onDelete={onDelete}
         onSavePackage={onSavePackage}

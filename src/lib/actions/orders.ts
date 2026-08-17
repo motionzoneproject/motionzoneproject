@@ -17,7 +17,7 @@ async function requireAdmin() {
 
 export async function updateOrderStatus(
   orderId: string,
-  toStatus: "PENDING_PAYMENT" | "PAID" | "APPROVED" | "CANCELLED",
+  toStatus: "PENDING_PAYMENT" | "APPROVED" | "CANCELLED",
   note?: string,
 ) {
   const adminUserId = await requireAdmin();
@@ -45,11 +45,8 @@ export async function updateOrderStatus(
 
     if (!current) throw new Error("Order not found");
     if (current.status === toStatus) return { success: true };
-    if (
-      toStatus === "CANCELLED" &&
-      ["APPROVED", "PAID"].includes(current.status)
-    ) {
-      throw new Error("Kan inte avbryta en redan godkänd eller betald order.");
+    if (toStatus === "CANCELLED" && current.status === "APPROVED") {
+      throw new Error("Kan inte avbryta en redan beviljad order.");
     }
 
     if (toStatus === "APPROVED") {
@@ -67,13 +64,13 @@ export async function updateOrderStatus(
           selectedCourseIds.length === 0
         ) {
           throw new Error(
-            `Du måste välja max ${maxCourses} olika kurser för "${item.product.name}" eeller minst 1st, innan ordern kan godkännas.`,
+            `Du måste välja max ${maxCourses} olika kurser för "${item.product.name}" eller minst 1st, innan ordern kan beviljas.`,
           );
         }
 
         if (uniqueSelectedIds.size !== selectedCourseIds.length) {
           throw new Error(
-            `Du måste välja olika kurser för "${item.product.name}" innan ordern kan godkännas.`,
+            `Du måste välja olika kurser för "${item.product.name}" innan ordern kan beviljas.`,
           );
         }
 
@@ -86,7 +83,7 @@ export async function updateOrderStatus(
 
         if (invalidCourseId) {
           throw new Error(
-            `En vald kurs i "${item.product.name}" finns inte kopplad till produkten och kan därför inte godkännas.`,
+            `En vald kurs i "${item.product.name}" finns inte kopplad till produkten och kan därför inte beviljas.`,
           );
         }
       }
@@ -119,8 +116,19 @@ export async function approveOrder(orderId: string, note?: string) {
   return updateOrderStatus(orderId, "APPROVED", note);
 }
 
-export async function markOrderPaid(orderId: string, note?: string) {
-  return updateOrderStatus(orderId, "PAID", note);
+/** Sätter betalningsstatus (isPaid) som ett separat fält, oberoende av orderns godkännandestatus. */
+export async function setOrderPaid(orderId: string, paid: boolean) {
+  await requireAdmin();
+  const now = new Date();
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      isPaid: paid,
+      paidAt: paid ? now : null,
+    },
+  });
+  revalidatePath("/admin/orders");
+  return { success: true };
 }
 
 export async function cancelOrder(orderId: string, note?: string) {
@@ -284,8 +292,8 @@ export async function createPurchaseFromOrder(orderId: string) {
     }
 
     // Kontrollera att ordern är i rätt status för att generera köp
-    if (!["APPROVED", "PAID"].includes(order.status)) {
-      throw new Error("Ordern är inte godkänd/betald ännu.");
+    if (order.status !== "APPROVED") {
+      throw new Error("Ordern är inte beviljad ännu.");
     }
 
     // 3. Skapa Purchases för varje OrderItem (en purchase per produkt i ordern)
@@ -394,7 +402,7 @@ export async function createPurchaseFromOrder(orderId: string) {
       const mailHTML = await generateOrderApprovedHtml(order);
       await sendMail(
         email,
-        `Din order är godkänd - Order #${order.id}`,
+        `Din plats är beviljad - Order #${order.id}`,
         mailHTML,
       );
     }

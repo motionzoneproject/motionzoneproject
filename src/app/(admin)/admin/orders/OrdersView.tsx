@@ -15,6 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Course } from "@/generated/prisma/client";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
@@ -26,6 +33,8 @@ import { OrderPackageDialog } from "./components/OrderPackageEditor";
 type OrderLite = {
   id: string;
   userId: string;
+  isPaid?: boolean;
+  paidAt?: string | Date | null;
   user?: {
     email?: string | null;
     details?: {
@@ -64,6 +73,7 @@ export default function OrdersView({
   pageSize,
   onApprove,
   onMarkPaid,
+  onTogglePaid,
   onCancel,
   onDelete,
   onSavePackage,
@@ -73,6 +83,7 @@ export default function OrdersView({
   pageSize: number;
   onApprove: (formData: FormData) => void;
   onMarkPaid: (formData: FormData) => void;
+  onTogglePaid: (orderId: string, paid: boolean) => void | Promise<void>;
   onCancel: (formData: FormData) => void;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
   onSavePackage: (
@@ -85,6 +96,11 @@ export default function OrdersView({
   const router = useRouter();
   const sp = useSearchParams();
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
+  const paidFilterParam = sp.get("paid")?.toUpperCase();
+  const paidFilter =
+    paidFilterParam === "PAID" || paidFilterParam === "UNPAID"
+      ? paidFilterParam
+      : "ALL";
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -135,14 +151,12 @@ export default function OrdersView({
       ALL: 0,
       PENDING: 0,
       APPROVED: 0,
-      PAID: 0,
       CANCELLED: 0,
     };
     for (const o of orders) {
       const st = String(o.status || "PENDING_PAYMENT");
       if (st === "PENDING_PAYMENT") acc.PENDING += 1;
       else if (st === "APPROVED") acc.APPROVED += 1;
-      else if (st === "PAID") acc.PAID += 1;
       else if (st === "CANCELLED") acc.CANCELLED += 1;
       acc.ALL += 1;
     }
@@ -183,8 +197,14 @@ export default function OrdersView({
       );
     }
 
+    if (paidFilter === "PAID") {
+      result = result.filter((o) => o.isPaid);
+    } else if (paidFilter === "UNPAID") {
+      result = result.filter((o) => !o.isPaid);
+    }
+
     return result;
-  }, [orders, active, searchInput, participantId]);
+  }, [orders, active, searchInput, participantId, paidFilter]);
 
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
@@ -202,8 +222,7 @@ export default function OrdersView({
   const tabs = [
     { id: "ALL", label: "Alla" },
     { id: "PENDING", label: "Väntar" },
-    { id: "PAID", label: "Betalda" },
-    { id: "APPROVED", label: "Godkända" },
+    { id: "APPROVED", label: "Beviljade" },
     { id: "CANCELLED", label: "Avbrutna" },
   ];
 
@@ -219,7 +238,7 @@ export default function OrdersView({
       });
 
       if (hasUnselectedPackage) {
-        toast.error("Kan inte godkänna ordern: Minst ett paketval saknas.");
+        toast.error("Kan inte bevilja ordern: Minst ett paketval saknas.");
         return;
       }
 
@@ -247,8 +266,6 @@ export default function OrdersView({
         return "bg-amber-500/10 text-amber-500";
       case "APPROVED":
         return "bg-emerald-500/10 text-emerald-500";
-      case "PAID":
-        return "bg-blue-500/10 text-blue-500";
       case "CANCELLED":
         return "bg-rose-500/10 text-rose-500";
       default:
@@ -256,14 +273,31 @@ export default function OrdersView({
     }
   };
 
+  const updatePaidFilter = (value: string) => {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("page");
+    if (value === "ALL") {
+      params.delete("paid");
+    } else {
+      params.set("paid", value);
+    }
+    const query = params.toString();
+    router.push(query ? `/admin/orders?${query}` : "/admin/orders");
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex gap-3 text-sm flex-wrap">
-          <form action="/admin/orders" method="GET" className="contents">
+        <div className="flex flex-col gap-2 text-sm">
+          <form
+            action="/admin/orders"
+            method="GET"
+            className="flex flex-wrap gap-2"
+          >
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="q" value={searchInput} />
             <input type="hidden" name="participantId" value={participantId} />
+            <input type="hidden" name="paid" value={paidFilter} />
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -299,12 +333,26 @@ export default function OrdersView({
               </Button>
             </div>
           ) : null}
+          <div className="flex items-center gap-2 text-sm md:w-auto">
+            <span className="text-muted-foreground">Visa</span>
+            <Select value={paidFilter} onValueChange={updatePaidFilter}>
+              <SelectTrigger size="sm" className="w-full bg-card md:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="ALL">Alla</SelectItem>
+                <SelectItem value="PAID">Betalda</SelectItem>
+                <SelectItem value="UNPAID">Obetalda</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <form
             action="/admin/orders"
             method="GET"
             className="relative w-full md:w-64"
           >
             <input type="hidden" name="status" value={active} />
+            <input type="hidden" name="paid" value={paidFilter} />
             <input type="hidden" name="page" value="1" />
             <input
               name="q"
@@ -327,11 +375,12 @@ export default function OrdersView({
               <th className="p-3 text-left font-medium">Paket</th>
               <th className="p-3 text-left font-medium">Total</th>
               <th className="p-3 text-left font-medium">Status</th>
+              <th className="p-3 text-left font-medium">Betald</th>
               <th className="p-3 text-left font-medium">
                 Betalningsalternativ
               </th>
               <th className="p-3 text-left font-medium">Detaljer</th>
-              <th className="p-3 text-left font-medium min-w-[260px]">
+              <th className="p-3 text-left font-medium min-w-[190px]">
                 Åtgärder
               </th>
             </tr>
@@ -340,7 +389,7 @@ export default function OrdersView({
             {paginatedOrders.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="p-6 text-center text-muted-foreground"
                 >
                   Inga ordrar hittades för valt filter.
@@ -348,6 +397,9 @@ export default function OrdersView({
               </tr>
             )}
             {paginatedOrders.map((o) => {
+              const canMarkPaid = ["PENDING_PAYMENT", "APPROVED"].includes(
+                o.status || "",
+              );
               const participants = Array.from(
                 new Map(
                   (o.orderItems ?? []) // Ensure o.orderItems is an array
@@ -522,6 +574,37 @@ export default function OrdersView({
                       {getOrderStatusLabel(o.status || "PENDING_PAYMENT")}
                     </span>
                   </td>
+                  {/* Betald-kolumn: separat från status */}
+                  <td className="p-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const newPaid = !o.isPaid;
+                        try {
+                          await onTogglePaid(o.id, newPaid);
+                          toast.success(
+                            newPaid
+                              ? "Markerad som betald"
+                              : "Betalning borttagen",
+                          );
+                        } catch {
+                          toast.error("Kunde inte uppdatera betalningsstatus.");
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${
+                        o.isPaid
+                          ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                      title={
+                        o.isPaid
+                          ? "Klicka för att ta bort betalning"
+                          : "Klicka för att markera som betald"
+                      }
+                    >
+                      {o.isPaid ? "Betald" : "Ej betald"}
+                    </button>
+                  </td>
                   <td className="p-3">{getPayMethodTxt(o.payMethod, "sv")}</td>
                   <td className="p-3">
                     <Link
@@ -532,8 +615,8 @@ export default function OrdersView({
                     </Link>
                   </td>
                   <td className="p-3">
-                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1.5">
+                    <div className="grid w-[168px] grid-cols-2 gap-1.5">
+                      <div className="contents">
                         {/* Bekräftelsedialog för paket med ofullständigt (men giltigt) kursval */}
 
                         {/* Bekräftelsedialog för paket med ofullständigt kursval */}
@@ -554,7 +637,7 @@ export default function OrdersView({
                               <DialogDescription className="pt-2">
                                 Följande paket har färre valda kurser än vad som
                                 ingår. Kunden förlorar de ej valda platserna om
-                                du godkänner.
+                                du beviljar.
                               </DialogDescription>
                             </DialogHeader>
 
@@ -611,54 +694,49 @@ export default function OrdersView({
                                 }}
                                 className="bg-amber-600 hover:bg-amber-700 text-white"
                               >
-                                {isPending ? "Godkänner..." : "Godkänn ändå"}
+                                {isPending ? "Beviljar..." : "Bevilja ändå"}
                               </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
 
                         {active !== "PENDING" &&
-                          ["PAID"].includes(o.status || "") && (
+                          ["PENDING_PAYMENT"].includes(o.status || "") && (
                             <Button
                               type="button"
                               size="sm"
-                              className="h-7 px-2.5 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
+                              className="h-7 w-full px-2 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
                               disabled={approvingOrderId === o.id || isPending}
                               onClick={() => handleApprove(o.id)}
                             >
                               <CheckIcon className="h-3.5 w-3.5" />
                               {approvingOrderId === o.id
-                                ? "Godkänner…"
-                                : "Godkänn"}
+                                ? "Beviljar…"
+                                : "Bevilja"}
                             </Button>
                           )}
 
-                        {active !== "APPROVED" &&
-                          ["PENDING_PAYMENT"].includes(o.status || "") && (
-                            <form action={onMarkPaid}>
-                              <input
-                                type="hidden"
-                                name="orderId"
-                                value={o.id}
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="h-7 px-2.5 text-xs gap-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400 shadow-none"
-                              >
-                                <DollarSignIcon className="h-3.5 w-3.5" />
-                                Betald
-                              </Button>
-                            </form>
-                          )}
-
-                        {["PENDING_PAYMENT"].includes(o.status || "") && (
-                          <form action={onCancel}>
+                        {!o.isPaid && canMarkPaid && (
+                          <form action={onMarkPaid} className="contents">
                             <input type="hidden" name="orderId" value={o.id} />
                             <Button
                               type="submit"
                               size="sm"
-                              className="h-7 px-2.5 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none"
+                              className="h-7 w-full px-2 text-xs gap-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400 shadow-none"
+                            >
+                              <DollarSignIcon className="h-3.5 w-3.5" />
+                              Betald
+                            </Button>
+                          </form>
+                        )}
+
+                        {["PENDING_PAYMENT"].includes(o.status || "") && (
+                          <form action={onCancel} className="contents">
+                            <input type="hidden" name="orderId" value={o.id} />
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="h-7 w-full px-2 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none"
                             >
                               <XIcon className="h-3.5 w-3.5" />
                               Avbryt
@@ -667,9 +745,12 @@ export default function OrdersView({
                         )}
                       </div>
 
-                      <div className="w-px h-5 bg-border" />
-
-                      <DeleteOrderBtn orderId={o.id} onDelete={onDelete} />
+                      <DeleteOrderBtn
+                        orderId={o.id}
+                        onDelete={onDelete}
+                        label="Ta bort"
+                        className="w-full px-2"
+                      />
                     </div>
                   </td>
                 </tr>
