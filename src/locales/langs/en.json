@@ -144,6 +144,7 @@
   },
   "checkout": {
     "title": "Cart",
+    "searchCourses": "Find more courses or products",
     "subtitleHasItems": "Review your order",
     "subtitleEmpty": "Your cart is empty",
     "yourProducts": "Your products",
@@ -194,6 +195,7 @@
       "duplicateUseExisting": "Use '{{name}}' already saved",
       "duplicateUseSelf": "Mark as \"Myself\" instead",
       "method": "Payment method:",
+      "methodInfo": "You'll be charged after your purchase is approved, it can take around 2 weeks",
       "1": "Invoice",
       "1description": "Full amount",
       "2": "Installments x 2",

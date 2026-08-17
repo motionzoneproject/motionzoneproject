@@ -144,6 +144,7 @@
   },
   "checkout": {
     "title": "Varukorg",
+    "searchCourses": "Hitta fler kurser eller produkter",
     "subtitleHasItems": "Granska din beställning",
     "subtitleEmpty": "Din varukorg är tom",
     "yourProducts": "Dina produkter",
@@ -194,6 +195,7 @@
       "duplicateUseExisting": "Använd '{{name}}' som redan finns",
       "duplicateUseSelf": "Markera som \"Jag själv\" istället",
       "method": "Betalningsmetod:",
+      "methodInfo": "Fakturan skickas efter att ordern har blivit godkänd, det kan ta runt 2 veckor.",
       "1": "Faktura",
       "1description": "Hela beloppet",
       "2": "Delbetalning x 2",

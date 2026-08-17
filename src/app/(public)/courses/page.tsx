@@ -657,6 +657,7 @@ export default async function Page({ searchParams }: Props) {
                         productName={pick(p, "name", lang) as string}
                         disabled={p.spotsLeft === 0}
                         label={t.coursesPage.buyNow}
+                        lang={lang}
                       />
                     </CardFooter>
                   </Card>

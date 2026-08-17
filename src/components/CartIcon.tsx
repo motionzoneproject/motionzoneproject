@@ -20,9 +20,9 @@ export default function CartIcon({ showLabel, onClick, count }: CartIconProps) {
       className="relative flex items-center gap-2 text-muted-foreground hover:text-brand transition-colors"
     >
       <span className="relative">
-        <ShoppingCart className="w-7 h-7" />
+        <ShoppingCart className="w-6 h-6" />
         {count > 0 && (
-          <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-brand text-white shadow-sm">
+          <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[12px] font-bold rounded-full bg-brand/50 text-white shadow-sm">
             {count > 99 ? "99+" : count}
           </span>
         )}
