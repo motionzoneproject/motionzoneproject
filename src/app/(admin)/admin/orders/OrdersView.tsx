@@ -700,21 +700,20 @@ export default function OrdersView({
                           </DialogContent>
                         </Dialog>
 
-                        {active !== "PENDING" &&
-                          ["PENDING_PAYMENT"].includes(o.status || "") && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="h-7 w-full px-2 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
-                              disabled={approvingOrderId === o.id || isPending}
-                              onClick={() => handleApprove(o.id)}
-                            >
-                              <CheckIcon className="h-3.5 w-3.5" />
-                              {approvingOrderId === o.id
-                                ? "Beviljar…"
-                                : "Bevilja"}
-                            </Button>
-                          )}
+                        {["PENDING_PAYMENT"].includes(o.status || "") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-7 w-full px-2 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
+                            disabled={approvingOrderId === o.id || isPending}
+                            onClick={() => handleApprove(o.id)}
+                          >
+                            <CheckIcon className="h-3.5 w-3.5" />
+                            {approvingOrderId === o.id
+                              ? "Beviljar…"
+                              : "Bevilja"}
+                          </Button>
+                        )}
 
                         {!o.isPaid && canMarkPaid && (
                           <form action={onMarkPaid} className="contents">
