@@ -69,7 +69,7 @@ export default async function Page() {
 
   const ordersPaid = await prisma.order.count({
     where: {
-      status: "PAID",
+      isPaid: true,
     },
   });
 
@@ -98,22 +98,22 @@ export default async function Page() {
               <InfoIcon />
             </div>
             <div>
-              <Link href="/admin/orders?status=PAID">
-                Det ligger <strong>{ordersPaid} st</strong> ordrar som behöver
-                godkännas.
+              <Link href="/admin/orders">
+                Det finns <strong>{ordersPaid} st</strong> betalda ordrar.
               </Link>
             </div>
           </div>
         )}
 
         {ordersApp > 0 && (
-          <div className="flex gap-2 text-xl text-green-500">
+          <div className="flex gap-2 text-xl text-amber-500">
             <div>
               <InfoIcon />
             </div>
             <div>
               <Link href="/admin/orders?status=PENDING">
-                Det ligger <strong>{ordersApp} st</strong> obetalda ordrar.
+                Det ligger <strong>{ordersApp} st</strong> ordrar som väntar på
+                att beviljas.
               </Link>
             </div>
           </div>

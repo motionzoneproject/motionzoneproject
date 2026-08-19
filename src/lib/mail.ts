@@ -167,7 +167,7 @@ export async function generateOrderConfirmationHtml(order: OrderForEmail) {
 }
 
 /**
- * Generates an HTML template for an approved order.
+ * Generates an HTML template for a spot-granted (beviljad) order email.
  * @param order The order data (with user and orderItems)
  * @returns HTML string
  */
@@ -192,11 +192,12 @@ export async function generateOrderApprovedHtml(order: OrderForEmail) {
 
   return `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-      <h2 style="color: #4CAF50; text-align: center;">Din order är godkänd!</h2>
-      <p>Goda nyheter! Din order <strong>#${order.id}</strong> har blivit godkänd och produkterna är nu skapade!</p>
-      Logga in på webbsidan med kontot ${order.user.email}, och gå till profil-sidan för att hantera bokningar och se dina köpta produkter.
-     <p><strong>Varmt välkommen! 🕺💃</strong></p>
-      
+      <h2 style="color: #4CAF50; text-align: center;">Din plats är beviljad! 🎉</h2>
+      <p>Hej ${order.user.name || "Kund"},</p>
+      <p>Goda nyheter! Du har fått en plats beviljad för order <strong>#${order.id}</strong>. Vi ser fram emot att välkomna dig!</p>
+      <p>Faktura skickas ut till dig <strong>ca 2 veckor efter första lektionen</strong>.</p>
+      <p>Logga in på webbsidan med kontot ${order.user.email} för att se dina detaljer och hantera dina bokningar.</p>
+      <p><strong>Varmt välkommen! 🕺💃</strong></p>
 
       <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Ordersammanfattning</h3>
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">

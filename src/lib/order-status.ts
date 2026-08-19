@@ -1,8 +1,8 @@
 export const ORDER_STATUS_LABELS = {
   CREATED: "Skapad",
   AWAITING_APPROVAL: "Inväntar godkännande",
-  PENDING_PAYMENT: "Väntar betalning",
-  APPROVED: "Godkänd",
+  PENDING_PAYMENT: "Väntar på beviljande",
+  APPROVED: "Beviljad",
   PAID: "Betald",
   COMPLETED: "Slutförd",
   CANCELLED: "Avbruten",

@@ -14,13 +14,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export default function DeleteOrderBtn({
   orderId,
   onDelete,
+  className,
+  label,
 }: {
   orderId: string;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
+  className?: string;
+  label?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -53,9 +58,13 @@ export default function DeleteOrderBtn({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="h-7 px-2.5 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none"
+          className={cn(
+            "h-7 px-2.5 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none",
+            className,
+          )}
         >
           <Trash2 className="h-4.5 w-4.5" />
+          {label}
         </Button>
       </DialogTrigger>
 
