@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { clearCart, readCart, writeCart } from "@/lib/cart";
 import { formatDateToInputStr } from "../date-utils";
@@ -10,8 +11,9 @@ export async function addToCart(params: {
   productId: string;
   qty?: number;
   redirectTo?: string;
-}) {
+}): Promise<{ success: boolean }> {
   const { productId, qty = 1, redirectTo } = params;
+
   if (!productId) throw new Error("productId required");
 
   // Block adding inactive products to cart
@@ -20,7 +22,7 @@ export async function addToCart(params: {
     select: { active: true },
   });
   if (!product || !product.active) {
-    throw new Error("Produkten är inte tillgänglig.");
+    return { success: false };
   }
 
   const cart = await readCart();
@@ -33,7 +35,11 @@ export async function addToCart(params: {
   cart.updatedAt = formatDateToInputStr(new Date());
   await writeCart(cart);
 
+  revalidatePath("/", "layout");
+
   if (redirectTo) redirect(redirectTo);
+
+  return { success: true };
 }
 
 export async function updateCart(params: { productId: string; qty: number }) {

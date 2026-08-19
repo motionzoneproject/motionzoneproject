@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, InfoIcon, Sparkles } from "lucide-react";
+import { AlertTriangle, Info, InfoIcon, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -640,8 +640,13 @@ export default function CheckoutForm({
 
           <div className="space-y-2 pt-4 border-t">
             <Label htmlFor="paymethod" className="mb-4">
-              {t("checkout.form.method")} ({paymethod})
+              {t("checkout.form.method")}
             </Label>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border/50">
+              <Info className="inline" />
+              {t("checkout.form.methodInfo")}
+            </div>
             <RadioGroup
               defaultValue="1"
               className="w-fit"

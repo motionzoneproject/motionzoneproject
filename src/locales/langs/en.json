@@ -69,7 +69,7 @@
     "lessonCountUnlimited": "Unlimited",
     "lessonCountClip": "{{count}} (clips)",
     "period": "Period: {{from}} - {{to}}",
-    "buyNow": "Buy now →",
+    "buyNow": "Enroll →",
     "noProducts": "No products match the current filters.",
     "filter": {
       "title": "Filter",
@@ -144,6 +144,7 @@
   },
   "checkout": {
     "title": "Cart",
+    "searchCourses": "Find more courses or products",
     "subtitleHasItems": "Review your order",
     "subtitleEmpty": "Your cart is empty",
     "yourProducts": "Your products",
@@ -194,6 +195,7 @@
       "duplicateUseExisting": "Use '{{name}}' already saved",
       "duplicateUseSelf": "Mark as \"Myself\" instead",
       "method": "Payment method:",
+      "methodInfo": "Your invoice will be sent after the first lesson, and it can take around two weeks to arrive.",
       "1": "Invoice",
       "1description": "Full amount",
       "2": "Installments x 2",

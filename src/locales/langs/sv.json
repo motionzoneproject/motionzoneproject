@@ -69,7 +69,7 @@
     "lessonCountUnlimited": "Obegränsat",
     "lessonCountClip": "{{count}} (klipp)",
     "period": "Period: {{from}} - {{to}}",
-    "buyNow": "Köp nu →",
+    "buyNow": "Anmälan →",
     "noProducts": "Inga produkter hittades med nuvarande filter.",
     "filter": {
       "title": "Filter",
@@ -144,6 +144,7 @@
   },
   "checkout": {
     "title": "Varukorg",
+    "searchCourses": "Hitta fler kurser eller produkter",
     "subtitleHasItems": "Granska din beställning",
     "subtitleEmpty": "Din varukorg är tom",
     "yourProducts": "Dina produkter",
@@ -194,6 +195,7 @@
       "duplicateUseExisting": "Använd '{{name}}' som redan finns",
       "duplicateUseSelf": "Markera som \"Jag själv\" istället",
       "method": "Betalningsmetod:",
+      "methodInfo": "Obs! Fakturan skickas efter första lektionen och kan ta upp till två veckor innan den kommer.”",
       "1": "Faktura",
       "1description": "Hela beloppet",
       "2": "Delbetalning x 2",

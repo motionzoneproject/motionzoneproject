@@ -1,10 +1,17 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import { SearchIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getMyParticipants } from "@/lib/actions/participants";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { readCart } from "@/lib/cart";
@@ -111,6 +118,18 @@ export default async function Page() {
             <CardContent>
               <CartSummary />
             </CardContent>
+            <CardFooter className="pt-4 justify-center">
+              <Button
+                asChild
+                size="lg"
+                className="w-full sm:w-auto gap-2 shadow-sm transition-all hover:shadow-md"
+              >
+                <Link href="/courses">
+                  <SearchIcon className="h-4 w-4" />
+                  <span>{t.checkout.searchCourses}</span>
+                </Link>
+              </Button>
+            </CardFooter>
           </Card>
 
           {/* Checkout Form - Only if has items */}
