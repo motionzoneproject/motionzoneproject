@@ -67,17 +67,11 @@ export default async function Page() {
         ? 0
         : futureLessonIndex;
 
-  const ordersPaid = await prisma.order.count({
-    where: {
-      isPaid: true,
-    },
+  const ordersWaiting = await prisma.order.count({
+    where: { status: { not: "APPROVED" } },
   });
 
-  const ordersApp = await prisma.order.count({
-    where: {
-      status: "PENDING_PAYMENT",
-    },
-  });
+  const ordersUnpaid = await prisma.order.count({ where: { isPaid: false } });
 
   return (
     <div className="p-8 space-y-8">
@@ -92,28 +86,28 @@ export default async function Page() {
       </div>
 
       <div className="space-y-4">
-        {ordersPaid > 0 && (
-          <div className="flex gap-2 text-xl text-green-500">
+        {ordersUnpaid > 0 && (
+          <div className="flex gap-2 text-xl text-amber-500">
             <div>
               <InfoIcon />
             </div>
             <div>
-              <Link href="/admin/orders">
-                Det finns <strong>{ordersPaid} st</strong> betalda ordrar.
+              <Link href="/admin/orders?paid=UNPAID">
+                Det finns <strong>{ordersWaiting} st</strong> obetalda ordrar.
               </Link>
             </div>
           </div>
         )}
 
-        {ordersApp > 0 && (
+        {ordersWaiting > 0 && (
           <div className="flex gap-2 text-xl text-amber-500">
             <div>
               <InfoIcon />
             </div>
             <div>
               <Link href="/admin/orders?status=PENDING">
-                Det ligger <strong>{ordersApp} st</strong> ordrar som väntar på
-                att beviljas.
+                Det ligger <strong>{ordersWaiting} st</strong> ordrar som väntar
+                på att beviljas.
               </Link>
             </div>
           </div>

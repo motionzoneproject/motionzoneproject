@@ -1,6 +1,13 @@
 "use client";
 
-import { AlertTriangle, CheckIcon, DollarSignIcon, XIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckIcon,
+  ChevronDown,
+  DollarSignIcon,
+  SearchIcon,
+  UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -27,6 +34,7 @@ import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
+import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
@@ -171,9 +179,12 @@ export default function OrdersView({
     } else if (active !== "ALL") {
       result = result.filter((o) => String(o.status) === active);
     }
-
     if (searchInput) {
+      // Tvinga i lowercase och ta bort '#' om användaren skrev t.ex. "#e5ae07b8"
+      const query = searchInput.toLowerCase().trim().replace("#", "");
+
       result = result.filter((o) => {
+        const orderId = o.id.toLowerCase();
         const userEmail = o.user?.email?.toLowerCase() || "";
         const userName = `${o.user?.details?.firstName || ""} ${
           o.user?.details?.lastName || ""
@@ -184,9 +195,10 @@ export default function OrdersView({
             .join(" ") || "";
 
         return (
-          userEmail.includes(searchInput) ||
-          userName.includes(searchInput) ||
-          participantNames.includes(searchInput)
+          orderId.includes(query) ||
+          userEmail.includes(query) ||
+          userName.includes(query) ||
+          participantNames.includes(query)
         );
       });
     }
@@ -230,7 +242,6 @@ export default function OrdersView({
     const order = orders.find((o) => o.id === orderId);
 
     if (order) {
-      // 1. Kontrollera om något paket helt saknar val (blockerande error)
       const hasUnselectedPackage = order.orderItems?.some((oi) => {
         const isPackage = (oi.product?.maxCourses ?? 0) > 0;
         const hasSelections = (oi.courseSelections?.length ?? 0) > 0;
@@ -242,7 +253,6 @@ export default function OrdersView({
         return;
       }
 
-      // 2. Kontrollera om något paket har färre valda kurser än maxCourses
       const hasLess = order.orderItems?.some((oi) => {
         const maxCourses = oi.product?.maxCourses ?? 0;
         const currentSelections = oi.courseSelections?.length ?? 0;
@@ -250,26 +260,24 @@ export default function OrdersView({
       });
 
       if (hasLess) {
-        // Öppna dialogen med denna order
         setPendingApprovalOrder(order);
         return;
       }
     }
 
-    // Om allt är komplett, kör direkt
     executeApprove(orderId);
   };
 
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "PENDING_PAYMENT":
-        return "bg-amber-500/10 text-amber-500";
+        return "bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30";
       case "APPROVED":
-        return "bg-emerald-500/10 text-emerald-500";
+        return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30";
       case "CANCELLED":
-        return "bg-rose-500/10 text-rose-500";
+        return "bg-rose-500/15 text-rose-800 dark:text-rose-400 border border-rose-500/30";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border border-border";
     }
   };
 
@@ -305,10 +313,10 @@ export default function OrdersView({
                 name="status"
                 value={t.id}
                 aria-current={active === t.id ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-full border transition-colors ${
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
                   active === t.id
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card text-foreground hover:bg-muted"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-card text-muted-foreground hover:bg-muted border-border"
                 }`}
               >
                 {t.label}
@@ -320,23 +328,27 @@ export default function OrdersView({
 
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
           {participantId ? (
-            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-1.5 text-xs">
               <div>
                 <span className="text-muted-foreground">
-                  Visar endast participantId:
-                </span>
-                <br />
-                <span className="font-mono text-xs">{participantId}</span>
+                  Filtrerar på deltagare:
+                </span>{" "}
+                <span className="font-mono">{participantId}</span>
               </div>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2">
-                <Link href={clearParticipantHref}>X</Link>
+              <Button asChild variant="ghost" size="sm" className="h-5 w-5 p-0">
+                <Link href={clearParticipantHref}>×</Link>
               </Button>
             </div>
           ) : null}
-          <div className="flex items-center gap-2 text-sm md:w-auto">
-            <span className="text-muted-foreground">Visa</span>
+          <div className="flex items-center gap-2 text-xs md:w-auto">
+            <span className="text-muted-foreground whitespace-nowrap">
+              Betalning:
+            </span>
             <Select value={paidFilter} onValueChange={updatePaidFilter}>
-              <SelectTrigger size="sm" className="w-full bg-card md:w-32">
+              <SelectTrigger
+                size="sm"
+                className="h-8 w-28 bg-card border-border text-xs"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
@@ -349,7 +361,7 @@ export default function OrdersView({
           <form
             action="/admin/orders"
             method="GET"
-            className="relative w-full md:w-64"
+            className="relative w-full md:w-56 flex"
           >
             <input type="hidden" name="status" value={active} />
             <input type="hidden" name="paid" value={paidFilter} />
@@ -357,42 +369,42 @@ export default function OrdersView({
             <input
               name="q"
               defaultValue={searchInput}
-              placeholder="Sök kund eller deltagare..."
-              className="w-full bg-card border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand outline-none transition-all"
+              placeholder="Sök order, kund..."
+              className="w-full bg-card border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground"
             />
+            <Button type="submit">
+              <SearchIcon />
+            </Button>
           </form>
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border">
-        <table className="min-w-[1100px] w-full text-sm">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+        <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-muted/50 text-muted-foreground border-b">
-              <th className="p-3 text-left font-medium">Order</th>
-              <th className="p-3 text-left font-medium">Beställare</th>
-              <th className="p-3 text-left font-medium">Deltagare</th>
-              <th className="p-3 text-left font-medium">Produkter</th>
-              <th className="p-3 text-left font-medium">Paket</th>
-              <th className="p-3 text-left font-medium">Total</th>
-              <th className="p-3 text-left font-medium">Status</th>
-              <th className="p-3 text-left font-medium">Betald</th>
-              <th className="p-3 text-left font-medium">
-                Betalningsalternativ
+            <tr className="border-b border-border bg-muted/50 text-muted-foreground uppercase tracking-wider text-[10px]">
+              <th className="py-3 px-4 font-semibold min-w-[220px]">
+                Order & Kund
               </th>
-              <th className="p-3 text-left font-medium">Detaljer</th>
-              <th className="p-3 text-left font-medium min-w-[190px]">
+              <th className="py-3 px-4 font-semibold min-w-[260px]">
+                Produkter & Paket
+              </th>
+              <th className="py-3 px-4 font-semibold min-w-[210px]">
+                Status & Betalning
+              </th>
+              <th className="py-3 px-4 font-semibold text-right w-[150px]">
                 Åtgärder
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-border/60">
             {paginatedOrders.length === 0 && (
               <tr>
                 <td
-                  colSpan={11}
-                  className="p-6 text-center text-muted-foreground"
+                  colSpan={4}
+                  className="py-10 text-center text-muted-foreground"
                 >
-                  Inga ordrar hittades för valt filter.
+                  Inga ordrar hittades.
                 </td>
               </tr>
             )}
@@ -402,7 +414,7 @@ export default function OrdersView({
               );
               const participants = Array.from(
                 new Map(
-                  (o.orderItems ?? []) // Ensure o.orderItems is an array
+                  (o.orderItems ?? [])
                     .map((oi) => oi.participant)
                     .filter((p): p is NonNullable<typeof p> => !!p)
                     .map((p) => [p.id, p]),
@@ -410,71 +422,67 @@ export default function OrdersView({
               );
 
               return (
-                <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="p-3">
-                    <div className="flex flex-col">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        #{o.id.slice(0, 8)}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatDateToInputStr(new Date(o.createdAt))}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {o.user?.details?.firstName || o.user?.details?.lastName
-                          ? `${o.user.details.firstName ?? ""} ${
-                              o.user.details.lastName ?? ""
-                            }`.trim()
-                          : (o.user?.email ?? o.userId)}{" "}
-                        ({calculateAge(o.user?.details?.dateOfBirth)} år)
-                      </span>
-                      {o.user?.details?.firstName && (
-                        <span className="text-xs text-muted-foreground">
-                          {o.user.email}
+                <tr
+                  key={o.id}
+                  className="hover:bg-muted/30 transition-colors border-b-3"
+                >
+                  {/* Kolumn 1: Order & Kund */}
+                  <td className="py-4 px-4 align-top">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[11px] font-bold text-foreground">
+                          #{o.id.slice(0, 8)}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1">
-                      {participants.length > 0 ? (
-                        participants.map((p, i) => (
-                          <div key={`${o.id}-p-${i}`}>
-                            <span>
-                              {p.name} ({calculateAge(p.dateOfBirth)} år)
-                            </span>
-                            <br />
-                            <span className="text-xs text-muted-foreground">
-                              {p.email}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground italic text-xs">
-                          Samma som kund
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-col max-w-[200px]">
-                      {o.orderItems?.slice(0, 2).map((oi) => (
-                        <span key={oi.id} className="truncate text-xs">
-                          {oi.product.name}
-                        </span>
-                      ))}
-                      {(o.orderItems?.length || 0) > 2 && (
                         <span className="text-[10px] text-muted-foreground">
-                          + {(o.orderItems?.length || 0) - 2} till...
+                          {formatDateToInputStr(new Date(o.createdAt))}
                         </span>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block">
+                          Beställare
+                        </span>
+                        <div className="font-medium text-foreground text-xs">
+                          {o.user?.details?.firstName ||
+                          o.user?.details?.lastName
+                            ? `${o.user.details.firstName ?? ""} ${
+                                o.user.details.lastName ?? ""
+                              }`.trim()
+                            : (o.user?.email ?? o.userId)}{" "}
+                          <span className="text-muted-foreground font-normal">
+                            ({calculateAge(o.user?.details?.dateOfBirth)} år)
+                          </span>
+                        </div>
+                        {o.user?.details?.firstName && (
+                          <span className="text-[11px] text-muted-foreground block truncate">
+                            {o.user.email}
+                          </span>
+                        )}
+                      </div>
+
+                      {participants.length > 0 && (
+                        <div className="space-y-0.5 pt-1 border-t border-border/40">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block">
+                            Deltagare
+                          </span>
+                          {participants.map((p, i) => (
+                            <div key={`${o.id}-p-${i}`} className="text-xs">
+                              <span className="font-medium text-foreground">
+                                {p.name}
+                              </span>{" "}
+                              <span className="text-muted-foreground text-[10px]">
+                                ({calculateAge(p.dateOfBirth)} år)
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </td>
-                  <td className="p-3">
-                    <div className="flex flex-col gap-1 max-w-[260px]">
+
+                  {/* Kolumn 2: Produkter och Paket med Deltagarnamn */}
+                  <td className="py-4 px-4 align-top">
+                    <div className="space-y-3">
                       {(o.orderItems ?? []).map((oi) => {
                         const courseOptions =
                           oi.product.courses?.map((c) => c.course) ?? [];
@@ -482,274 +490,202 @@ export default function OrdersView({
                           oi.courseSelections?.flatMap((sel) =>
                             sel.course ? [getCourseName(sel.course)] : [],
                           ) ?? [];
-
-                        if (
-                          oi.product?.maxCourses == null ||
-                          courseOptions.length === 0
-                        ) {
-                          return (
-                            <span
-                              key={`${oi.id}-empty`}
-                              className="text-[11px] text-muted-foreground italic block"
-                            >
-                              {oi.product?.maxCourses != null
-                                ? "Inga paketval tillgängliga"
-                                : "—"}
-                            </span>
-                          );
-                        }
-
                         const selectedIds =
                           oi.courseSelections?.flatMap((sel) =>
                             sel.course?.id ? [sel.course.id] : [],
                           ) ?? [];
-
+                        const maxCourses = oi.product?.maxCourses ?? 0;
+                        const isPackage = maxCourses > 0;
                         const canEdit = o.status !== "APPROVED";
+                        const participantName = oi.participant?.name;
 
                         return (
                           <div
-                            key={`${oi.id}-pack`}
-                            className="flex flex-col gap-1.5 rounded-md border bg-muted/30 p-2"
+                            key={oi.id || `${o.id}-item`}
+                            className="space-y-1 text-xs border-b border-border/40 last:border-0 pb-2 last:pb-0"
                           >
-                            {selections.length === 0 ? (
-                              <span className="text-[11px] text-muted-foreground italic">
-                                Inga paketval sparade
-                              </span>
-                            ) : (
-                              selections.map((courseName, idx) => (
-                                <span
-                                  key={`${oi.id}-${courseName}-${idx}`}
-                                  className="truncate text-[11px]"
-                                >
-                                  {courseName}
+                            <div className="font-semibold text-foreground">
+                              {oi.product.name}
+                            </div>
+
+                            {participantName && (
+                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                <UserIcon className="h-3 w-3 shrink-0" />
+                                <span>Deltagare:</span>
+                                <span className="font-medium text-foreground">
+                                  {participantName}
                                 </span>
-                              ))
+                              </div>
                             )}
 
-                            <OrderPackageDialog
-                              orderItemId={oi.id ?? ""}
-                              productName={oi.product?.name ?? "Produkt"}
-                              maxCourses={oi.product?.maxCourses ?? 0}
-                              courses={courseOptions}
-                              selected={selectedIds}
-                              onSave={async (orderItemId, next) => {
-                                try {
-                                  const res = await onSavePackage(
-                                    orderItemId,
-                                    next,
-                                  );
-                                  if (res?.success) {
-                                    toast.success("Paketvalen har sparats!");
-                                  } else {
-                                    toast.error(
-                                      res?.msg ||
-                                        "Kunde inte spara paketvalen.",
-                                    );
-                                  }
-                                } catch (err) {
-                                  const msg =
-                                    (err as { message?: string })?.message ||
-                                    "Ett fel uppstod när paketvalen skulle sparas.";
-                                  toast.error(msg);
-                                }
-                              }}
-                              disabled={!canEdit}
-                              readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
-                              triggerLabel="Ändra paket"
-                            />
+                            {isPackage && (
+                              <details className="group rounded-md bg-muted/40 border border-border text-xs mt-1">
+                                <summary className="flex cursor-pointer items-center justify-between py-1 px-2 font-medium text-muted-foreground select-none hover:text-foreground text-[11px]">
+                                  <span>
+                                    Paketval ({selections.length}/{maxCourses})
+                                  </span>
+                                  <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180 opacity-70" />
+                                </summary>
+                                <div className="space-y-1.5 border-t border-border p-2 bg-card">
+                                  {selections.length === 0 ? (
+                                    <span className="text-[10px] text-muted-foreground italic block">
+                                      Inga paketval sparade
+                                    </span>
+                                  ) : (
+                                    selections.map((courseName, idx) => (
+                                      <span
+                                        key={`${oi.id}-${courseName}-${idx}`}
+                                        className="truncate text-[11px] text-muted-foreground block"
+                                      >
+                                        • {courseName}
+                                      </span>
+                                    ))
+                                  )}
+
+                                  <div className="pt-1">
+                                    <OrderPackageDialog
+                                      orderItemId={oi.id ?? ""}
+                                      productName={
+                                        oi.product?.name ?? "Produkt"
+                                      }
+                                      maxCourses={maxCourses}
+                                      courses={courseOptions}
+                                      selected={selectedIds}
+                                      onSave={async (orderItemId, next) => {
+                                        try {
+                                          const res = await onSavePackage(
+                                            orderItemId,
+                                            next,
+                                          );
+                                          if (res?.success) {
+                                            toast.success(
+                                              "Paketvalen har sparats!",
+                                            );
+                                          } else {
+                                            toast.error(
+                                              res?.msg ||
+                                                "Kunde inte spara paketvalen.",
+                                            );
+                                          }
+                                        } catch (err) {
+                                          const msg =
+                                            (err as { message?: string })
+                                              ?.message ||
+                                            "Ett fel uppstod när paketvalen skulle sparas.";
+                                          toast.error(msg);
+                                        }
+                                      }}
+                                      disabled={!canEdit}
+                                      readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
+                                      triggerLabel="Ändra paket"
+                                    />
+                                  </div>
+                                </div>
+                              </details>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </td>
-                  <td className="p-3 font-semibold">
-                    {formatPrice(Number(o.totalPrice))}
-                  </td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusStyles(
-                        o.status || "PENDING_PAYMENT",
-                      )}`}
-                    >
-                      {getOrderStatusLabel(o.status || "PENDING_PAYMENT")}
-                    </span>
-                  </td>
-                  {/* Betald-kolumn: separat från status */}
-                  <td className="p-3">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const newPaid = !o.isPaid;
-                        try {
-                          await onTogglePaid(o.id, newPaid);
-                          toast.success(
-                            newPaid
-                              ? "Markerad som betald"
-                              : "Betalning borttagen",
-                          );
-                        } catch {
-                          toast.error("Kunde inte uppdatera betalningsstatus.");
-                        }
-                      }}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${
-                        o.isPaid
-                          ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                      title={
-                        o.isPaid
-                          ? "Klicka för att ta bort betalning"
-                          : "Klicka för att markera som betald"
-                      }
-                    >
-                      {o.isPaid ? "Betald" : "Ej betald"}
-                    </button>
-                  </td>
-                  <td className="p-3">{getPayMethodTxt(o.payMethod, "sv")}</td>
-                  <td className="p-3">
-                    <Link
-                      href={createOrderDetailHref(o.id)}
-                      className="text-blue-500 hover:underline font-medium"
-                    >
-                      Visa
-                    </Link>
-                  </td>
-                  <td className="p-3">
-                    <div className="grid w-[168px] grid-cols-2 gap-1.5">
-                      <div className="contents">
-                        {/* Bekräftelsedialog för paket med ofullständigt (men giltigt) kursval */}
 
-                        {/* Bekräftelsedialog för paket med ofullständigt kursval */}
-                        <Dialog
-                          open={!!pendingApprovalOrder}
-                          onOpenChange={(open) => {
-                            if (!open) setPendingApprovalOrder(null);
-                          }}
+                  {/* Kolumn 3: Status & Betalning (Korrigerad kontrast) */}
+                  <td className="py-4 px-4 align-top">
+                    <div className="space-y-2">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm font-bold text-foreground">
+                          {formatPrice(Number(o.totalPrice))}
+                        </span>
+                        <Link
+                          href={createOrderDetailHref(o.id)}
+                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
                         >
-                          <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-md">
-                            <DialogHeader>
-                              <div className="flex items-center gap-2 text-amber-600">
-                                <AlertTriangle className="h-5 w-5 shrink-0" />
-                                <DialogTitle>
-                                  Ofullständiga paketval
-                                </DialogTitle>
-                              </div>
-                              <DialogDescription className="pt-2">
-                                Följande paket har färre valda kurser än vad som
-                                ingår. Kunden förlorar de ej valda platserna om
-                                du beviljar.
-                              </DialogDescription>
-                            </DialogHeader>
-
-                            <ul className="space-y-2 rounded-lg border bg-muted/40 p-3 text-sm">
-                              {pendingApprovalOrder?.orderItems
-                                ?.filter((oi) => {
-                                  const maxCourses =
-                                    oi.product?.maxCourses ?? 0;
-                                  const currentCount =
-                                    oi.courseSelections?.length ?? 0;
-                                  return (
-                                    maxCourses > 0 && currentCount < maxCourses
-                                  );
-                                })
-                                .map((oi) => {
-                                  const count =
-                                    oi.courseSelections?.length ?? 0;
-                                  const maxCourses =
-                                    oi.product?.maxCourses ?? 0;
-
-                                  return (
-                                    <li
-                                      key={oi.id}
-                                      className="flex justify-between items-center gap-2 border-b last:border-0 pb-1.5 last:pb-0"
-                                    >
-                                      <span className="font-medium truncate">
-                                        {oi.product.name}
-                                      </span>
-                                      <span className="text-muted-foreground shrink-0 text-xs bg-muted px-2 py-0.5 rounded font-mono">
-                                        {count} / {maxCourses} kurser valda
-                                      </span>
-                                    </li>
-                                  );
-                                })}
-                            </ul>
-
-                            {/*"here"*/}
-
-                            <DialogFooter className="sm:justify-between gap-2 pt-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setPendingApprovalOrder(null)}
-                              >
-                                Avbryt
-                              </Button>
-                              <Button
-                                type="button"
-                                disabled={isPending}
-                                onClick={() => {
-                                  if (pendingApprovalOrder) {
-                                    executeApprove(pendingApprovalOrder.id);
-                                  }
-                                }}
-                                className="bg-amber-600 hover:bg-amber-700 text-white"
-                              >
-                                {isPending ? "Beviljar..." : "Bevilja ändå"}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-
-                        {["PENDING_PAYMENT"].includes(o.status || "") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="h-7 w-full px-2 text-xs gap-1 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 shadow-none"
-                            disabled={approvingOrderId === o.id || isPending}
-                            onClick={() => handleApprove(o.id)}
-                          >
-                            <CheckIcon className="h-3.5 w-3.5" />
-                            {approvingOrderId === o.id
-                              ? "Beviljar…"
-                              : "Bevilja"}
-                          </Button>
-                        )}
-
-                        {!o.isPaid && canMarkPaid && (
-                          <form action={onMarkPaid} className="contents">
-                            <input type="hidden" name="orderId" value={o.id} />
-                            <Button
-                              type="submit"
-                              size="sm"
-                              className="h-7 w-full px-2 text-xs gap-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400 shadow-none"
-                            >
-                              <DollarSignIcon className="h-3.5 w-3.5" />
-                              Betald
-                            </Button>
-                          </form>
-                        )}
-
-                        {["PENDING_PAYMENT"].includes(o.status || "") && (
-                          <form action={onCancel} className="contents">
-                            <input type="hidden" name="orderId" value={o.id} />
-                            <Button
-                              type="submit"
-                              size="sm"
-                              className="h-7 w-full px-2 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none"
-                            >
-                              <XIcon className="h-3.5 w-3.5" />
-                              Avbryt
-                            </Button>
-                          </form>
-                        )}
+                          Visa detaljer →
+                        </Link>
                       </div>
 
-                      <DeleteOrderBtn
-                        orderId={o.id}
-                        onDelete={onDelete}
-                        label="Ta bort"
-                        className="w-full px-2"
-                      />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[9px] font-semibold tracking-wide uppercase ${getStatusStyles(
+                            o.status || "PENDING_PAYMENT",
+                          )}`}
+                        >
+                          {getOrderStatusLabel(o.status || "PENDING_PAYMENT")}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const newPaid = !o.isPaid;
+                            try {
+                              await onTogglePaid(o.id, newPaid);
+                              toast.success(
+                                newPaid
+                                  ? "Markerad som betald"
+                                  : "Betalning borttagen",
+                              );
+                            } catch {
+                              toast.error(
+                                "Kunde inte uppdatera betalningsstatus.",
+                              );
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded text-[9px] font-semibold tracking-wide uppercase transition-all ${
+                            o.isPaid
+                              ? "bg-blue-500/15 text-blue-800 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-500/25"
+                              : "bg-muted text-muted-foreground border border-border hover:bg-muted/80"
+                          }`}
+                        >
+                          {o.isPaid ? "Betald" : "Ej betald"}
+                        </button>
+                      </div>
+
+                      <div className="text-[11px] text-muted-foreground">
+                        <span>Sätt: </span>
+                        <span className="font-medium text-foreground">
+                          {getPayMethodTxt(o.payMethod, "sv")}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Kolumn 4: Åtgärder (Korrigerad kontrast) */}
+                  <td className="py-4 px-4 align-top text-right">
+                    <div className="flex flex-col gap-1 items-end ml-auto max-w-[130px]">
+                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-none font-normal"
+                          disabled={approvingOrderId === o.id || isPending}
+                          onClick={() => handleApprove(o.id)}
+                        >
+                          <CheckIcon className="h-3 w-3 shrink-0" />
+                          {approvingOrderId === o.id ? "Beviljar…" : "Bevilja"}
+                        </Button>
+                      )}
+
+                      {!o.isPaid && canMarkPaid && (
+                        <form action={onMarkPaid} className="w-full">
+                          <input type="hidden" name="orderId" value={o.id} />
+                          <Button
+                            type="submit"
+                            size="sm"
+                            className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/20 shadow-none font-normal"
+                          >
+                            <DollarSignIcon className="h-3 w-3 shrink-0" />
+                            Ange betald
+                          </Button>
+                        </form>
+                      )}
+
+                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                        <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
+                      )}
+
+                      <div className="w-full">
+                        <DeleteOrderBtn orderId={o.id} onDelete={onDelete} />
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -759,15 +695,79 @@ export default function OrdersView({
         </table>
       </div>
 
-      {totalFiltered > 0 && (
-        <div className="flex items-center justify-between gap-4 pt-2">
-          <span className="text-sm text-muted-foreground">
-            Visar {pageStart + 1}–{Math.min(pageEnd, totalFiltered)} av{" "}
-            {totalFiltered}
-          </span>
-          <PaginationBar currentPage={currentPage} totalPages={totalPages} />
-        </div>
-      )}
+      <PaginationBar totalPages={totalPages} currentPage={currentPage} />
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={!!pendingApprovalOrder}
+        onOpenChange={(open) => {
+          if (!open) setPendingApprovalOrder(null);
+        }}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <DialogTitle>Ofullständiga paketval</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2 text-xs">
+              Följande paket har färre valda kurser än vad som ingår. Kunden
+              förlorar de ej valda platserna om du beviljar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ul className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-xs">
+            {pendingApprovalOrder?.orderItems
+              ?.filter((oi) => {
+                const maxCourses = oi.product?.maxCourses ?? 0;
+                const currentCount = oi.courseSelections?.length ?? 0;
+                return maxCourses > 0 && currentCount < maxCourses;
+              })
+              .map((oi) => {
+                const count = oi.courseSelections?.length ?? 0;
+                const maxCourses = oi.product?.maxCourses ?? 0;
+
+                return (
+                  <li
+                    key={oi.id}
+                    className="flex justify-between items-center gap-2 border-b border-border/40 last:border-0 pb-1.5 last:pb-0"
+                  >
+                    <span className="font-medium truncate">
+                      {oi.product.name}
+                    </span>
+                    <span className="text-muted-foreground shrink-0 text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
+                      {count} / {maxCourses} valda
+                    </span>
+                  </li>
+                );
+              })}
+          </ul>
+
+          <DialogFooter className="sm:justify-between gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingApprovalOrder(null)}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                if (pendingApprovalOrder) {
+                  executeApprove(pendingApprovalOrder.id);
+                }
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isPending ? "Beviljar..." : "Bevilja ändå"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
