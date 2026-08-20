@@ -268,7 +268,44 @@
     "validation": {
       "invalidEmail": "Ogiltig e-postadress",
       "passwordMin": "Lösenordet måste vara minst 8 tecken"
-    }
+    },
+    "forgotPassword": "Glömt lösenordet?"
+  },
+  "forgotPassword": {
+    "title": "Glömt lösenordet?",
+    "subtitle": "Vi skickar en länk så du kan välja ett nytt",
+    "remembered": "Kom du på lösenordet?",
+    "backToSignIn": "Tillbaka till inloggning",
+    "cardTitle": "Återställ lösenord",
+    "cardDescription": "Ange e-postadressen du använder på ditt konto",
+    "email": "E-post",
+    "emailPlaceholder": "din@epost.se",
+    "submit": "Skicka återställningslänk",
+    "submitting": "Skickar...",
+    "successToast": "Länken är skickad!",
+    "sentTitle": "Kolla din inkorg",
+    "sentDescription": "Finns det ett konto med den adressen har vi skickat en länk dit. Den gäller i 30 minuter. Titta även i skräpposten.",
+    "errorTitle": "Kunde inte skicka länken",
+    "errorFallback": "Försök igen om en liten stund."
+  },
+  "resetPassword": {
+    "title": "Välj nytt lösenord",
+    "subtitle": "Ange ett nytt lösenord till ditt konto",
+    "remembered": "Vill du inte byta?",
+    "backToSignIn": "Tillbaka till inloggning",
+    "cardTitle": "Nytt lösenord",
+    "cardDescription": "Minst 8 tecken",
+    "password": "Nytt lösenord",
+    "passwordPlaceholder": "********",
+    "confirmPassword": "Bekräfta lösenord",
+    "submit": "Spara nytt lösenord",
+    "submitting": "Sparar...",
+    "successToast": "Lösenordet är uppdaterat! Logga in med det nya.",
+    "invalidTitle": "Länken gäller inte längre",
+    "invalidDescription": "Länken har gått ut eller redan använts. Begär en ny så skickar vi en till.",
+    "requestNewLink": "Begär ny länk",
+    "errorTitle": "Kunde inte byta lösenord",
+    "errorFallback": "Länken kan ha gått ut. Begär en ny och försök igen."
   },
   "signup": {
     "title": "Skapa konto",
