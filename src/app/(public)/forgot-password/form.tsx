@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -29,50 +29,70 @@ import { authClient } from "@/lib/auth-client";
 
 const FormSchema = z.object({
   email: z.string().email("Ogiltig e-postadress").max(100),
-  password: z.string().min(8, "Lösenordet måste vara minst 8 tecken").max(50),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
 
-export default function SignInForm() {
+export default function ForgotPasswordForm() {
   const { t } = useTranslation();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/user";
+  const [sent, setSent] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
   async function onSubmit(values: FormValues) {
-    const { error } = await authClient.signIn.email({
+    const { error } = await authClient.requestPasswordReset({
       email: values.email,
-      password: values.password,
+      // Absolute URL so better-auth doesn't have to infer the origin.
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) {
-      toast.error(t("signin.errorTitle"), {
-        description: error.message || t("signin.errorFallback"),
+      toast.error(t("forgotPassword.errorTitle"), {
+        description: error.message || t("forgotPassword.errorFallback"),
       });
-    } else {
-      toast.success(t("signin.successToast"));
-      router.push(callbackUrl);
-      router.refresh();
+      return;
     }
+
+    // Deliberately the same outcome whether or not the address exists, so the
+    // form can't be used to find out who has an account here.
+    setSent(true);
+    toast.success(t("forgotPassword.successToast"));
+  }
+
+  if (sent) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("forgotPassword.sentTitle")}</CardTitle>
+          <CardDescription>
+            {t("forgotPassword.sentDescription")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            asChild
+            className="w-full bg-brand hover:bg-brand-light text-white"
+          >
+            <Link href="/signin">{t("forgotPassword.backToSignIn")}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("signin.cardTitle")}</CardTitle>
-        <CardDescription>{t("signin.cardDescription")}</CardDescription>
+        <CardTitle>{t("forgotPassword.cardTitle")}</CardTitle>
+        <CardDescription>{t("forgotPassword.cardDescription")}</CardDescription>
         <CardAction>
           <Button asChild variant="link" className="text-brand p-0">
-            <Link href="/signup">{t("signin.createAccount")}</Link>
+            <Link href="/signin">{t("forgotPassword.backToSignIn")}</Link>
           </Button>
         </CardAction>
       </CardHeader>
@@ -84,11 +104,11 @@ export default function SignInForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>{t("signin.email")}</FormLabel>
+                  <FormLabel required>{t("forgotPassword.email")}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder={t("signin.emailPlaceholder")}
+                      placeholder={t("forgotPassword.emailPlaceholder")}
                       autoComplete="email"
                       aria-required="true"
                       {...field}
@@ -98,40 +118,14 @@ export default function SignInForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel required>{t("signin.password")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder={t("signin.passwordPlaceholder")}
-                      autoComplete="current-password"
-                      aria-required="true"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button asChild variant="link" className="text-brand p-0 h-auto">
-                <Link href="/forgot-password">
-                  {t("signin.forgotPassword")}
-                </Link>
-              </Button>
-            </div>
             <Button
               type="submit"
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
               {form.formState.isSubmitting
-                ? t("signin.submitting")
-                : t("signin.submit")}
+                ? t("forgotPassword.submitting")
+                : t("forgotPassword.submit")}
             </Button>
           </form>
         </Form>

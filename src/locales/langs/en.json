@@ -268,7 +268,44 @@
     "validation": {
       "invalidEmail": "Invalid email address",
       "passwordMin": "Password must be at least 8 characters"
-    }
+    },
+    "forgotPassword": "Forgot password?"
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "We'll send you a link to choose a new one",
+    "remembered": "Remembered it?",
+    "backToSignIn": "Back to sign in",
+    "cardTitle": "Reset password",
+    "cardDescription": "Enter the email address you use for your account",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Send reset link",
+    "submitting": "Sending...",
+    "successToast": "Link sent!",
+    "sentTitle": "Check your inbox",
+    "sentDescription": "If an account exists for that address, we've sent a link to it. It is valid for 30 minutes. Check your spam folder too.",
+    "errorTitle": "Could not send the link",
+    "errorFallback": "Please try again in a moment."
+  },
+  "resetPassword": {
+    "title": "Choose a new password",
+    "subtitle": "Set a new password for your account",
+    "remembered": "Changed your mind?",
+    "backToSignIn": "Back to sign in",
+    "cardTitle": "New password",
+    "cardDescription": "At least 8 characters",
+    "password": "New password",
+    "passwordPlaceholder": "********",
+    "confirmPassword": "Confirm password",
+    "submit": "Save new password",
+    "submitting": "Saving...",
+    "successToast": "Password updated! Sign in with your new one.",
+    "invalidTitle": "This link is no longer valid",
+    "invalidDescription": "The link has expired or was already used. Request a new one and we'll send another.",
+    "requestNewLink": "Request a new link",
+    "errorTitle": "Could not change the password",
+    "errorFallback": "The link may have expired. Request a new one and try again."
   },
   "signup": {
     "title": "Create account",

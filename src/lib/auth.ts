@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin as adminPlugin } from "better-auth/plugins";
+import { generatePasswordResetHtml, sendMail } from "@/lib/mail";
 import prisma from "@/lib/prisma"; // Importera din HMR-säkra, adapter-konfigurerade instans
 
 export const auth = betterAuth({
@@ -9,6 +10,21 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Utan sendResetPassword svarar /request-password-reset med
+    // RESET_PASSWORD_DISABLED. Då fastnar den som glömt sitt lösenord helt:
+    // inloggning ger "User not found" och registrering ger "User already
+    // exists", utan någon väg ut.
+    sendResetPassword: async ({ user, url }) => {
+      await sendMail(
+        user.email,
+        "Återställ ditt lösenord / Reset your password",
+        await generatePasswordResetHtml(user.name, url),
+      );
+    },
+    // Länken i mejlet ska inte ligga kvar och vara giltig en hel timme.
+    resetPasswordTokenExpiresIn: 60 * 30,
+    // Om lösenordet byts för att kontot kapats ska gamla sessioner dö med det.
+    revokeSessionsOnPasswordReset: true,
   },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,

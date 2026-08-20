@@ -10,7 +10,6 @@ import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -27,69 +26,99 @@ import {
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
-const FormSchema = z.object({
-  email: z.string().email("Ogiltig e-postadress").max(100),
-  password: z.string().min(8, "Lösenordet måste vara minst 8 tecken").max(50),
-});
+const FormSchema = z
+  .object({
+    password: z.string().min(8, "Lösenordet måste vara minst 8 tecken").max(50),
+    confirmPassword: z.string(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: "Lösenorden matchar inte",
+    path: ["confirmPassword"],
+  });
 
 type FormValues = z.infer<typeof FormSchema>;
 
-export default function SignInForm() {
+export default function ResetPasswordForm() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/user";
+
+  // better-auth validates the token before redirecting here, and sends
+  // ?error=INVALID_TOKEN instead when it is expired or already used.
+  const token = searchParams.get("token");
+  const linkError = searchParams.get("error");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
   async function onSubmit(values: FormValues) {
-    const { error } = await authClient.signIn.email({
-      email: values.email,
-      password: values.password,
+    if (!token) return;
+
+    const { error } = await authClient.resetPassword({
+      newPassword: values.password,
+      token,
     });
 
     if (error) {
-      toast.error(t("signin.errorTitle"), {
-        description: error.message || t("signin.errorFallback"),
+      toast.error(t("resetPassword.errorTitle"), {
+        description: error.message || t("resetPassword.errorFallback"),
       });
-    } else {
-      toast.success(t("signin.successToast"));
-      router.push(callbackUrl);
-      router.refresh();
+      return;
     }
+
+    toast.success(t("resetPassword.successToast"));
+    router.push("/signin");
+    router.refresh();
+  }
+
+  if (!token || linkError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("resetPassword.invalidTitle")}</CardTitle>
+          <CardDescription>
+            {t("resetPassword.invalidDescription")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            asChild
+            className="w-full bg-brand hover:bg-brand-light text-white"
+          >
+            <Link href="/forgot-password">
+              {t("resetPassword.requestNewLink")}
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("signin.cardTitle")}</CardTitle>
-        <CardDescription>{t("signin.cardDescription")}</CardDescription>
-        <CardAction>
-          <Button asChild variant="link" className="text-brand p-0">
-            <Link href="/signup">{t("signin.createAccount")}</Link>
-          </Button>
-        </CardAction>
+        <CardTitle>{t("resetPassword.cardTitle")}</CardTitle>
+        <CardDescription>{t("resetPassword.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="email"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>{t("signin.email")}</FormLabel>
+                  <FormLabel required>{t("resetPassword.password")}</FormLabel>
                   <FormControl>
                     <Input
-                      type="email"
-                      placeholder={t("signin.emailPlaceholder")}
-                      autoComplete="email"
+                      type="password"
+                      placeholder={t("resetPassword.passwordPlaceholder")}
+                      autoComplete="new-password"
                       aria-required="true"
                       {...field}
                     />
@@ -100,15 +129,17 @@ export default function SignInForm() {
             />
             <FormField
               control={form.control}
-              name="password"
+              name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>{t("signin.password")}</FormLabel>
+                  <FormLabel required>
+                    {t("resetPassword.confirmPassword")}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder={t("signin.passwordPlaceholder")}
-                      autoComplete="current-password"
+                      placeholder={t("resetPassword.passwordPlaceholder")}
+                      autoComplete="new-password"
                       aria-required="true"
                       {...field}
                     />
@@ -117,21 +148,14 @@ export default function SignInForm() {
                 </FormItem>
               )}
             />
-            <div className="flex justify-end">
-              <Button asChild variant="link" className="text-brand p-0 h-auto">
-                <Link href="/forgot-password">
-                  {t("signin.forgotPassword")}
-                </Link>
-              </Button>
-            </div>
             <Button
               type="submit"
               disabled={form.formState.isSubmitting}
               className="w-full bg-brand hover:bg-brand-light text-white"
             >
               {form.formState.isSubmitting
-                ? t("signin.submitting")
-                : t("signin.submit")}
+                ? t("resetPassword.submitting")
+                : t("resetPassword.submit")}
             </Button>
           </form>
         </Form>
