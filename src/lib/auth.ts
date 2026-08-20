@@ -28,7 +28,9 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 5 },
-      "/forget-password": { window: 300, max: 3 },
+      // better-auth 1.7 renamed this endpoint; "/forget-password" no longer
+      // exists, so the old rule silently left it on the 100/min default.
+      "/request-password-reset": { window: 300, max: 3 },
       "/reset-password": { window: 300, max: 5 },
       "/change-password": { window: 60, max: 5 },
       "/change-email": { window: 60, max: 5 },
