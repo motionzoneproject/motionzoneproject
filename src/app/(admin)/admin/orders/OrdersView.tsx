@@ -7,7 +7,6 @@ import {
   DollarSignIcon,
   SearchIcon,
   UserIcon,
-  XIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -35,6 +34,7 @@ import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
+import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
@@ -674,23 +674,13 @@ export default function OrdersView({
                             className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/20 shadow-none font-normal"
                           >
                             <DollarSignIcon className="h-3 w-3 shrink-0" />
-                            Markerad betald
+                            Ange betald
                           </Button>
                         </form>
                       )}
 
                       {["PENDING_PAYMENT"].includes(o.status || "") && (
-                        <form action={onCancel} className="w-full">
-                          <input type="hidden" name="orderId" value={o.id} />
-                          <Button
-                            type="submit"
-                            size="sm"
-                            className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-none font-normal"
-                          >
-                            <XIcon className="h-3 w-3 shrink-0" />
-                            Avbryt
-                          </Button>
-                        </form>
+                        <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
                       )}
 
                       <div className="w-full">
