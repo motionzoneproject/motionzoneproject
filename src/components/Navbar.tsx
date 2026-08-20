@@ -137,7 +137,7 @@ export default function NavBar({ categories, cartCount }: NavBarProps) {
                 }`}
               >
                 <span>{t("nav.courses")}</span>
-                <ChevronDown className="w-4 h-4 opacity-70 -mr-4" />
+                <ChevronDown className="w-4 h-4 opacity-70" />
                 {isAnyCourseActive && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-brand" />
                 )}

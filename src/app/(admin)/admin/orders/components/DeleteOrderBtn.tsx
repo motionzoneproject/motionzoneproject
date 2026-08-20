@@ -34,7 +34,6 @@ export default function DeleteOrderBtn({
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      // Nollställ state när dialogen stängs, så nästa gång startar rent
       setConfirmed(false);
       setIsDeleting(false);
     }
@@ -59,22 +58,22 @@ export default function DeleteOrderBtn({
         <Button
           size="sm"
           className={cn(
-            "h-7 px-2.5 text-xs gap-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 shadow-none",
+            "h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-none font-normal transition-colors",
             className,
           )}
         >
-          <Trash2 className="h-4.5 w-4.5" />
-          {label}
+          <Trash2 className="h-3 w-3 shrink-0" />
+          <span>{label ?? "Ta bort"}</span>
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-rose-600">
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <DialogTitle>Ta bort order</DialogTitle>
           </div>
-          <DialogDescription className="pt-2">
+          <DialogDescription className="pt-2 text-xs">
             Ordern tas bort permanent tillsammans med tillhörande produkter,
             bokningar och statistik – detta går inte att ångra.
             <br />
@@ -86,7 +85,7 @@ export default function DeleteOrderBtn({
             <br />
             Deltagare som skapats i samband med köpet finns kvar för kunden vid
             framtida köp, men blir osökbara i admin om de saknar andra kopplade
-            ordrar
+            ordrar.
             <br />
             <br />
             Obs! Om produkten inte är godkänd eller betald ännu, så kan du även
@@ -94,31 +93,33 @@ export default function DeleteOrderBtn({
           </DialogDescription>
         </DialogHeader>
 
-        <Label className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3 text-sm cursor-pointer">
+        <Label className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-3 text-xs cursor-pointer">
           <Checkbox
             checked={confirmed}
             onCheckedChange={(checked) => setConfirmed(checked === true)}
             className="mt-0.5"
           />
-          <span>
+          <span className="leading-relaxed">
             Jag förstår att åtgärden är permanent och att all information
-            kopplad till ordern försvinner, och vad det innebär.
+            kopplad till ordern försvinner.
           </span>
         </Label>
 
         <DialogFooter className="sm:justify-between gap-2">
           <DialogClose asChild>
-            <Button type="button" variant="ghost">
+            <Button type="button" variant="ghost" size="sm" className="text-xs">
               Avbryt
             </Button>
           </DialogClose>
           <Button
             type="button"
             variant="destructive"
+            size="sm"
+            className="text-xs gap-1.5"
             disabled={!confirmed || isDeleting}
             onClick={handleDelete}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
             {isDeleting ? "Tar bort..." : "Ta bort ändå"}
           </Button>
         </DialogFooter>
