@@ -3,6 +3,7 @@ import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
 import StudentsFilter from "./components/StudentsFilter";
 import StudentTableClient from "./components/StudentTableClient";
@@ -66,6 +67,18 @@ type StudentPurchaseSummary = {
   purchaseItems: StudentPurchaseItemSummary[];
 };
 
+type StudentPendingOrderItemSummary = {
+  id: string;
+  orderId: string;
+  status: OrderStatus;
+  isPaid: boolean;
+  product: {
+    id: string;
+    name: string;
+  };
+  courses: { id: string; name: string }[];
+};
+
 export type StudentSummary = {
   studentKey: string;
   userId: string;
@@ -79,6 +92,9 @@ export type StudentSummary = {
   terminer: { id: string; name: string }[];
   bookings: StudentBookingSummary[];
   purchases: StudentPurchaseSummary[];
+  pendingOrderItems: StudentPendingOrderItemSummary[];
+  hasApprovedPurchase: boolean;
+  hasPendingOrder: boolean;
 };
 
 type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
@@ -172,8 +188,108 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
   };
 }>;
 
+type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
+  select: {
+    id: true;
+    orderId: true;
+    participantId: true;
+    order: {
+      select: {
+        id: true;
+        userId: true;
+        status: true;
+        isPaid: true;
+        user: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+            details: {
+              select: {
+                firstName: true;
+                lastName: true;
+                phoneNumber: true;
+                address: true;
+                postalCode: true;
+                city: true;
+                allowPhotoVideo: true;
+                dateOfBirth: true;
+              };
+            };
+          };
+        };
+      };
+    };
+    participant: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        phone: true;
+        userId: true;
+        allowPhotoVideo: true;
+        dateOfBirth: true;
+        addedBy: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+          };
+        };
+      };
+    };
+    product: {
+      select: {
+        id: true;
+        name: true;
+        courses: {
+          select: {
+            course: {
+              select: {
+                id: true;
+                name: true;
+                schemaItems: {
+                  select: {
+                    termin: {
+                      select: {
+                        id: true;
+                        name: true;
+                      };
+                    };
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+    courseSelections: {
+      select: {
+        course: {
+          select: {
+            id: true;
+            name: true;
+            schemaItems: {
+              select: {
+                termin: {
+                  select: {
+                    id: true;
+                    name: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}>;
+
 function buildStudentSummaries(
   purchasesWithData: StudentPurchaseRow[],
+  pendingOrderItems: StudentPendingOrderItemRow[],
 ): StudentSummary[] {
   const studentMap = new Map<
     string,
@@ -221,10 +337,14 @@ function buildStudentSummaries(
       terminer: [],
       bookings: [],
       purchases: [],
+      pendingOrderItems: [],
+      hasApprovedPurchase: true,
+      hasPendingOrder: false,
       courseMap: new Map<string, { id: string; name: string }>(),
       terminMap: new Map<string, { id: string; name: string }>(),
       bookingMap: new Map<string, StudentBookingSummary>(),
     };
+    existing.hasApprovedPurchase = true;
 
     const purchaseItems: StudentPurchaseItemSummary[] =
       purchase.PurchaseItems.map((item) => {
@@ -269,6 +389,83 @@ function buildStudentSummaries(
     studentMap.set(studentKey, existing);
   }
 
+  for (const item of pendingOrderItems) {
+    const participant = item.participantId ? item.participant : null;
+    const user = item.order.user;
+
+    const studentKey = participant
+      ? `participant:${participant.id}`
+      : `user:${item.order.userId}`;
+
+    const existing = studentMap.get(studentKey) ?? {
+      studentKey,
+      userId: user.id,
+      participantId: participant?.id ?? null,
+      name: participant?.name ?? user.name,
+      customerName: participant ? participant.addedBy.name : null,
+      dateOfBirth: participant
+        ? participant.dateOfBirth
+        : (user.details?.dateOfBirth ?? null),
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        details: user.details,
+      },
+      participant: participant
+        ? {
+            id: participant.id,
+            name: participant.name,
+            email: participant.email,
+            phone: participant.phone,
+            allowPhotoVideo: participant.allowPhotoVideo,
+            dateOfBirth: participant.dateOfBirth,
+            addedBy: participant.addedBy,
+          }
+        : null,
+      courses: [],
+      terminer: [],
+      bookings: [],
+      purchases: [],
+      pendingOrderItems: [],
+      hasApprovedPurchase: false,
+      hasPendingOrder: true,
+      courseMap: new Map<string, { id: string; name: string }>(),
+      terminMap: new Map<string, { id: string; name: string }>(),
+      bookingMap: new Map<string, StudentBookingSummary>(),
+    };
+    existing.hasPendingOrder = true;
+
+    const selectedCourses = item.courseSelections.map(
+      (selection) => selection.course,
+    );
+    const courses =
+      selectedCourses.length > 0
+        ? selectedCourses
+        : item.product.courses.map((link) => link.course);
+
+    for (const course of courses) {
+      existing.courseMap.set(course.id, { id: course.id, name: course.name });
+
+      for (const schemaItem of course.schemaItems) {
+        existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
+      }
+    }
+
+    existing.pendingOrderItems.push({
+      id: item.id,
+      orderId: item.orderId,
+      status: item.order.status,
+      isPaid: item.order.isPaid,
+      product: item.product,
+      courses: courses
+        .map((course) => ({ id: course.id, name: course.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, "sv")),
+    });
+
+    studentMap.set(studentKey, existing);
+  }
+
   return Array.from(studentMap.values())
     .map(({ bookingMap, courseMap, terminMap, ...student }) => ({
       ...student,
@@ -286,6 +483,9 @@ function buildStudentSummaries(
       purchases: student.purchases.sort((a, b) =>
         a.product.name.localeCompare(b.product.name, "sv"),
       ),
+      pendingOrderItems: student.pendingOrderItems.sort((a, b) =>
+        a.product.name.localeCompare(b.product.name, "sv"),
+      ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
@@ -300,6 +500,7 @@ export default async function Page({
     page?: string;
     course?: string;
     product?: string;
+    approval?: string;
   }>;
 }) {
   await requireAdmin();
@@ -309,6 +510,10 @@ export default async function Page({
   const termin = params.termin || "";
   const course = params.course || "";
   const product = params.product || "";
+  const approval =
+    params.approval === "approved" || params.approval === "unapproved"
+      ? params.approval
+      : "all";
 
   const teachers = await prisma.user.findMany({
     where: { role: "admin" },
@@ -323,32 +528,78 @@ export default async function Page({
 
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
 
-  const filters: Prisma.PurchaseWhereInput[] = [];
+  const purchaseFilters: Prisma.PurchaseWhereInput[] = [];
+  const pendingOrderItemFilters: Prisma.OrderItemWhereInput[] = [
+    {
+      order: {
+        status: {
+          in: ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"],
+        },
+      },
+    },
+  ];
 
   if (product) {
-    filters.push({ productId: product });
+    purchaseFilters.push({ productId: product });
+    pendingOrderItemFilters.push({ productId: product });
   }
 
   if (course) {
-    filters.push({
+    purchaseFilters.push({
       PurchaseItems: {
         some: { courseId: course },
       },
     });
+    pendingOrderItemFilters.push({
+      OR: [
+        {
+          courseSelections: {
+            some: { courseId: course },
+          },
+        },
+        {
+          product: {
+            courses: {
+              some: { courseId: course },
+            },
+          },
+        },
+      ],
+    });
   }
 
   if (teacher) {
-    filters.push({
+    purchaseFilters.push({
       PurchaseItems: {
         some: {
           course: { teacherId: teacher },
         },
       },
     });
+    pendingOrderItemFilters.push({
+      OR: [
+        {
+          courseSelections: {
+            some: {
+              course: { teacherId: teacher },
+            },
+          },
+        },
+        {
+          product: {
+            courses: {
+              some: {
+                course: { teacherId: teacher },
+              },
+            },
+          },
+        },
+      ],
+    });
   }
 
   if (termin) {
-    filters.push({
+    purchaseFilters.push({
       PurchaseItems: {
         some: {
           course: {
@@ -359,10 +610,38 @@ export default async function Page({
         },
       },
     });
+    pendingOrderItemFilters.push({
+      OR: [
+        {
+          courseSelections: {
+            some: {
+              course: {
+                schemaItems: {
+                  some: { terminId: termin },
+                },
+              },
+            },
+          },
+        },
+        {
+          product: {
+            courses: {
+              some: {
+                course: {
+                  schemaItems: {
+                    some: { terminId: termin },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
   }
 
   if (query) {
-    filters.push({
+    purchaseFilters.push({
       OR: [
         {
           user: {
@@ -420,104 +699,292 @@ export default async function Page({
         },
       ],
     });
+    pendingOrderItemFilters.push({
+      OR: [
+        {
+          order: {
+            user: {
+              name: {
+                contains: query,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          },
+        },
+        {
+          order: {
+            user: {
+              email: {
+                contains: query,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          },
+        },
+        {
+          participant: {
+            name: {
+              contains: query,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+        },
+        {
+          participant: {
+            addedBy: {
+              name: {
+                contains: query,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          },
+        },
+        {
+          product: {
+            name: {
+              contains: query,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+        },
+        {
+          courseSelections: {
+            some: {
+              course: {
+                name: {
+                  contains: query,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            },
+          },
+        },
+        {
+          product: {
+            courses: {
+              some: {
+                course: {
+                  name: {
+                    contains: query,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
   }
 
   const where: Prisma.PurchaseWhereInput =
-    filters.length > 0 ? { AND: filters } : {};
+    purchaseFilters.length > 0 ? { AND: purchaseFilters } : {};
+  const pendingOrderItemWhere: Prisma.OrderItemWhereInput = {
+    AND: pendingOrderItemFilters,
+  };
 
-  const purchasesWithData = await prisma.purchase.findMany({
-    where,
-    select: {
-      id: true,
-      type: true,
-      remainingCount: true,
-      userId: true,
-      participantId: true,
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          details: {
-            select: {
-              firstName: true,
-              lastName: true,
-              phoneNumber: true,
-              address: true,
-              postalCode: true,
-              city: true,
-              allowPhotoVideo: true,
-              dateOfBirth: true,
+  const purchasesWithData =
+    approval === "unapproved"
+      ? []
+      : await prisma.purchase.findMany({
+          where,
+          select: {
+            id: true,
+            type: true,
+            remainingCount: true,
+            userId: true,
+            participantId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                details: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    phoneNumber: true,
+                    address: true,
+                    postalCode: true,
+                    city: true,
+                    allowPhotoVideo: true,
+                    dateOfBirth: true,
+                  },
+                },
+              },
             },
-          },
-        },
-      },
-      participant: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          userId: true,
-          allowPhotoVideo: true,
-          dateOfBirth: true,
-          addedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+            participant: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                userId: true,
+                allowPhotoVideo: true,
+                dateOfBirth: true,
+                addedBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
             },
-          },
-        },
-      },
-      product: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      PurchaseItems: {
-        select: {
-          id: true,
-          remainingCount: true,
-          unlimited: true,
-          course: {
-            select: {
-              id: true,
-              name: true,
-              schemaItems: {
-                select: {
-                  termin: {
-                    select: {
-                      id: true,
-                      name: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            PurchaseItems: {
+              select: {
+                id: true,
+                remainingCount: true,
+                unlimited: true,
+                course: {
+                  select: {
+                    id: true,
+                    name: true,
+                    schemaItems: {
+                      select: {
+                        termin: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                bookings: {
+                  where: {
+                    cancelled: false,
+                  },
+                  select: {
+                    id: true,
+                    lessonId: true,
+                    lesson: {
+                      select: {
+                        startTime: true,
+                        endTime: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
-          bookings: {
-            where: {
-              cancelled: false,
+        });
+
+  const pendingOrderItems =
+    approval === "approved"
+      ? []
+      : await prisma.orderItem.findMany({
+          where: pendingOrderItemWhere,
+          select: {
+            id: true,
+            orderId: true,
+            participantId: true,
+            order: {
+              select: {
+                id: true,
+                userId: true,
+                status: true,
+                isPaid: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    details: {
+                      select: {
+                        firstName: true,
+                        lastName: true,
+                        phoneNumber: true,
+                        address: true,
+                        postalCode: true,
+                        city: true,
+                        allowPhotoVideo: true,
+                        dateOfBirth: true,
+                      },
+                    },
+                  },
+                },
+              },
             },
-            select: {
-              id: true,
-              lessonId: true,
-              lesson: {
-                select: {
-                  startTime: true,
-                  endTime: true,
+            participant: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                userId: true,
+                allowPhotoVideo: true,
+                dateOfBirth: true,
+                addedBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                courses: {
+                  select: {
+                    course: {
+                      select: {
+                        id: true,
+                        name: true,
+                        schemaItems: {
+                          select: {
+                            termin: {
+                              select: {
+                                id: true,
+                                name: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            courseSelections: {
+              select: {
+                course: {
+                  select: {
+                    id: true,
+                    name: true,
+                    schemaItems: {
+                      select: {
+                        termin: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
           },
-        },
-      },
-    },
-  });
+        });
 
-  const allStudents = buildStudentSummaries(purchasesWithData);
+  const allStudents = buildStudentSummaries(
+    purchasesWithData,
+    pendingOrderItems,
+  );
 
   const ITEMS_PER_PAGE = 10;
   const currentPage = Number(params.page) || 1;

@@ -301,7 +301,7 @@ function ProductsDialog({ student }: { student: StudentSummary }) {
 
   return (
     <CountDialogButton
-      count={student.purchases.length}
+      count={student.purchases.length + student.pendingOrderItems.length}
       open={isOpen}
       onOpenChange={setIsOpen}
       title={`Köpta produkter för ${student.name}`}
