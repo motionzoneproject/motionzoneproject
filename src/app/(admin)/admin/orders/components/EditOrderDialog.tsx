@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { Edit3Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -290,7 +290,6 @@ export function EditOrderDialog({
   getParticipantsForUser,
   createParticipant,
   disabled,
-  readOnlyMessage,
   userName,
 }: {
   order: OrderForEdit;
@@ -304,7 +303,6 @@ export function EditOrderDialog({
     data: ParticipantData,
   ) => Promise<{ id: string; name: string }>;
   disabled?: boolean;
-  readOnlyMessage?: string;
   userName: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -490,14 +488,10 @@ export function EditOrderDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          type="button"
-          variant="outline"
           size="sm"
-          className="h-7 w-full justify-start px-2 text-[11px]"
-          disabled={disabled}
-          title={disabled ? readOnlyMessage : undefined}
+          className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20 shadow-none font-normal transition-colors"
         >
-          {disabled ? "Låst" : "Ändra order"}
+          <Edit3Icon /> {disabled ? "Låst" : "Ändra order"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-xl">
