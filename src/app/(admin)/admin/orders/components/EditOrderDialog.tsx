@@ -518,7 +518,7 @@ export function EditOrderDialog({
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  #{i}
+                  Rad #{i + 1}
                 </span>
                 <Button
                   type="button"
