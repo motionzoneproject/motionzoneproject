@@ -30,12 +30,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course } from "@/generated/prisma/client";
+import type { OrderEditPayload } from "@/lib/actions/orders";
+import type { ParticipantData } from "@/lib/actions/participants";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
 import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
+import {
+  type EditableProduct,
+  EditOrderDialog,
+} from "./components/EditOrderDialog";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
 type OrderLite = {
@@ -55,7 +61,9 @@ type OrderLite = {
     | {
         id?: string;
         product: {
+          id: string;
           name: string;
+          price: number;
           maxCourses?: number | null;
           courses?: { course: Course }[];
         };
@@ -77,6 +85,7 @@ type OrderLite = {
 
 export default function OrdersView({
   orders,
+  products,
   defaultStatus,
   pageSize,
   onApprove,
@@ -85,8 +94,12 @@ export default function OrdersView({
   onCancel,
   onDelete,
   onSavePackage,
+  onUpdateOrder,
+  getParticipantsForUser,
+  createParticipant,
 }: {
   orders: OrderLite[];
+  products: EditableProduct[];
   defaultStatus: string;
   pageSize: number;
   onApprove: (formData: FormData) => void;
@@ -94,6 +107,16 @@ export default function OrdersView({
   onTogglePaid: (orderId: string, paid: boolean) => void | Promise<void>;
   onCancel: (formData: FormData) => void;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
+  onUpdateOrder: (
+    orderId: string,
+    payload: OrderEditPayload,
+  ) => Promise<{ success: boolean; msg?: string }>;
+  getParticipantsForUser: (
+    userId: string,
+  ) => Promise<{ id: string; name: string; email: string | null }[]>;
+  createParticipant: (
+    data: ParticipantData,
+  ) => Promise<{ id: string; name: string }>;
   onSavePackage: (
     orderItemId: string,
     selectedCourseIds: string[],
@@ -412,6 +435,13 @@ export default function OrdersView({
               const canMarkPaid = ["PENDING_PAYMENT", "APPROVED"].includes(
                 o.status || "",
               );
+              const canEditOrder = o.status !== "APPROVED";
+              const customerLabel =
+                o.user?.details?.firstName || o.user?.details?.lastName
+                  ? `${o.user.details.firstName ?? ""} ${
+                      o.user.details.lastName ?? ""
+                    }`.trim()
+                  : (o.user?.email ?? "Kunden");
               const participants = Array.from(
                 new Map(
                   (o.orderItems ?? [])
@@ -443,12 +473,7 @@ export default function OrdersView({
                           Beställare
                         </span>
                         <div className="font-medium text-foreground text-xs">
-                          {o.user?.details?.firstName ||
-                          o.user?.details?.lastName
-                            ? `${o.user.details.firstName ?? ""} ${
-                                o.user.details.lastName ?? ""
-                              }`.trim()
-                            : (o.user?.email ?? o.userId)}{" "}
+                          {customerLabel}{" "}
                           <span className="text-muted-foreground font-normal">
                             ({calculateAge(o.user?.details?.dateOfBirth)} år)
                           </span>
@@ -678,6 +703,24 @@ export default function OrdersView({
                           </Button>
                         </form>
                       )}
+
+                      <div className="w-full">
+                        <EditOrderDialog
+                          order={{
+                            id: o.id,
+                            userId: o.userId,
+                            customerLabel,
+                            orderItems: o.orderItems,
+                          }}
+                          userName={customerLabel}
+                          products={products}
+                          onSave={onUpdateOrder}
+                          getParticipantsForUser={getParticipantsForUser}
+                          createParticipant={createParticipant}
+                          disabled={!canEditOrder}
+                          readOnlyMessage="Ordern går inte att ändra när den är godkänd."
+                        />
+                      </div>
 
                       {["PENDING_PAYMENT"].includes(o.status || "") && (
                         <CancelOrderBtn onCancel={onCancel} orderId={o.id} />

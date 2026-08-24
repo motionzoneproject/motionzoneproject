@@ -13,6 +13,14 @@ export type ParticipantData = {
   userId?: string;
 };
 
+export async function getParticipantsForUser(userId: string) {
+  return prisma.participant.findMany({
+    where: { addedByUserId: userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, email: true },
+  });
+}
+
 export async function getMyParticipants() {
   const session = await getSessionData();
   if (!session) return [];

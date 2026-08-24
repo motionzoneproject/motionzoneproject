@@ -168,6 +168,139 @@ export async function adminGetOrder(orderId: string): Promise<OrderDetail> {
   });
 }
 
+export type OrderEditPayload = {
+  creates: { productId: string; participantId: string | null }[];
+  updates: {
+    orderItemId: string;
+    productId: string;
+    participantId: string | null;
+  }[];
+  deletes: string[];
+};
+
+// Statusar där ordern fortfarande får redigeras av admin.
+// Justera listan om PAID/CANCELLED också ska tillåtas eller blockeras.
+const EDITABLE_STATUSES = ["PENDING_PAYMENT", "AWAITING_APPROVAL"];
+
+export async function updateOrder(
+  orderId: string,
+  payload: OrderEditPayload,
+): Promise<{ success: boolean; msg?: string }> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { orderItems: true },
+  });
+
+  if (!order) {
+    return { success: false, msg: "Ordern hittades inte." };
+  }
+
+  if (!EDITABLE_STATUSES.includes(order.status)) {
+    return {
+      success: false,
+      msg: "Ordern kan inte ändras i sitt nuvarande status.",
+    };
+  }
+
+  // Säkerställ att raderna som ska uppdateras/tas bort faktiskt tillhör ordern
+  // (annars kan en admin råka peta i en annan orders rader).
+  const orderItemIds = new Set(order.orderItems.map((oi) => oi.id));
+  const touchedIds = [
+    ...payload.updates.map((u) => u.orderItemId),
+    ...payload.deletes,
+  ];
+  if (touchedIds.some((id) => !orderItemIds.has(id))) {
+    return {
+      success: false,
+      msg: "En eller flera rader hör inte till ordern.",
+    };
+  }
+
+  const remainingCount =
+    order.orderItems.length - payload.deletes.length + payload.creates.length;
+  if (remainingCount <= 0) {
+    return { success: false, msg: "Ordern måste ha minst en produkt kvar." };
+  }
+
+  const productIds = [
+    ...new Set([
+      ...payload.updates.map((u) => u.productId),
+      ...payload.creates.map((c) => c.productId),
+    ]),
+  ];
+  const products = productIds.length
+    ? await prisma.product.findMany({ where: { id: { in: productIds } } })
+    : [];
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (const del of payload.deletes) {
+        await tx.orderItemCourseSelection.deleteMany({
+          where: { orderItemId: del },
+        });
+        await tx.orderItem.delete({ where: { id: del } });
+      }
+
+      for (const upd of payload.updates) {
+        const product = productMap.get(upd.productId);
+        if (!product) {
+          throw new Error(`Produkten hittades inte (${upd.productId}).`);
+        }
+
+        const existing = order.orderItems.find(
+          (oi) => oi.id === upd.orderItemId,
+        );
+        const productChanged = existing && existing.productId !== upd.productId;
+
+        await tx.orderItem.update({
+          where: { id: upd.orderItemId },
+          data: {
+            productId: upd.productId,
+            participantId: upd.participantId,
+            price: product.price,
+          },
+        });
+
+        if (productChanged) {
+          await tx.orderItemCourseSelection.deleteMany({
+            where: { orderItemId: upd.orderItemId },
+          });
+        }
+      }
+
+      for (const create of payload.creates) {
+        const product = productMap.get(create.productId);
+        if (!product) {
+          throw new Error(`Produkten hittades inte (${create.productId}).`);
+        }
+
+        await tx.orderItem.create({
+          data: {
+            orderId,
+            productId: create.productId,
+            participantId: create.participantId,
+            count: 1,
+            price: product.price,
+          },
+        });
+      }
+
+      const remaining = await tx.orderItem.findMany({ where: { orderId } });
+      const totalPrice = remaining.reduce(
+        (sum, oi) => sum + oi.price * oi.count,
+        0,
+      );
+
+      await tx.order.update({ where: { id: orderId }, data: { totalPrice } });
+    });
+
+    return { success: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Ett fel uppstod.";
+    return { success: false, msg };
+  }
+}
 export async function updateOrderItemCourseSelections(
   orderItemId: string,
   selectedCourseIds: string[],
