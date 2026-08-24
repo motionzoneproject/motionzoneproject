@@ -7,7 +7,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { autobook } from "@/lib/actions/server-actions";
 
-export function AutobookBtn({ purchaseItemId }: { purchaseItemId: string }) {
+export function AutobookBtn({
+  purchaseItemId,
+  remainingClips,
+  disabled,
+}: {
+  purchaseItemId: string;
+  remainingClips: number;
+  disabled: boolean;
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -31,7 +39,11 @@ export function AutobookBtn({ purchaseItemId }: { purchaseItemId: string }) {
   };
 
   return (
-    <Button type="button" onClick={onAutobook} disabled={isPending}>
+    <Button
+      type="button"
+      onClick={onAutobook}
+      disabled={isPending || remainingClips === 0 || disabled}
+    >
       {isPending ? t("user.autobook.running") : t("user.autobook.label")}
     </Button>
   );

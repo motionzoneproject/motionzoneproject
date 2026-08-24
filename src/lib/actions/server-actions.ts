@@ -14,7 +14,21 @@ import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 export type BookingWithLesson = Prisma.BookingGetPayload<{
-  include: { lesson: true };
+  include: {
+    lesson: {
+      include: { course: true };
+    };
+    purchaseItem: {
+      include: {
+        purchase: {
+          include: {
+            product: true;
+            participant: true;
+          };
+        };
+      };
+    };
+  };
 }>;
 
 export async function getUserBookings(): Promise<{
@@ -38,6 +52,16 @@ export async function getUserBookings(): Promise<{
       include: {
         lesson: {
           include: { course: true },
+        },
+        purchaseItem: {
+          include: {
+            purchase: {
+              include: {
+                product: true,
+                participant: true,
+              },
+            },
+          },
         },
       },
     });
@@ -134,36 +158,30 @@ export async function getUserLessons(): Promise<{
   }
 }
 
-export type UserPurchaseWithProduct = {
-  purchase: {
-    totalCount: number | null;
-    id: string;
-    product: {
-      totalCount: number | null;
-      id: string;
-      name: string;
-      type: "CLIP" | "PACK" | "COURSE";
+export type UserPurchaseWithProduct = Prisma.PurchaseItemGetPayload<{
+  include: {
+    orderItem: { include: { courseSelections: true } };
+    course: {
+      select: { name: true };
     };
-    type: "CLIP" | "PACK" | "COURSE";
-    remainingCount: number | null;
-    participant?: {
-      id: string;
-      name: string;
-    } | null;
+    purchase: {
+      select: {
+        id: true;
+        type: true;
+        totalCount: true;
+        remainingCount: true;
+        participantId: true;
+        participant: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+        product: true;
+      };
+    };
   };
-} & {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  type: string;
-  courseId: string;
-  course: { name: string }; // <--- NYTT: Inkludera kursdata här
-  unlimited: boolean;
-  lessonsIncluded: number;
-  remainingCount: number;
-  purchaseId: string;
-  orderItemId: string;
-};
+}>;
 
 export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
   const session = await getSessionData();
@@ -178,6 +196,7 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
         ],
       },
       include: {
+        orderItem: { include: { courseSelections: true } },
         course: {
           // <--- NYTT: Hämtar kursnamnet direkt
           select: { name: true },
@@ -195,14 +214,7 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
                 name: true,
               },
             },
-            product: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                totalCount: true,
-              },
-            },
+            product: true,
           },
         },
       },

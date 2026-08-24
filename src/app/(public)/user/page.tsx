@@ -218,7 +218,25 @@ export default async function Page() {
                                     )}
                                 </div>
 
-                                <AutobookBtn purchaseItemId={pi.id} />
+                                {pi.orderItem.courseSelections
+                                  .map((cs) => cs.courseId)
+                                  .filter((fcs) => fcs === pi.courseId)
+                                  .length === 0 ? (
+                                  <span className="p-2 border-destructive border-2 rounded-xl text-sm text-destructive font-bold">
+                                    Utbytt i paket.
+                                  </span>
+                                ) : (
+                                  <AutobookBtn
+                                    purchaseItemId={pi.id}
+                                    remainingClips={remaining}
+                                    disabled={
+                                      pi.orderItem.courseSelections
+                                        .map((cs) => cs.courseId)
+                                        .filter((fcs) => fcs === pi.courseId)
+                                        .length > 0
+                                    }
+                                  />
+                                )}
                               </div>
 
                               <div>
