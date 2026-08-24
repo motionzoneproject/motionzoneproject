@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, Product, Termin, User } from "@/generated/prisma/client";
+import { getCourseName } from "@/lib/tools";
 
 interface Props {
   teachers: User[];
@@ -206,7 +207,7 @@ export default function StudentsFilter({
               <SelectSeparator />
               {courses.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.name}
+                  {getCourseName(c)}
                 </SelectItem>
               ))}
             </SelectGroup>
