@@ -459,13 +459,18 @@ export async function getAllProducts(): Promise<Product[]> {
 //   }
 // }
 
-export async function autobook(purchaseItemId: string): Promise<Booking[]> {
+export async function autobook(
+  purchaseItemId: string,
+  optTx?: Prisma.TransactionClient,
+): Promise<Booking[]> {
   const sessionData = await getSessionData();
   const sessionUser = sessionData?.user;
   if (!sessionUser) return [];
 
+  const db = optTx ?? prisma;
+
   try {
-    const purchaseItem = await prisma.purchaseItem.findUnique({
+    const purchaseItem = await db.purchaseItem.findUnique({
       where: { id: purchaseItemId },
       include: {
         purchase: {
@@ -494,14 +499,12 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     if (!product.autobook) return [];
 
     // 2. Klippkort med fler än 1 kopplad kurs stödjer inte autobokning.
-    // (autobook borde redan vara false i det läget via updateProductType,
-    // men vi dubbelkollar här som ett extra säkerhetsnät.)
     if (product.type === "CLIP" && product.courses.length > 1) return [];
 
     // 3. Om produkten begränsar antal valbara kurser (maxCourses satt),
     // autoboka bara den/de kurser kunden faktiskt valde vid köpet.
     if (product.maxCourses !== null) {
-      const selection = await prisma.orderItemCourseSelection.findUnique({
+      const selection = await db.orderItemCourseSelection.findUnique({
         where: {
           orderItemId_courseId: {
             orderItemId: purchaseItem.orderItemId,
@@ -522,7 +525,7 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
 
     const now = new Date();
 
-    const lessonsToBook = await prisma.lesson.findMany({
+    const lessonsToBook = await db.lesson.findMany({
       where: {
         courseId: course.id,
         startTime: { gte: now },
@@ -533,7 +536,7 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     });
     if (lessonsToBook.length === 0) return [];
 
-    const existingBookings = await prisma.booking.findMany({
+    const existingBookings = await db.booking.findMany({
       where: {
         lessonId: { in: lessonsToBook.map((l) => l.id) },
         ...(participantId
@@ -554,11 +557,12 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     const lessons = availableLessons.slice(0, aClip);
     if (lessons.length === 0) return [];
 
-    const bookings = await prisma.$transaction(async (tx) => {
+    // Hjälpfunktion för att skapa bokningar och uppdatera klipp/saldo
+    const executeBookingLogic = async (txClient: Prisma.TransactionClient) => {
       const created: Booking[] = [];
 
       for (const lesson of lessons) {
-        const booking = await tx.booking.create({
+        const booking = await txClient.booking.create({
           data: {
             lessonId: lesson.id,
             userId: purchase.userId,
@@ -569,7 +573,7 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
       }
 
       const clipResult = await handleClips(
-        tx,
+        txClient,
         purchaseItem.id,
         -created.length,
       );
@@ -578,7 +582,12 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
       }
 
       return created;
-    });
+    };
+
+    // Kör direkt i befintlig transaktion om optTx finns, annars starta en ny
+    const bookings = optTx
+      ? await executeBookingLogic(optTx)
+      : await prisma.$transaction(executeBookingLogic);
 
     if (bookings.length > 0) {
       revalidatePath("/user");
@@ -590,7 +599,6 @@ export async function autobook(purchaseItemId: string): Promise<Booking[]> {
     return [];
   }
 }
-
 // Counts how many slots are left for a course, so we can show it on the cards on the course page.
 // Returns the total number of slots left, or null if there is no limit (unlimitedCustomers = true).
 export async function getRemainingSlotsForCourse(

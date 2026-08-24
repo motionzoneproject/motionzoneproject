@@ -41,6 +41,7 @@ type OrderLite = {
   orderItems?:
     | {
         id?: string;
+        order: { id: string };
         product: {
           id: string;
           name: string;
@@ -84,6 +85,7 @@ async function getOrders(): Promise<OrderLite[]> {
               },
             },
           },
+          order: { select: { id: true } },
           participant: true,
           courseSelections: {
             include: { course: true },
@@ -196,12 +198,14 @@ export default async function Page({
   }
 
   async function onSavePackage(
+    orderId: string,
     orderItemId: string,
     selectedCourseIds: string[],
   ): Promise<{ success: boolean; msg?: string }> {
     "use server";
 
     const result = await updateOrderItemCourseSelections(
+      orderId,
       orderItemId,
       selectedCourseIds,
     );

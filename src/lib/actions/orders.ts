@@ -1,9 +1,12 @@
 "use server";
 
+import { TZDate } from "@date-fns/tz";
 import { revalidatePath } from "next/cache";
 import type { OrderDetail } from "@/app/(admin)/admin/orders/view/view-client";
+import type { PurchaseItem } from "@/generated/prisma/client";
 import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
+import { handleClips } from "./purchase-actions";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 
@@ -154,6 +157,7 @@ export async function adminGetOrder(orderId: string): Promise<OrderDetail> {
               },
             },
           },
+          order: { select: { id: true } },
           participant: true,
           courseSelections: {
             include: { course: true },
@@ -302,80 +306,340 @@ export async function updateOrder(
   }
 }
 export async function updateOrderItemCourseSelections(
+  orderId: string,
   orderItemId: string,
   selectedCourseIds: string[],
-): Promise<{ success: boolean; msg?: string; selectedCourseIds?: string[] }> {
+): Promise<{
+  success: boolean;
+  msg?: string;
+  selectedCourseIds?: string[];
+}> {
   await requireAdmin();
 
-  const id = orderItemId?.trim();
-  if (!id) throw new Error("Giltigt orderItemId saknas.");
+  const normalizedOrderId = orderId.trim();
+  const normalizedOrderItemId = orderItemId.trim();
+
+  const timeZone = "Europe/Stockholm";
+  const now = new Date(new TZDate(new Date(), timeZone).getTime());
+
+  if (!normalizedOrderId) {
+    return {
+      success: false,
+      msg: "Giltigt orderId saknas.",
+    };
+  }
+
+  if (!normalizedOrderItemId) {
+    return {
+      success: false,
+      msg: "Giltigt orderItemId saknas.",
+    };
+  }
 
   const normalized = Array.from(
-    new Set((selectedCourseIds ?? []).filter(Boolean).map((x) => x.trim())),
+    new Set(
+      (selectedCourseIds ?? [])
+        .filter((courseId): courseId is string => typeof courseId === "string")
+        .map((courseId) => courseId.trim())
+        .filter(Boolean),
+    ),
   );
 
   try {
-    return prisma.$transaction(async (tx) => {
-      const orderItem = await tx.orderItem.findUnique({
-        where: { id },
+    return await prisma.$transaction(async (tx) => {
+      const orderItem = await tx.orderItem.findFirst({
+        where: {
+          id: normalizedOrderItemId,
+          orderId: normalizedOrderId,
+        },
         include: {
+          order: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
           product: {
             include: {
-              courses: { select: { courseId: true } },
+              courses: {
+                select: {
+                  courseId: true,
+                  lessonsIncluded: true,
+                  unlimited: true,
+                },
+              },
+            },
+          },
+          courseSelections: {
+            select: {
+              courseId: true,
             },
           },
         },
       });
 
-      if (!orderItem) throw new Error("Orderitem hittades inte.");
+      if (!orderItem) {
+        throw new Error("Orderraden hittades inte i den angivna ordern.");
+      }
+
+      if (orderItem.order.status === "CANCELLED") {
+        throw new Error("Paketvalet kan inte ändras på en avbruten order.");
+      }
+
       if (orderItem.product.maxCourses == null) {
         throw new Error("Den här produkten är inte ett paket med kursval.");
       }
 
       const maxCourses = orderItem.product.maxCourses;
 
-      if (normalized.length === 0 || normalized.length > maxCourses) {
+      if (normalized.length === 0) {
+        throw new Error("Du måste välja minst en kurs.");
+      }
+
+      if (normalized.length > maxCourses) {
         throw new Error(
-          `Du måste välja max ${maxCourses} ${maxCourses === 1 ? "kurs" : "kurser"}, eller minst 1`,
+          `Du får välja högst ${maxCourses} ${
+            maxCourses === 1 ? "kurs" : "kurser"
+          }.`,
         );
       }
 
-      const validCourseIds = new Set(
-        orderItem.product.courses.map((link) => link.courseId),
+      const productCourses = new Map(
+        orderItem.product.courses.map((productCourse) => [
+          productCourse.courseId,
+          productCourse,
+        ]),
       );
 
-      for (const courseId of normalized) {
-        if (!validCourseIds.has(courseId)) {
-          throw new Error(
-            "En vald kurs finns inte kopplad till produkten och kan därför inte sparas.",
-          );
-        }
+      const invalidCourseId = normalized.find(
+        (courseId) => !productCourses.has(courseId),
+      );
+
+      if (invalidCourseId) {
+        throw new Error("En vald kurs finns inte kopplad till produkten.");
       }
 
-      await tx.orderItemCourseSelection.deleteMany({
-        where: { orderItemId: id },
+      const oldCourseIds = new Set(
+        orderItem.courseSelections.map((selection) => selection.courseId),
+      );
+
+      const newCourseIds = new Set(normalized);
+
+      const removedCourseIds = [...oldCourseIds].filter(
+        (courseId) => !newCourseIds.has(courseId),
+      );
+
+      const addedCourseIds = [...newCourseIds].filter(
+        (courseId) => !oldCourseIds.has(courseId),
+      );
+
+      const purchaseItems = await tx.purchaseItem.findMany({
+        where: {
+          orderItemId: normalizedOrderItemId,
+        },
+        select: {
+          id: true,
+          purchaseId: true,
+          courseId: true,
+          type: true,
+          lessonsIncluded: true,
+          remainingCount: true,
+          unlimited: true,
+          purchase: {
+            select: {
+              id: true,
+              orderId: true,
+              type: true,
+              remainingCount: true,
+            },
+          },
+        },
       });
 
-      if (normalized.length > 0) {
+      if (purchaseItems.length === 0) {
+        await tx.orderItemCourseSelection.deleteMany({
+          where: {
+            orderItemId: normalizedOrderItemId,
+          },
+        });
+
         await tx.orderItemCourseSelection.createMany({
           data: normalized.map((courseId) => ({
-            orderItemId: id,
+            orderItemId: normalizedOrderItemId,
             courseId,
           })),
           skipDuplicates: true,
         });
+
+        revalidatePath("/admin/orders");
+        revalidatePath("/admin/orders/view");
+
+        return {
+          success: true,
+          selectedCourseIds: normalized,
+        };
+      }
+
+      const purchaseId = purchaseItems[0].purchaseId;
+
+      const purchaseItemsByCourse = new Map(
+        purchaseItems.map((purchaseItem) => [
+          purchaseItem.courseId,
+          purchaseItem,
+        ]),
+      );
+
+      /*
+       * Ta bort gamla kurser som inte längre är valda.
+       * Endast framtida bokningar tas bort.
+       */
+      for (const removedCourseId of removedCourseIds) {
+        const oldPurchaseItem = purchaseItemsByCourse.get(removedCourseId);
+
+        if (!oldPurchaseItem) {
+          continue;
+        }
+
+        const futureBookings = await tx.booking.findMany({
+          where: {
+            purchaseItemId: oldPurchaseItem.id,
+            lesson: {
+              startTime: {
+                gte: now,
+              },
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (futureBookings.length > 0) {
+          await tx.booking.deleteMany({
+            where: {
+              id: {
+                in: futureBookings.map((booking) => booking.id),
+              },
+            },
+          });
+
+          const restored = await handleClips(
+            tx,
+            oldPurchaseItem.id,
+            futureBookings.length,
+          );
+
+          if (!restored.success) {
+            throw new Error(
+              restored.msg ??
+                "Kunde inte återställa saldo efter borttagna bokningar.",
+            );
+          }
+        }
+
+        const remainingBookings = await tx.booking.count({
+          where: {
+            purchaseItemId: oldPurchaseItem.id,
+          },
+        });
+
+        if (remainingBookings === 0) {
+          await tx.purchaseItem.delete({
+            where: {
+              id: oldPurchaseItem.id,
+            },
+          });
+        }
+      }
+
+      const newPI = <PurchaseItem[]>[];
+
+      /*
+       * Skapa PurchaseItem för nya kurser med deras fulla pott.
+       */
+      for (const addedCourseId of addedCourseIds) {
+        const productCourse = productCourses.get(addedCourseId);
+
+        if (!productCourse) {
+          throw new Error("Den nya kursen saknas i produktens kurskoppling.");
+        }
+
+        const alreadyExists = await tx.purchaseItem.findFirst({
+          where: {
+            purchaseId,
+            orderItemId: normalizedOrderItemId,
+            courseId: addedCourseId,
+          },
+        });
+
+        if (alreadyExists) {
+          continue;
+        }
+
+        const lessonsIncluded = productCourse.lessonsIncluded;
+
+        const createPI = await tx.purchaseItem.create({
+          data: {
+            purchaseId,
+            orderItemId: normalizedOrderItemId,
+            courseId: addedCourseId,
+            type: orderItem.product.type,
+            lessonsIncluded:
+              orderItem.product.type === "CLIP" ? 0 : lessonsIncluded,
+            remainingCount:
+              orderItem.product.type === "CLIP" ? 0 : lessonsIncluded,
+            unlimited: productCourse.unlimited ?? false,
+          },
+        });
+
+        newPI.push(createPI);
+      }
+
+      /*
+       * Uppdatera orderns kursval.
+       */
+      await tx.orderItemCourseSelection.deleteMany({
+        where: {
+          orderItemId: normalizedOrderItemId,
+        },
+      });
+
+      await tx.orderItemCourseSelection.createMany({
+        data: normalized.map((courseId) => ({
+          orderItemId: normalizedOrderItemId,
+          courseId,
+        })),
+        skipDuplicates: true,
+      });
+
+      /*
+       * Autoboka för de nya kursraderna.
+       */
+      for (const pi of newPI) {
+        console.log(`Autobooking for pi ${pi.id}`);
+        const ab = await autobook(pi.id, tx);
+        console.log(JSON.stringify(ab));
       }
 
       revalidatePath("/admin/orders");
       revalidatePath("/admin/orders/view");
+      revalidatePath("/user");
 
       return {
         success: true,
         selectedCourseIds: normalized,
       };
     });
-  } catch (e) {
-    return { success: false, msg: JSON.stringify(e) };
+  } catch (error) {
+    console.error("Kunde inte uppdatera orderradens kursval:", error);
+
+    return {
+      success: false,
+      msg:
+        error instanceof Error
+          ? error.message
+          : "Kunde inte uppdatera paketvalet.",
+    };
   }
 }
 

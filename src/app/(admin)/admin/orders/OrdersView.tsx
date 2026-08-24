@@ -60,6 +60,7 @@ type OrderLite = {
   orderItems?:
     | {
         id?: string;
+        order: { id: string };
         product: {
           id: string;
           name: string;
@@ -118,6 +119,7 @@ export default function OrdersView({
     data: ParticipantData,
   ) => Promise<{ id: string; name: string }>;
   onSavePackage: (
+    ordeerId: string,
     orderItemId: string,
     selectedCourseIds: string[],
   ) =>
@@ -521,7 +523,7 @@ export default function OrdersView({
                           ) ?? [];
                         const maxCourses = oi.product?.maxCourses ?? 0;
                         const isPackage = maxCourses > 0;
-                        const canEdit = o.status !== "APPROVED";
+                        const canEdit = o.status !== "CANCELLED";
                         const participantName = oi.participant?.name;
 
                         return (
@@ -569,6 +571,7 @@ export default function OrdersView({
 
                                   <div className="pt-1">
                                     <OrderPackageDialog
+                                      orderId={oi.order.id}
                                       orderItemId={oi.id ?? ""}
                                       productName={
                                         oi.product?.name ?? "Produkt"
@@ -579,6 +582,7 @@ export default function OrdersView({
                                       onSave={async (orderItemId, next) => {
                                         try {
                                           const res = await onSavePackage(
+                                            oi.order.id,
                                             orderItemId,
                                             next,
                                           );
@@ -601,7 +605,7 @@ export default function OrdersView({
                                         }
                                       }}
                                       disabled={!canEdit}
-                                      readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
+                                      readOnlyMessage="Paketvalet går inte att ändra när ordern är avbruten."
                                       triggerLabel="Ändra paket"
                                     />
                                   </div>
@@ -718,7 +722,6 @@ export default function OrdersView({
                           getParticipantsForUser={getParticipantsForUser}
                           createParticipant={createParticipant}
                           disabled={!canEditOrder}
-                          readOnlyMessage="Ordern går inte att ändra när den är godkänd."
                         />
                       </div>
 

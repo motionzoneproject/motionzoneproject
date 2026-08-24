@@ -23,6 +23,7 @@ import { getPayMethodTxt } from "@/lib/tools";
 
 export type OrderItemLite = {
   id: string;
+  order: { id: string };
   price: unknown;
   count: number;
   productId: string;
@@ -180,6 +181,7 @@ export default function OrderDetailsClient() {
   }, [orderId]);
 
   const handleSavePackage = async (
+    orderId: string,
     orderItemId: string,
     selectedOverride?: string[],
   ) => {
@@ -189,6 +191,7 @@ export default function OrderDetailsClient() {
 
     try {
       const result = await updateOrderItemCourseSelections(
+        orderId,
         orderItemId,
         selected,
       );
@@ -198,6 +201,7 @@ export default function OrderDetailsClient() {
       }
 
       const data = await adminGetOrder(orderId);
+
       setOrder(data);
       setPackageSelections(
         Object.fromEntries(
@@ -551,6 +555,7 @@ export default function OrderDetailsClient() {
                           packCourses.length > 0 && (
                             <div className="mt-3 space-y-2 rounded-md border bg-muted/30 p-2">
                               <OrderPackageEditor
+                                orderId={it.order.id}
                                 orderItemId={it.id}
                                 productName={it.product?.name ?? it.productId}
                                 maxCourses={it.product.maxCourses}
@@ -561,11 +566,15 @@ export default function OrderDetailsClient() {
                                     ...prev,
                                     [orderItemId]: next,
                                   }));
-                                  await handleSavePackage(orderItemId, next);
+                                  await handleSavePackage(
+                                    it.order.id,
+                                    orderItemId,
+                                    next,
+                                  );
                                 }}
                                 isSaving={savingItemId === it.id}
-                                disabled={order.status === "APPROVED"}
-                                readOnlyMessage="Paketvalet går inte att ändra för en godkänd order."
+                                disabled={order.status === "CANCELLED"}
+                                readOnlyMessage="Paketvalet går inte att ändra för en avbruten order."
                               />
                             </div>
                           )}
