@@ -134,8 +134,19 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
     PurchaseItems: {
       select: {
         id: true;
+        courseId: true; // <-- LÄGG TILL
         remainingCount: true;
         unlimited: true;
+        orderItem: {
+          // <-- LÄGG TILL
+          select: {
+            courseSelections: {
+              select: {
+                courseId: true;
+              };
+            };
+          };
+        };
         course: {
           select: {
             id: true;
@@ -227,7 +238,15 @@ function buildStudentSummaries(
     };
 
     const purchaseItems: StudentPurchaseItemSummary[] =
-      purchase.PurchaseItems.map((item) => {
+      purchase.PurchaseItems.filter((item) => {
+        const selections = item.orderItem?.courseSelections ?? [];
+        // Om det finns explicit valda kurser (paketval), visa bara de som matchar item.courseId
+        if (selections.length > 0) {
+          return selections.some((sel) => sel.courseId === item.courseId);
+        }
+        // Annars är det en vanlig produkt/kurs där alla PurchaseItems gäller
+        return true;
+      }).map((item) => {
         existing.courseMap.set(item.course.id, {
           id: item.course.id,
           name: item.course.name,
@@ -332,7 +351,27 @@ export default async function Page({
   if (course) {
     filters.push({
       PurchaseItems: {
-        some: { courseId: course },
+        some: {
+          courseId: course,
+          OR: [
+            //Antingen finns det ett aktivt val i orderItem
+            {
+              orderItem: {
+                courseSelections: {
+                  some: { courseId: course },
+                },
+              },
+            },
+            // Eller så har produkten inga val överhuvudtaget (vanligt kursköp)
+            {
+              orderItem: {
+                courseSelections: {
+                  none: {},
+                },
+              },
+            },
+          ],
+        },
       },
     });
   }
@@ -424,7 +463,6 @@ export default async function Page({
 
   const where: Prisma.PurchaseWhereInput =
     filters.length > 0 ? { AND: filters } : {};
-
   const purchasesWithData = await prisma.purchase.findMany({
     where,
     select: {
@@ -479,8 +517,18 @@ export default async function Page({
       PurchaseItems: {
         select: {
           id: true,
+          courseId: true, // <-- Tillagd här
           remainingCount: true,
           unlimited: true,
+          orderItem: {
+            select: {
+              courseSelections: {
+                select: {
+                  courseId: true,
+                },
+              },
+            },
+          },
           course: {
             select: {
               id: true,

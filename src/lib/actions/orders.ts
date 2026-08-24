@@ -544,9 +544,20 @@ export async function updateOrderItemCourseSelections(
         });
 
         if (remainingBookings === 0) {
+          // Om inga bokningar finns kvar alls kan vi radera raden helt
           await tx.purchaseItem.delete({
             where: {
               id: oldPurchaseItem.id,
+            },
+          });
+        } else {
+          // Om det finns historiska bokningar kvar: nollställ alla kvarvarande klipp
+          await tx.purchaseItem.update({
+            where: {
+              id: oldPurchaseItem.id,
+            },
+            data: {
+              remainingCount: 0, // nollställ här också så vi slipper se det i närvarohantering i admin.
             },
           });
         }
