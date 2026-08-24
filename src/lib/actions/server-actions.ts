@@ -162,7 +162,7 @@ export type UserPurchaseWithProduct = Prisma.PurchaseItemGetPayload<{
   include: {
     orderItem: { include: { courseSelections: true } };
     course: {
-      select: { name: true };
+      select: { name: true; name_en: true };
     };
     purchase: {
       select: {
@@ -199,7 +199,7 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
         orderItem: { include: { courseSelections: true } },
         course: {
           // <--- NYTT: Hämtar kursnamnet direkt
-          select: { name: true },
+          select: { name: true, name_en: true },
         },
         purchase: {
           select: {

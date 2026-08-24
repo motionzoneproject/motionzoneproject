@@ -41,6 +41,9 @@ export function AutobookBtn({
   return (
     <Button
       type="button"
+      variant="default"
+      size="sm"
+      className="gap-2 p-3 bg-brand/10 text-brand border-2 text-xl border-brand/20 hover:bg-brand/20"
       onClick={onAutobook}
       disabled={isPending || remainingClips === 0 || disabled}
     >

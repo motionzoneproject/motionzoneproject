@@ -1,4 +1,4 @@
-import { Calendar, Clock, Users } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
@@ -27,18 +27,16 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
-import { formatFriendlyDateTime } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
-import { dbToFormTime } from "@/lib/time-convert";
 import { getDictionary } from "@/locales/get-dictionary";
 import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
-import { DelBookBtn } from "./components/DelBookBtn";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditEmailForm } from "./components/EditEmailForm";
 import { EditPwForm } from "./components/EditPwForm";
 import OrderHistory from "./components/OrderHistory";
+import { PurchaseItemBookings } from "./components/PurchaseItemsBookings";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
 
 export const metadata: Metadata = {
@@ -49,7 +47,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const { lang, t } = await getDictionary();
-  const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
+  const _dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const sessionData = await getSessionData();
 
   if (!sessionData) {
@@ -173,7 +171,7 @@ export default async function Page() {
                     {/* ok */}
 
                     <AccordionContent className="border-t pt-4 pb-2">
-                      <div className="space-y-3">
+                      <Accordion type="multiple" className="space-y-2">
                         {group.items.map((pi) => {
                           const courseName = pick(
                             pi.course,
@@ -197,110 +195,87 @@ export default async function Page() {
                                 b.lesson.startTime.getTime(),
                             );
 
+                          const isSwapped =
+                            pi.orderItem.courseSelections
+                              .map((cs) => cs.courseId)
+                              .filter((fcs) => fcs === pi.courseId).length ===
+                            0;
+
                           return (
-                            <div
+                            <AccordionItem
                               key={pi.id}
-                              className="bg-muted p-4 rounded-xl border space-y-3"
+                              value={pi.id}
+                              className="bg-muted rounded-xl border px-3"
                             >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {courseName}
-                                  </p>
-
-                                  {pi.purchase.participant &&
-                                    pi.purchase.participant.name !==
-                                      user?.name && (
-                                      <p className="text-[10px] text-brand font-medium">
-                                        {t.user.participantPrefix}{" "}
-                                        {pi.purchase.participant.name}
-                                      </p>
-                                    )}
-                                </div>
-
-                                {pi.orderItem.courseSelections
-                                  .map((cs) => cs.courseId)
-                                  .filter((fcs) => fcs === pi.courseId)
-                                  .length === 0 ? (
-                                  <span className="p-2 border-destructive border-2 rounded-xl text-sm text-destructive font-bold">
-                                    Utbytt i paket.
-                                  </span>
-                                ) : (
-                                  <AutobookBtn
-                                    purchaseItemId={pi.id}
-                                    remainingClips={remaining}
-                                    disabled={
-                                      pi.orderItem.courseSelections
-                                        .map((cs) => cs.courseId)
-                                        .filter((fcs) => fcs === pi.courseId)
-                                        .length > 0
-                                    }
-                                  />
-                                )}
-                              </div>
-
-                              <div>
-                                <p className="text-muted-foreground text-xs mb-2">
-                                  {t.user.yourBookings}
-                                </p>
-
-                                {piBookings.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {piBookings.map((b) => (
-                                      <div
-                                        key={b.id}
-                                        className="flex items-center justify-between w-full p-3 rounded-lg bg-background border"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <Calendar
-                                            local="sv"
-                                            className="w-4 h-4 text-muted-foreground"
-                                          />
-
-                                          <p className="text-sm">
-                                            {formatFriendlyDateTime(
-                                              b.lesson.startTime,
-                                              dateLocale,
-                                            )}{" "}
-                                            - {dbToFormTime(b.lesson.endTime)}
-                                          </p>
-                                        </div>
-
-                                        <DelBookBtn
-                                          pId={b.purchaseItemId}
-                                          lId={b.lessonId}
-                                        />
-                                      </div>
-                                    ))}
+                              <AccordionTrigger className="hover:no-underline py-3">
+                                <div className="flex flex-1 items-center justify-between text-left pr-3">
+                                  <div>
+                                    <p className="font-medium text-sm">
+                                      {courseName}{" "}
+                                      {isSwapped && (
+                                        <span className="inline-block p-2 border-destructive border-2 rounded-xl text-xs text-destructive">
+                                          {t.user.orderHistory.swapped}
+                                        </span>
+                                      )}
+                                    </p>
+                                    {pi.purchase.participant &&
+                                      pi.purchase.participant.name !==
+                                        user?.name && (
+                                        <p className="text-[10px] text-brand font-medium">
+                                          {t.user.participantPrefix}{" "}
+                                          {pi.purchase.participant.name}
+                                        </p>
+                                      )}
                                   </div>
-                                ) : (
-                                  <p className="text-xs text-muted-foreground italic">
-                                    {t.user.noBookings}
-                                  </p>
-                                )}
-                              </div>
 
-                              <div className="text-right">
-                                <span
-                                  className={`font-bold ${
-                                    isLow ? "text-destructive" : ""
-                                  }`}
-                                >
-                                  {t.user.clipsLeft.replace(
-                                    "{{count}}",
-                                    remaining === Infinity
-                                      ? t.common.infinitySymbol
-                                      : String(remaining),
-                                  )}{" "}
-                                  {pi.purchase.type === "CLIP"
-                                    ? t.user.clipsLeftTotal
-                                    : ""}
-                                </span>
-                              </div>
-                            </div>
+                                  {!isSwapped && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Badge
+                                        variant="outline"
+                                        className={
+                                          isLow
+                                            ? "border-destructive text-destructive"
+                                            : ""
+                                        }
+                                      >
+                                        {t.user.clipsLeft.replace(
+                                          "{{count}}",
+                                          remaining === Infinity
+                                            ? t.common.infinitySymbol
+                                            : String(remaining),
+                                        )}{" "}
+                                        {pi.purchase.type === "CLIP"
+                                          ? t.user.clipsLeftTotal
+                                          : ""}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                </div>
+                              </AccordionTrigger>
+
+                              <AccordionContent className="pb-3 space-y-3">
+                                {isSwapped ? (
+                                  ""
+                                ) : (
+                                  <div className="flex justify-end">
+                                    <AutobookBtn
+                                      purchaseItemId={pi.id}
+                                      remainingClips={remaining}
+                                      disabled={false}
+                                    />
+                                  </div>
+                                )}
+
+                                <PurchaseItemBookings
+                                  bookings={piBookings}
+                                  labelYourBookings={t.user.yourBookings}
+                                  labelNoBookings={t.user.noBookings}
+                                />
+                              </AccordionContent>
+                            </AccordionItem>
                           );
                         })}
-                      </div>
+                      </Accordion>
                     </AccordionContent>
                   </AccordionItem>
                 ))}

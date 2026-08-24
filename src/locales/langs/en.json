@@ -412,7 +412,10 @@
       "statusPaid": "Paid",
       "statusPendingPayment": "Awaiting payment",
       "statusApproved": "Approved",
-      "statusCancelled": "Cancelled"
+      "statusCancelled": "Cancelled",
+      "showLess": "Show less",
+      "showMore": "Show {{count}} more",
+      "swapped": "Invalid. Swapped in package."
     },
     "autobook": {
       "running": "Auto-booking...",

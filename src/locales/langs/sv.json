@@ -412,7 +412,10 @@
       "statusPaid": "Betald",
       "statusPendingPayment": "Väntar på betalning",
       "statusApproved": "Godkänd",
-      "statusCancelled": "Avbruten"
+      "statusCancelled": "Avbruten",
+      "showLess": "Visa färre",
+      "showMore": "Visa {{count}} fler",
+      "swapped": "Ogiltig. Utbytt i paket."
     },
     "autobook": {
       "running": "Autobokar...",
