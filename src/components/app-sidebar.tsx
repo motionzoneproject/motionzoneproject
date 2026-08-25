@@ -63,16 +63,18 @@ export function AppSidebar() {
   const from = formatDate(today);
   const to = formatDate(in7);
 
-  const items = [
+  const allItems = [
     {
       title: "Översikt",
       url: "/admin",
       icon: Home,
+      teacherVisible: true,
     },
     {
       title: "Lektioner",
       url: `/admin/lectures?teacher=${user?.id}&from=${from}&to=${to}`,
       icon: BookOpen,
+      teacherVisible: true,
     },
     {
       title: "Startsida",
@@ -83,6 +85,7 @@ export function AppSidebar() {
       title: "Lärarprofiler",
       url: "/admin/teachers",
       icon: UserRoundCog,
+      teacherVisible: true,
     },
     {
       title: "Dansstilar",
@@ -140,6 +143,14 @@ export function AppSidebar() {
       icon: Scale,
     },
   ];
+
+  // Lärare ska bara kunna hantera sina lektioner + sin lärarprofil (den
+  // senare nås via /user, inte adminpanelen), så resten av navigationen
+  // döljs för dem.
+  const items =
+    user?.role === "teacher"
+      ? allItems.filter((item) => item.teacherVisible)
+      : allItems;
 
   const isItemActive = (url: string) => {
     const itemPath = url.split("?")[0];
