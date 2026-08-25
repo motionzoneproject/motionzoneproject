@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
@@ -37,6 +37,8 @@ import { getCourseName, getPayMethodTxt } from "@/lib/tools";
 import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
+
+type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
 
 type OrderLite = {
   id: string;
@@ -57,7 +59,7 @@ type OrderLite = {
         product: {
           name: string;
           maxCourses?: number | null;
-          courses?: { course: Course }[];
+          courses?: { course: CourseWithSchedule }[];
         };
         participant?: {
           id: string;
@@ -65,7 +67,7 @@ type OrderLite = {
           email: string;
           name: string;
         } | null;
-        courseSelections?: { course: Course }[] | null;
+        courseSelections?: { course: CourseWithSchedule }[] | null;
       }[]
     | null;
   totalPrice: unknown;
@@ -488,7 +490,15 @@ export default function OrdersView({
                           oi.product.courses?.map((c) => c.course) ?? [];
                         const selections =
                           oi.courseSelections?.flatMap((sel) =>
-                            sel.course ? [getCourseName(sel.course)] : [],
+                            sel.course
+                              ? [
+                                  getCourseName(
+                                    sel.course,
+                                    "sv",
+                                    sel.course.schemaItems,
+                                  ),
+                                ]
+                              : [],
                           ) ?? [];
                         const selectedIds =
                           oi.courseSelections?.flatMap((sel) =>

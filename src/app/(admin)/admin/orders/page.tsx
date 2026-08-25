@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 import { isAdminRole } from "@/lib/actions/admin";
 import {
   approveOrder,
@@ -20,6 +20,8 @@ const PAGE_SIZE = 10;
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
+
 type OrderLite = {
   id: string;
   userId: string;
@@ -38,7 +40,7 @@ type OrderLite = {
         product: {
           name: string;
           maxCourses?: number | null;
-          courses?: { course: Course }[];
+          courses?: { course: CourseWithSchedule }[];
         };
         participant?: {
           id: string;
@@ -48,7 +50,7 @@ type OrderLite = {
         } | null;
         courseSelections?:
           | {
-              course: Course;
+              course: CourseWithSchedule;
             }[]
           | null;
       }[]
@@ -72,13 +74,25 @@ async function getOrders(): Promise<OrderLite[]> {
           product: {
             include: {
               courses: {
-                include: { course: true },
+                include: {
+                  course: {
+                    include: {
+                      schemaItems: { select: { weekday: true } },
+                    },
+                  },
+                },
               },
             },
           },
           participant: true,
           courseSelections: {
-            include: { course: true },
+            include: {
+              course: {
+                include: {
+                  schemaItems: { select: { weekday: true } },
+                },
+              },
+            },
           },
         },
       },

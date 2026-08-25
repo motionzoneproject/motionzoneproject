@@ -1,4 +1,4 @@
-import type { SchemaItem, Weekday } from "@/generated/prisma/client";
+import type { Weekday } from "@/generated/prisma/client";
 
 type CourseLike = {
   name: string;
@@ -65,7 +65,7 @@ export const getWeekdayAsShort = (day: Weekday, lang: "sv" | "en" = "sv") => {
 export function getCourseName(
   course: CourseLike,
   lang: "sv" | "en" = "sv",
-  schemaItems?: SchemaItem[],
+  schemaItems?: { weekday: Weekday }[],
 ) {
   // För att kunna sortera.
   const WEEKDAY_ORDER: Weekday[] = [

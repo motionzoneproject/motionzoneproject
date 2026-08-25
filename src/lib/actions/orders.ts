@@ -150,13 +150,25 @@ export async function adminGetOrder(orderId: string): Promise<OrderDetail> {
           product: {
             include: {
               courses: {
-                include: { course: true },
+                include: {
+                  course: {
+                    include: {
+                      schemaItems: { select: { weekday: true } },
+                    },
+                  },
+                },
               },
             },
           },
           participant: true,
           courseSelections: {
-            include: { course: true },
+            include: {
+              course: {
+                include: {
+                  schemaItems: { select: { weekday: true } },
+                },
+              },
+            },
           },
         },
       },

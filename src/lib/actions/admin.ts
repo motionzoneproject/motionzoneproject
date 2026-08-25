@@ -20,6 +20,7 @@ import type {
   Studio,
   Termin,
   User,
+  Weekday,
 } from "@/generated/prisma/client";
 import {
   AddStudentToLessonForm,
@@ -38,6 +39,7 @@ import { generateBookingCancelledHtml, sendMail } from "../mail";
 import { sekToOre } from "../money";
 import prisma from "../prisma";
 import { dbToFormTime, formToDbDate } from "../time-convert";
+import { getCourseName } from "../tools";
 import { getProductStats, handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
@@ -110,14 +112,17 @@ export async function getSchemaItems(
 
 /**
  * Listing courses, with filter for course name. (Notice that its not searching for the combined name only the db field name)
+ * Sorted by the full display name (name + age/level/weekday) so same-named
+ * courses land in a predictable order instead of just the raw name field.
  * @param q term for course name.
- * @returns the found courses as Course[]
+ * @returns the found courses, including schemaItems (weekday only)
  * @auth Admin
  */
 export async function getAllCourses(
   q: string = "",
   showInactive = false,
-): Promise<Course[]> {
+  lang: "sv" | "en" = "sv",
+): Promise<(Course & { schemaItems: { weekday: Weekday }[] })[]> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return [];
 
@@ -133,9 +138,22 @@ export async function getAllCourses(
         : {}),
       ...(showInactive ? {} : { active: true }),
     },
+    include: {
+      schemaItems: { select: { weekday: true } },
+    },
     orderBy: { name: "asc" },
   });
-  return courses;
+
+  // Sortera på hela visningsnamnet (namn + ålder/nivå/veckodag) på valt språk,
+  // så att kurser med samma namn men olika ålder/dag hamnar i en begriplig
+  // ordning istället för att bara sorteras på det råa name-fältet.
+  const collationLocale = lang === "en" ? "en-GB" : "sv-SE";
+  return courses.sort((a, b) =>
+    getCourseName(a, lang, a.schemaItems).localeCompare(
+      getCourseName(b, lang, b.schemaItems),
+      collationLocale,
+    ),
+  );
 }
 
 export async function getAllStudios(): Promise<Studio[]> {

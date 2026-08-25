@@ -10,12 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 import { getCourseName } from "@/lib/tools";
+import { normalizeLang } from "@/locales/config-lang";
 
 interface SelectPackProps {
   maxCourses: number;
-  courses: Course[];
+  courses: (Course & { schemaItems?: { weekday: Weekday }[] })[];
   /** Array of chosen course IDs, e.g. ["id-1", "id-2"] */
   selected: string[];
   onChange: (selected: string[]) => void;
@@ -29,7 +30,8 @@ export function SelectPack({
   selected,
   onChange,
 }: SelectPackProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = normalizeLang(i18n.language);
 
   const slots = Array.from({ length: maxCourses }, (_, i) => selected[i] ?? "");
 
@@ -112,7 +114,7 @@ export function SelectPack({
                         className="text-sm"
                         disabled={otherSelected.includes(c.id)}
                       >
-                        {getCourseName(c)}
+                        {getCourseName(c, lang, c.schemaItems)}
                       </SelectItem>
                     ))}
                   </SelectContent>

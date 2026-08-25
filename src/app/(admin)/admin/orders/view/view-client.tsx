@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { OrderPackageEditor } from "@/app/(admin)/admin/orders/components/OrderPackageEditor";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 import {
   adminGetOrder,
   deleteOrder,
@@ -21,6 +21,8 @@ import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
 
+type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
+
 export type OrderItemLite = {
   id: string;
   price: unknown;
@@ -33,7 +35,7 @@ export type OrderItemLite = {
       | {
           courseId: string;
           courseName?: string | null;
-          course?: Course;
+          course?: CourseWithSchedule;
         }[]
       | null;
   } | null;
@@ -46,7 +48,7 @@ export type OrderItemLite = {
   } | null;
   courseSelections?:
     | {
-        course: Course;
+        course: CourseWithSchedule;
       }[]
     | null;
 };
@@ -514,7 +516,7 @@ export default function OrderDetailsClient() {
                 const sum = unit * (it.count ?? 0);
                 const packCourses = (it.product?.courses ?? [])
                   .map((c) => c.course)
-                  .filter((c): c is Course => !!c);
+                  .filter((c): c is CourseWithSchedule => !!c);
                 const selectedPack = packageSelections[it.id] ?? [];
                 return (
                   <tr key={it.id} className="hover:bg-muted/30">
