@@ -189,6 +189,8 @@ export async function updateOrder(
   orderId: string,
   payload: OrderEditPayload,
 ): Promise<{ success: boolean; msg?: string }> {
+  await requireAdmin();
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { orderItems: true },
