@@ -20,7 +20,7 @@ async function requireAdmin() {
 
 export async function updateOrderStatus(
   orderId: string,
-  toStatus: "PENDING_PAYMENT" | "APPROVED" | "CANCELLED",
+  toStatus: "AWAITING_APPROVAL" | "APPROVED" | "CANCELLED",
   note?: string,
 ) {
   const adminUserId = await requireAdmin();
@@ -182,10 +182,8 @@ export type OrderEditPayload = {
   deletes: string[];
 };
 
-// potentiell fix: I praktiken används nog bara AWAITING_APPROVAL och APPROVAL tack vare alla ändringar kring arbetssättet.
-// Vi kanske kan fixa det genom hela appen så det är enklare, exempelvis ha ett fält bara isApproved likt isPaid, så kan vi hoppa "status".
-// Lämnar det till en framtida issue.
-const EDITABLE_STATUSES = ["PENDING_PAYMENT", "AWAITING_APPROVAL", "CREATED"];
+// Endast ordrar som väntar på godkännande kan redigeras. APPROVED och CANCELLED är låsta.
+const EDITABLE_STATUSES = ["AWAITING_APPROVAL"];
 
 export async function updateOrder(
   orderId: string,

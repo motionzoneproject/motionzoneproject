@@ -230,11 +230,11 @@ export async function getUserPendingRegistrations() {
   const session = await getSessionData();
   if (!session) return [];
 
-  // Find all order items where the user is a participant and payment is still pending
+  // Find all order items where the user is a participant and the order is still awaiting approval
   return prisma.orderItem.findMany({
     where: {
       order: {
-        status: { in: ["PENDING_PAYMENT"] },
+        status: { in: ["AWAITING_APPROVAL"] },
       },
       OR: [
         { order: { userId: session.user.id } },

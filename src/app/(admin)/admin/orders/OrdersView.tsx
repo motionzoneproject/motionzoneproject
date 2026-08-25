@@ -187,8 +187,8 @@ export default function OrdersView({
       CANCELLED: 0,
     };
     for (const o of orders) {
-      const st = String(o.status || "PENDING_PAYMENT");
-      if (st === "PENDING_PAYMENT") acc.PENDING += 1;
+      const st = String(o.status || "AWAITING_APPROVAL");
+      if (st === "AWAITING_APPROVAL") acc.PENDING += 1;
       else if (st === "APPROVED") acc.APPROVED += 1;
       else if (st === "CANCELLED") acc.CANCELLED += 1;
       acc.ALL += 1;
@@ -200,7 +200,7 @@ export default function OrdersView({
     let result = orders;
 
     if (active === "PENDING") {
-      result = result.filter((o) => String(o.status) === "PENDING_PAYMENT");
+      result = result.filter((o) => String(o.status) === "AWAITING_APPROVAL");
     } else if (active !== "ALL") {
       result = result.filter((o) => String(o.status) === active);
     }
@@ -295,7 +295,7 @@ export default function OrdersView({
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case "PENDING_PAYMENT":
+      case "AWAITING_APPROVAL":
         return "bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30";
       case "APPROVED":
         return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30";
@@ -434,7 +434,7 @@ export default function OrdersView({
               </tr>
             )}
             {paginatedOrders.map((o) => {
-              const canMarkPaid = ["PENDING_PAYMENT", "APPROVED"].includes(
+              const canMarkPaid = ["AWAITING_APPROVAL", "APPROVED"].includes(
                 o.status || "",
               );
               const canEditOrder = o.status !== "APPROVED";
@@ -636,10 +636,10 @@ export default function OrdersView({
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
                           className={`px-2 py-0.5 rounded text-[9px] font-semibold tracking-wide uppercase ${getStatusStyles(
-                            o.status || "PENDING_PAYMENT",
+                            o.status || "AWAITING_APPROVAL",
                           )}`}
                         >
-                          {getOrderStatusLabel(o.status || "PENDING_PAYMENT")}
+                          {getOrderStatusLabel(o.status || "AWAITING_APPROVAL")}
                         </span>
 
                         <button
@@ -681,7 +681,7 @@ export default function OrdersView({
                   {/* Kolumn 4: Åtgärder (Korrigerad kontrast) */}
                   <td className="py-4 px-4 align-top text-right">
                     <div className="flex flex-col gap-1 items-end ml-auto max-w-[130px]">
-                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                      {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <Button
                           type="button"
                           size="sm"
@@ -725,7 +725,7 @@ export default function OrdersView({
                         />
                       </div>
 
-                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                      {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
                       )}
 

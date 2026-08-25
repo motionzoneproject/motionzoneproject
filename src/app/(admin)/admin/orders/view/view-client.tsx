@@ -317,7 +317,7 @@ export default function OrderDetailsClient() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
                 <span className="font-bold px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-xs uppercase">
-                  {getStatusLabel(order.status ?? "PENDING_PAYMENT")}
+                  {getStatusLabel(order.status ?? "AWAITING_APPROVAL")}
                 </span>
               </div>
               <div className="flex justify-between">
