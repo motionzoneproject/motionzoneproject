@@ -2,7 +2,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdminRole } from "@/lib/actions/admin";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import { getS3Resources } from "@/lib/s3";
 import type { UploadMetadata } from "@/lib/uploads";
 
@@ -39,9 +39,6 @@ const uploadMetadataSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return new Response("Unauthorized", { status: 401 });
-
   try {
     const payload = await req.json().catch(() => null);
     if (!payload) {
@@ -60,6 +57,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
     const { size, folder } = parsed.data satisfies UploadMetadata;
+
+    const sessiondata = await getSessionData();
+    const role = sessiondata?.user.role;
+    // Lärare får bara ladda upp till sin egen lärarprofilbild — allt annat
+    // (galleri, produkter, event osv.) är fortfarande admin-only.
+    const isAllowed =
+      role === "admin" || (role === "teacher" && folder === "teachers");
+    if (!isAllowed) return new Response("Unauthorized", { status: 401 });
+
     const rawContentType = parsed.data.contentType;
     const contentType =
       rawContentType === "image/jpg" ? "image/jpeg" : rawContentType;
