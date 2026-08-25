@@ -97,194 +97,198 @@ export type StudentSummary = {
   hasPendingOrder: boolean;
 };
 
+const purchaseSelect = {
+  id: true,
+  type: true,
+  remainingCount: true,
+  userId: true,
+  participantId: true,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      details: {
+        select: {
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          address: true,
+          postalCode: true,
+          city: true,
+          allowPhotoVideo: true,
+          dateOfBirth: true,
+        },
+      },
+    },
+  },
+  participant: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      userId: true,
+      allowPhotoVideo: true,
+      dateOfBirth: true,
+      addedBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  },
+  product: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  PurchaseItems: {
+    select: {
+      id: true,
+      remainingCount: true,
+      unlimited: true,
+      course: {
+        select: {
+          id: true,
+          name: true,
+          schemaItems: {
+            select: {
+              termin: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      bookings: {
+        where: {
+          cancelled: false,
+        },
+        select: {
+          id: true,
+          lessonId: true,
+          lesson: {
+            select: {
+              startTime: true,
+              endTime: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.PurchaseSelect;
+
 type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
-  select: {
-    id: true;
-    type: true;
-    remainingCount: true;
-    userId: true;
-    participantId: true;
-    user: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        details: {
-          select: {
-            firstName: true;
-            lastName: true;
-            phoneNumber: true;
-            address: true;
-            postalCode: true;
-            city: true;
-            allowPhotoVideo: true;
-            dateOfBirth: true;
-          };
-        };
-      };
-    };
-    participant: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        phone: true;
-        userId: true;
-        allowPhotoVideo: true;
-        dateOfBirth: true;
-        addedBy: {
-          select: {
-            id: true;
-            name: true;
-            email: true;
-          };
-        };
-      };
-    };
-    product: {
-      select: {
-        id: true;
-        name: true;
-      };
-    };
-    PurchaseItems: {
-      select: {
-        id: true;
-        remainingCount: true;
-        unlimited: true;
-        course: {
-          select: {
-            id: true;
-            name: true;
-            schemaItems: {
-              select: {
-                termin: {
-                  select: {
-                    id: true;
-                    name: true;
-                  };
-                };
-              };
-            };
-          };
-        };
-        bookings: {
-          where: {
-            cancelled: false;
-          };
-          select: {
-            id: true;
-            lessonId: true;
-            lesson: {
-              select: {
-                startTime: true;
-                endTime: true;
-              };
-            };
-          };
-        };
-      };
-    };
-  };
+  select: typeof purchaseSelect;
 }>;
 
+const pendingOrderItemSelect = {
+  id: true,
+  orderId: true,
+  participantId: true,
+  order: {
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      isPaid: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          details: {
+            select: {
+              firstName: true,
+              lastName: true,
+              phoneNumber: true,
+              address: true,
+              postalCode: true,
+              city: true,
+              allowPhotoVideo: true,
+              dateOfBirth: true,
+            },
+          },
+        },
+      },
+    },
+  },
+  participant: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      userId: true,
+      allowPhotoVideo: true,
+      dateOfBirth: true,
+      addedBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  },
+  product: {
+    select: {
+      id: true,
+      name: true,
+      courses: {
+        select: {
+          course: {
+            select: {
+              id: true,
+              name: true,
+              schemaItems: {
+                select: {
+                  termin: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  courseSelections: {
+    select: {
+      course: {
+        select: {
+          id: true,
+          name: true,
+          schemaItems: {
+            select: {
+              termin: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.OrderItemSelect;
+
 type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
-  select: {
-    id: true;
-    orderId: true;
-    participantId: true;
-    order: {
-      select: {
-        id: true;
-        userId: true;
-        status: true;
-        isPaid: true;
-        user: {
-          select: {
-            id: true;
-            name: true;
-            email: true;
-            details: {
-              select: {
-                firstName: true;
-                lastName: true;
-                phoneNumber: true;
-                address: true;
-                postalCode: true;
-                city: true;
-                allowPhotoVideo: true;
-                dateOfBirth: true;
-              };
-            };
-          };
-        };
-      };
-    };
-    participant: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        phone: true;
-        userId: true;
-        allowPhotoVideo: true;
-        dateOfBirth: true;
-        addedBy: {
-          select: {
-            id: true;
-            name: true;
-            email: true;
-          };
-        };
-      };
-    };
-    product: {
-      select: {
-        id: true;
-        name: true;
-        courses: {
-          select: {
-            course: {
-              select: {
-                id: true;
-                name: true;
-                schemaItems: {
-                  select: {
-                    termin: {
-                      select: {
-                        id: true;
-                        name: true;
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    courseSelections: {
-      select: {
-        course: {
-          select: {
-            id: true;
-            name: true;
-            schemaItems: {
-              select: {
-                termin: {
-                  select: {
-                    id: true;
-                    name: true;
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-  };
+  select: typeof pendingOrderItemSelect;
 }>;
 
 function buildStudentSummaries(
@@ -788,94 +792,7 @@ export default async function Page({
       ? []
       : await prisma.purchase.findMany({
           where,
-          select: {
-            id: true,
-            type: true,
-            remainingCount: true,
-            userId: true,
-            participantId: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                details: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    phoneNumber: true,
-                    address: true,
-                    postalCode: true,
-                    city: true,
-                    allowPhotoVideo: true,
-                    dateOfBirth: true,
-                  },
-                },
-              },
-            },
-            participant: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                userId: true,
-                allowPhotoVideo: true,
-                dateOfBirth: true,
-                addedBy: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-            product: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            PurchaseItems: {
-              select: {
-                id: true,
-                remainingCount: true,
-                unlimited: true,
-                course: {
-                  select: {
-                    id: true,
-                    name: true,
-                    schemaItems: {
-                      select: {
-                        termin: {
-                          select: {
-                            id: true,
-                            name: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                bookings: {
-                  where: {
-                    cancelled: false,
-                  },
-                  select: {
-                    id: true,
-                    lessonId: true,
-                    lesson: {
-                      select: {
-                        startTime: true,
-                        endTime: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          select: purchaseSelect,
         });
 
   const pendingOrderItems =
@@ -883,102 +800,7 @@ export default async function Page({
       ? []
       : await prisma.orderItem.findMany({
           where: pendingOrderItemWhere,
-          select: {
-            id: true,
-            orderId: true,
-            participantId: true,
-            order: {
-              select: {
-                id: true,
-                userId: true,
-                status: true,
-                isPaid: true,
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    details: {
-                      select: {
-                        firstName: true,
-                        lastName: true,
-                        phoneNumber: true,
-                        address: true,
-                        postalCode: true,
-                        city: true,
-                        allowPhotoVideo: true,
-                        dateOfBirth: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            participant: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                userId: true,
-                allowPhotoVideo: true,
-                dateOfBirth: true,
-                addedBy: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-            product: {
-              select: {
-                id: true,
-                name: true,
-                courses: {
-                  select: {
-                    course: {
-                      select: {
-                        id: true,
-                        name: true,
-                        schemaItems: {
-                          select: {
-                            termin: {
-                              select: {
-                                id: true,
-                                name: true,
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            courseSelections: {
-              select: {
-                course: {
-                  select: {
-                    id: true,
-                    name: true,
-                    schemaItems: {
-                      select: {
-                        termin: {
-                          select: {
-                            id: true,
-                            name: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          select: pendingOrderItemSelect,
         });
 
   const allStudents = buildStudentSummaries(

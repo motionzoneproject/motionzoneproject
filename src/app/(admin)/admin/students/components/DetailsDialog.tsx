@@ -1,6 +1,6 @@
 "use client";
 
-import { List } from "lucide-react";
+import { InfoIcon, List } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
@@ -28,6 +28,8 @@ import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 interface Props {
   id: string;
   isParticipant: boolean;
+  /** Sätt till false för att visa en varning om att eleven bara finns med via en ej beviljad order. Utelämnas av vyer utan orderkontext (t.ex. /admin/users). */
+  hasApprovedPurchase?: boolean;
 }
 
 function hasText(value: string | null | undefined) {
@@ -286,7 +288,11 @@ function StudentDetailsContent({ details }: { details: AdminStudentDetails }) {
   );
 }
 
-export function DetailsDialog({ id, isParticipant }: Props) {
+export function DetailsDialog({
+  id,
+  isParticipant,
+  hasApprovedPurchase = true,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState<AdminStudentDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -339,6 +345,12 @@ export function DetailsDialog({ id, isParticipant }: Props) {
             Här kan du se alla uppgifter som finns sparade för vald elev.
           </DialogDescription>
         </DialogHeader>
+        {!hasApprovedPurchase ? (
+          <div className="flex items-center gap-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-400">
+            <InfoIcon className="h-4 w-4 shrink-0" />
+            Eleven finns endast med via en order som ännu inte är beviljad.
+          </div>
+        ) : null}
         <div className="min-w-0 max-h-[65dvh] overflow-x-hidden overflow-y-auto pt-1 pr-1">
           {isLoading ? (
             <div className="text-muted-foreground text-sm">
