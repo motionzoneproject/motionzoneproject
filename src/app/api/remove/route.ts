@@ -40,10 +40,13 @@ export async function DELETE(req: Request) {
 
     const sessiondata = await getSessionData();
     const role = sessiondata?.user.role;
-    // Lärare får bara ta bort sina egna lärarprofilbilder — allt annat är
+    // Lärare får bara ta bort filer i sin egen teachers/{userId}/-mapp
+    // (uploads namnges med ownerId i /api/upload) — allt annat är
     // fortfarande admin-only.
     const isAllowed =
-      role === "admin" || (role === "teacher" && key.startsWith("teachers/"));
+      role === "admin" ||
+      (role === "teacher" &&
+        key.startsWith(`teachers/${sessiondata?.user.id}/`));
     if (!isAllowed) return new Response("Unauthorized", { status: 401 });
 
     const command = new DeleteObjectCommand({

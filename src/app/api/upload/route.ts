@@ -36,6 +36,7 @@ const uploadMetadataSchema = z.object({
   contentType: z.enum(ALLOWED_MIME_TYPES as [string, ...string[]]),
   size: z.number().int().positive(),
   folder: z.string().optional(), // e.g. "gallery" or "products"
+  ownerId: z.string().optional(), // teacher profile owner, required for folder "teachers"
 });
 
 export async function POST(req: Request) {
@@ -56,14 +57,18 @@ export async function POST(req: Request) {
         : "Ogiltig metadata";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
-    const { size, folder } = parsed.data satisfies UploadMetadata;
+    const { size, folder, ownerId } = parsed.data satisfies UploadMetadata;
 
     const sessiondata = await getSessionData();
     const role = sessiondata?.user.role;
-    // Lärare får bara ladda upp till sin egen lärarprofilbild — allt annat
-    // (galleri, produkter, event osv.) är fortfarande admin-only.
+    // Lärare får bara ladda upp till sin egen lärarprofilbild (ownerId måste
+    // vara deras eget id, annars kan en lärare ladda upp åt en annan lärare)
+    // — allt annat (galleri, produkter, event osv.) är fortfarande admin-only.
     const isAllowed =
-      role === "admin" || (role === "teacher" && folder === "teachers");
+      role === "admin" ||
+      (role === "teacher" &&
+        folder === "teachers" &&
+        ownerId === sessiondata?.user.id);
     if (!isAllowed) return new Response("Unauthorized", { status: 401 });
 
     const rawContentType = parsed.data.contentType;
@@ -84,7 +89,10 @@ export async function POST(req: Request) {
     }
 
     const fileExt = CONTENT_TYPE_TO_EXT[contentType];
-    const prefix = folder ?? (isVideo ? "gallery" : "products");
+    const prefix =
+      folder === "teachers" && ownerId
+        ? `teachers/${ownerId}`
+        : (folder ?? (isVideo ? "gallery" : "products"));
     const uniqueFileName = `${prefix}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
 
     const s3Resources = getS3Resources();
