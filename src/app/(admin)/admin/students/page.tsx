@@ -311,7 +311,7 @@ export default async function Page({
   const product = params.product || "";
 
   const teachers = await prisma.user.findMany({
-    where: { role: "admin" },
+    where: { role: { in: ["admin", "teacher"] } },
     orderBy: { name: "asc" },
   });
 
