@@ -294,6 +294,7 @@ type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
 function buildStudentSummaries(
   purchasesWithData: StudentPurchaseRow[],
   pendingOrderItems: StudentPendingOrderItemRow[],
+  approvedStudentKeys?: Set<string>,
 ): StudentSummary[] {
   const studentMap = new Map<
     string,
@@ -432,7 +433,7 @@ function buildStudentSummaries(
       bookings: [],
       purchases: [],
       pendingOrderItems: [],
-      hasApprovedPurchase: false,
+      hasApprovedPurchase: approvedStudentKeys?.has(studentKey) ?? false,
       hasPendingOrder: true,
       courseMap: new Map<string, { id: string; name: string }>(),
       terminMap: new Map<string, { id: string; name: string }>(),
@@ -803,9 +804,46 @@ export default async function Page({
           select: pendingOrderItemSelect,
         });
 
+  // Under "unapproved" filtret hoppas hela purchase-queryn över (perf), men
+  // vi behöver ändå veta vilka av de synade eleverna redan har ett beviljat
+  // köp någon annanstans, annars visas "Ej beviljad än" felaktigt för en
+  // befintlig elev som bara lagt till en ny obeviljad order.
+  let approvedStudentKeys: Set<string> | undefined;
+  if (approval === "unapproved" && pendingOrderItems.length > 0) {
+    const participantIds = [
+      ...new Set(
+        pendingOrderItems
+          .map((item) => item.participantId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const userIds = [
+      ...new Set(pendingOrderItems.map((item) => item.order.userId)),
+    ];
+
+    const approvedPurchases = await prisma.purchase.findMany({
+      where: {
+        OR: [
+          ...(participantIds.length > 0
+            ? [{ participantId: { in: participantIds } }]
+            : []),
+          { userId: { in: userIds }, participantId: null },
+        ],
+      },
+      select: { userId: true, participantId: true },
+    });
+
+    approvedStudentKeys = new Set(
+      approvedPurchases.map((p) =>
+        p.participantId ? `participant:${p.participantId}` : `user:${p.userId}`,
+      ),
+    );
+  }
+
   const allStudents = buildStudentSummaries(
     purchasesWithData,
     pendingOrderItems,
+    approvedStudentKeys,
   );
 
   const ITEMS_PER_PAGE = 10;
