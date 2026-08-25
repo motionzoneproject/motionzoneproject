@@ -35,14 +35,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { removeUserFromLesson } from "@/lib/actions/admin";
-import { adminUpdatePurchaseRemainingCount } from "@/lib/actions/admin-students";
-
 import {
   calculateAge,
   formatDateToInputStr,
   formatFriendlyDateTime,
 } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import { ProductEditorDialog } from "../../components/ProductEditorDialog";
 import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
@@ -241,201 +240,6 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
               </Button>
             </div>
           ))
-        )}
-      </div>
-    </CountDialogButton>
-  );
-}
-
-function ProductsDialog({ student }: { student: StudentSummary }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [isOpen, setIsOpen] = useState(false);
-  const [values, setValues] = useState<Record<string, string>>({});
-
-  const getClipUsedCount = (purchase: StudentSummary["purchases"][number]) =>
-    purchase.purchaseItems.reduce((sum, item) => sum + item.bookingsCount, 0);
-
-  const getClipTotalCount = (purchase: StudentSummary["purchases"][number]) =>
-    getClipUsedCount(purchase) + (purchase.remainingCount ?? 0);
-
-  const getItemTotalCount = (
-    item: StudentSummary["purchases"][number]["purchaseItems"][number],
-  ) => item.bookingsCount + item.remainingCount;
-
-  const saveTotal = (input: {
-    purchaseId: string;
-    purchaseItemId?: string;
-    key: string;
-    minValue: number;
-  }) => {
-    const raw = values[input.key];
-    const nextTotalCount = Number(raw);
-
-    if (!Number.isInteger(nextTotalCount) || nextTotalCount < input.minValue) {
-      toast.error(
-        `Ange ett heltal som är minst ${input.minValue}. Det som redan använts kan inte underskridas.`,
-      );
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await adminUpdatePurchaseRemainingCount({
-        purchaseId: input.purchaseId,
-        purchaseItemId: input.purchaseItemId,
-        nextTotalCount,
-      });
-
-      if (!result.success) {
-        toast.error("Kunde inte uppdatera saldo", {
-          description: result.error,
-        });
-        return;
-      }
-
-      toast.success(result.message);
-      setIsOpen(false);
-      router.refresh();
-    });
-  };
-
-  return (
-    <CountDialogButton
-      count={student.purchases.length}
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      title={`Köpta produkter för ${student.name}`}
-      description="Du kan ändra totalt antal klipp eller tillfällen, aldrig under det som redan använts."
-    >
-      <div className="space-y-4">
-        {student.purchases.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            Inga produkter hittades.
-          </div>
-        ) : (
-          student.purchases.map((purchase) => {
-            const clipUsedCount = getClipUsedCount(purchase);
-            const clipTotalCount = getClipTotalCount(purchase);
-
-            return (
-              <div key={purchase.id} className="rounded border p-4">
-                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="font-medium">{purchase.product.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Typ: {purchase.type}
-                    </div>
-                    {purchase.type === "CLIP" ? (
-                      <div className="text-sm text-muted-foreground">
-                        Använda klipp: {clipUsedCount} • Kvar:{" "}
-                        {purchase.remainingCount ?? 0}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {purchase.type === "CLIP" ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={clipUsedCount}
-                        className="h-9 w-24 rounded-md border px-3 text-sm"
-                        value={
-                          values[`purchase:${purchase.id}`] ??
-                          String(clipTotalCount)
-                        }
-                        onChange={(event) =>
-                          setValues((current) => ({
-                            ...current,
-                            [`purchase:${purchase.id}`]: event.target.value,
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={isPending}
-                        onClick={() =>
-                          saveTotal({
-                            purchaseId: purchase.id,
-                            key: `purchase:${purchase.id}`,
-                            minValue: clipUsedCount,
-                          })
-                        }
-                      >
-                        Spara
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="space-y-2">
-                  {purchase.purchaseItems.map((item) => {
-                    const itemTotalCount = getItemTotalCount(item);
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex flex-col gap-3 rounded border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="space-y-1 text-sm">
-                          <div className="font-medium">{item.courseName}</div>
-                          <div className="text-muted-foreground">
-                            Bokningar: {item.bookingsCount}
-                          </div>
-                          {item.unlimited ? (
-                            <div className="text-muted-foreground">
-                              Obegränsad tillgång
-                            </div>
-                          ) : (
-                            <div className="text-muted-foreground">
-                              Använda: {item.bookingsCount} • Kvar:{" "}
-                              {item.remainingCount}
-                            </div>
-                          )}
-                        </div>
-
-                        {purchase.type !== "CLIP" ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={item.bookingsCount}
-                              disabled={item.unlimited}
-                              className="h-9 w-24 rounded-md border px-3 text-sm disabled:opacity-50"
-                              value={
-                                values[`item:${item.id}`] ??
-                                String(itemTotalCount)
-                              }
-                              onChange={(event) =>
-                                setValues((current) => ({
-                                  ...current,
-                                  [`item:${item.id}`]: event.target.value,
-                                }))
-                              }
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={isPending || item.unlimited}
-                              onClick={() =>
-                                saveTotal({
-                                  purchaseId: purchase.id,
-                                  purchaseItemId: item.id,
-                                  key: `item:${item.id}`,
-                                  minValue: item.bookingsCount,
-                                })
-                              }
-                            >
-                              Spara
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })
         )}
       </div>
     </CountDialogButton>
@@ -687,7 +491,12 @@ export default function StudentTableClient({
                   <BookingsDialog student={student} />
                 </TableCell>
                 <TableCell>
-                  <ProductsDialog student={student} />
+                  <ProductEditorDialog
+                    scope="student"
+                    userId={student.userId}
+                    participantId={student.participantId}
+                    triggerLabel={`(${student.purchases.length}st)`}
+                  />
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

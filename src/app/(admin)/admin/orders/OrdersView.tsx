@@ -36,6 +36,7 @@ import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
+import { ProductEditorDialog } from "../components/ProductEditorDialog";
 import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
 import {
@@ -727,6 +728,12 @@ export default function OrdersView({
 
                       {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
+                      )}
+
+                      {o.status === "APPROVED" && (
+                        <div className="w-full">
+                          <ProductEditorDialog scope="order" orderId={o.id} />
+                        </div>
                       )}
 
                       <div className="w-full">
