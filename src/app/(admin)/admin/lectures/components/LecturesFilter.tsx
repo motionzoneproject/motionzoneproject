@@ -31,6 +31,8 @@ interface Props {
   terminer: Termin[];
   courses: Course[];
   schemaItems: SchemaItem[];
+  /** Döljer lärarfiltret — lärare scopas alltid till sig själva server-side. */
+  hideTeacherFilter?: boolean;
 }
 
 export function LecturesFilter({
@@ -38,6 +40,7 @@ export function LecturesFilter({
   courses,
   schemaItems,
   terminer,
+  hideTeacherFilter = false,
 }: Props) {
   const searchParams = useSearchParams();
 
@@ -135,38 +138,40 @@ export function LecturesFilter({
 
   return (
     <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div>
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Lärare
-        </Label>
-        <Select
-          value={
-            params.get("teacher")
-              ? validParam("teacher", params.get("teacher"))
-              : "all"
-          }
-          onValueChange={(value) =>
-            setFilter("teacher", value === "all" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj lärare" />
-          </SelectTrigger>
+      {!hideTeacherFilter && (
+        <div>
+          <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Lärare
+          </Label>
+          <Select
+            value={
+              params.get("teacher")
+                ? validParam("teacher", params.get("teacher"))
+                : "all"
+            }
+            onValueChange={(value) =>
+              setFilter("teacher", value === "all" ? "" : value)
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Välj lärare" />
+            </SelectTrigger>
 
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Välj lärare</SelectLabel>
-              <SelectItem value={"all"}>Alla</SelectItem>
-              <SelectSeparator></SelectSeparator>
-              {teachers.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Välj lärare</SelectLabel>
+                <SelectItem value={"all"}>Alla</SelectItem>
+                <SelectSeparator></SelectSeparator>
+                {teachers.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div>
         <Label className="mb-1 block text-xs font-medium text-muted-foreground">
           Termin
@@ -292,17 +297,23 @@ export function LecturesFilter({
         />
       </div>
 
-      <div className="md:flex justify-end items-end">
-        <Label className="mb-1 block text-xs font-medium text-muted-foreground flex justify-end items-center">
+      <div>
+        <div className="mb-1 text-xs font-medium text-muted-foreground">
+          Visning
+        </div>
+        <label
+          htmlFor="hideold-filter"
+          className="flex h-9 items-center gap-2 rounded-md border border-input px-3 text-sm"
+        >
           <Checkbox
-            className="h-8 w-8"
+            id="hideold-filter"
             checked={params.get("hideold") === "true"}
             onCheckedChange={(checked) => {
               setFilter("hideold", checked === true ? "true" : "");
             }}
-          />{" "}
+          />
           Dölj gamla
-        </Label>
+        </label>
       </div>
     </div>
   );
