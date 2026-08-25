@@ -63,6 +63,53 @@ export async function requireAdmin(): Promise<void> {
 }
 
 /**
+ * Check if session user is a teacher (the restricted role that can only
+ * manage their own lessons and teacher profile).
+ */
+export async function isTeacherRole(): Promise<boolean> {
+  const sessiondata = await getSessionData();
+
+  return sessiondata?.user.role === "teacher";
+}
+
+/**
+ * Check if session user is admin OR teacher — the shared gate for
+ * /admin and /admin/lectures, which both roles may access.
+ */
+export async function isAdminOrTeacherRole(): Promise<boolean> {
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+
+  return role === "admin" || role === "teacher";
+}
+
+/**
+ * Page-level guard for routes teachers may also access
+ * (currently: /admin and /admin/lectures).
+ */
+export async function requireAdminOrTeacher(): Promise<void> {
+  if (!(await isAdminOrTeacherRole())) notFound();
+}
+
+/**
+ * Verifies the current session may act on a lesson owned by `teacherId`:
+ * admins can act on any lesson, teachers only on their own.
+ */
+async function requireAdminOrLessonOwner(
+  teacherId: string,
+): Promise<{ authorized: boolean; msg?: string }> {
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+
+  if (role === "admin") return { authorized: true };
+  if (role === "teacher" && sessiondata?.user.id === teacherId) {
+    return { authorized: true };
+  }
+
+  return { authorized: false, msg: "Ingen behörighet för denna lektion." };
+}
+
+/**
  * Get a list of all "terminer" in db.
  * @returns Promise of Terminer as a list of Termin[].
  * @auth Admin
@@ -323,7 +370,12 @@ export async function addNewCourse(
       where: { id: validated.teacherid },
     });
 
-    if (!(checkTeacherId && checkTeacherId.role === "admin"))
+    if (
+      !(
+        checkTeacherId &&
+        (checkTeacherId.role === "admin" || checkTeacherId.role === "teacher")
+      )
+    )
       throw new Error(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
@@ -382,7 +434,12 @@ export async function editCourse(
       where: { id: validated.teacherid },
     });
 
-    if (!(checkTeacherId && checkTeacherId.role === "admin"))
+    if (
+      !(
+        checkTeacherId &&
+        (checkTeacherId.role === "admin" || checkTeacherId.role === "teacher")
+      )
+    )
       throw new Error(
         `A teacher with id ${validated.teacherid} was not found.`,
       );
@@ -504,13 +561,13 @@ async function sendCancelledMail(
 /**
  * Edit a lessonItem and handle clips.
  * @returns Success (boolean) and a message.
- * @auth Admin
+ * @auth Admin or the lesson's own teacher.
  */
 export async function editLessonItem(
   formData: z.output<typeof adminLessonFormSchema>,
 ): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
+  const allowed = await isAdminOrTeacherRole();
+  if (!allowed) return { success: false, msg: "No permission." };
 
   try {
     const validated = await adminLessonFormSchema.parseAsync(formData);
@@ -521,6 +578,11 @@ export async function editLessonItem(
     });
 
     if (!currentLesson) return { success: false, msg: "Lesson not found." };
+
+    const ownership = await requireAdminOrLessonOwner(currentLesson.teacherId);
+    if (!ownership.authorized) {
+      return { success: false, msg: ownership.msg ?? "Ingen behörighet." };
+    }
 
     let mailStudents: MailStudentRecipient[] = [];
 
@@ -613,16 +675,35 @@ export async function editLessonItem(
 /**
  * Bulk update lessons to cancelled state in a date range and selected courses.
  * Restores clips and removes existing bookings for newly cancelled lessons.
- * @auth Admin
+ * @auth Admin or a teacher (only for their own courses).
  */
 export async function bulkCancelLessons(
   formData: z.output<typeof adminBulkCancelLessonsSchema>,
 ): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  const isAdmin = role === "admin";
+  if (role !== "admin" && role !== "teacher") {
+    return { success: false, msg: "No permission." };
+  }
 
   try {
     const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
+
+    if (!isAdmin) {
+      const foreignCourseCount = await prisma.course.count({
+        where: {
+          id: { in: validated.courseIds },
+          teacherId: { not: sessiondata?.user.id },
+        },
+      });
+      if (foreignCourseCount > 0) {
+        return {
+          success: false,
+          msg: "Du kan bara ställa in lektioner för dina egna kurser.",
+        };
+      }
+    }
 
     const timeZone = "Europe/Stockholm";
     const from = new Date(
@@ -1128,13 +1209,22 @@ export type UserPurchasesForCourse = {
  * Gets all users that have purchased products containing a specific course.
  * @param courseId The course to filter by.
  * @returns Array of users with their purchases for that course.
- * @auth Admin
+ * @auth Admin, or the course's own teacher.
  */
 export async function getUsersWithPurchasedProductsWithCourseInIt(
   courseId: string,
 ): Promise<StudentWithPurchaseItemsWithCourse[]> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return [];
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  if (role !== "admin" && role !== "teacher") return [];
+
+  if (role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { teacherId: true },
+    });
+    if (course?.teacherId !== sessiondata?.user.id) return [];
+  }
 
   try {
     const users = await prisma.user.findMany({
@@ -1262,11 +1352,23 @@ export type BookingWithUserAndParticipant = Booking & {
   } & PurchaseItem;
 };
 
+/**
+ * @auth Admin, or the lesson's own teacher.
+ */
 export async function getBookings(
   lessonId: string,
 ): Promise<BookingWithUserAndParticipant[]> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return [];
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  if (role !== "admin" && role !== "teacher") return [];
+
+  if (role === "teacher") {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { teacherId: true },
+    });
+    if (lesson?.teacherId !== sessiondata?.user.id) return [];
+  }
 
   try {
     const bookings = await prisma.booking.findMany({
@@ -1295,11 +1397,13 @@ export async function addUserInLesson(
 ): Promise<{ success: boolean; msg: string }> {
   const validated = await AddStudentToLessonForm.parseAsync(formData);
   const session = await auth.api.getSession({ headers: await headers() });
-  const isAdmin = await isAdminRole();
+  const role = session?.user.role;
+  const isAdmin = role === "admin";
+  const isTeacher = role === "teacher";
 
   if (!session) return { success: false, msg: "Ingen session." };
-  if (session.user.id !== validated.userId) {
-    if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+  if (session.user.id !== validated.userId && !isAdmin && !isTeacher) {
+    return { success: false, msg: "Ingen behörighet." };
   }
 
   try {
@@ -1350,6 +1454,10 @@ export async function addUserInLesson(
       };
     }
 
+    if (isTeacher && lesson.teacherId !== session.user.id) {
+      return { success: false, msg: "Ingen behörighet för denna lektion." };
+    }
+
     if (!pitem.purchase)
       return { success: false, msg: "Ingen purchase hittades." };
 
@@ -1367,7 +1475,7 @@ export async function addUserInLesson(
     const timeZone = "Europe/Stockholm";
     const now = new TZDate(new Date(), timeZone);
 
-    if (!isAdmin && lesson.startTime.getTime() < now.getTime()) {
+    if (!isAdmin && !isTeacher && lesson.startTime.getTime() < now.getTime()) {
       return {
         success: false,
         msg: "Lektionen har redan varit, ednast lärare kan lägga in bakåt i tiden.",
@@ -1403,20 +1511,31 @@ export async function addUserInLesson(
 }
 
 /**
- * Admin function to remove a user from a lesson and restore their clips.
+ * Remove a user from a lesson and restore their clips.
  * @param purchaseItemId The purchaseItem to remove.
  * @param lessonId The lesson to remove from.
  * @returns Success status and message.
- * @auth Admin
+ * @auth Admin or the lesson's own teacher.
  */
 export async function removeUserFromLesson(
   purchaseItemId: string,
   lessonId: string,
 ): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "Ingen behörighet." };
+  const allowed = await isAdminOrTeacherRole();
+  if (!allowed) return { success: false, msg: "Ingen behörighet." };
 
   try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { teacherId: true },
+    });
+    if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
+
+    const ownership = await requireAdminOrLessonOwner(lesson.teacherId);
+    if (!ownership.authorized) {
+      return { success: false, msg: ownership.msg ?? "Ingen behörighet." };
+    }
+
     // 1. Hitta bokningen
     const booking = await prisma.booking.findFirst({
       where: {
