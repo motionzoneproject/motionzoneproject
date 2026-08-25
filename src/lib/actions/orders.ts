@@ -623,13 +623,9 @@ export async function updateOrderItemCourseSelections(
         skipDuplicates: true,
       });
 
-      /*
-       * Autoboka för de nya kursraderna.
-       */
+      // Autoboka nya rader :)
       for (const pi of newPI) {
-        console.log(`Autobooking for pi ${pi.id}`);
-        const ab = await autobook(pi.id, tx);
-        console.log(JSON.stringify(ab));
+        const _ab = await autobook(pi.id, tx);
       }
 
       revalidatePath("/admin/orders");
