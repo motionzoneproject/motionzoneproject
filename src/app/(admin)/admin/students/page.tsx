@@ -134,11 +134,10 @@ type StudentPurchaseRow = Prisma.PurchaseGetPayload<{
     PurchaseItems: {
       select: {
         id: true;
-        courseId: true; // <-- LÄGG TILL
+        courseId: true;
         remainingCount: true;
         unlimited: true;
         orderItem: {
-          // <-- LÄGG TILL
           select: {
             courseSelections: {
               select: {

@@ -40,7 +40,7 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
-        id?: string;
+        id: string;
         order: { id: string };
         product: {
           id: string;

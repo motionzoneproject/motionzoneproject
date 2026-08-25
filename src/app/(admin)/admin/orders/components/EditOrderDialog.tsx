@@ -40,7 +40,7 @@ type OrderForEdit = {
   customerLabel: string;
   orderItems?:
     | {
-        id?: string;
+        id: string;
         product: { id: string; name: string; price: number };
         participant?: { id: string; name: string } | null;
       }[]
@@ -102,7 +102,6 @@ function ParticipantPicker({
 
   // Get typed name for duplicate detection
   const typedName = value.customData?.name || "";
-  const _normalized = normalizeName(typedName);
 
   // Check for duplicates
   const dupWarning = getDuplicateWarning(
@@ -313,20 +312,19 @@ export function EditOrderDialog({
   const [addProductId, setAddProductId] = useState("");
   const [addQty, setAddQty] = useState(1);
 
+  // orderitems.id är inte längre optional, så nu ska det gå bra utan .filter.
   const seed = async () => {
     setRows(
-      (order.orderItems ?? [])
-        .filter((oi): oi is typeof oi & { id: string } => !!oi.id)
-        .map((oi) => ({
-          id: oi.id,
-          kind: "existing" as const,
-          orderItemId: oi.id,
-          productId: oi.product.id,
-          participant: oi.participant
-            ? { isSelf: false, participantId: oi.participant.id }
-            : { isSelf: true },
-          deleted: false,
-        })),
+      (order.orderItems ?? []).map((oi) => ({
+        id: oi.id,
+        kind: "existing" as const,
+        orderItemId: oi.id,
+        productId: oi.product.id,
+        participant: oi.participant
+          ? { isSelf: false, participantId: oi.participant.id }
+          : { isSelf: true },
+        deleted: false,
+      })),
     );
 
     setLoadingParticipants(true);

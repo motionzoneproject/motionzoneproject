@@ -59,7 +59,7 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
-        id?: string;
+        id: string;
         order: { id: string };
         product: {
           id: string;
@@ -528,7 +528,7 @@ export default function OrdersView({
 
                         return (
                           <div
-                            key={oi.id || `${o.id}-item`}
+                            key={oi.id}
                             className="space-y-1 text-xs border-b border-border/40 last:border-0 pb-2 last:pb-0"
                           >
                             <div className="font-semibold text-foreground">
@@ -572,7 +572,7 @@ export default function OrdersView({
                                   <div className="pt-1">
                                     <OrderPackageDialog
                                       orderId={oi.order.id}
-                                      orderItemId={oi.id ?? ""}
+                                      orderItemId={oi.id}
                                       productName={
                                         oi.product?.name ?? "Produkt"
                                       }

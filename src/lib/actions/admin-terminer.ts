@@ -259,7 +259,7 @@ export async function editCourseInSchema(
     // Skapa en JavaScript-date för "just nu" i UTC/lokal tid för att skydda historiken (med TZDate såklart)
     const timeZone = "Europe/Stockholm";
 
-    const now = new Date(new TZDate(new Date(), timeZone).getTime());
+    const now = new TZDate(new Date(), timeZone);
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. ÅTERBETALA KLIPP: Hämta ENBART bokningar på FRAMTIDA lektioner som ska tas bort
@@ -429,7 +429,7 @@ export async function editTermin(
 
     const timeZone = "Europe/Stockholm";
 
-    const now = new Date(new TZDate(new Date(), timeZone).getTime());
+    const now = new TZDate(new Date(), timeZone);
 
     const result = await prisma.$transaction(async (tx) => {
       const { startDate, endDate, ...rest } = validated;
@@ -545,7 +545,7 @@ export async function checkTerminDateChange(
   try {
     const timeZone = "Europe/Stockholm";
 
-    const now = new Date(new TZDate(new Date(), timeZone).getTime());
+    const now = new TZDate(new Date(), timeZone);
     const targetStart = formToDbDate(newStartStr);
     // Inklusivt slutdatum: lektioner på sista dagen ligger inom perioden.
     const targetEndInclusive = endOfStockholmDay(formToDbDate(newEndStr));

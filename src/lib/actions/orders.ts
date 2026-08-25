@@ -182,9 +182,10 @@ export type OrderEditPayload = {
   deletes: string[];
 };
 
-// Statusar där ordern fortfarande får redigeras av admin.
-// Justera listan om PAID/CANCELLED också ska tillåtas eller blockeras.
-const EDITABLE_STATUSES = ["PENDING_PAYMENT", "AWAITING_APPROVAL"];
+// potentiell fix: I praktiken används nog bara AWAITING_APPROVAL och APPROVAL tack vare alla ändringar kring arbetssättet.
+// Vi kanske kan fixa det genom hela appen så det är enklare, exempelvis ha ett fält bara isApproved likt isPaid, så kan vi hoppa "status".
+// Lämnar det till en framtida issue.
+const EDITABLE_STATUSES = ["PENDING_PAYMENT", "AWAITING_APPROVAL", "CREATED"];
 
 export async function updateOrder(
   orderId: string,
@@ -232,6 +233,7 @@ export async function updateOrder(
       ...payload.creates.map((c) => c.productId),
     ]),
   ];
+
   const products = productIds.length
     ? await prisma.product.findMany({ where: { id: { in: productIds } } })
     : [];
@@ -320,7 +322,7 @@ export async function updateOrderItemCourseSelections(
   const normalizedOrderItemId = orderItemId.trim();
 
   const timeZone = "Europe/Stockholm";
-  const now = new Date(new TZDate(new Date(), timeZone).getTime());
+  const now = new TZDate(new Date(), timeZone);
 
   if (!normalizedOrderId) {
     return {
