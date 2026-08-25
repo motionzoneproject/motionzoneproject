@@ -139,10 +139,16 @@ export default function ToggleTerminActiveBtn({
               className="mt-0.5"
             />
             <span>
-              Återaktivera även {impact.courses.length} kurs
-              {impact.courses.length === 1 ? "" : "er"} och{" "}
-              {impact.products.length} produkt
-              {impact.products.length === 1 ? "" : "er"} som hör till terminen.
+              Återaktivera även{" "}
+              {[
+                impact.courses.length > 0 &&
+                  `${impact.courses.length} kurs${impact.courses.length === 1 ? "" : "er"}`,
+                impact.products.length > 0 &&
+                  `${impact.products.length} produkt${impact.products.length === 1 ? "" : "er"}`,
+              ]
+                .filter(Boolean)
+                .join(" och ")}{" "}
+              som hör till terminen.
             </span>
           </label>
         )}
