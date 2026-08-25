@@ -79,7 +79,11 @@ export default async function CourseItem({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end items-center gap-2">
-          <ToggleCourseActiveBtn courseId={course.id} active={course.active} />
+          <ToggleCourseActiveBtn
+            courseId={course.id}
+            courseName={getCourseName(course, lang)}
+            active={course.active}
+          />
           <EditCourseForm teachers={teachers} styles={styles} course={course} />
           <DeleteCourseBtn courseId={course.id} />
         </div>
