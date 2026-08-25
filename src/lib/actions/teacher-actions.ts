@@ -33,23 +33,33 @@ export async function getTeachers(): Promise<TeacherWithProfile[]> {
 
 export async function getTeacherUsers(): Promise<TeacherWithProfile[]> {
   return prisma.user.findMany({
-    where: { role: "admin" },
+    where: { role: { in: ["admin", "teacher"] } },
     include: { teacherProfile: true },
   });
 }
 
 /**
  * Create a new teacher profile.
- * @auth Admin
+ * @auth Admin, or a teacher creating their own (first-time) profile.
  */
 export async function createTeacher(
   formData: z.infer<typeof adminTeacherSchema>,
 ) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  const isAdmin = role === "admin";
+  const isTeacher = role === "teacher";
+  if (!isAdmin && !isTeacher) {
+    return { success: false, msg: "No permission." };
+  }
 
   try {
     const validated = await adminTeacherSchema.parseAsync(formData);
+
+    // En lärare får bara skapa sin egen profil, aldrig åt någon annan.
+    if (isTeacher && validated.userId !== sessiondata?.user.id) {
+      return { success: false, msg: "No permission." };
+    }
 
     await prisma.teacherProfile.create({
       data: {
@@ -78,17 +88,36 @@ export async function createTeacher(
 
 /**
  * Update a teacher profile.
- * @auth Admin
+ * @auth Admin, or the teacher who owns this profile.
  */
 export async function updateTeacher(
   id: string,
   formData: z.infer<typeof adminTeacherSchema>,
 ) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  const isAdmin = role === "admin";
+  const isTeacher = role === "teacher";
+  if (!isAdmin && !isTeacher) {
+    return { success: false, msg: "No permission." };
+  }
 
   try {
     const validated = await adminTeacherSchema.parseAsync(formData);
+
+    if (isTeacher) {
+      const existing = await prisma.teacherProfile.findUnique({
+        where: { id },
+        select: { userId: true },
+      });
+      if (!existing || existing.userId !== sessiondata?.user.id) {
+        return { success: false, msg: "Ingen behörighet för denna profil." };
+      }
+      // En lärare kan inte flytta sin profil till en annan användare.
+      if (validated.userId !== sessiondata?.user.id) {
+        return { success: false, msg: "No permission." };
+      }
+    }
 
     await prisma.teacherProfile.update({
       where: { id },
