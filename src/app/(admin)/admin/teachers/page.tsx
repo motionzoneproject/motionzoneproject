@@ -1,4 +1,5 @@
-import { requireAdmin } from "@/lib/actions/admin";
+import { requireAdminOrTeacher } from "@/lib/actions/admin";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import { getTeachers, getTeacherUsers } from "@/lib/actions/teacher-actions";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
 import { TeacherList } from "./teacher-list";
@@ -10,15 +11,26 @@ interface Props {
 }
 
 export default async function Page({ searchParams }: Props) {
-  await requireAdmin();
+  await requireAdminOrTeacher();
 
   const sp = await searchParams;
   const lang = sp.lang === "en" ? "en" : "sv";
 
-  const [teachers, teacherUsers] = await Promise.all([
+  const sessionData = await getSessionData();
+  const isTeacher = sessionData?.user.role === "teacher";
+
+  const [allTeachers, allTeacherUsers] = await Promise.all([
     getTeachers(),
     getTeacherUsers(),
   ]);
+
+  // Lärare får bara se/hantera sin egen profil här, inte hela rosterna.
+  const teachers = isTeacher
+    ? allTeachers.filter((t) => t.id === sessionData?.user.id)
+    : allTeachers;
+  const teacherUsers = isTeacher
+    ? allTeacherUsers.filter((u) => u.id === sessionData?.user.id)
+    : allTeacherUsers;
 
   return (
     <div className="p-4 space-y-4">
@@ -38,6 +50,8 @@ export default async function Page({ searchParams }: Props) {
         lang={lang}
         teachersWithProfile={teachers}
         teacherUsers={teacherUsers}
+        canDelete={!isTeacher}
+        canCreate={!isTeacher || teachers.length === 0}
       />
     </div>
   );
