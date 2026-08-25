@@ -401,9 +401,10 @@ export default async function Page() {
               {userDetails && <EditDetailsForm details={userDetails} />}
               <EditPwForm />
               <EditEmailForm />
-              {user?.role === "admin" && userWithTeacherProfile && (
-                <TeacherProfileDialog user={userWithTeacherProfile} />
-              )}
+              {(user?.role === "admin" || user?.role === "teacher") &&
+                userWithTeacherProfile && (
+                  <TeacherProfileDialog user={userWithTeacherProfile} />
+                )}
             </div>
           </CardContent>
         </Card>
