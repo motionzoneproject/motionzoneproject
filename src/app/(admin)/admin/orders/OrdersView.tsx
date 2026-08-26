@@ -709,22 +709,23 @@ export default function OrdersView({
                         </form>
                       )}
 
-                      <div className="w-full">
-                        <EditOrderDialog
-                          order={{
-                            id: o.id,
-                            userId: o.userId,
-                            customerLabel,
-                            orderItems: o.orderItems,
-                          }}
-                          userName={customerLabel}
-                          products={products}
-                          onSave={onUpdateOrder}
-                          getParticipantsForUser={getParticipantsForUser}
-                          createParticipant={createParticipant}
-                          disabled={!canEditOrder}
-                        />
-                      </div>
+                      {canEditOrder && (
+                        <div className="w-full">
+                          <EditOrderDialog
+                            order={{
+                              id: o.id,
+                              userId: o.userId,
+                              customerLabel,
+                              orderItems: o.orderItems,
+                            }}
+                            userName={customerLabel}
+                            products={products}
+                            onSave={onUpdateOrder}
+                            getParticipantsForUser={getParticipantsForUser}
+                            createParticipant={createParticipant}
+                          />
+                        </div>
+                      )}
 
                       {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
