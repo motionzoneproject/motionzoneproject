@@ -103,6 +103,11 @@ export default function StudentsFilter({
     sanitize("course");
     sanitize("product");
 
+    const approval = next.get("approval");
+    if (approval && approval !== "approved" && approval !== "unapproved") {
+      next.delete("approval");
+    }
+
     if (next.toString() !== searchParams.toString()) {
       replace(`${pathname}?${next.toString()}`);
     }
@@ -242,6 +247,31 @@ export default function StudentsFilter({
                   {p.name}
                 </SelectItem>
               ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Status
+        </Label>
+        <Select
+          value={params.get("approval") ?? "all"}
+          onValueChange={(value) =>
+            setFilter("approval", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Visa" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Visa</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              <SelectItem value="approved">Beviljade</SelectItem>
+              <SelectItem value="unapproved">Obeviljade</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
