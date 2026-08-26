@@ -301,7 +301,7 @@ function ProductsDialog({ student }: { student: StudentSummary }) {
 
   return (
     <CountDialogButton
-      count={student.purchases.length}
+      count={student.purchases.length + student.pendingOrderItems.length}
       open={isOpen}
       onOpenChange={setIsOpen}
       title={`Köpta produkter för ${student.name}`}
@@ -653,7 +653,19 @@ export default function StudentTableClient({
                     aria-label={`Välj ${student.name}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{student.name}</span>
+                    {!student.hasApprovedPurchase && student.hasPendingOrder ? (
+                      <Badge
+                        variant="outline"
+                        className="border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
+                      >
+                        Ej beviljad än
+                      </Badge>
+                    ) : null}
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium">
                   {student.dateOfBirth ? (
                     <span title={formatDateToInputStr(student.dateOfBirth)}>
@@ -674,6 +686,7 @@ export default function StudentTableClient({
                   <DetailsDialog
                     id={student.participantId ?? student.userId}
                     isParticipant={!!student.participantId}
+                    hasApprovedPurchase={student.hasApprovedPurchase}
                   />
                 </TableCell>
                 <TableCell>{student.customerName ?? "-"}</TableCell>
