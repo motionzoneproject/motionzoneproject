@@ -149,8 +149,18 @@ const purchaseSelect = {
   PurchaseItems: {
     select: {
       id: true,
+      courseId: true,
       remainingCount: true,
       unlimited: true,
+      orderItem: {
+        select: {
+          courseSelections: {
+            select: {
+              courseId: true,
+            },
+          },
+        },
+      },
       course: {
         select: {
           id: true,
@@ -352,7 +362,15 @@ function buildStudentSummaries(
     existing.hasApprovedPurchase = true;
 
     const purchaseItems: StudentPurchaseItemSummary[] =
-      purchase.PurchaseItems.map((item) => {
+      purchase.PurchaseItems.filter((item) => {
+        const selections = item.orderItem?.courseSelections ?? [];
+        // Om det finns explicit valda kurser (paketval), visa bara de som matchar item.courseId
+        if (selections.length > 0) {
+          return selections.some((sel) => sel.courseId === item.courseId);
+        }
+        // Annars är det en vanlig produkt/kurs där alla PurchaseItems gäller
+        return true;
+      }).map((item) => {
         existing.courseMap.set(item.course.id, {
           id: item.course.id,
           name: item.course.name,
@@ -552,7 +570,27 @@ export default async function Page({
   if (course) {
     purchaseFilters.push({
       PurchaseItems: {
-        some: { courseId: course },
+        some: {
+          courseId: course,
+          OR: [
+            //Antingen finns det ett aktivt val i orderItem
+            {
+              orderItem: {
+                courseSelections: {
+                  some: { courseId: course },
+                },
+              },
+            },
+            // Eller så har produkten inga val överhuvudtaget (vanligt kursköp)
+            {
+              orderItem: {
+                courseSelections: {
+                  none: {},
+                },
+              },
+            },
+          ],
+        },
       },
     });
     pendingOrderItemFilters.push({

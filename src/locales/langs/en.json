@@ -240,10 +240,10 @@
       "participantSelf": "Yourself",
       "participantLabel": "Participant: {{name}}",
       "total": "Total",
-      "paymentNote": "Payment via invoice/agreement. A teacher will approve your order once payment is confirmed.",
+      "paymentNote": "Payment via invoice/agreement.",
       "toHome": "Back to home",
       "received": "Order received.",
-      "statusPendingPayment": "Awaiting payment",
+      "statusPendingPayment": "Awaiting approval",
       "statusApproved": "Approved",
       "statusPaid": "Paid",
       "statusCancelled": "Cancelled"
@@ -410,9 +410,12 @@
       "participantPrefix": "Participant:",
       "total": "Total",
       "statusPaid": "Paid",
-      "statusPendingPayment": "Awaiting payment",
+      "statusPendingPayment": "Awaiting approval",
       "statusApproved": "Approved",
-      "statusCancelled": "Cancelled"
+      "statusCancelled": "Cancelled",
+      "showLess": "Show less",
+      "showMore": "Show {{count}} more",
+      "swapped": "Invalid. Swapped in package."
     },
     "autobook": {
       "running": "Auto-booking...",

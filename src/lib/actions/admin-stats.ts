@@ -188,7 +188,7 @@ function buildPotentialReservedOrderItemWhere(
   return {
     order: {
       status: {
-        in: ["PENDING_PAYMENT", "APPROVED"],
+        in: ["AWAITING_APPROVAL", "APPROVED"],
       },
       ...(dateRange && !terminId
         ? {
