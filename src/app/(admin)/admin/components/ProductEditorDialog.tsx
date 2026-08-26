@@ -174,12 +174,12 @@ export function ProductEditorDialog(props: ProductEditorDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs">
           <EditIcon className="h-3 w-3" />
-          {props.triggerLabel ?? "Redigera produkt"}
+          {props.triggerLabel ?? "Ändra produkt"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Redigera produkt</DialogTitle>
+          <DialogTitle>Ändra produkter</DialogTitle>
           <DialogDescription>
             Ändra antal klipp/tillfällen manuellt, eller byt vilken kurs en rad
             gäller för. Framtida bokningar på den gamla kursen tas bort och
