@@ -1,16 +1,9 @@
 import { HelpCircleIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { LessonCarousel } from "./components/LessonCarousel";
-import { StatsPage } from "./components/StatsPage";
 
 const _lessonsInclude = {
   bookings: true,
@@ -138,19 +131,6 @@ export default async function Page() {
           />
         </div>
       </div>
-
-      {!isTeacher && (
-        <Accordion type="single" collapsible>
-          <AccordionItem value="item-1">
-            <AccordionTrigger className="text-xl">
-              Visa statistik
-            </AccordionTrigger>
-            <AccordionContent>
-              <StatsPage />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
     </div>
   );
 }

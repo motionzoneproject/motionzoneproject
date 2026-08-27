@@ -3,6 +3,7 @@
 import { addDays } from "date-fns";
 import {
   ArrowLeft,
+  BarChart3,
   BookOpen,
   CalendarDays,
   ChevronsUpDown,
@@ -136,6 +137,11 @@ export function AppSidebar() {
       title: "Terminer / Scheman",
       url: "/admin/termin",
       icon: CalendarDays,
+    },
+    {
+      title: "Statistik",
+      url: "/admin/stats",
+      icon: BarChart3,
     },
     {
       title: "Juridiskt",
