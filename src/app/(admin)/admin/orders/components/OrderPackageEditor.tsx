@@ -14,6 +14,7 @@ import {
 import type { Course, Weekday } from "@/generated/prisma/client";
 
 type OrderPackageEditorProps = {
+  orderId: string;
   orderItemId: string;
   productName: string;
   maxCourses: number;
@@ -87,6 +88,7 @@ type OrderPackageDialogProps = OrderPackageEditorProps & {
 };
 
 export function OrderPackageDialog({
+  orderId,
   orderItemId,
   productName,
   maxCourses,
@@ -128,6 +130,7 @@ export function OrderPackageDialog({
           </DialogDescription>
         </DialogHeader>
         <OrderPackageEditor
+          orderId={orderId}
           orderItemId={orderItemId}
           productName={productName}
           maxCourses={maxCourses}

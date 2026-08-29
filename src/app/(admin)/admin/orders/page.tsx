@@ -7,9 +7,15 @@ import {
   cancelOrder,
   createPurchaseFromOrder,
   deleteOrder,
+  type OrderEditPayload,
   setOrderPaid,
+  updateOrder,
   updateOrderItemCourseSelections,
 } from "@/lib/actions/orders";
+import {
+  getOrCreateParticipant,
+  getParticipantsForUser,
+} from "@/lib/actions/participants";
 import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
 import OrdersView from "./OrdersView";
@@ -36,9 +42,12 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
-        id?: string;
+        id: string;
+        order: { id: string };
         product: {
+          id: string;
           name: string;
+          price: number;
           maxCourses?: number | null;
           courses?: { course: CourseWithSchedule }[];
         };
@@ -84,6 +93,7 @@ async function getOrders(): Promise<OrderLite[]> {
               },
             },
           },
+          order: { select: { id: true } },
           participant: true,
           courseSelections: {
             include: {
@@ -99,6 +109,15 @@ async function getOrders(): Promise<OrderLite[]> {
     },
   })) as unknown as OrderLite[];
   return orders;
+}
+
+async function getEditableProducts() {
+  noStore();
+  return prisma.product.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, price: true, maxCourses: true },
+  });
 }
 
 export default async function Page({
@@ -122,7 +141,10 @@ export default async function Page({
     ? (raw as StatusFilter)
     : "ALL";
 
-  const orders = await getOrders();
+  const [orders, products] = await Promise.all([
+    getOrders(),
+    getEditableProducts(),
+  ]);
 
   async function onApprove(formData: FormData) {
     "use server";
@@ -163,13 +185,41 @@ export default async function Page({
     return res.success;
   }
 
+  async function onUpdateOrder(
+    orderId: string,
+    payload: OrderEditPayload,
+  ): Promise<{ success: boolean; msg?: string }> {
+    "use server";
+
+    const result = await updateOrder(orderId, payload);
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders/view");
+
+    return result;
+  }
+
+  async function onGetParticipantsForUser(userId: string) {
+    "use server";
+    return getParticipantsForUser(userId);
+  }
+
+  async function onCreateParticipant(
+    data: Parameters<typeof getOrCreateParticipant>[0],
+  ) {
+    "use server";
+    const participant = await getOrCreateParticipant(data);
+    return { id: participant.id, name: participant.name };
+  }
+
   async function onSavePackage(
+    orderId: string,
     orderItemId: string,
     selectedCourseIds: string[],
   ): Promise<{ success: boolean; msg?: string }> {
     "use server";
 
     const result = await updateOrderItemCourseSelections(
+      orderId,
       orderItemId,
       selectedCourseIds,
     );
@@ -184,6 +234,7 @@ export default async function Page({
       <h1 className="text-2xl font-bold">Ordrar</h1>
       <OrdersView
         orders={orders}
+        products={products}
         defaultStatus={status}
         pageSize={PAGE_SIZE}
         onApprove={onApprove}
@@ -192,6 +243,9 @@ export default async function Page({
         onCancel={onCancel}
         onDelete={onDelete}
         onSavePackage={onSavePackage}
+        onUpdateOrder={onUpdateOrder}
+        getParticipantsForUser={onGetParticipantsForUser}
+        createParticipant={onCreateParticipant}
       />
     </div>
   );

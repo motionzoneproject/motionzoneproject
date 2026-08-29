@@ -198,7 +198,7 @@ export default async function Page({ searchParams }: Props) {
         productId: { in: productIds },
         order: {
           status: {
-            in: ["PENDING_PAYMENT", "APPROVED"],
+            in: ["AWAITING_APPROVAL", "APPROVED"],
           },
         },
       },

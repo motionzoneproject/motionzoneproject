@@ -464,7 +464,9 @@ export default function AddProductForm({
 
                     return (
                       <FormItem>
-                        <FormLabel>Begränsa antal valbara kurser</FormLabel>
+                        <FormLabel>
+                          Begränsa antal valbara kurser (PAKET-produkt)
+                        </FormLabel>
 
                         <div className="flex items-center gap-2 mb-2">
                           <Checkbox
@@ -483,6 +485,7 @@ export default function AddProductForm({
 
                         <FormControl>
                           <Input
+                            className={limitEnabled ? "" : "hidden"}
                             type="number"
                             min="1"
                             step="1"

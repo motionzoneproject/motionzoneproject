@@ -30,12 +30,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, Weekday } from "@/generated/prisma/client";
+import type { OrderEditPayload } from "@/lib/actions/orders";
+import type { ParticipantData } from "@/lib/actions/participants";
 import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
+import { ProductEditorDialog } from "../components/ProductEditorDialog";
 import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
+import {
+  type EditableProduct,
+  EditOrderDialog,
+} from "./components/EditOrderDialog";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
 type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
@@ -55,9 +62,12 @@ type OrderLite = {
   } | null;
   orderItems?:
     | {
-        id?: string;
+        id: string;
+        order: { id: string };
         product: {
+          id: string;
           name: string;
+          price: number;
           maxCourses?: number | null;
           courses?: { course: CourseWithSchedule }[];
         };
@@ -79,6 +89,7 @@ type OrderLite = {
 
 export default function OrdersView({
   orders,
+  products,
   defaultStatus,
   pageSize,
   onApprove,
@@ -87,8 +98,12 @@ export default function OrdersView({
   onCancel,
   onDelete,
   onSavePackage,
+  onUpdateOrder,
+  getParticipantsForUser,
+  createParticipant,
 }: {
   orders: OrderLite[];
+  products: EditableProduct[];
   defaultStatus: string;
   pageSize: number;
   onApprove: (formData: FormData) => void;
@@ -96,7 +111,18 @@ export default function OrdersView({
   onTogglePaid: (orderId: string, paid: boolean) => void | Promise<void>;
   onCancel: (formData: FormData) => void;
   onDelete: (orderId: string) => boolean | Promise<boolean>;
+  onUpdateOrder: (
+    orderId: string,
+    payload: OrderEditPayload,
+  ) => Promise<{ success: boolean; msg?: string }>;
+  getParticipantsForUser: (
+    userId: string,
+  ) => Promise<{ id: string; name: string; email: string | null }[]>;
+  createParticipant: (
+    data: ParticipantData,
+  ) => Promise<{ id: string; name: string }>;
   onSavePackage: (
+    ordeerId: string,
     orderItemId: string,
     selectedCourseIds: string[],
   ) =>
@@ -164,8 +190,8 @@ export default function OrdersView({
       CANCELLED: 0,
     };
     for (const o of orders) {
-      const st = String(o.status || "PENDING_PAYMENT");
-      if (st === "PENDING_PAYMENT") acc.PENDING += 1;
+      const st = String(o.status || "AWAITING_APPROVAL");
+      if (st === "AWAITING_APPROVAL") acc.PENDING += 1;
       else if (st === "APPROVED") acc.APPROVED += 1;
       else if (st === "CANCELLED") acc.CANCELLED += 1;
       acc.ALL += 1;
@@ -177,7 +203,7 @@ export default function OrdersView({
     let result = orders;
 
     if (active === "PENDING") {
-      result = result.filter((o) => String(o.status) === "PENDING_PAYMENT");
+      result = result.filter((o) => String(o.status) === "AWAITING_APPROVAL");
     } else if (active !== "ALL") {
       result = result.filter((o) => String(o.status) === active);
     }
@@ -272,7 +298,7 @@ export default function OrdersView({
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case "PENDING_PAYMENT":
+      case "AWAITING_APPROVAL":
         return "bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30";
       case "APPROVED":
         return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30";
@@ -411,9 +437,16 @@ export default function OrdersView({
               </tr>
             )}
             {paginatedOrders.map((o) => {
-              const canMarkPaid = ["PENDING_PAYMENT", "APPROVED"].includes(
+              const canMarkPaid = ["AWAITING_APPROVAL", "APPROVED"].includes(
                 o.status || "",
               );
+              const canEditOrder = o.status !== "APPROVED";
+              const customerLabel =
+                o.user?.details?.firstName || o.user?.details?.lastName
+                  ? `${o.user.details.firstName ?? ""} ${
+                      o.user.details.lastName ?? ""
+                    }`.trim()
+                  : (o.user?.email ?? "Kunden");
               const participants = Array.from(
                 new Map(
                   (o.orderItems ?? [])
@@ -445,12 +478,7 @@ export default function OrdersView({
                           Beställare
                         </span>
                         <div className="font-medium text-foreground text-xs">
-                          {o.user?.details?.firstName ||
-                          o.user?.details?.lastName
-                            ? `${o.user.details.firstName ?? ""} ${
-                                o.user.details.lastName ?? ""
-                              }`.trim()
-                            : (o.user?.email ?? o.userId)}{" "}
+                          {customerLabel}{" "}
                           <span className="text-muted-foreground font-normal">
                             ({calculateAge(o.user?.details?.dateOfBirth)} år)
                           </span>
@@ -506,12 +534,12 @@ export default function OrdersView({
                           ) ?? [];
                         const maxCourses = oi.product?.maxCourses ?? 0;
                         const isPackage = maxCourses > 0;
-                        const canEdit = o.status !== "APPROVED";
+                        const canEdit = o.status !== "CANCELLED";
                         const participantName = oi.participant?.name;
 
                         return (
                           <div
-                            key={oi.id || `${o.id}-item`}
+                            key={oi.id}
                             className="space-y-1 text-xs border-b border-border/40 last:border-0 pb-2 last:pb-0"
                           >
                             <div className="font-semibold text-foreground">
@@ -554,7 +582,8 @@ export default function OrdersView({
 
                                   <div className="pt-1">
                                     <OrderPackageDialog
-                                      orderItemId={oi.id ?? ""}
+                                      orderId={oi.order.id}
+                                      orderItemId={oi.id}
                                       productName={
                                         oi.product?.name ?? "Produkt"
                                       }
@@ -564,6 +593,7 @@ export default function OrdersView({
                                       onSave={async (orderItemId, next) => {
                                         try {
                                           const res = await onSavePackage(
+                                            oi.order.id,
                                             orderItemId,
                                             next,
                                           );
@@ -586,7 +616,7 @@ export default function OrdersView({
                                         }
                                       }}
                                       disabled={!canEdit}
-                                      readOnlyMessage="Paketvalet går inte att ändra när ordern är godkänd."
+                                      readOnlyMessage="Paketvalet går inte att ändra när ordern är avbruten."
                                       triggerLabel="Ändra paket"
                                     />
                                   </div>
@@ -617,10 +647,10 @@ export default function OrdersView({
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
                           className={`px-2 py-0.5 rounded text-[9px] font-semibold tracking-wide uppercase ${getStatusStyles(
-                            o.status || "PENDING_PAYMENT",
+                            o.status || "AWAITING_APPROVAL",
                           )}`}
                         >
-                          {getOrderStatusLabel(o.status || "PENDING_PAYMENT")}
+                          {getOrderStatusLabel(o.status || "AWAITING_APPROVAL")}
                         </span>
 
                         <button
@@ -662,7 +692,7 @@ export default function OrdersView({
                   {/* Kolumn 4: Åtgärder (Korrigerad kontrast) */}
                   <td className="py-4 px-4 align-top text-right">
                     <div className="flex flex-col gap-1 items-end ml-auto max-w-[130px]">
-                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                      {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <Button
                           type="button"
                           size="sm"
@@ -689,8 +719,32 @@ export default function OrdersView({
                         </form>
                       )}
 
-                      {["PENDING_PAYMENT"].includes(o.status || "") && (
+                      {canEditOrder && (
+                        <div className="w-full">
+                          <EditOrderDialog
+                            order={{
+                              id: o.id,
+                              userId: o.userId,
+                              customerLabel,
+                              orderItems: o.orderItems,
+                            }}
+                            userName={customerLabel}
+                            products={products}
+                            onSave={onUpdateOrder}
+                            getParticipantsForUser={getParticipantsForUser}
+                            createParticipant={createParticipant}
+                          />
+                        </div>
+                      )}
+
+                      {["AWAITING_APPROVAL"].includes(o.status || "") && (
                         <CancelOrderBtn onCancel={onCancel} orderId={o.id} />
+                      )}
+
+                      {o.status === "APPROVED" && (
+                        <div className="w-full">
+                          <ProductEditorDialog scope="order" orderId={o.id} />
+                        </div>
                       )}
 
                       <div className="w-full">
