@@ -29,7 +29,7 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
   const schemaItems: SchemaItemWithCourseStudioLessons[] = await getSchemaItems(
     termin.id,
   );
-  const allCourses = await getAllCourses("", true);
+  const allCourses = await getAllCourses("", true, lang);
   const allStudios = await getAllStudios();
   const cascadeImpact = await getTerminCascadeImpact(
     termin.id,

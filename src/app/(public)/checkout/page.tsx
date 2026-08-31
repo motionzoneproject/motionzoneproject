@@ -42,7 +42,13 @@ export default async function Page() {
       where: { id: { in: ids }, active: true },
       include: {
         courses: {
-          include: { course: true },
+          include: {
+            course: {
+              include: {
+                schemaItems: { select: { weekday: true } },
+              },
+            },
+          },
         },
       },
     });

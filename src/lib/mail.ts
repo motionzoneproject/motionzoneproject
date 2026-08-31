@@ -128,7 +128,7 @@ export async function generateOrderConfirmationHtml(order: OrderForEmail) {
       <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
         <p><strong>Ordernummer:</strong> ${order.id}</p>
         <p><strong>Datum:</strong> ${formatDateToInputStr(order.createdAt)}</p>
-        <p><strong>Status:</strong> ${getOrderStatusLabel(order.status, { PENDING_PAYMENT: "Inväntar betalning" })}</p>
+        <p><strong>Status:</strong> ${getOrderStatusLabel(order.status)}</p>
         <p><strong>Betalningsmetod:</strong> ${getPayMethodTxt(order.payMethod)}</p>
         <p><strong>Notering:</strong> ${order.note}</p>
       </div>

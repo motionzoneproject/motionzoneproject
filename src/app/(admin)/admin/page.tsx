@@ -93,7 +93,7 @@ export default async function Page() {
             </div>
             <div>
               <Link href="/admin/orders?paid=UNPAID">
-                Det finns <strong>{ordersWaiting} st</strong> obetalda ordrar.
+                Det finns <strong>{ordersUnpaid} st</strong> obetalda ordrar.
               </Link>
             </div>
           </div>

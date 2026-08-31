@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { OrderPackageEditor } from "@/app/(admin)/admin/orders/components/OrderPackageEditor";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 import {
   adminGetOrder,
   deleteOrder,
@@ -21,8 +21,11 @@ import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getPayMethodTxt } from "@/lib/tools";
 
+type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
+
 export type OrderItemLite = {
   id: string;
+  order: { id: string };
   price: unknown;
   count: number;
   productId: string;
@@ -33,7 +36,7 @@ export type OrderItemLite = {
       | {
           courseId: string;
           courseName?: string | null;
-          course?: Course;
+          course?: CourseWithSchedule;
         }[]
       | null;
   } | null;
@@ -46,7 +49,7 @@ export type OrderItemLite = {
   } | null;
   courseSelections?:
     | {
-        course: Course;
+        course: CourseWithSchedule;
       }[]
     | null;
 };
@@ -180,6 +183,7 @@ export default function OrderDetailsClient() {
   }, [orderId]);
 
   const handleSavePackage = async (
+    orderId: string,
     orderItemId: string,
     selectedOverride?: string[],
   ) => {
@@ -189,6 +193,7 @@ export default function OrderDetailsClient() {
 
     try {
       const result = await updateOrderItemCourseSelections(
+        orderId,
         orderItemId,
         selected,
       );
@@ -198,6 +203,7 @@ export default function OrderDetailsClient() {
       }
 
       const data = await adminGetOrder(orderId);
+
       setOrder(data);
       setPackageSelections(
         Object.fromEntries(
@@ -313,7 +319,7 @@ export default function OrderDetailsClient() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
                 <span className="font-bold px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-xs uppercase">
-                  {getStatusLabel(order.status ?? "PENDING_PAYMENT")}
+                  {getStatusLabel(order.status ?? "AWAITING_APPROVAL")}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -514,7 +520,7 @@ export default function OrderDetailsClient() {
                 const sum = unit * (it.count ?? 0);
                 const packCourses = (it.product?.courses ?? [])
                   .map((c) => c.course)
-                  .filter((c): c is Course => !!c);
+                  .filter((c): c is CourseWithSchedule => !!c);
                 const selectedPack = packageSelections[it.id] ?? [];
                 return (
                   <tr key={it.id} className="hover:bg-muted/30">
@@ -551,6 +557,7 @@ export default function OrderDetailsClient() {
                           packCourses.length > 0 && (
                             <div className="mt-3 space-y-2 rounded-md border bg-muted/30 p-2">
                               <OrderPackageEditor
+                                orderId={it.order.id}
                                 orderItemId={it.id}
                                 productName={it.product?.name ?? it.productId}
                                 maxCourses={it.product.maxCourses}
@@ -561,11 +568,15 @@ export default function OrderDetailsClient() {
                                     ...prev,
                                     [orderItemId]: next,
                                   }));
-                                  await handleSavePackage(orderItemId, next);
+                                  await handleSavePackage(
+                                    it.order.id,
+                                    orderItemId,
+                                    next,
+                                  );
                                 }}
                                 isSaving={savingItemId === it.id}
-                                disabled={order.status === "APPROVED"}
-                                readOnlyMessage="Paketvalet går inte att ändra för en godkänd order."
+                                disabled={order.status === "CANCELLED"}
+                                readOnlyMessage="Paketvalet går inte att ändra för en avbruten order."
                               />
                             </div>
                           )}

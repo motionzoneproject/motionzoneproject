@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Course, Product } from "@/generated/prisma/client";
+import type { Course, Product, Weekday } from "@/generated/prisma/client";
 import { createCheckout } from "@/lib/actions/checkout";
 import {
   getOrCreateParticipant,
@@ -56,7 +56,7 @@ export type CheckoutFormProps = {
     qty: number;
     price: number;
     /** Available courses for SelectPack (populated when maxCourses is set) */
-    courses: Course[];
+    courses: (Course & { schemaItems?: { weekday: Weekday }[] })[];
   }[];
   user: {
     id: string;

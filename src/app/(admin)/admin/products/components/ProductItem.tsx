@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default async function ProductItem({ product, lang }: Props) {
-  const allCourses = await getAllCourses("", true);
+  const allCourses = await getAllCourses("", true, lang);
   const productStats = await getProductStats(product.id);
   const prodCourse: ProdCourse[] = await prisma.productOnCourse.findMany({
     where: { productId: product.id },

@@ -75,12 +75,15 @@ export default async function Page({
                       {t.checkout.success.status}
                     </span>
                     <span className="font-semibold text-foreground">
-                      {getOrderStatusLabel(order.status ?? "PENDING_PAYMENT", {
-                        PENDING_PAYMENT:
-                          t.checkout.success.statusPendingPayment,
-                        APPROVED: t.checkout.success.statusApproved,
-                        CANCELLED: t.checkout.success.statusCancelled,
-                      })}
+                      {getOrderStatusLabel(
+                        order.status ?? "AWAITING_APPROVAL",
+                        {
+                          AWAITING_APPROVAL:
+                            t.checkout.success.statusPendingPayment,
+                          APPROVED: t.checkout.success.statusApproved,
+                          CANCELLED: t.checkout.success.statusCancelled,
+                        },
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between">

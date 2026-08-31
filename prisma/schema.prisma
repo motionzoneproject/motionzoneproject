@@ -476,7 +476,7 @@ model Order {
   purchases Purchase[]
 
   // Order status lifecycle
-  status       OrderStatus        @default(PENDING_PAYMENT)
+  status       OrderStatus        @default(AWAITING_APPROVAL)
   isPaid       Boolean            @default(false)
   paidAt       DateTime?
   statusEvents OrderStatusEvent[]
@@ -551,6 +551,9 @@ model Photo {
 }
 
 // Enum for order lifecycle states
+// I praktiken används bara AWAITING_APPROVAL, APPROVED och CANCELLED (se orders.ts).
+// CREATED, PENDING_PAYMENT, PAID och COMPLETED är deprecated och sätts inte längre.
+// Har kvar de nu för bakåtkompabilitet bara.
 enum OrderStatus {
   CREATED
   PENDING_PAYMENT

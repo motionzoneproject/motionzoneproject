@@ -36,7 +36,7 @@ export async function createOrder(
       note,
       payMethod: paymethod || 1,
       totalPrice: total,
-      // default status is PENDING_PAYMENT per schema
+      // default status is AWAITING_APPROVAL per schema
     },
   });
 
@@ -96,12 +96,12 @@ export async function createOrder(
     }
   }
 
-  // Seed first status event (from null -> PENDING_PAYMENT)
+  // Seed first status event (from null -> AWAITING_APPROVAL)
   await tx.orderStatusEvent.create({
     data: {
       orderId: orderResult.id,
       fromStatus: null,
-      toStatus: "PENDING_PAYMENT",
+      toStatus: "AWAITING_APPROVAL",
       changedByUserId: userId,
       note,
     },

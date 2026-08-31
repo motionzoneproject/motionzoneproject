@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import type { Weekday } from "@/generated/prisma/client";
 import { pick } from "@/lib/i18n/pick";
 import { getCourseName } from "@/lib/tools";
 import type { AppLang } from "@/locales/config-lang";
@@ -29,6 +30,7 @@ type CourseForDialog = {
   description: string;
   description_en?: string | null;
   adult: boolean;
+  schemaItems?: { weekday: Weekday }[];
   teacher: {
     name: string;
     email: string;
@@ -48,7 +50,7 @@ export function CourseInfoDialog({ course }: CourseInfoDialogProps) {
   const id = useId();
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
-  const title = getCourseName(course, lang);
+  const title = getCourseName(course, lang, course.schemaItems);
 
   return (
     <Dialog>

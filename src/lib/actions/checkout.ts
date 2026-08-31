@@ -211,7 +211,7 @@ export async function createCheckout(params: {
 
   return {
     orderId: order.id,
-    status: order.status ?? "PENDING_PAYMENT",
+    status: order.status ?? "AWAITING_APPROVAL",
     successRedirect: `/checkout/success?orderId=${order.id}`,
   } as const;
 }
