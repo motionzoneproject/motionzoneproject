@@ -1474,9 +1474,216 @@ export async function removeUserFromLesson(
 
 // ─── Active/inactive toggles ───────────────────────────────────────────────
 
+export type CascadeImpactItem = { id: string; name: string };
+
+export type TerminCascadeImpact = {
+  /** Följer automatiskt med när terminen togglas. */
+  courses: CascadeImpactItem[];
+  products: CascadeImpactItem[];
+  /**
+   * Bara vid aktivering: inaktiva kurser/produkter som stängdes av manuellt och
+   * alltså inte av terminens cascade. De lämnas orörda och visas bara som
+   * information, så att admin inte råkar publicera något som stängts av med flit.
+   */
+  manualCourses: CascadeImpactItem[];
+  manualProducts: CascadeImpactItem[];
+};
+
+const courseNameSelect = {
+  id: true,
+  name: true,
+  name_en: true,
+  minAge: true,
+  maxAge: true,
+  adult: true,
+  level: true,
+  level_en: true,
+  schemaItems: { select: { weekday: true } },
+} satisfies Prisma.CourseSelect;
+
+const productImpactSelect = {
+  id: true,
+  name: true,
+} satisfies Prisma.ProductSelect;
+
+function toCourseImpact(
+  course: Prisma.CourseGetPayload<{ select: typeof courseNameSelect }>,
+  lang: "sv" | "en",
+) {
+  // Skicka med schemaItems så att namnet får veckodagarna, precis som i kurslistan.
+  return {
+    id: course.id,
+    name: getCourseName(course, lang, course.schemaItems),
+  };
+}
+
+function sortImpact(items: CascadeImpactItem[], lang: "sv" | "en") {
+  const collationLocale = lang === "en" ? "en-GB" : "sv-SE";
+  return items.sort((a, b) => a.name.localeCompare(b.name, collationLocale));
+}
+
+function emptyImpact(): TerminCascadeImpact {
+  return { courses: [], products: [], manualCourses: [], manualProducts: [] };
+}
+
+/**
+ * Read-only preview of what toggling a termin's active flag would affect:
+ * - If the termin is currently active: which currently-active courses/products
+ *   would get auto-deactivated (because this is the last active termin keeping
+ *   them alive) if the termin is turned off.
+ * - If the termin is currently inactive: which cascade-deactivated courses/products
+ *   would come back if it's turned on (`courses`/`products`), and which ones were
+ *   deactivated by hand and are therefore left alone (`manualCourses`/`manualProducts`).
+ * Mirrors the cascade logic in toggleTerminActive without mutating anything,
+ * so it's safe to call for a confirmation dialog before the admin commits.
+ */
+export async function getTerminCascadeImpact(
+  terminId: string,
+  currentlyActive: boolean,
+  lang: "sv" | "en" = "sv",
+): Promise<TerminCascadeImpact> {
+  const isAdmin = await isAdminRole();
+  if (!isAdmin) return emptyImpact();
+
+  const linkedCourses = await prisma.schemaItem.findMany({
+    where: { terminId },
+    select: { courseId: true },
+    distinct: ["courseId"],
+  });
+  const linkedCourseIds = linkedCourses.map((item) => item.courseId);
+  if (linkedCourseIds.length === 0) return emptyImpact();
+
+  const linkedProducts = await prisma.productOnCourse.findMany({
+    where: { courseId: { in: linkedCourseIds } },
+    select: { productId: true },
+    distinct: ["productId"],
+  });
+  const linkedProductIds = linkedProducts.map((item) => item.productId);
+
+  if (!currentlyActive) {
+    // Reaktivering: bara det som cascaden själv stängde av får följa med
+    // tillbaka. Allt som avaktiverats för hand listas separat och lämnas av.
+    const cascadeCourses = await prisma.course.findMany({
+      where: {
+        id: { in: linkedCourseIds },
+        active: false,
+        deactivatedByCascade: true,
+      },
+      select: courseNameSelect,
+    });
+
+    const manualCourses = await prisma.course.findMany({
+      where: {
+        id: { in: linkedCourseIds },
+        active: false,
+        deactivatedByCascade: false,
+      },
+      select: courseNameSelect,
+    });
+
+    const cascadeProducts = linkedProductIds.length
+      ? await prisma.product.findMany({
+          where: {
+            id: { in: linkedProductIds },
+            active: false,
+            deactivatedByCascade: true,
+          },
+          select: productImpactSelect,
+          orderBy: { name: "asc" },
+        })
+      : [];
+
+    const manualProducts = linkedProductIds.length
+      ? await prisma.product.findMany({
+          where: {
+            id: { in: linkedProductIds },
+            active: false,
+            deactivatedByCascade: false,
+          },
+          select: productImpactSelect,
+          orderBy: { name: "asc" },
+        })
+      : [];
+
+    return {
+      courses: sortImpact(
+        cascadeCourses.map((c) => toCourseImpact(c, lang)),
+        lang,
+      ),
+      products: cascadeProducts,
+      manualCourses: sortImpact(
+        manualCourses.map((c) => toCourseImpact(c, lang)),
+        lang,
+      ),
+      manualProducts,
+    };
+  }
+
+  // Deactivation impact: courses with no OTHER active termin keeping them
+  // alive (the `id: { not: terminId }` simulates this termin already being
+  // off, since it's still active at preview time).
+  const courses = await prisma.course.findMany({
+    where: {
+      id: { in: linkedCourseIds },
+      active: true,
+      schemaItems: {
+        none: { termin: { active: true, id: { not: terminId } } },
+      },
+    },
+    select: courseNameSelect,
+  });
+
+  const products = linkedProductIds.length
+    ? await prisma.product.findMany({
+        where: {
+          id: { in: linkedProductIds },
+          active: true,
+          NOT: {
+            courses: {
+              some: {
+                course: {
+                  active: true,
+                  schemaItems: {
+                    some: { termin: { active: true, id: { not: terminId } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        select: productImpactSelect,
+        orderBy: { name: "asc" },
+      })
+    : [];
+
+  return {
+    courses: sortImpact(
+      courses.map((c) => toCourseImpact(c, lang)),
+      lang,
+    ),
+    products,
+    manualCourses: [],
+    manualProducts: [],
+  };
+}
+
+/**
+ * Toggle a termin's active flag, with the cascade to linked courses/products.
+ * @param alsoToggleLinked On activation: also bring back everything the cascade
+ *   itself deactivated (`deactivatedByCascade`). Ignored on deactivation, where
+ *   the cascade always runs.
+ * @param extraCourseIds On activation: manually deactivated courses the admin
+ *   explicitly ticked. Always intersected with the termin's own courses, so an
+ *   id from the client can't reach anything else.
+ * @param extraProductIds Same, for manually deactivated products.
+ * @auth Admin
+ */
 export async function toggleTerminActive(
   id: string,
   active: boolean,
+  alsoToggleLinked = false,
+  extraCourseIds: string[] = [],
+  extraProductIds: string[] = [],
 ): Promise<{ success: boolean; msg: string }> {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, msg: "No permission." };
@@ -1487,14 +1694,6 @@ export async function toggleTerminActive(
         where: { id },
         data: { active },
       });
-
-      if (active) {
-        return {
-          termin,
-          deactivatedCourses: 0,
-          deactivatedProducts: 0,
-        };
-      }
 
       const linkedCourses = await tx.schemaItem.findMany({
         where: { terminId: id },
@@ -1507,8 +1706,102 @@ export async function toggleTerminActive(
       if (linkedCourseIds.length === 0) {
         return {
           termin,
-          deactivatedCourses: 0,
-          deactivatedProducts: 0,
+          affectedCourses: 0,
+          affectedProducts: 0,
+        };
+      }
+
+      if (active) {
+        // Skär de ikryssade id:na mot terminens egna kurser, så att ett id
+        // från klienten aldrig kan aktivera något utanför terminen.
+        const linkedCourseIdSet = new Set(linkedCourseIds);
+        const pickedCourseIds = extraCourseIds.filter((courseId) =>
+          linkedCourseIdSet.has(courseId),
+        );
+
+        if (
+          !alsoToggleLinked &&
+          pickedCourseIds.length === 0 &&
+          extraProductIds.length === 0
+        ) {
+          return {
+            termin,
+            affectedCourses: 0,
+            affectedProducts: 0,
+          };
+        }
+
+        // Cascade-flaggade följer med när rutan är ikryssad, manuellt
+        // avstängda bara om admin kryssat i dem var för sig. Bygg villkoren
+        // först och hoppa över frågan helt om listan är tom — ett tomt OR är
+        // inte något vi vill vara beroende av när träffarna aktiveras.
+        const courseFilters: Prisma.CourseWhereInput[] = [];
+        if (alsoToggleLinked) {
+          courseFilters.push({
+            id: { in: linkedCourseIds },
+            deactivatedByCascade: true,
+          });
+        }
+        if (pickedCourseIds.length > 0) {
+          courseFilters.push({ id: { in: pickedCourseIds } });
+        }
+
+        const coursesToActivate = courseFilters.length
+          ? await tx.course.findMany({
+              where: { active: false, OR: courseFilters },
+              select: { id: true },
+            })
+          : [];
+        const courseIdsToActivate = coursesToActivate.map((item) => item.id);
+
+        if (courseIdsToActivate.length > 0) {
+          await tx.course.updateMany({
+            where: { id: { in: courseIdsToActivate } },
+            data: { active: true, deactivatedByCascade: false },
+          });
+        }
+
+        const linkedProducts = await tx.productOnCourse.findMany({
+          where: { courseId: { in: linkedCourseIds } },
+          select: { productId: true },
+          distinct: ["productId"],
+        });
+        const linkedProductIds = linkedProducts.map((item) => item.productId);
+        const linkedProductIdSet = new Set(linkedProductIds);
+        const pickedProductIds = extraProductIds.filter((productId) =>
+          linkedProductIdSet.has(productId),
+        );
+
+        const productFilters: Prisma.ProductWhereInput[] = [];
+        if (alsoToggleLinked && linkedProductIds.length > 0) {
+          productFilters.push({
+            id: { in: linkedProductIds },
+            deactivatedByCascade: true,
+          });
+        }
+        if (pickedProductIds.length > 0) {
+          productFilters.push({ id: { in: pickedProductIds } });
+        }
+
+        const productsToActivate = productFilters.length
+          ? await tx.product.findMany({
+              where: { active: false, OR: productFilters },
+              select: { id: true },
+            })
+          : [];
+        const productIdsToActivate = productsToActivate.map((item) => item.id);
+
+        if (productIdsToActivate.length > 0) {
+          await tx.product.updateMany({
+            where: { id: { in: productIdsToActivate } },
+            data: { active: true, deactivatedByCascade: false },
+          });
+        }
+
+        return {
+          termin,
+          affectedCourses: courseIdsToActivate.length,
+          affectedProducts: productIdsToActivate.length,
         };
       }
 
@@ -1532,7 +1825,7 @@ export async function toggleTerminActive(
       if (courseIdsToDeactivate.length > 0) {
         await tx.course.updateMany({
           where: { id: { in: courseIdsToDeactivate } },
-          data: { active: false },
+          data: { active: false, deactivatedByCascade: true },
         });
       }
 
@@ -1547,8 +1840,8 @@ export async function toggleTerminActive(
       if (linkedProductIds.length === 0) {
         return {
           termin,
-          deactivatedCourses: courseIdsToDeactivate.length,
-          deactivatedProducts: 0,
+          affectedCourses: courseIdsToDeactivate.length,
+          affectedProducts: 0,
         };
       }
 
@@ -1583,14 +1876,14 @@ export async function toggleTerminActive(
       if (productIdsToDeactivate.length > 0) {
         await tx.product.updateMany({
           where: { id: { in: productIdsToDeactivate } },
-          data: { active: false },
+          data: { active: false, deactivatedByCascade: true },
         });
       }
 
       return {
         termin,
-        deactivatedCourses: courseIdsToDeactivate.length,
-        deactivatedProducts: productIdsToDeactivate.length,
+        affectedCourses: courseIdsToDeactivate.length,
+        affectedProducts: productIdsToDeactivate.length,
       };
     });
 
@@ -1599,9 +1892,12 @@ export async function toggleTerminActive(
     revalidatePath("/admin/products");
     revalidatePath("/courses");
 
-    const cascadeSummary = !active
-      ? ` ${result.deactivatedCourses} kurser och ${result.deactivatedProducts} produkter avaktiverades automatiskt.`
-      : "";
+    const cascadeSummary =
+      result.affectedCourses > 0 || result.affectedProducts > 0
+        ? ` ${result.affectedCourses} kurser och ${result.affectedProducts} produkter ${
+            active ? "återaktiverades" : "avaktiverades automatiskt"
+          }.`
+        : "";
 
     return {
       success: true,
@@ -1621,9 +1917,11 @@ export async function toggleCourseActive(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Manuell toggle: nollställ alltid flaggan, annars kan en gammal
+    // cascade-markering leva kvar och svepa med kursen nästa gång.
     const course = await prisma.course.update({
       where: { id },
-      data: { active },
+      data: { active, deactivatedByCascade: false },
     });
     revalidatePath("/admin/courses");
     return {
@@ -1644,9 +1942,11 @@ export async function toggleProductActive(
   if (!isAdmin) return { success: false, msg: "No permission." };
 
   try {
+    // Manuell toggle: nollställ alltid flaggan, annars kan en gammal
+    // cascade-markering leva kvar och svepa med produkten nästa gång.
     const product = await prisma.product.update({
       where: { id },
-      data: { active },
+      data: { active, deactivatedByCascade: false },
     });
     revalidatePath("/admin/products");
     revalidatePath("/courses");

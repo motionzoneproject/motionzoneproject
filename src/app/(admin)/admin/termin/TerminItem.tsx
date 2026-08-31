@@ -5,6 +5,7 @@ import {
   getAllCourses,
   getAllStudios,
   getSchemaItems,
+  getTerminCascadeImpact,
   type SchemaItemWithCourseStudioLessons,
 } from "@/lib/actions/admin";
 import { formatDateToInputStr, startOfStockholmDay } from "@/lib/date-utils";
@@ -30,6 +31,11 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
   );
   const allCourses = await getAllCourses("", true, lang);
   const allStudios = await getAllStudios();
+  const cascadeImpact = await getTerminCascadeImpact(
+    termin.id,
+    termin.active,
+    lang,
+  );
 
   return (
     <TableRow className="align-top">
@@ -62,7 +68,14 @@ export default async function TerminItem({ termin, lang = "sv" }: Props) {
       </TableCell>
       <TableCell className="p-3 text-right">
         <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
-          <ToggleTerminActiveBtn terminId={termin.id} active={termin.active} />
+          <ToggleTerminActiveBtn
+            terminId={termin.id}
+            terminName={
+              lang === "en" ? (termin.name_en ?? termin.name) : termin.name
+            }
+            active={termin.active}
+            impact={cascadeImpact}
+          />
           <TerminScheduleDialogUI termin={termin} lang={lang}>
             <Schema
               lang={lang}

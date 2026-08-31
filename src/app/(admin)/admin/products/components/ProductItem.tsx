@@ -90,6 +90,7 @@ export default async function ProductItem({ product, lang }: Props) {
         <div className="flex justify-end gap-2">
           <ToggleProductActiveBtn
             productId={product.id}
+            productName={product.name}
             active={product.active}
           />
           <EditProductForm
