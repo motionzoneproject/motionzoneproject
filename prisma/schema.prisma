@@ -261,6 +261,7 @@ model Course {
   adult  Boolean @default(false)
 
   active Boolean @default(true) // Om kursen är aktiv (synlig för kunder)
+  deactivatedByCascade Boolean @default(false) // True bara om kursen stängdes av automatiskt när en termin avaktiverades. Styr om den får återaktiveras automatiskt igen.
 
   @@index([teacherId])
   @@map("course")
@@ -322,6 +323,7 @@ model Product {
   maxCourses Int? // För paket där kunden får välja ur ett urval (urvalet är productOnCourse). Null är obegränsat och då kan kunden boka in sig på alla kurser som är kopplade viaa productOnCourse
 
   active Boolean @default(true) // Om produkten är aktiv (synlig för kunder)
+  deactivatedByCascade Boolean @default(false) // True bara om produkten stängdes av automatiskt när en termin avaktiverades. Styr om den får återaktiveras automatiskt igen.
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
