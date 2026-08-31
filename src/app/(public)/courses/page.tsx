@@ -319,7 +319,7 @@ export default async function Page({ searchParams }: Props) {
       seenCourseIds.add(course.id);
       courseListItems.push({
         id: course.id,
-        name: getCourseName(course, lang),
+        name: getCourseName(course, lang, course.schemaItems),
       });
     }
   }
@@ -548,7 +548,7 @@ export default async function Page({ searchParams }: Props) {
                                     >
                                       <div className="flex justify-between gap-2 mb-1 items-center">
                                         <div className="font-medium">
-                                          {`${getCourseName(c, lang)}`}
+                                          {`${getCourseName(c, lang, c.schemaItems)}`}
                                         </div>
 
                                         <CourseInfoDialog course={c} />

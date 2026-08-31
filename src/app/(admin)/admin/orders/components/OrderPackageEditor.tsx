@@ -11,14 +11,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Course } from "@/generated/prisma/client";
+import type { Course, Weekday } from "@/generated/prisma/client";
 
 type OrderPackageEditorProps = {
   orderId: string;
   orderItemId: string;
   productName: string;
   maxCourses: number;
-  courses: Course[];
+  courses: (Course & { schemaItems?: { weekday: Weekday }[] })[];
   selected: string[];
   onSave: (orderItemId: string, selected: string[]) => Promise<void> | void;
   isSaving?: boolean;

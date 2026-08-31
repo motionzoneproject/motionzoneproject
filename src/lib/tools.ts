@@ -20,13 +20,61 @@ const WEEKDAYS = [
   "SUNDAY",
 ] as const;
 
-export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
+const WEEKDAY_LABELS: Record<
+  Weekday,
+  Record<"sv" | "en", { full: string; short: string }>
+> = {
+  MONDAY: {
+    sv: { full: "Måndag", short: "Mån" },
+    en: { full: "Monday", short: "Mon" },
+  },
+  TUESDAY: {
+    sv: { full: "Tisdag", short: "Tis" },
+    en: { full: "Tuesday", short: "Tue" },
+  },
+  WEDNESDAY: {
+    sv: { full: "Onsdag", short: "Ons" },
+    en: { full: "Wednesday", short: "Wed" },
+  },
+  THURSDAY: {
+    sv: { full: "Torsdag", short: "Tor" },
+    en: { full: "Thursday", short: "Thu" },
+  },
+  FRIDAY: {
+    sv: { full: "Fredag", short: "Fre" },
+    en: { full: "Friday", short: "Fri" },
+  },
+  SATURDAY: {
+    sv: { full: "Lördag", short: "Lör" },
+    en: { full: "Saturday", short: "Sat" },
+  },
+  SUNDAY: {
+    sv: { full: "Söndag", short: "Sön" },
+    en: { full: "Sunday", short: "Sun" },
+  },
+};
+
+export const getWeekdayAsShort = (day: Weekday, lang: "sv" | "en" = "sv") =>
+  WEEKDAY_LABELS[day]?.[lang].short ?? day;
+
+export function getCourseName(
+  course: CourseLike,
+  lang: "sv" | "en" = "sv",
+  schemaItems?: { weekday: Weekday }[],
+) {
+  const siDaysStr = schemaItems
+    ? Array.from(new Set(schemaItems.map((si) => si.weekday)))
+        .sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b))
+        .map((day) => getWeekdayAsShort(day, lang))
+        .join(", ")
+    : "";
+
   const ageRange =
     course.minAge && course.minAge > 0
       ? `${course.minAge}${
           course.maxAge && course.maxAge > 0
-            ? `–${course.maxAge} ${lang === "sv" ? ` år` : `years`}` // Använder tankstreck (–) och lägger till " år" här
-            : `+ ${lang === "sv" ? ` år` : `years`}` // Lägger till "+ år" om maxAge saknas
+            ? `–${course.maxAge} ${lang === "sv" ? `år` : `years`}` // Använder tankstreck (–) och lägger till " år" här
+            : `+ ${lang === "sv" ? `år` : `years`}` // Lägger till "+ år" om maxAge saknas
         }${course.adult ? (lang === "sv" ? ` / Vuxen` : ` / Adult`) : ""}`
       : course.adult
         ? lang === "sv"
@@ -45,33 +93,20 @@ export function getCourseName(course: CourseLike, lang: "sv" | "en" = "sv") {
   const baseName =
     lang === "sv" ? course.name : course.name_en?.trim() || course.name; // Fallback på svenskt namn.
 
-  return `${baseName} ${ageRange} ${levelInfo}`.trim();
+  const parts = [baseName, ageRange, levelInfo]
+    .filter(Boolean)
+    .map((s) => s.trim());
+  const daysPart = siDaysStr ? `(${siDaysStr})` : "";
+
+  return [...parts, daysPart].filter(Boolean).join(" ");
 }
 
 export function getWeekdays() {
   return [...WEEKDAYS];
 }
 
-export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") => {
-  switch (day) {
-    case "MONDAY":
-      return lang === "sv" ? "Måndag" : "Monday";
-    case "TUESDAY":
-      return lang === "sv" ? "Tisdag" : "Tuesday";
-    case "WEDNESDAY":
-      return lang === "sv" ? "Onsdag" : "Wednesday";
-    case "THURSDAY":
-      return lang === "sv" ? "Torsdag" : "Thursday";
-    case "FRIDAY":
-      return lang === "sv" ? "Fredag" : "Friday";
-    case "SATURDAY":
-      return lang === "sv" ? "Lördag" : "Saturday";
-    case "SUNDAY":
-      return lang === "sv" ? "Söndag" : "Sunday";
-    default:
-      return day; // Returnerar originalsträngen om ingen matchning hittas
-  }
-};
+export const getVeckodag = (day: Weekday, lang: "sv" | "en" = "sv") =>
+  WEEKDAY_LABELS[day]?.[lang].full ?? day;
 
 export function getPayMethodTxt(n: number, lang: "sv" | "en" = "sv") {
   if (lang === "sv")
