@@ -1,18 +1,15 @@
-import { CalendarDays, CircleAlert, Clock, MapPin, Wallet } from "lucide-react";
+import { CalendarDays, CircleAlert, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-  type AdminOverview as AdminOverviewData,
-  bookedCount,
-} from "@/lib/admin-overview";
+import { getHealthCheckInfo } from "@/lib/admin-health";
+import type { AdminOverview as AdminOverviewData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
-import { dbToFormTime } from "@/lib/time-convert";
 import { LessonCarousel } from "../LessonCarousel";
 import { CancelledAhead } from "./CancelledAhead";
-import { HealthChecks, HealthChecksSkeleton } from "./HealthChecks";
+import { HealthChecks } from "./HealthChecks";
 import { StatTile } from "./StatTile";
+import { TodayLessonCard } from "./TodayLessonCard";
 
 /**
  * Adminens översikt svarar på "hur ligger skolan till just nu, och vad kräver
@@ -71,7 +68,7 @@ export function AdminOverview({
         </section>
       )}
 
-      <section className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           label="Lektioner"
           value={stats.lessonsAhead}
@@ -110,43 +107,17 @@ export function AdminOverview({
             Inga lektioner ligger inbokade idag.
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {data.today.map((lesson) => (
-              <li
-                key={lesson.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm"
-              >
-                <span className="flex items-center gap-1.5 tabular-nums text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  {dbToFormTime(new Date(lesson.startTime))}–
-                  {dbToFormTime(new Date(lesson.endTime))}
-                </span>
-                <span className="font-medium">{lesson.course.name}</span>
-                {lesson.schemaItem.studio && (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {lesson.schemaItem.studio.name}
-                  </span>
-                )}
-                <span className="text-muted-foreground">
-                  {lesson.teacher.name}
-                </span>
-                <span className="ml-auto flex items-center gap-2">
-                  {lesson.cancelled && (
-                    <Badge
-                      variant="outline"
-                      className="text-amber-600 dark:text-amber-400"
-                    >
-                      Inställd
-                    </Badge>
-                  )}
-                  <span className="tabular-nums text-muted-foreground">
-                    {bookedCount(lesson)} bokade
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          // Varje kort hämtar närvarodata för sin lektion, så listan strömmas
+          // in i stället för att hålla upp resten av översikten.
+          <Suspense
+            fallback={<TodayScheduleSkeleton count={data.today.length} />}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              {data.today.map((lesson) => (
+                <TodayLessonCard key={lesson.id} lesson={lesson} showTeacher />
+              ))}
+            </div>
+          </Suspense>
         )}
 
         <Link
@@ -159,25 +130,35 @@ export function AdminOverview({
 
       <CancelledAhead lessons={data.cancelledAhead} showTeacher />
 
-      {/* Kontrollerna är åtta separata frågor, så de strömmas in efter
-          resten i stället för att hålla upp hela sidan. */}
-      <Suspense fallback={<HealthChecksSkeleton />}>
-        <HealthChecks />
-      </Suspense>
+      {/* Kontrollerna körs på knapptryck, inte vid sidladdning — det är ett
+          tjugotal frågor och man letar fel ibland, inte varje gång. */}
+      <HealthChecks info={getHealthCheckInfo()} />
 
-      {own.lessons.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">
-            <strong>Dina</strong> senaste och kommande lektioner
-          </h2>
-          <div className="rounded-xl bg-muted/30 p-1">
-            <LessonCarousel
-              lessons={own.lessons}
-              initialScrollIndex={own.initialScrollIndex}
-            />
-          </div>
-        </section>
-      )}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">
+          <strong>Dina</strong> senaste och kommande lektioner
+        </h2>
+        <div className="rounded-xl bg-muted/30 p-1">
+          <LessonCarousel
+            lessons={own.lessons}
+            initialScrollIndex={own.initialScrollIndex}
+          />
+        </div>
+      </section>
     </>
+  );
+}
+
+/** Platshållare med rätt antal kort, så sidan inte hoppar när de laddats. */
+function TodayScheduleSkeleton({ count }: { count: number }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {Array.from({ length: count }, (_, index) => index).map((index) => (
+        <div
+          key={index}
+          className="h-36 animate-pulse rounded-xl border border-border bg-card"
+        />
+      ))}
+    </div>
   );
 }

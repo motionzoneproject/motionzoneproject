@@ -131,6 +131,11 @@ export function LecturesFilter({
       next.delete("hideold");
     }
 
+    const status = next.get("status");
+    if (status && status !== "cancelled" && status !== "active") {
+      next.delete("status");
+    }
+
     if (next.toString() !== searchParams.toString()) {
       replace(`${pathname}?${next.toString()}`);
     }
@@ -295,6 +300,41 @@ export function LecturesFilter({
           from={params.get("from")}
           to={params.get("to")}
         />
+      </div>
+
+      {/* Sidan har filtrerat på ?status hela tiden, men kontrollen saknades.
+          Kom man in via en länk till inställda lektioner satt man fast i ett
+          filter som varken syntes eller gick att ta bort. */}
+      <div>
+        <Label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Status
+        </Label>
+        <Select
+          value={
+            params.get("status") === "cancelled"
+              ? "cancelled"
+              : params.get("status") === "active"
+                ? "active"
+                : "all"
+          }
+          onValueChange={(value) =>
+            setFilter("status", value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Välj status" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Välj status</SelectLabel>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectSeparator />
+              <SelectItem value="active">Aktiva</SelectItem>
+              <SelectItem value="cancelled">Inställda</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>

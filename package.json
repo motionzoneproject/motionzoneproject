@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "biome check",
     "check:order-status": "tsx --env-file=.env scripts/check-order-status.ts",
+    "seed:health": "tsx --env-file=.env scripts/seed-health-testdata.ts",
     "format": "biome format --write",
     "prepare": "husky",
     "seed": "tsx scripts/seed.ts"

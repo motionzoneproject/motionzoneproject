@@ -25,8 +25,8 @@ export function LessonCarousel({
 }: LessonCarouselProps) {
   if (lessons.length === 0) {
     return (
-      <div className="text-muted-foreground p-4">
-        Inga lektioner hittades för denna termin.
+      <div className="p-4 text-sm text-muted-foreground">
+        Du står inte som lärare på någon lektion den närmaste månaden.
       </div>
     );
   }
