@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/actions/admin";
 import { getHealthDetail, HEALTH_ROW_LIMIT } from "@/lib/admin-health";
+import { FixDialog } from "./FixDialog";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -56,13 +57,19 @@ export default async function Page({ params }: Props) {
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {detail.rows.map((row) => (
-            <li key={row.id} className="px-4 py-3">
-              <div className="font-medium">{row.title}</div>
-              {row.detail && (
-                <div className="text-sm text-muted-foreground">
-                  {row.detail}
-                </div>
-              )}
+            <li
+              key={row.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+            >
+              <div className="min-w-0">
+                <div className="font-medium">{row.title}</div>
+                {row.detail && (
+                  <div className="text-sm text-muted-foreground">
+                    {row.detail}
+                  </div>
+                )}
+              </div>
+              {row.fix && <FixDialog fix={row.fix} />}
             </li>
           ))}
         </ul>

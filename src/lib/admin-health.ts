@@ -19,10 +19,33 @@ export type HealthSeverity = "warning" | "serious";
 /** Så långa listor blir det aldrig i praktiken, men en gräns är en gräns. */
 export const HEALTH_ROW_LIMIT = 200;
 
+/** En av flera dubbletter av samma deltagare, med allt admin behöver för att välja vilken som ska överleva. */
+export type ParticipantCopy = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  dateOfBirth: Date | null;
+  allowPhotoVideo: boolean;
+  orderItems: number;
+  purchases: number;
+  createdAt: Date;
+};
+
+/**
+ * Vad som går att göra åt en enskild rad. Bara problem med ett entydigt,
+ * återställbart ingrepp får en fix — resten kräver ett mänskligt beslut
+ * (vilken sal? vilken produkt?) och länkar i stället till rätt sida.
+ */
+export type HealthFix =
+  | { kind: "participant-merge"; copies: ParticipantCopy[] }
+  | { kind: "teacher-role"; userId: string; userName: string; courses: number };
+
 export type HealthRow = {
   id: string;
   title: string;
   detail?: string;
+  fix?: HealthFix;
 };
 
 export type HealthIssue = {
@@ -73,10 +96,10 @@ const bookingOnCancelled = {
   lesson: { cancelled: true },
 } satisfies Prisma.BookingWhereInput;
 
-const courseTeacherWithoutRole = {
-  active: true,
-  teacher: { role: { notIn: ["admin", "teacher"] } },
-} satisfies Prisma.CourseWhereInput;
+const teacherMissingRole = {
+  role: { notIn: ["admin", "teacher"] },
+  teachingCourses: { some: { active: true } },
+} satisfies Prisma.UserWhereInput;
 
 const teacherWithoutProfile = {
   teacherProfile: null,
@@ -284,21 +307,25 @@ const checks: Check[] = [
   },
   {
     id: "teacher-without-role",
-    singular: "aktiv kurs har en lärare utan lärarbehörighet",
-    plural: "aktiva kurser har lärare utan lärarbehörighet",
+    singular: "lärare undervisar utan lärarbehörighet",
+    plural: "lärare undervisar utan lärarbehörighet",
     description:
-      "Läraren kan inte logga in och hantera sina lektioner, och försvinner ur lärarlistorna.",
+      "Kan inte logga in och hantera sina lektioner, och försvinner ur lärarlistorna.",
     fixHref: "/admin/users",
     fixLabel: "Till användare",
     severity: "warning",
-    count: () => prisma.course.count({ where: courseTeacherWithoutRole }),
+    // Grupperat per lärare, inte per kurs: en lärare med fyra kurser är ett
+    // problem att åtgärda, inte fyra.
+    count: () => prisma.user.count({ where: teacherMissingRole }),
     list: async () => {
-      const rows = await prisma.course.findMany({
-        where: courseTeacherWithoutRole,
+      const rows = await prisma.user.findMany({
+        where: teacherMissingRole,
         select: {
           id: true,
           name: true,
-          teacher: { select: { name: true, email: true, role: true } },
+          email: true,
+          role: true,
+          _count: { select: { teachingCourses: { where: { active: true } } } },
         },
         orderBy: { name: "asc" },
         take,
@@ -306,7 +333,13 @@ const checks: Check[] = [
       return rows.map((row) => ({
         id: row.id,
         title: row.name,
-        detail: `${row.teacher.name} (${row.teacher.email}) har rollen ${row.teacher.role ?? "ingen"}`,
+        detail: `${row.email} · har rollen "${row.role ?? "ingen"}" · undervisar ${row._count.teachingCourses} aktiva kurser`,
+        fix: {
+          kind: "teacher-role" as const,
+          userId: row.id,
+          userName: row.name,
+          courses: row._count.teachingCourses,
+        },
       }));
     },
   },
@@ -561,23 +594,73 @@ const checks: Check[] = [
       return Number(rows[0]?.n ?? 0);
     },
     list: async () => {
-      const rows = await prisma.$queryRaw<
-        { userName: string; participantName: string; n: bigint }[]
+      // Grupperna först — vilka (ägare, normaliserat namn) som har dubbletter
+      // och vilka id:n som ingår. array_agg ger oss id:na direkt.
+      const groups = await prisma.$queryRaw<
+        { userName: string; ids: string[] }[]
       >`
-        SELECT u.name AS "userName", MIN(p.name) AS "participantName",
-               COUNT(*)::bigint AS n
+        SELECT u.name AS "userName", array_agg(p.id) AS ids
         FROM "participant" p
         JOIN "user" u ON u.id = p."addedByUserId"
-        GROUP BY u.name, lower(btrim(p.name))
+        GROUP BY u.name, p."addedByUserId", lower(btrim(p.name))
         HAVING COUNT(*) > 1
         ORDER BY COUNT(*) DESC
         LIMIT ${take}
       `;
-      return rows.map((row) => ({
-        id: `${row.userName}-${row.participantName}`,
-        title: row.participantName,
-        detail: `${row.n} kopior, tillagda av ${row.userName}`,
-      }));
+
+      if (groups.length === 0) return [];
+
+      // Sedan detaljerna för alla inblandade i en enda fråga, så dialogen
+      // kan visa vad varje kopia faktiskt bär på.
+      const details = await prisma.participant.findMany({
+        where: { id: { in: groups.flatMap((group) => group.ids) } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          dateOfBirth: true,
+          allowPhotoVideo: true,
+          createdAt: true,
+          _count: { select: { orderItems: true, purchases: true } },
+        },
+      });
+
+      const byId = new Map(details.map((row) => [row.id, row]));
+
+      return groups.flatMap((group) => {
+        const copies: ParticipantCopy[] = group.ids
+          .map((id) => byId.get(id))
+          .filter((row) => row !== undefined)
+          .map((row) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            dateOfBirth: row.dateOfBirth,
+            allowPhotoVideo: row.allowPhotoVideo,
+            orderItems: row._count.orderItems,
+            purchases: row._count.purchases,
+            createdAt: row.createdAt,
+          }))
+          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+        if (copies.length < 2) return [];
+
+        const linked = copies.reduce(
+          (sum, copy) => sum + copy.orderItems + copy.purchases,
+          0,
+        );
+
+        return [
+          {
+            id: copies[0].id,
+            title: copies[0].name,
+            detail: `${copies.length} kopior tillagda av ${group.userName} · ${linked} kopplade ordrar/köp`,
+            fix: { kind: "participant-merge" as const, copies },
+          },
+        ];
+      });
     },
   },
 
