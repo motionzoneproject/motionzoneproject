@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  backfillPurchaseItems,
   grantTeacherRole,
   mergeParticipants,
 } from "@/lib/actions/health-actions";
@@ -47,7 +48,7 @@ export function FixDialog({
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        {fix.kind === "participant-merge" ? (
+        {fix.kind === "participant-merge" && (
           <MergeParticipants
             copies={fix.copies}
             onDone={() => {
@@ -55,8 +56,18 @@ export function FixDialog({
               onFixed?.();
             }}
           />
-        ) : (
+        )}
+        {fix.kind === "teacher-role" && (
           <GrantTeacherRole
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "purchase-backfill" && (
+          <BackfillPurchase
             fix={fix}
             onDone={() => {
               setOpen(false);
@@ -219,6 +230,74 @@ function GrantTeacherRole({
       <DialogFooter>
         <Button onClick={submit} disabled={isPending}>
           {isPending ? "Sätter roll…" : "Ge lärarbehörighet"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Skapar kursraderna på ett köp som blev utan. Kan produkten inte leverera
+ * dem säger dialogen det rakt ut i stället för att erbjuda en knapp som ändå
+ * skulle vägra.
+ */
+function BackfillPurchase({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "purchase-backfill" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const canBackfill = fix.courseNames.length > 0;
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await backfillPurchaseItems(fix.purchaseId);
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Hämta kurser från produkten</DialogTitle>
+        <DialogDescription>
+          {fix.userName} har betalat för &ldquo;{fix.productName}&rdquo; men
+          köpet saknar kursrader, så ingenting går att boka.
+        </DialogDescription>
+      </DialogHeader>
+
+      {canBackfill ? (
+        <div className="space-y-2 text-sm">
+          <p className="text-muted-foreground">
+            Följande läggs till på köpet, med samma antal tillfällen som ett
+            beviljande hade gett:
+          </p>
+          <ul className="ml-4 list-disc space-y-1">
+            {fix.courseNames.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          &ldquo;{fix.productName}&rdquo; har inga kurser kopplade, så det finns
+          ingenting att hämta. Lägg till kurser i produkten under
+          /admin/products först — kom sedan tillbaka hit.
+        </div>
+      )}
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending || !canBackfill}>
+          {isPending ? "Hämtar…" : "Hämta från produkt"}
         </Button>
       </DialogFooter>
     </>

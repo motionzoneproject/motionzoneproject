@@ -39,7 +39,15 @@ export type ParticipantCopy = {
  */
 export type HealthFix =
   | { kind: "participant-merge"; copies: ParticipantCopy[] }
-  | { kind: "teacher-role"; userId: string; userName: string; courses: number };
+  | { kind: "teacher-role"; userId: string; userName: string; courses: number }
+  | {
+      kind: "purchase-backfill";
+      purchaseId: string;
+      userName: string;
+      productName: string;
+      /** Kurserna som skulle läggas till. Tom lista = produkten måste lagas först. */
+      courseNames: string[];
+    };
 
 export type HealthRow = {
   id: string;
@@ -55,6 +63,8 @@ export type HealthIssue = {
   /** Varför det spelar roll — annars går det inte att prioritera. */
   description: string;
   severity: HealthSeverity;
+  /** Konkreta steg för att laga det, med de knappnamn som faktiskt finns. */
+  howTo: HealthHowTo;
   /**
    * Raderna som går att åtgärda direkt, så knappen finns redan i översikten
    * och man slipper klicka sig vidare för att laga något. Tom för kontroller
@@ -63,11 +73,27 @@ export type HealthIssue = {
   fixes: HealthRow[];
 };
 
+/**
+ * Hur admin faktiskt lagar problemet. Stegen namnger de knappar som finns i
+ * gränssnittet idag — inte hur det borde gå till.
+ */
+export type HealthHowTo = {
+  steps: string[];
+  /**
+   * Varning om att stegen inte gör kunden hel. Att lägga kurser i en produkt
+   * hjälper t.ex. framtida köp men lagar inte de redan sålda.
+   */
+  caveat?: string;
+  /** Sant när gränssnittet saknar väg dit — då ska ingen låtsas annat. */
+  noUiPath?: boolean;
+};
+
 type Check = {
   id: string;
   singular: string;
   plural: string;
   description: string;
+  howTo: HealthHowTo;
   /** Vart man går för att faktiskt laga det. */
   fixHref: string;
   fixLabel: string;
@@ -141,6 +167,15 @@ const checks: Check[] = [
     singular: "aktiv produkt utan kurser",
     plural: "aktiva produkter utan kurser",
     description: "Går att köpa men ger inte tillgång till någonting.",
+    howTo: {
+      steps: [
+        "Öppna produkten på /admin/products.",
+        'Klicka "Lägg till kurser i produkt" och välj de kurser köpet ska ge tillgång till.',
+        'Kör felsökningen igen och gå till "köp saknar kurstillgång" — där lagar du kunderna som redan hunnit köpa.',
+      ],
+      caveat:
+        'Det lagar bara framtida köp. Kunder som redan hunnit köpa får inte tillgång automatiskt — gå till kontrollen "köp saknar kurstillgång" när kurserna är på plats och klicka "Hämta från produkt" på varje drabbat köp.',
+    },
     fixHref: "/admin/products",
     fixLabel: "Till produkter",
     severity: "serious",
@@ -164,6 +199,13 @@ const checks: Check[] = [
     singular: "aktiv kurs utan schemapost",
     plural: "aktiva kurser utan schemaposter",
     description: "Utan veckoschema skapas inga lektioner att boka.",
+    howTo: {
+      steps: [
+        "Gå till /admin/termin och öppna terminen kursen ska gå i.",
+        'Klicka "Lägg till kurstillfälle" och välj kursen, veckodag, tid och studio.',
+        "Lektionerna skapas då automatiskt för hela terminen.",
+      ],
+    },
     fixHref: "/admin/termin",
     fixLabel: "Till terminer och scheman",
     severity: "warning",
@@ -187,6 +229,12 @@ const checks: Check[] = [
     singular: "aktiv kurs ingår inte i någon produkt",
     plural: "aktiva kurser ingår inte i någon produkt",
     description: "Kursen finns men går inte att köpa sig till.",
+    howTo: {
+      steps: [
+        "Gå till /admin/products.",
+        'Öppna en befintlig produkt och klicka "Lägg till kurser i produkt", eller klicka "Skapa en ny produkt" för kursen.',
+      ],
+    },
     fixHref: "/admin/products",
     fixLabel: "Till produkter",
     severity: "warning",
@@ -210,6 +258,13 @@ const checks: Check[] = [
     singular: "schemapost saknar sal",
     plural: "schemaposter saknar sal",
     description: "Lektionerna visas utan plats för eleverna.",
+    howTo: {
+      steps: [
+        'Gå till /admin/termin och klicka "Visa veckoschema" på terminen.',
+        'Klicka "Redigera kurstillfälle" på raden och välj sal under "Välj studio".',
+        "Saknas salen i listan? Lägg upp den på /admin/studios först.",
+      ],
+    },
     fixHref: "/admin/termin",
     fixLabel: "Till terminer och scheman",
     severity: "warning",
@@ -240,6 +295,13 @@ const checks: Check[] = [
     plural: "bokningar ligger kvar på inställda lektioner",
     description:
       "Klippen borde ha återförts när lektionen ställdes in. Eleven har blivit av med ett tillfälle.",
+    howTo: {
+      steps: [
+        "Gå till /admin/lectures och sätt filtret Status till Inställda.",
+        'Öppna lektionens "Närvaro" och klicka "Ta bort från lektion" på eleven.',
+        "Klippet återförs automatiskt till elevens saldo.",
+      ],
+    },
     fixHref: "/admin/lectures?status=cancelled",
     fixLabel: "Till inställda lektioner",
     severity: "serious",
@@ -269,6 +331,14 @@ const checks: Check[] = [
     singular: "köp har negativt saldo",
     plural: "köp har negativt saldo",
     description: "Fler tillfällen har dragits än som fanns. Bokföringsfel.",
+    howTo: {
+      steps: [
+        "Gå till /admin/students och sök upp eleven.",
+        'Klicka "Ändra produkter" och justera antalet klipp/tillfällen till rätt värde.',
+      ],
+      caveat:
+        "Ta reda på varför saldot blev negativt innan du nollställer — annars uppstår det igen. Dubbelbokningar är en vanlig orsak.",
+    },
     fixHref: "/admin/students",
     fixLabel: "Till elever",
     severity: "serious",
@@ -323,6 +393,12 @@ const checks: Check[] = [
     plural: "lärare undervisar utan lärarbehörighet",
     description:
       "Kan inte logga in och hantera sina lektioner, och försvinner ur lärarlistorna.",
+    howTo: {
+      steps: [
+        'Använd "Åtgärda"-knappen här — den sätter rollen direkt.',
+        "Alternativt: /admin/users, sök upp personen och välj Lärare i rollistan.",
+      ],
+    },
     fixHref: "/admin/users",
     fixLabel: "Till användare",
     severity: "warning",
@@ -361,6 +437,12 @@ const checks: Check[] = [
     singular: "lärare saknar lärarprofil",
     plural: "lärare saknar lärarprofil",
     description: "Syns inte på den publika presentationssidan.",
+    howTo: {
+      steps: [
+        'Gå till /admin/teachers och klicka "Lägg till lärarprofil".',
+        "Välj användaren och fyll i namn, specialitet, beskrivning och bild.",
+      ],
+    },
     fixHref: "/admin/teachers",
     fixLabel: "Till lärarprofiler",
     severity: "warning",
@@ -388,6 +470,14 @@ const checks: Check[] = [
     plural: "beviljade ordrar saknar köp",
     description:
       "Ordern godkändes men createPurchaseFromOrder skapade aldrig något köp. Kunden har betalat och fått noll tillgång.",
+    howTo: {
+      steps: [
+        'Det finns ingen knapp för det här idag. Köpet skapas av "Bevilja", och den visas bara för ordrar som väntar på godkännande — den här är redan beviljad.',
+        "Praktisk väg: lägg en ny order åt kunden och bevilja den, och avbryt sedan den trasiga.",
+        "Hör av dig till utvecklare om det gäller flera ordrar — då behövs en reparation i databasen.",
+      ],
+      noUiPath: true,
+    },
     fixHref: "/admin/orders?status=APPROVED",
     fixLabel: "Till beviljade ordrar",
     severity: "serious",
@@ -420,9 +510,19 @@ const checks: Check[] = [
     plural: "köp saknar kurstillgång",
     description:
       "Köpet finns men har inga purchaseItems, så kunden kan inte boka någonting på det.",
+    howTo: {
+      steps: [
+        'Saknar produkten kurser? Lägg till dem först på /admin/products via "Lägg till kurser i produkt" — annars finns det inget att hämta.',
+        'Klicka sedan "Hämta från produkt" här. Raderna skapas med samma kurser och antal tillfällen som ett beviljande hade gett.',
+        'Gäller det bara fel kurs på en befintlig rad använder du "Ändra produkter" på elevsidan i stället.',
+      ],
+      caveat:
+        "Hämtningen vägrar om produkten saknar kurser, eller om det är ett paket där kunden själv väljer kurser och inga val sparats. Då behöver ordern läggas om.",
+    },
     fixHref: "/admin/students",
     fixLabel: "Till elever",
     severity: "serious",
+    fixable: true,
     count: () =>
       prisma.purchase.count({ where: { PurchaseItems: { none: {} } } }),
     list: async () => {
@@ -431,15 +531,30 @@ const checks: Check[] = [
         select: {
           id: true,
           user: { select: { name: true, email: true } },
-          product: { select: { name: true } },
+          product: {
+            select: {
+              name: true,
+              courses: { select: { course: { select: { name: true } } } },
+            },
+          },
         },
         take,
       });
-      return rows.map((row) => ({
-        id: row.id,
-        title: row.user.name,
-        detail: `${row.product.name} · ${row.user.email}`,
-      }));
+      return rows.map((row) => {
+        const courseNames = row.product.courses.map((link) => link.course.name);
+        return {
+          id: row.id,
+          title: row.user.name,
+          detail: `${row.product.name} · ${row.user.email}${courseNames.length === 0 ? " · produkten saknar kurser" : ""}`,
+          fix: {
+            kind: "purchase-backfill" as const,
+            purchaseId: row.id,
+            userName: row.user.name,
+            productName: row.product.name,
+            courseNames,
+          },
+        };
+      });
     },
   },
   {
@@ -448,6 +563,13 @@ const checks: Check[] = [
     plural: "ordrar innehåller produkter utan kurser",
     description:
       "Kunden har köpt något som inte ger tillgång till någon kurs. Åtgärda produkten, inte bara ordern.",
+    howTo: {
+      steps: [
+        'Gå till /admin/products, öppna produkten och klicka "Lägg till kurser i produkt".',
+      ],
+      caveat:
+        'Det gör produkten rätt framåt, men kundens redan lagda order får ingen tillgång av det. Gå vidare till "köp saknar kurstillgång" och klicka "Hämta från produkt" på köpet.',
+    },
     fixHref: "/admin/products",
     fixLabel: "Till produkter",
     severity: "serious",
@@ -492,6 +614,13 @@ const checks: Check[] = [
     plural: "bokningar gäller andra kurser än de köpta",
     description:
       "Bokningens purchaseItem pekar på en annan kurs än lektionen tillhör. Klipp har dragits från fel kurs.",
+    howTo: {
+      steps: [
+        'Gå till /admin/lectures, öppna lektionens "Närvaro" och klicka "Ta bort från lektion". Klippet återförs.',
+        "Boka sedan in eleven på rätt lektion.",
+        'Gäller det hela köpet kan du i stället byta kurs på raden via "Ändra produkter" på elevsidan.',
+      ],
+    },
     fixHref: "/admin/lectures",
     fixLabel: "Till lektioner",
     severity: "serious",
@@ -541,6 +670,12 @@ const checks: Check[] = [
     plural: "lektioner har samma köp bokat flera gånger",
     description:
       "Samma purchaseItem är bokat mer än en gång på samma lektion, så fler klipp har dragits än platser tagits.",
+    howTo: {
+      steps: [
+        'Gå till /admin/lectures och öppna lektionens "Närvaro".',
+        'Klicka "Ta bort från lektion" på den extra raden — klippet återförs automatiskt.',
+      ],
+    },
     fixHref: "/admin/lectures",
     fixLabel: "Till lektioner",
     severity: "serious",
@@ -593,6 +728,12 @@ const checks: Check[] = [
     plural: "deltagare är inlagda flera gånger",
     description:
       "Samma namn finns som flera separata deltagare hos samma användare. Bokningar och närvaro splittras då mellan dubbletterna.",
+    howTo: {
+      steps: [
+        'Använd "Åtgärda"-knappen här och välj vilken kopia som ska behållas.',
+        "De andra raderas och deras ordrar och köp flyttas över till den du behåller.",
+      ],
+    },
     fixHref: "/admin/students",
     fixLabel: "Till elever",
     severity: "warning",
@@ -686,6 +827,12 @@ const checks: Check[] = [
     plural: "aktiva produkter har noll platser",
     description:
       "maxCustomer är 0 utan att produkten är obegränsad, så den visar alltid slutsåld och går aldrig att köpa.",
+    howTo: {
+      steps: [
+        'Gå till /admin/products och klicka "Ändra produkt".',
+        'Sätt "Platser" till rätt antal, eller kryssa i "Obegränsat antal kunder".',
+      ],
+    },
     fixHref: "/admin/products",
     fixLabel: "Till produkter",
     severity: "serious",
@@ -709,6 +856,12 @@ const checks: Check[] = [
     singular: "order har väntat länge på godkännande",
     plural: "ordrar har väntat länge på godkännande",
     description: `Äldre än ${STALE_ORDER_DAYS} dagar och fortfarande obeslutade. Kunden väntar.`,
+    howTo: {
+      steps: [
+        "Gå till /admin/orders och öppna fliken Väntar.",
+        'Klicka "Bevilja" eller "Avbryt" på ordern.',
+      ],
+    },
     fixHref: "/admin/orders?status=PENDING",
     fixLabel: "Till väntande ordrar",
     severity: "warning",
@@ -747,6 +900,11 @@ const checks: Check[] = [
     plural: "terminer är aktiva men har passerat sitt slutdatum",
     description:
       "Kurser och produkter i terminen kan fortfarande visas och säljas till kunder.",
+    howTo: {
+      steps: ['Gå till /admin/termin och klicka "Avaktivera termin".'],
+      caveat:
+        "Avaktiveringen kan även stänga av kurser och produkter i terminen. Bekräftelserutan visar exakt vad som påverkas — läs den innan du bekräftar.",
+    },
     fixHref: "/admin/termin",
     fixLabel: "Till terminer",
     severity: "warning",
@@ -773,6 +931,13 @@ const checks: Check[] = [
     singular: "aktiv produkt har passerat sitt sista datum",
     plural: "aktiva produkter har passerat sitt sista datum",
     description: "Ligger kvar som köpbar trots att giltigheten gått ut.",
+    howTo: {
+      steps: [
+        'Gå till /admin/products och klicka "Avaktivera produkt" om den inte ska säljas längre.',
+      ],
+      caveat:
+        "Sista datum (expireFixedDate) går inte att ändra i produktformuläret idag, så att förlänga giltigheten kräver utvecklare.",
+    },
     fixHref: "/admin/products",
     fixLabel: "Till produkter",
     severity: "warning",
@@ -802,6 +967,13 @@ const checks: Check[] = [
     plural: "lektioner saknar termin",
     description:
       "Faller ur alla terminsfilter och räknas inte med i statistiken.",
+    howTo: {
+      steps: [
+        "Det går inte att sätta termin på en enskild lektion i gränssnittet.",
+        "Uppstår oftast när en lektion skapats utanför ett schema. Hör av dig till utvecklare.",
+      ],
+      noUiPath: true,
+    },
     fixHref: "/admin/lectures",
     fixLabel: "Till lektioner",
     severity: "warning",
@@ -832,6 +1004,7 @@ export type HealthCheckInfo = {
   label: string;
   description: string;
   severity: HealthSeverity;
+  howTo: HealthHowTo;
 };
 
 /**
@@ -844,6 +1017,7 @@ export function getHealthCheckInfo(): HealthCheckInfo[] {
     label: check.plural,
     description: check.description,
     severity: check.severity,
+    howTo: check.howTo,
   }));
 }
 
@@ -873,6 +1047,7 @@ export async function getHealthIssues(): Promise<HealthIssue[]> {
       label: count === 1 ? check.singular : check.plural,
       description: check.description,
       severity: check.severity,
+      howTo: check.howTo,
       fixes: fixLists[index].filter((row) => row.fix !== undefined),
     }))
     .sort((a, b) => {
@@ -886,6 +1061,7 @@ export type HealthDetail = {
   label: string;
   description: string;
   severity: HealthSeverity;
+  howTo: HealthHowTo;
   fixHref: string;
   fixLabel: string;
   rows: HealthRow[];
@@ -910,6 +1086,7 @@ export async function getHealthDetail(
     label: rows.length === 1 ? check.singular : check.plural,
     description: check.description,
     severity: check.severity,
+    howTo: check.howTo,
     fixHref: check.fixHref,
     fixLabel: check.fixLabel,
     rows,

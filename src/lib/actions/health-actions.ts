@@ -122,6 +122,138 @@ export async function mergeParticipants(
 }
 
 /**
+ * Skapar de purchaseItems ett köp skulle ha fått vid beviljandet, för köp som
+ * blev av med dem — kunden har betalat men kan inte boka någonting.
+ *
+ * Raderna byggs med exakt samma regler som createPurchaseFromOrder: samma
+ * lessonsIncluded, samma nollställning för klippkort, samma hänsyn till
+ * maxCourses och kundens kursval. Annars skulle en lagning ge ett köp som
+ * beter sig annorlunda än ett riktigt.
+ *
+ * Vägrar när förutsättningarna inte stämmer i stället för att gissa: köpet
+ * måste sakna rader helt, produkten måste ha kurser, och för produkter där
+ * kunden väljer kurser måste valen finnas.
+ *
+ * @auth Admin
+ */
+export async function backfillPurchaseItems(
+  purchaseId: string,
+): Promise<Result> {
+  if (!(await isAdminRole())) {
+    return { success: false, msg: "Ingen behörighet." };
+  }
+
+  try {
+    const purchase = await prisma.purchase.findUnique({
+      where: { id: purchaseId },
+      select: {
+        id: true,
+        orderId: true,
+        productId: true,
+        participantId: true,
+        _count: { select: { PurchaseItems: true } },
+        product: {
+          select: {
+            name: true,
+            type: true,
+            maxCourses: true,
+            courses: {
+              select: {
+                courseId: true,
+                lessonsIncluded: true,
+                unlimited: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!purchase) return { success: false, msg: "Köpet finns inte." };
+
+    if (purchase._count.PurchaseItems > 0) {
+      return {
+        success: false,
+        msg: "Köpet har redan rader — inget att hämta.",
+      };
+    }
+
+    if (purchase.product.courses.length === 0) {
+      return {
+        success: false,
+        msg: `"${purchase.product.name}" har inga kurser kopplade. Lägg till kurser i produkten först, annars finns det inget att hämta.`,
+      };
+    }
+
+    // PurchaseItem kräver en orderItem, och det är den raden i ordern som
+    // gäller den här produkten och deltagaren.
+    const orderItem = await prisma.orderItem.findFirst({
+      where: {
+        orderId: purchase.orderId,
+        productId: purchase.productId,
+        participantId: purchase.participantId,
+      },
+      select: {
+        id: true,
+        courseSelections: { select: { courseId: true } },
+      },
+    });
+
+    if (!orderItem) {
+      return {
+        success: false,
+        msg: "Hittade ingen orderrad för produkten. Ordern behöver läggas om.",
+      };
+    }
+
+    // Paket där kunden väljer ur ett urval: vi får inte välja åt kunden.
+    const selected = new Set(
+      orderItem.courseSelections.map((selection) => selection.courseId),
+    );
+    if (purchase.product.maxCourses != null && selected.size === 0) {
+      return {
+        success: false,
+        msg: "Produkten kräver att kunden väljer kurser, och inga val finns sparade. Ordern behöver läggas om.",
+      };
+    }
+
+    const courses =
+      purchase.product.maxCourses != null && selected.size > 0
+        ? purchase.product.courses.filter((course) =>
+            selected.has(course.courseId),
+          )
+        : purchase.product.courses;
+
+    const isClip = purchase.product.type === "CLIP";
+
+    await prisma.purchaseItem.createMany({
+      data: courses.map((course) => ({
+        purchaseId: purchase.id,
+        courseId: course.courseId,
+        orderItemId: orderItem.id,
+        type: purchase.product.type,
+        lessonsIncluded: isClip ? 0 : course.lessonsIncluded,
+        remainingCount: isClip ? 0 : course.lessonsIncluded,
+        unlimited: course.unlimited ?? false,
+      })),
+      skipDuplicates: true,
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/health/purchase-without-items");
+    revalidatePath("/admin/students");
+
+    return {
+      success: true,
+      msg: `${courses.length} kurser tillagda på köpet. Kunden kan boka nu.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte hämta kurserna från produkten." };
+  }
+}
+
+/**
  * Ger en användare som redan undervisar aktiva kurser rollen "teacher", så
  * hen kan logga in och hantera sina egna lektioner.
  *

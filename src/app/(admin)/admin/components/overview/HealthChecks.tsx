@@ -23,6 +23,7 @@ import {
 import { runHealthChecks } from "@/lib/actions/health-actions";
 import type { HealthCheckInfo, HealthIssue } from "@/lib/admin-health";
 import { FixDialog } from "../../health/[id]/FixDialog";
+import { HowToFix } from "./HowToFix";
 
 /** Fler än så i översikten blir en vägg av knappar — resten på detaljsidan. */
 const INLINE_FIX_LIMIT = 3;
@@ -126,8 +127,12 @@ export function HealthChecks({ info }: Props) {
                         href={`/admin/health/${issue.id}`}
                         className="inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
                       >
-                        Visa vilka
+                        Visa problemet
                       </Link>
+
+                      <div className="pt-2">
+                        <HowToFix howTo={issue.howTo} compact />
+                      </div>
                     </div>
 
                     {issue.fixes.length > 0 && (
@@ -242,7 +247,10 @@ function CheckGroup({
             <div className="font-medium first-letter:uppercase">
               {check.label}
             </div>
-            <div className="text-muted-foreground">{check.description}</div>
+            <div className="mb-2 text-muted-foreground">
+              {check.description}
+            </div>
+            <HowToFix howTo={check.howTo} compact />
           </li>
         ))}
       </ul>

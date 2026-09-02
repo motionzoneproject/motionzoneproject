@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/actions/admin";
 import { getHealthDetail, HEALTH_ROW_LIMIT } from "@/lib/admin-health";
+import { HowToFix } from "../../components/overview/HowToFix";
 import { FixDialog } from "./FixDialog";
 
 interface Props {
@@ -49,6 +50,8 @@ export default async function Page({ params }: Props) {
         </h1>
         <p className="text-muted-foreground">{detail.description}</p>
       </div>
+
+      <HowToFix howTo={detail.howTo} />
 
       {detail.rows.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
