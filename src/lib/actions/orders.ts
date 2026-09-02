@@ -4,9 +4,9 @@ import { TZDate } from "@date-fns/tz";
 import { revalidatePath } from "next/cache";
 import type { OrderDetail } from "@/app/(admin)/admin/orders/view/view-client";
 import type { Prisma, PurchaseItem } from "@/generated/prisma/client";
+import { handleClips } from "../clips";
 import { generateOrderApprovedHtml, sendMail } from "../mail";
 import prisma from "../prisma";
-import { handleClips } from "./purchase-actions";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 

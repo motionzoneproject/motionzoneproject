@@ -33,6 +33,7 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { handleClips } from "../clips";
 import { formatLongFriendlyDate } from "../date-utils";
 import { sanitizeRichText } from "../dom-sanitize";
 import { generateBookingCancelledHtml, sendMail } from "../mail";
@@ -40,7 +41,7 @@ import { sekToOre } from "../money";
 import prisma from "../prisma";
 import { dbToFormTime, formToDbDate } from "../time-convert";
 import { getCourseName } from "../tools";
-import { getProductStats, handleClips } from "./purchase-actions";
+import { getProductStats } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 

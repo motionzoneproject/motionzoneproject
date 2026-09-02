@@ -9,11 +9,11 @@ import {
   adminAddCourseToSchemaSchema,
   adminAddTerminSchema,
 } from "@/validations/adminforms";
+import { handleClips } from "../clips";
 import { endOfStockholmDay } from "../date-utils";
 import prisma from "../prisma";
 import { formToDbDate, getZonedHoursMinutes } from "../time-convert";
 import { isAdminRole } from "./admin";
-import { handleClips } from "./purchase-actions";
 
 /**
  * Creating lessons bases on a schemaItem.
