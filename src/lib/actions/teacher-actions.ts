@@ -16,22 +16,59 @@ async function isAdminRole(): Promise<boolean> {
   return sessiondata?.user.role === "admin";
 }
 
+/**
+ * Check if session user is admin or teacher.
+ */
+async function isAdminOrTeacherRole(): Promise<boolean> {
+  const sessiondata = await getSessionData();
+  const role = sessiondata?.user.role;
+  return role === "admin" || role === "teacher";
+}
+
 export type TeacherWithProfile = Prisma.UserGetPayload<{
   include: { teacherProfile: true };
 }>;
 
+export type PublicTeacher = {
+  id: string;
+  name: string;
+  teacherProfile: Prisma.TeacherProfileGetPayload<true> | null;
+};
+
 /**
- * Get all teacher profiles.
- * Accessible by public (for now, or maybe restriction needed? Usually public).
+ * Lärarprofiler för den publika presentationssidan. Medvetet oskyddad, så
+ * den får bara selecta fält som är okej för vem som helst att se — aldrig
+ * e-post, roll eller ban-status.
+ * @auth Public
+ */
+export async function getPublicTeachers(): Promise<PublicTeacher[]> {
+  return prisma.user.findMany({
+    where: { teacherProfile: { isNot: null } },
+    select: { id: true, name: true, teacherProfile: true },
+  });
+}
+
+/**
+ * Samma lista men med hela User-raden, för adminvyn.
+ * @auth Admin eller lärare.
  */
 export async function getTeachers(): Promise<TeacherWithProfile[]> {
+  if (!(await isAdminOrTeacherRole())) return [];
+
   return prisma.user.findMany({
     where: { teacherProfile: { isNot: null } },
     include: { teacherProfile: true },
   });
 }
 
+/**
+ * Användare som kan kopplas till en lärarprofil. Returnerar hela User-rader
+ * (e-post, roll, ban-status) och måste därför vara låst.
+ * @auth Admin eller lärare.
+ */
 export async function getTeacherUsers(): Promise<TeacherWithProfile[]> {
+  if (!(await isAdminOrTeacherRole())) return [];
+
   return prisma.user.findMany({
     where: { role: { in: ["admin", "teacher"] } },
     include: { teacherProfile: true },

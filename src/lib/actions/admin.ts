@@ -1118,7 +1118,10 @@ export async function isCourseInProduct(
 
 export type PrismaTx = Prisma.TransactionClient;
 // Uppdaterar product.type baserat på om det är klippkort eller hur många kurser som är kopplade.
-export async function updateProductType(
+// Inte exporterad: i en "use server"-fil blir varje export en publik
+// endpoint, och den här skriver till product. Alla anropare ligger i den
+// här filen, bakom sina egna isAdminRole()-kontroller.
+async function updateProductType(
   productId: string,
   options?: { isClip?: boolean; tx?: PrismaTx },
 ): Promise<"COURSE" | "PACK" | "CLIP"> {

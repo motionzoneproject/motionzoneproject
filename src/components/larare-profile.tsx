@@ -8,14 +8,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { TeacherWithProfile } from "@/lib/actions/teacher-actions";
-import { getTeachers } from "@/lib/actions/teacher-actions";
+import type { PublicTeacher } from "@/lib/actions/teacher-actions";
+import { getPublicTeachers } from "@/lib/actions/teacher-actions";
 import { pick } from "@/lib/i18n/pick";
 import { getDictionary } from "@/locales/get-dictionary";
 
 const LarareProfile = async () => {
   const { lang, t } = await getDictionary();
-  const teachers: TeacherWithProfile[] = await getTeachers();
+  const teachers: PublicTeacher[] = await getPublicTeachers();
 
   const activeTeachers = teachers.filter(
     (teacher) => teacher.teacherProfile?.active,

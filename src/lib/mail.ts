@@ -1,5 +1,3 @@
-"use server";
-
 import { Resend } from "resend";
 import type { Course, Lesson } from "@/generated/prisma/client";
 import { formatDateToInputStr, formatLongFriendlyDate } from "./date-utils";

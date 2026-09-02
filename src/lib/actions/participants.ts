@@ -13,7 +13,17 @@ export type ParticipantData = {
   userId?: string;
 };
 
+/**
+ * Deltagare som en godtycklig användare lagt till. Tar emot userId utifrån,
+ * så den måste vara admin-låst — annars kan vem som helst läsa ut namn och
+ * e-post på andras deltagare. Inloggade som vill se sina egna använder
+ * getMyParticipants(), som scopar på sessionen istället.
+ * @auth Admin
+ */
 export async function getParticipantsForUser(userId: string) {
+  const sessiondata = await getSessionData();
+  if (sessiondata?.user.role !== "admin") return [];
+
   return prisma.participant.findMany({
     where: { addedByUserId: userId },
     orderBy: { name: "asc" },
