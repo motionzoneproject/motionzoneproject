@@ -10,6 +10,7 @@ import {
   parseStockholmDateInput,
   startOfStockholmDay,
 } from "../date-utils";
+import { requireAdmin } from "./admin";
 
 const SUCCESSFUL_ORDER_STATUSES = ["APPROVED"] as const;
 
@@ -433,7 +434,9 @@ function buildDailyTimeline(
   }));
 }
 
-export async function getGeneralProductStats(
+// Inte exporterad: i en "use server"-fil blir varje export en publik
+// endpoint. Den här anropas bara internt av getOrderStats.
+async function getGeneralProductStats(
   terminId?: string | null,
   from?: string | null,
   to?: string | null,
@@ -554,7 +557,8 @@ export async function getGeneralProductStats(
   });
 }
 
-export async function getOrderStats(
+// Inte exporterad, av samma skäl som getGeneralProductStats ovan.
+async function getOrderStats(
   terminId?: string | null,
   from?: string | null,
   to?: string | null,
@@ -597,6 +601,12 @@ export async function getTerminsStats(
   from?: string | null,
   to?: string | null,
 ): Promise<TerminStats> {
+  // Enda exporten i den här filen, och därmed enda server action-endpointen.
+  // Utan den här vakten kunde vem som helst anropa den direkt och läsa ut
+  // intäkter, ordrar och kundantal — sidvakten i /admin/stats räcker inte,
+  // eftersom StatsClient anropar den här från klienten vid filterbyte.
+  await requireAdmin();
+
   const customDateRange = parseCustomDateRange(from, to);
   const selectedPeriod = await getSelectedPeriod(terminId, customDateRange); // Intressant
 

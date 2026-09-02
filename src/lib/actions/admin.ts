@@ -33,6 +33,7 @@ import {
   adminProductSchema,
 } from "@/validations/adminforms";
 import { auth } from "../auth";
+import { handleClips } from "../clips";
 import { formatLongFriendlyDate } from "../date-utils";
 import { sanitizeRichText } from "../dom-sanitize";
 import { generateBookingCancelledHtml, sendMail } from "../mail";
@@ -40,7 +41,7 @@ import { sekToOre } from "../money";
 import prisma from "../prisma";
 import { dbToFormTime, formToDbDate } from "../time-convert";
 import { getCourseName } from "../tools";
-import { getProductStats, handleClips } from "./purchase-actions";
+import { getProductStats } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
@@ -1118,7 +1119,10 @@ export async function isCourseInProduct(
 
 export type PrismaTx = Prisma.TransactionClient;
 // Uppdaterar product.type baserat på om det är klippkort eller hur många kurser som är kopplade.
-export async function updateProductType(
+// Inte exporterad: i en "use server"-fil blir varje export en publik
+// endpoint, och den här skriver till product. Alla anropare ligger i den
+// här filen, bakom sina egna isAdminRole()-kontroller.
+async function updateProductType(
   productId: string,
   options?: { isClip?: boolean; tx?: PrismaTx },
 ): Promise<"COURSE" | "PACK" | "CLIP"> {

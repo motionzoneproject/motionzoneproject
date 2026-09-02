@@ -7,9 +7,9 @@ import type {
   Prisma,
   Product,
 } from "@/generated/prisma/client";
+import { handleClips } from "../clips";
 import prisma from "../prisma";
 import { getCourseName } from "../tools";
-import { handleClips } from "./purchase-actions";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
