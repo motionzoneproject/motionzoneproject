@@ -1,5 +1,6 @@
 import { CalendarDays, CircleAlert, Clock, MapPin, Wallet } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   type AdminOverview as AdminOverviewData,
@@ -10,6 +11,7 @@ import { formatPrice } from "@/lib/money";
 import { dbToFormTime } from "@/lib/time-convert";
 import { LessonCarousel } from "../LessonCarousel";
 import { CancelledAhead } from "./CancelledAhead";
+import { HealthChecks, HealthChecksSkeleton } from "./HealthChecks";
 import { StatTile } from "./StatTile";
 
 /**
@@ -156,6 +158,12 @@ export function AdminOverview({
       </section>
 
       <CancelledAhead lessons={data.cancelledAhead} showTeacher />
+
+      {/* Kontrollerna är åtta separata frågor, så de strömmas in efter
+          resten i stället för att hålla upp hela sidan. */}
+      <Suspense fallback={<HealthChecksSkeleton />}>
+        <HealthChecks />
+      </Suspense>
 
       {own.lessons.length > 0 && (
         <section className="space-y-3">
