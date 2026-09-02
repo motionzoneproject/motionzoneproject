@@ -1,12 +1,13 @@
 import { CalendarDays, CircleAlert, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { getHealthCheckInfo } from "@/lib/admin-health";
 import type { AdminOverview as AdminOverviewData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { LessonCarousel } from "../LessonCarousel";
 import { CancelledAhead } from "./CancelledAhead";
-import { HealthChecks, HealthChecksSkeleton } from "./HealthChecks";
+import { HealthChecks } from "./HealthChecks";
 import { StatTile } from "./StatTile";
 import { TodayLessonCard } from "./TodayLessonCard";
 
@@ -129,11 +130,9 @@ export function AdminOverview({
 
       <CancelledAhead lessons={data.cancelledAhead} showTeacher />
 
-      {/* Kontrollerna är åtta separata frågor, så de strömmas in efter
-          resten i stället för att hålla upp hela sidan. */}
-      <Suspense fallback={<HealthChecksSkeleton />}>
-        <HealthChecks />
-      </Suspense>
+      {/* Kontrollerna körs på knapptryck, inte vid sidladdning — det är ett
+          tjugotal frågor och man letar fel ibland, inte varje gång. */}
+      <HealthChecks info={getHealthCheckInfo()} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">

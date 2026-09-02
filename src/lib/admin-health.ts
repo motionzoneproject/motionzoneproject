@@ -812,6 +812,27 @@ const checks: Check[] = [
   },
 ];
 
+/** Vad en kontroll letar efter — underlag till "Vad testas?"-dialogen. */
+export type HealthCheckInfo = {
+  id: string;
+  label: string;
+  description: string;
+  severity: HealthSeverity;
+};
+
+/**
+ * Alla kontroller, oavsett om de slår till. Används för att förklara vad
+ * felsökningen faktiskt tittar på, så en tom lista går att lita på.
+ */
+export function getHealthCheckInfo(): HealthCheckInfo[] {
+  return checks.map((check) => ({
+    id: check.id,
+    label: check.plural,
+    description: check.description,
+    severity: check.severity,
+  }));
+}
+
 /**
  * Kör alla kontroller och returnerar bara de som faktiskt slår till,
  * allvarligast först.

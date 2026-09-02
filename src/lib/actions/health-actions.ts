@@ -4,11 +4,36 @@
 // så alla kontrollerar admin själva — sidvakten på /admin/health räcker inte.
 
 import { revalidatePath } from "next/cache";
+import { getHealthIssues, type HealthIssue } from "../admin-health";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
 import { adminSetRole } from "./user-management";
 
 type Result = { success: boolean; msg: string };
+
+/**
+ * Kör felsökningskontrollerna på begäran.
+ *
+ * Tidigare kördes de vid varje sidladdning, vilket kostade ~20 frågor på en
+ * översikt som redan var långsam. Nyttan är dessutom episodisk — man letar fel
+ * ibland, inte varje gång man öppnar /admin — så det är ett knapptryck nu.
+ *
+ * @auth Admin
+ */
+export async function runHealthChecks(): Promise<
+  { success: true; issues: HealthIssue[] } | { success: false; msg: string }
+> {
+  if (!(await isAdminRole())) {
+    return { success: false, msg: "Ingen behörighet." };
+  }
+
+  try {
+    return { success: true, issues: await getHealthIssues() };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte köra kontrollerna." };
+  }
+}
 
 /**
  * Slår ihop dubbletter av samma deltagare till en.
