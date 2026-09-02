@@ -1,10 +1,10 @@
 export const ORDER_STATUS_LABELS = {
-  CREATED: "Skapad",
-  AWAITING_APPROVAL: "Inväntar godkännande",
+  // Utgången, men kvar för att order_status_event fortfarande har rader med
+  // den och de ska gå att läsa i klartext. Se OrderStatus i schema.prisma.
   PENDING_PAYMENT: "Väntar på beviljande",
+
+  AWAITING_APPROVAL: "Inväntar godkännande",
   APPROVED: "Beviljad",
-  PAID: "Betald",
-  COMPLETED: "Slutförd",
   CANCELLED: "Avbruten",
 } as const;
 

@@ -557,12 +557,14 @@ model Photo {
 // CREATED, PENDING_PAYMENT, PAID och COMPLETED är deprecated och sätts inte längre.
 // Har kvar de nu för bakåtkompabilitet bara.
 enum OrderStatus {
-  CREATED
+  // Utgått, men kvar för historikens skull: order_status_event har rader med
+  // PENDING_PAYMENT och den loggen ska visa vad som faktiskt hände. Migrationen
+  // 20260825200000 flyttade alla ordrar ur statusen och bytte default.
   PENDING_PAYMENT
+
+  // Den levande livscykeln.
   AWAITING_APPROVAL
   APPROVED
-  PAID
-  COMPLETED
   CANCELLED
 }
 
