@@ -553,16 +553,9 @@ model Photo {
 }
 
 // Enum for order lifecycle states
-// I praktiken används bara AWAITING_APPROVAL, APPROVED och CANCELLED (se orders.ts).
-// CREATED, PENDING_PAYMENT, PAID och COMPLETED är deprecated och sätts inte längre.
-// Har kvar de nu för bakåtkompabilitet bara.
+// Hela livscykeln för en order. Inga utgångna värden ligger kvar här — gamla
+// statusar lever bara som text i order_status_event, se den modellen nedan.
 enum OrderStatus {
-  // Utgått, men kvar för historikens skull: order_status_event har rader med
-  // PENDING_PAYMENT och den loggen ska visa vad som faktiskt hände. Migrationen
-  // 20260825200000 flyttade alla ordrar ur statusen och bytte default.
-  PENDING_PAYMENT
-
-  // Den levande livscykeln.
   AWAITING_APPROVAL
   APPROVED
   CANCELLED
@@ -575,8 +568,13 @@ model OrderStatusEvent {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  fromStatus OrderStatus?
-  toStatus   OrderStatus
+  // Text, inte OrderStatus. En logg ska bevara vad som faktiskt hände, även
+  // statusar som sedan tagits bort ur livscykeln (loggen innehåller t.ex.
+  // PENDING_PAYMENT). Med enum här skulle varje utgången status tvinga sig
+  // kvar i enumet, eller kräva att historiken skrivs om. Skrivningarna görs
+  // bara från updateOrderStatus(), som är typad till OrderStatus.
+  fromStatus String?
+  toStatus   String
 
   changedByUserId String
   changedBy       User   @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
