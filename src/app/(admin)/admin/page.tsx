@@ -1,25 +1,10 @@
-import { HelpCircleIcon, InfoIcon } from "lucide-react";
+import { HelpCircleIcon } from "lucide-react";
 import Link from "next/link";
-import type { Prisma } from "@/generated/prisma/client";
 import { getSessionData } from "@/lib/actions/sessiondata";
-import prisma from "@/lib/prisma";
-import { LessonCarousel } from "./components/LessonCarousel";
-
-const _lessonsInclude = {
-  bookings: true,
-  teacher: true,
-  course: true,
-  schemaItem: true,
-} satisfies Prisma.LessonInclude;
-
-export type LessonWithData = Prisma.LessonGetPayload<{
-  include: {
-    bookings: true;
-    course: true;
-    teacher: true;
-    schemaItem: { include: { studio: true } };
-  };
-}>;
+import { getAdminOverview, getTeacherOverview } from "@/lib/admin-overview";
+import { endOfStockholmDay, startOfStockholmDay } from "@/lib/date-utils";
+import { AdminOverview } from "./components/overview/AdminOverview";
+import { TeacherOverview } from "./components/overview/TeacherOverview";
 
 export default async function Page() {
   const sessionData = await getSessionData();
@@ -32,105 +17,38 @@ export default async function Page() {
     return null;
   }
 
+  const now = new Date();
+  const dayStart = startOfStockholmDay(now);
+  const dayEnd = endOfStockholmDay(now);
+
+  // Rollerna får två olika sidor, inte samma sida med saker bortdolda: en
+  // lärare ska se sin dag, en admin ska se skolans. Datan hämtas därefter —
+  // lärare kör aldrig frågorna om ordrar eller andras lektioner.
   const isTeacher = user.role === "teacher";
 
-  const now = new Date();
-
-  const lessons: LessonWithData[] = await prisma.lesson.findMany({
-    where: {
-      teacherId: user.id,
-      startTime: {
-        gte: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
-        lte: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000),
-      },
-    },
-    include: {
-      course: true,
-      teacher: true,
-      bookings: true,
-      schemaItem: { include: { studio: true } },
-    },
-    orderBy: {
-      startTime: "asc",
-    },
-  });
-
-  const futureLessonIndex = lessons.findIndex(
-    (l) => new Date(l.endTime) >= now,
-  );
-
-  const initialScrollIndex =
-    futureLessonIndex === -1 && lessons.length > 0
-      ? lessons.length - 1
-      : futureLessonIndex === -1
-        ? 0
-        : futureLessonIndex;
-
-  // Ordrar/statistik är inte del av "hantera sina lektioner" — hoppas över
-  // helt för lärare, inte bara dolt i UI.
-  const ordersWaiting = isTeacher
-    ? 0
-    : await prisma.order.count({ where: { status: { not: "APPROVED" } } });
-
-  const ordersUnpaid = isTeacher
-    ? 0
-    : await prisma.order.count({ where: { isPaid: false } });
-
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 p-8">
       <div className="flex justify-between">
         <h1 className="text-3xl font-bold">Översikt</h1>
-        <div className="text-center p-3 border-2 border-blue-500 hover:bg-blue-500 rounded-full">
+        <div className="rounded-full border-2 border-blue-500 p-3 text-center hover:bg-blue-500">
           <Link href="admin-manual.pdf" className="text-sm" target="_blank">
-            <HelpCircleIcon className="w-8 h-8 mx-auto" />
+            <HelpCircleIcon className="mx-auto h-8 w-8" />
             Manual
           </Link>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {ordersUnpaid > 0 && (
-          <div className="flex gap-2 text-xl text-amber-500">
-            <div>
-              <InfoIcon />
-            </div>
-            <div>
-              <Link href="/admin/orders?paid=UNPAID">
-                Det finns <strong>{ordersUnpaid} st</strong> obetalda ordrar.
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {ordersWaiting > 0 && (
-          <div className="flex gap-2 text-xl text-amber-500">
-            <div>
-              <InfoIcon />
-            </div>
-            <div>
-              <Link href="/admin/orders?status=PENDING">
-                Det ligger <strong>{ordersWaiting} st</strong> ordrar som väntar
-                på att beviljas.
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex justify-between items-baseline">
-          <h2 className="text-xl font-semibold">
-            <strong>Dina</strong> senaste och kommande lektioner
-          </h2>
-        </div>
-
-        <div className="bg-muted/30 p-1 rounded-xl">
-          <LessonCarousel
-            lessons={lessons}
-            initialScrollIndex={initialScrollIndex}
-          />
-        </div>
-      </div>
+      {isTeacher ? (
+        <TeacherOverview
+          data={await getTeacherOverview(user.id, dayStart, dayEnd)}
+          today={now}
+        />
+      ) : (
+        <AdminOverview
+          data={await getAdminOverview(user.id, dayStart, dayEnd)}
+          today={now}
+        />
+      )}
     </div>
   );
 }

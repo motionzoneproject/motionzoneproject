@@ -6,12 +6,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { LessonWithData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { cn } from "@/lib/utils";
 import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../lectures/components/EditLesson";
-import type { LessonWithData } from "../page";
 import { LessonCarouselInteractive } from "./LessonCarouselInteractive";
 
 interface LessonCarouselProps {
