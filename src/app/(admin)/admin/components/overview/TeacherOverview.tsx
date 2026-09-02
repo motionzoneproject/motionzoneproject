@@ -1,18 +1,12 @@
-import { Clock, MapPin, Sun } from "lucide-react";
+import { Sun } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-  bookedCount,
-  type TeacherOverview as TeacherOverviewData,
-} from "@/lib/admin-overview";
+import { Suspense } from "react";
+import type { TeacherOverview as TeacherOverviewData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
-import { dbToFormTime } from "@/lib/time-convert";
-import { AttendeDialog } from "../../lectures/components/attendence/AttendenceDialog";
-import { EditLessonBtn } from "../../lectures/components/EditLesson";
 import { LessonCarousel } from "../LessonCarousel";
 import { CancelledAhead } from "./CancelledAhead";
 import { StatTile } from "./StatTile";
+import { TodayLessonCard } from "./TodayLessonCard";
 
 /**
  * Lärarens översikt svarar på "vad gäller för mig idag". Dagens lektioner
@@ -46,55 +40,15 @@ export function TeacherOverview({
             Du har inga lektioner idag.
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {data.today.map((lesson) => (
-              <Card key={lesson.id} className="border-l-4 border-l-primary">
-                <CardContent className="space-y-2 pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-base font-semibold leading-tight">
-                      {lesson.course.name}
-                    </span>
-                    {lesson.cancelled && (
-                      <Badge
-                        variant="outline"
-                        className="shrink-0 text-amber-600 dark:text-amber-400"
-                      >
-                        Inställd
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1.5 tabular-nums">
-                      <Clock className="h-4 w-4" />
-                      {dbToFormTime(new Date(lesson.startTime))}–
-                      {dbToFormTime(new Date(lesson.endTime))}
-                    </span>
-                    {lesson.schemaItem.studio && (
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4" />
-                        {lesson.schemaItem.studio.name}
-                      </span>
-                    )}
-                    <span className="tabular-nums">
-                      {bookedCount(lesson)} bokade
-                    </span>
-                  </div>
-
-                  {lesson.message && (
-                    <p className="text-sm text-muted-foreground">
-                      {lesson.message}
-                    </p>
-                  )}
-                </CardContent>
-
-                <CardFooter className="flex items-center gap-4 border-t pt-3 text-xs">
-                  <AttendeDialog lesson={lesson} />
-                  <EditLessonBtn lesson={lesson} />
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          // Varje kort hämtar närvarodata för sin lektion, så listan strömmas
+          // in i stället för att hålla upp resten av översikten.
+          <Suspense fallback={<TodaySkeleton count={data.today.length} />}>
+            <div className="grid gap-3 md:grid-cols-2">
+              {data.today.map((lesson) => (
+                <TodayLessonCard key={lesson.id} lesson={lesson} />
+              ))}
+            </div>
+          </Suspense>
         )}
       </section>
 
@@ -131,5 +85,19 @@ export function TeacherOverview({
         </Link>
       </section>
     </>
+  );
+}
+
+/** Platshållare med rätt antal kort, så sidan inte hoppar när de laddats. */
+function TodaySkeleton({ count }: { count: number }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {Array.from({ length: count }, (_, index) => index).map((index) => (
+        <div
+          key={index}
+          className="h-36 animate-pulse rounded-xl border border-border bg-card"
+        />
+      ))}
+    </div>
   );
 }

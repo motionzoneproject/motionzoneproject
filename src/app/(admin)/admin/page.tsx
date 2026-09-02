@@ -27,7 +27,9 @@ export default async function Page() {
   const isTeacher = user.role === "teacher";
 
   return (
-    <div className="space-y-8 p-8">
+    // Smalare marginal på mobil: p-8 äter ~64px av en 414px-skärm, vilket är
+    // vad som fick beloppet i "Utestående" att rinna över sin bricka.
+    <div className="space-y-8 p-4 sm:p-8">
       <div className="flex justify-between">
         <h1 className="text-3xl font-bold">Översikt</h1>
         <div className="rounded-full border-2 border-blue-500 p-3 text-center hover:bg-blue-500">
