@@ -1,14 +1,28 @@
+/**
+ * Statusar en order kan ha. Det här är den levande livscykeln, och enumet
+ * OrderStatus i schema.prisma innehåller exakt de här värdena.
+ */
 export const ORDER_STATUS_LABELS = {
-  CREATED: "Skapad",
   AWAITING_APPROVAL: "Inväntar godkännande",
-  PENDING_PAYMENT: "Väntar på beviljande",
   APPROVED: "Beviljad",
-  PAID: "Betald",
-  COMPLETED: "Slutförd",
   CANCELLED: "Avbruten",
 } as const;
 
 export type OrderStatus = keyof typeof ORDER_STATUS_LABELS;
+
+/**
+ * Statusar som funnits förr och ligger kvar i orderloggen
+ * (order_status_event). De kan aldrig sättas på en order — de finns bara för
+ * att gamla händelser ska gå att läsa i klartext i stället för som råa
+ * versaler. Loggen lagras som text just för att den ska kunna innehålla
+ * sådant här utan att enumet behöver bära på det.
+ */
+const HISTORICAL_STATUS_LABELS: Record<string, string> = {
+  CREATED: "Skapad",
+  PENDING_PAYMENT: "Väntar på beviljande",
+  PAID: "Betald",
+  COMPLETED: "Slutförd",
+};
 
 export function getOrderStatusLabel(
   status: string,
@@ -19,5 +33,5 @@ export function getOrderStatusLabel(
     return overrides?.[typedStatus] ?? ORDER_STATUS_LABELS[typedStatus];
   }
 
-  return status;
+  return HISTORICAL_STATUS_LABELS[status] ?? status;
 }

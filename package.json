@@ -7,6 +7,7 @@
     "build": "npx prisma migrate deploy && npx prisma generate && next build",
     "start": "next start",
     "lint": "biome check",
+    "check:order-status": "tsx --env-file=.env scripts/check-order-status.ts",
     "format": "biome format --write",
     "prepare": "husky",
     "seed": "tsx scripts/seed.ts"

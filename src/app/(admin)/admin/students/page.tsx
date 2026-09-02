@@ -552,14 +552,10 @@ export default async function Page({
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
 
   const purchaseFilters: Prisma.PurchaseWhereInput[] = [];
+  // "Ej godkänd ännu" är numera bara AWAITING_APPROVAL: CREATED sattes aldrig
+  // av koden, och 20260825200000 flyttade alla ordrar ur PENDING_PAYMENT.
   const pendingOrderItemFilters: Prisma.OrderItemWhereInput[] = [
-    {
-      order: {
-        status: {
-          in: ["CREATED", "PENDING_PAYMENT", "AWAITING_APPROVAL"],
-        },
-      },
-    },
+    { order: { status: "AWAITING_APPROVAL" } },
   ];
 
   if (product) {

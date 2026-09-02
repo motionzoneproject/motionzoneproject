@@ -56,8 +56,10 @@ export type OrderItemLite = {
 
 type StatusEventLite = {
   id: string;
-  fromStatus?: OrderStatus | null;
-  toStatus: OrderStatus;
+  // Text, inte OrderStatus: loggen innehåller även statusar som tagits bort ur
+  // livscykeln. getOrderStatusLabel() översätter dem.
+  fromStatus?: string | null;
+  toStatus: string;
   note?: string | null;
   createdAt: string | Date;
   changedByUserId: string;
