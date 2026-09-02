@@ -35,7 +35,7 @@ export async function HealthChecks() {
             return (
               <li key={issue.id}>
                 <Link
-                  href={issue.href}
+                  href={`/admin/health/${issue.id}`}
                   className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                 >
                   <Icon
@@ -52,6 +52,9 @@ export async function HealthChecks() {
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {issue.description}
+                    </div>
+                    <div className="text-sm text-muted-foreground underline underline-offset-4">
+                      Visa vilka
                     </div>
                   </div>
                 </Link>
