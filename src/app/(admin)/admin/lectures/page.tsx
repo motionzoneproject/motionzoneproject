@@ -101,7 +101,14 @@ export default async function LecturePage({ searchParams }: Props) {
     ...(sp.termin ? { terminId: sp.termin } : {}),
     ...(sp.course ? { courseId: sp.course } : {}),
     ...(sp.schemaitem ? { schemaItemId: sp.schemaitem } : {}),
-    ...(sp.status ? { cancelled: sp.status === "cancelled" } : {}),
+    // Bara de två värdena filterkomponenten kan producera. Tidigare gav vilket
+    // annat ?status= som helst cancelled: false, alltså ett tyst filter som
+    // dolde alla inställda lektioner.
+    ...(sp.status === "cancelled"
+      ? { cancelled: true }
+      : sp.status === "active"
+        ? { cancelled: false }
+        : {}),
     ...(sp.from || sp.to
       ? {
           startTime: {
