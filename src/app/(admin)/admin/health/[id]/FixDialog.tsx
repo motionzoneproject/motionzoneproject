@@ -21,7 +21,21 @@ import {
 import type { HealthFix, ParticipantCopy } from "@/lib/admin-health";
 import { formatShortFriendlyDate } from "@/lib/date-utils";
 
-export function FixDialog({ fix }: { fix: HealthFix }) {
+export function FixDialog({
+  fix,
+  label = "Åtgärda",
+  onFixed,
+}: {
+  fix: HealthFix;
+  /** Namnger raden när flera knappar visas bredvid varandra i översikten. */
+  label?: string;
+  /**
+   * Anropas när åtgärden lyckats. Översikten håller sina resultat i
+   * klient-state, så router.refresh() räcker inte där — den behöver köra om
+   * kontrollerna själv.
+   */
+  onFixed?: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -29,17 +43,26 @@ export function FixDialog({ fix }: { fix: HealthFix }) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="shrink-0">
           <Wrench className="h-4 w-4" />
-          Åtgärda
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         {fix.kind === "participant-merge" ? (
           <MergeParticipants
             copies={fix.copies}
-            onDone={() => setOpen(false)}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
           />
         ) : (
-          <GrantTeacherRole fix={fix} onDone={() => setOpen(false)} />
+          <GrantTeacherRole
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

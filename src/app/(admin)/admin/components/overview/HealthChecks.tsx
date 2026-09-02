@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { runHealthChecks } from "@/lib/actions/health-actions";
 import type { HealthCheckInfo, HealthIssue } from "@/lib/admin-health";
+import { FixDialog } from "../../health/[id]/FixDialog";
+
+/** Fler än så i översikten blir en vägg av knappar — resten på detaljsidan. */
+const INLINE_FIX_LIMIT = 3;
 
 interface Props {
   /** Alla kontroller, för "Vad testas?" — hämtas server-side, kräver ingen körning. */
@@ -95,31 +99,66 @@ export function HealthChecks({ info }: Props) {
                 const Icon = serious ? TriangleAlert : CircleAlert;
 
                 return (
-                  <li key={issue.id}>
-                    <Link
-                      href={`/admin/health/${issue.id}`}
-                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-                    >
-                      <Icon
-                        className={
-                          serious
-                            ? "mt-0.5 h-4 w-4 shrink-0 text-destructive"
-                            : "mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
-                        }
-                      />
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-medium">
-                          <span className="tabular-nums">{issue.count}</span>{" "}
-                          {issue.label}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {issue.description}
-                        </div>
-                        <div className="text-sm text-muted-foreground underline underline-offset-4">
-                          Visa vilka
-                        </div>
+                  // Knappen kan inte ligga inuti länken — en <button> i en
+                  // <a> är ogiltig och skulle navigera i stället för att
+                  // öppna dialogen. Därför är raden en behållare med länken
+                  // och knapparna som syskon.
+                  <li
+                    key={issue.id}
+                    className="flex flex-wrap items-start gap-3 px-4 py-3"
+                  >
+                    <Icon
+                      className={
+                        serious
+                          ? "mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                          : "mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                      }
+                    />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="text-sm font-medium">
+                        <span className="tabular-nums">{issue.count}</span>{" "}
+                        {issue.label}
                       </div>
-                    </Link>
+                      <div className="text-sm text-muted-foreground">
+                        {issue.description}
+                      </div>
+                      <Link
+                        href={`/admin/health/${issue.id}`}
+                        className="inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                      >
+                        Visa vilka
+                      </Link>
+                    </div>
+
+                    {issue.fixes.length > 0 && (
+                      <div className="flex flex-col items-stretch gap-2">
+                        {issue.fixes
+                          .slice(0, INLINE_FIX_LIMIT)
+                          .map(
+                            (row) =>
+                              row.fix && (
+                                <FixDialog
+                                  key={row.id}
+                                  fix={row.fix}
+                                  label={
+                                    issue.fixes.length > 1
+                                      ? `Åtgärda: ${row.title}`
+                                      : "Åtgärda"
+                                  }
+                                  onFixed={run}
+                                />
+                              ),
+                          )}
+                        {issue.fixes.length > INLINE_FIX_LIMIT && (
+                          <Link
+                            href={`/admin/health/${issue.id}`}
+                            className="text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                          >
+                            +{issue.fixes.length - INLINE_FIX_LIMIT} till
+                          </Link>
+                        )}
+                      </div>
+                    )}
                   </li>
                 );
               })}

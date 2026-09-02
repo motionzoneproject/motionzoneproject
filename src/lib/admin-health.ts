@@ -55,6 +55,12 @@ export type HealthIssue = {
   /** Varför det spelar roll — annars går det inte att prioritera. */
   description: string;
   severity: HealthSeverity;
+  /**
+   * Raderna som går att åtgärda direkt, så knappen finns redan i översikten
+   * och man slipper klicka sig vidare för att laga något. Tom för kontroller
+   * vars fix kräver ett mänskligt beslut.
+   */
+  fixes: HealthRow[];
 };
 
 type Check = {
@@ -66,6 +72,12 @@ type Check = {
   fixHref: string;
   fixLabel: string;
   severity: HealthSeverity;
+  /**
+   * Sant om list() ger rader med en fix. Styr om översikten ska hämta dem
+   * direkt — utan flaggan skulle alla nitton kontroller behöva listas för
+   * att ta reda på att de flesta inte har någon knapp.
+   */
+  fixable?: boolean;
   count: () => Promise<number>;
   list: () => Promise<HealthRow[]>;
 };
@@ -314,6 +326,7 @@ const checks: Check[] = [
     fixHref: "/admin/users",
     fixLabel: "Till användare",
     severity: "warning",
+    fixable: true,
     // Grupperat per lärare, inte per kurs: en lärare med fyra kurser är ett
     // problem att åtgärda, inte fyra.
     count: () => prisma.user.count({ where: teacherMissingRole }),
@@ -583,6 +596,7 @@ const checks: Check[] = [
     fixHref: "/admin/students",
     fixLabel: "Till elever",
     severity: "warning",
+    fixable: true,
     count: async () => {
       const rows = await prisma.$queryRaw<{ n: bigint }[]>`
         SELECT COUNT(*)::bigint AS n FROM (
@@ -840,15 +854,26 @@ export function getHealthCheckInfo(): HealthCheckInfo[] {
 export async function getHealthIssues(): Promise<HealthIssue[]> {
   const counts = await Promise.all(checks.map((check) => check.count()));
 
-  return checks
+  const hits = checks
     .map((check, index) => ({ check, count: counts[index] }))
-    .filter(({ count }) => count > 0)
-    .map(({ check, count }) => ({
+    .filter(({ count }) => count > 0);
+
+  // Bara de åtgärdbara kontrollerna listas här, och bara när de faktiskt slår
+  // till — resten av raderna hämtas först på detaljsidan.
+  const fixLists = await Promise.all(
+    hits.map(({ check }) =>
+      check.fixable ? check.list() : Promise.resolve([]),
+    ),
+  );
+
+  return hits
+    .map(({ check, count }, index) => ({
       id: check.id,
       count,
       label: count === 1 ? check.singular : check.plural,
       description: check.description,
       severity: check.severity,
+      fixes: fixLists[index].filter((row) => row.fix !== undefined),
     }))
     .sort((a, b) => {
       if (a.severity !== b.severity) return a.severity === "serious" ? -1 : 1;
