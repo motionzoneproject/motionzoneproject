@@ -30,12 +30,18 @@ type TeacherListProps = {
   teachersWithProfile: TeacherWithProfile[];
   teacherUsers: TeacherWithProfile[];
   lang?: string;
+  /** Döljer ta-bort-knappen — lärare får bara redigera, inte radera. */
+  canDelete?: boolean;
+  /** Döljer "Lägg till"-knappen — t.ex. en lärare som redan har en profil. */
+  canCreate?: boolean;
 };
 
 export function TeacherList({
   teachersWithProfile: teachers,
   teacherUsers,
   lang,
+  canDelete = true,
+  canCreate = true,
 }: TeacherListProps) {
   const router = useRouter();
   const [editingTeacher, setEditingTeacher] =
@@ -70,16 +76,18 @@ export function TeacherList({
       <div className="flex items-center justify-between gap-2">
         <span className="font-bold text-2xl">Lärarprofiler</span>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              className="cursor-pointer"
-              onClick={() => setEditingTeacher(null)}
-            >
-              <Plus className="h-4 w-4" />
-              Lägg till lärarprofil
-            </Button>
-          </DialogTrigger>
+          {canCreate && (
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="cursor-pointer"
+                onClick={() => setEditingTeacher(null)}
+              >
+                <Plus className="h-4 w-4" />
+                Lägg till lärarprofil
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -132,15 +140,17 @@ export function TeacherList({
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">Redigera lärare</span>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(profile.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Ta bort lärare</span>
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(profile.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Ta bort lärare</span>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );

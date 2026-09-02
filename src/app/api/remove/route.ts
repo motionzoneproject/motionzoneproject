@@ -1,13 +1,10 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdminRole } from "@/lib/actions/admin";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import { getS3Resources } from "@/lib/s3";
 
 export async function DELETE(req: Request) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return new Response("Unauthorized", { status: 401 });
-
   const s3Resources = getS3Resources();
   if (!s3Resources) {
     return NextResponse.json(
@@ -40,6 +37,17 @@ export async function DELETE(req: Request) {
         { status: 400 },
       );
     }
+
+    const sessiondata = await getSessionData();
+    const role = sessiondata?.user.role;
+    // Lärare får bara ta bort filer i sin egen teachers/{userId}/-mapp
+    // (uploads namnges med ownerId i /api/upload) — allt annat är
+    // fortfarande admin-only.
+    const isAllowed =
+      role === "admin" ||
+      (role === "teacher" &&
+        key.startsWith(`teachers/${sessiondata?.user.id}/`));
+    if (!isAllowed) return new Response("Unauthorized", { status: 401 });
 
     const command = new DeleteObjectCommand({
       Bucket: bucket,

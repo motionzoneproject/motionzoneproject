@@ -1,16 +1,9 @@
 import { HelpCircleIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSessionData } from "@/lib/actions/sessiondata";
 import prisma from "@/lib/prisma";
 import { LessonCarousel } from "./components/LessonCarousel";
-import { StatsPage } from "./components/StatsPage";
 
 const _lessonsInclude = {
   bookings: true,
@@ -31,9 +24,15 @@ export type LessonWithData = Prisma.LessonGetPayload<{
 export default async function Page() {
   const sessionData = await getSessionData();
   const user = sessionData?.user;
-  if (!sessionData || !user || user.role !== "admin") {
+  if (
+    !sessionData ||
+    !user ||
+    (user.role !== "admin" && user.role !== "teacher")
+  ) {
     return null;
   }
+
+  const isTeacher = user.role === "teacher";
 
   const now = new Date();
 
@@ -41,8 +40,8 @@ export default async function Page() {
     where: {
       teacherId: user.id,
       startTime: {
-        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        gte: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+        lte: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000),
       },
     },
     include: {
@@ -67,11 +66,15 @@ export default async function Page() {
         ? 0
         : futureLessonIndex;
 
-  const ordersWaiting = await prisma.order.count({
-    where: { status: { not: "APPROVED" } },
-  });
+  // Ordrar/statistik är inte del av "hantera sina lektioner" — hoppas över
+  // helt för lärare, inte bara dolt i UI.
+  const ordersWaiting = isTeacher
+    ? 0
+    : await prisma.order.count({ where: { status: { not: "APPROVED" } } });
 
-  const ordersUnpaid = await prisma.order.count({ where: { isPaid: false } });
+  const ordersUnpaid = isTeacher
+    ? 0
+    : await prisma.order.count({ where: { isPaid: false } });
 
   return (
     <div className="p-8 space-y-8">
@@ -128,17 +131,6 @@ export default async function Page() {
           />
         </div>
       </div>
-
-      <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
-          <AccordionTrigger className="text-xl">
-            Visa statistik
-          </AccordionTrigger>
-          <AccordionContent>
-            <StatsPage />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
     </div>
   );
 }

@@ -2,6 +2,7 @@ export type UploadMetadata = {
   contentType: string;
   size: number;
   folder?: string;
+  ownerId?: string;
 };
 
 export type PresignResponse = {
@@ -25,7 +26,11 @@ async function readErrorMessage(res: Response) {
   }
 }
 
-export async function uploadImageFromBlob(blob: Blob) {
+export async function uploadImageFromBlob(
+  blob: Blob,
+  folder?: string,
+  ownerId?: string,
+) {
   const contentType = normalizeContentType(blob.type || "image/jpeg");
   if (
     !ALLOWED_MIME_TYPES.includes(
@@ -35,7 +40,12 @@ export async function uploadImageFromBlob(blob: Blob) {
     throw new Error("Ogiltig bildtyp. Endast JPEG, PNG och WEBP stöds.");
   }
 
-  const payload: UploadMetadata = { contentType, size: blob.size };
+  const payload: UploadMetadata = {
+    contentType,
+    size: blob.size,
+    folder,
+    ownerId,
+  };
 
   const presignRes = await fetch("/api/upload", {
     method: "POST",

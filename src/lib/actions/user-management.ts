@@ -151,13 +151,24 @@ export async function adminUpdateUserDetails(
   }
 }
 
-export async function adminSetRole(userId: string, role: "admin" | "user") {
+export async function adminSetRole(
+  userId: string,
+  role: "admin" | "teacher" | "user",
+) {
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, error: "Ej behörig." };
 
   try {
+    // better-auth's admin plugin infers setRole's type from its own
+    // `adminRoles` config (defaults to "admin" | "user"), so "teacher" trips
+    // the type checker even though the endpoint's runtime validation is a
+    // plain string. Don't "fix" this by adding "teacher" to adminRoles in
+    // auth.ts — that config controls who may call the plugin's *privileged*
+    // endpoints (ban, impersonate, set-role-for-others) directly, and would
+    // grant teachers that access. The real authorization here is the
+    // isAdminRole() check above.
     await auth.api.setRole({
-      body: { userId, role },
+      body: { userId, role: role as "admin" | "user" },
       headers: await headers(),
     });
     return { success: true };

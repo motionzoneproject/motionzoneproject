@@ -50,7 +50,10 @@ export default function UsersView({
 
   function handleRoleChange(userId: string, role: string) {
     startTransition(async () => {
-      const result = await adminSetRole(userId, role as "admin" | "user");
+      const result = await adminSetRole(
+        userId,
+        role as "admin" | "teacher" | "user",
+      );
       if (result.success) {
         toast.success("Roll uppdaterad");
         router.refresh();
@@ -139,7 +142,11 @@ export default function UsersView({
                       <Badge variant="default">Admin</Badge>
                     ) : (
                       <Select
-                        value={u.role === "admin" ? "admin" : "user"}
+                        value={
+                          u.role === "admin" || u.role === "teacher"
+                            ? u.role
+                            : "user"
+                        }
                         onValueChange={(val) => handleRoleChange(u.id, val)}
                         disabled={isPending}
                       >
@@ -148,6 +155,7 @@ export default function UsersView({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="user">Användare</SelectItem>
+                          <SelectItem value="teacher">Lärare</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>

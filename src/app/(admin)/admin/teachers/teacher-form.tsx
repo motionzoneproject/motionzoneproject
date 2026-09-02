@@ -103,7 +103,11 @@ export function TeacherForm({
         try {
           const res = await fetch(finalImageURL);
           const blob = await res.blob();
-          finalImageURL = await uploadImageFromBlob(blob);
+          finalImageURL = await uploadImageFromBlob(
+            blob,
+            "teachers",
+            values.userId,
+          );
           URL.revokeObjectURL(values.imageUrl ?? "");
         } catch (e) {
           console.error(e);

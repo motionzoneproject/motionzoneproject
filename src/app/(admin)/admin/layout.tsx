@@ -5,15 +5,15 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { isAdminRole } from "@/lib/actions/admin";
+import { isAdminOrTeacherRole } from "@/lib/actions/admin";
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return notFound();
+  const allowed = await isAdminOrTeacherRole();
+  if (!allowed) return notFound();
 
   return (
     <SidebarProvider className="relative flex-1 !min-h-0">

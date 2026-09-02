@@ -7,7 +7,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Course, SchemaItem, Termin } from "@/generated/prisma/client";
-import { requireAdmin } from "@/lib/actions/admin";
+import { requireAdminOrTeacher } from "@/lib/actions/admin";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import {
   endOfStockholmDateInput,
   parseStockholmDateInput,
@@ -35,12 +36,19 @@ interface Props {
 }
 
 export default async function LecturePage({ searchParams }: Props) {
-  await requireAdmin();
+  await requireAdminOrTeacher();
   const sp = await searchParams;
 
+  // Lärare kan bara se sina egna lektioner. En admin får filtrera fritt på
+  // ?teacher=..., men för en lärare ignoreras query-parametern helt (den kan
+  // inte tas emot från klienten) — de scopas alltid till sitt eget id.
+  const sessionData = await getSessionData();
+  const isTeacher = sessionData?.user.role === "teacher";
+  const teacherFilter = isTeacher ? sessionData?.user.id : sp.teacher;
+
   const getTerminer = async (): Promise<Termin[]> => {
-    const where = sp.teacher
-      ? { schemaItems: { some: { course: { teacherId: sp.teacher } } } }
+    const where = teacherFilter
+      ? { schemaItems: { some: { course: { teacherId: teacherFilter } } } }
       : undefined;
 
     return await prisma.termin.findMany({ where });
@@ -48,7 +56,7 @@ export default async function LecturePage({ searchParams }: Props) {
 
   const getCourses = async (): Promise<Course[]> => {
     const where = {
-      ...(sp.teacher ? { teacherId: sp.teacher } : {}),
+      ...(teacherFilter ? { teacherId: teacherFilter } : {}),
       ...(sp.termin ? { schemaItems: { some: { terminId: sp.termin } } } : {}),
     };
 
@@ -59,13 +67,15 @@ export default async function LecturePage({ searchParams }: Props) {
     const where = {
       ...(sp.course ? { courseId: sp.course } : {}),
       ...(sp.termin ? { terminId: sp.termin } : {}),
-      ...(sp.teacher ? { course: { teacherId: sp.teacher } } : {}),
+      ...(teacherFilter ? { course: { teacherId: teacherFilter } } : {}),
     };
 
     return await prisma.schemaItem.findMany({ where });
   };
 
-  const teachers = await prisma.user.findMany({ where: { role: "admin" } });
+  const teachers = await prisma.user.findMany({
+    where: { role: { in: ["admin", "teacher"] } },
+  });
 
   const terminer = await getTerminer();
 
@@ -87,7 +97,7 @@ export default async function LecturePage({ searchParams }: Props) {
 
   // Build filters based on search params
   const filters = {
-    ...(sp.teacher ? { teacherId: sp.teacher } : {}),
+    ...(teacherFilter ? { teacherId: teacherFilter } : {}),
     ...(sp.termin ? { terminId: sp.termin } : {}),
     ...(sp.course ? { courseId: sp.course } : {}),
     ...(sp.schemaitem ? { schemaItemId: sp.schemaitem } : {}),
@@ -136,6 +146,7 @@ export default async function LecturePage({ searchParams }: Props) {
         schemaItems={schemaItems}
         teachers={teachers}
         terminer={terminer}
+        hideTeacherFilter={isTeacher}
       />
 
       <Lov courses={courses} terminer={terminer} schemaItems={schemaItems} />

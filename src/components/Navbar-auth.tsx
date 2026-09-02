@@ -47,7 +47,7 @@ export default function NavBarAuth({
       return (
         <div className="flex flex-col gap-3">
           {/* Admin */}
-          {user.role === "admin" && (
+          {(user.role === "admin" || user.role === "teacher") && (
             <Button
               asChild
               size="sm"
@@ -107,7 +107,7 @@ export default function NavBarAuth({
         </Button>
 
         {/* Admin */}
-        {user.role === "admin" && (
+        {(user.role === "admin" || user.role === "teacher") && (
           <Button
             asChild
             size="sm"
