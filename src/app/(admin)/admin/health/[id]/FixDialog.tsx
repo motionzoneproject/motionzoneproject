@@ -16,8 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   backfillPurchaseItems,
+  createMissingPurchase,
   grantTeacherRole,
   mergeParticipants,
+  removeStaleBooking,
 } from "@/lib/actions/health-actions";
 import type { HealthFix, ParticipantCopy } from "@/lib/admin-health";
 import { formatShortFriendlyDate } from "@/lib/date-utils";
@@ -68,6 +70,24 @@ export function FixDialog({
         )}
         {fix.kind === "purchase-backfill" && (
           <BackfillPurchase
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "booking-remove" && (
+          <RemoveBooking
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "order-purchase" && (
+          <CreatePurchase
             fix={fix}
             onDone={() => {
               setOpen(false);
@@ -298,6 +318,150 @@ function BackfillPurchase({
       <DialogFooter>
         <Button onClick={submit} disabled={isPending || !canBackfill}>
           {isPending ? "Hämtar…" : "Hämta från produkt"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Tar bort en bokning som inte borde ligga kvar, och lägger tillbaka klippet.
+ * Dialogen säger vad som händer med saldot innan man trycker — det är kundens
+ * tillfällen det handlar om, inte bara en rad i en lista.
+ */
+function RemoveBooking({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "booking-remove" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const cancelled = fix.reason === "cancelled";
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await removeStaleBooking(
+        fix.lessonId,
+        fix.purchaseItemId,
+        fix.reason,
+      );
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>
+          {cancelled
+            ? "Ta bort bokningen på den inställda lektionen"
+            : `Ta bort ${fix.removes} dubblett${fix.removes === 1 ? "" : "er"}`}
+        </DialogTitle>
+        <DialogDescription>
+          {fix.studentName} · {fix.courseName} ·{" "}
+          {formatShortFriendlyDate(fix.startTime)}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 text-sm text-muted-foreground">
+        <p>
+          {cancelled
+            ? "Lektionen är inställd, så bokningen ska inte ligga kvar. Den tas bort och klippet läggs tillbaka på elevens saldo."
+            : `Samma köp är bokat ${fix.removes + 1} gånger på lektionen. Den första bokningen behålls, ${fix.removes} tas bort och lika många klipp läggs tillbaka.`}
+        </p>
+        <p>
+          Det är samma sak som papperskorgen i närvarodialogen gör. Vill du se
+          hela närvarolistan först ligger lektionen bakom länken på raden.
+        </p>
+      </div>
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending}>
+          {isPending
+            ? "Tar bort…"
+            : cancelled
+              ? "Ta bort bokning"
+              : "Ta bort dubbletter"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Skapar köpet på en beviljad order som aldrig fick något. Dialogen är tydlig
+ * med sidoeffekterna: det går ett mail till kunden, och gamla lektioner bokas
+ * inte in i efterhand.
+ */
+function CreatePurchase({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "order-purchase" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const blocked = fix.missingSelections.length > 0;
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await createMissingPurchase(fix.orderId);
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Skapa köpet från ordern</DialogTitle>
+        <DialogDescription>
+          {fix.userName} har en beviljad order utan köp, alltså ingen tillgång
+          alls. Knappen gör samma sak som &ldquo;Bevilja&rdquo; hade gjort.
+        </DialogDescription>
+      </DialogHeader>
+
+      {blocked ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          {fix.missingSelections.join(", ")} är paket där kunden själv väljer
+          kurser, och inga val finns sparade på ordern. Skapandet vägrar tills
+          valen är gjorda — öppna ordern och spara kursvalen först.
+        </div>
+      ) : (
+        <div className="space-y-2 text-sm">
+          <p className="text-muted-foreground">
+            Följande skapas som köp, med kurser och antal tillfällen från
+            produkten:
+          </p>
+          <ul className="ml-4 list-disc space-y-1">
+            {fix.productNames.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+          <p className="text-muted-foreground">
+            Kunden får godkännandemailet igen, och autobokning bokar bara
+            lektioner som ännu inte varit.
+          </p>
+        </div>
+      )}
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending || blocked}>
+          {isPending ? "Skapar…" : "Skapa köp"}
         </Button>
       </DialogFooter>
     </>

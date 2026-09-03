@@ -74,3 +74,47 @@ export function TodayLessonCard({
     </Card>
   );
 }
+
+/**
+ * Samma lektion som en rad i stället för ett kort. Adminens dag är hela
+ * skolans, och en tabell går snabbare att läsa av än ett rutnät med kort —
+ * men åtgärderna finns kvar, sist på raden.
+ */
+export function TodayLessonRow({ lesson }: { lesson: LessonWithData }) {
+  return (
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm">
+      <span className="flex items-center gap-1.5 tabular-nums text-muted-foreground">
+        <Clock className="h-4 w-4 shrink-0" />
+        {dbToFormTime(new Date(lesson.startTime))}–
+        {dbToFormTime(new Date(lesson.endTime))}
+      </span>
+
+      <span className="font-medium">{lesson.course.name}</span>
+
+      {lesson.schemaItem.studio && (
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <MapPin className="h-4 w-4 shrink-0" />
+          {lesson.schemaItem.studio.name}
+        </span>
+      )}
+
+      <span className="text-muted-foreground">{lesson.teacher.name}</span>
+
+      <span className="ml-auto flex items-center gap-2">
+        {lesson.cancelled && (
+          <Badge
+            variant="outline"
+            className="shrink-0 text-amber-600 dark:text-amber-400"
+          >
+            Inställd
+          </Badge>
+        )}
+        <span className="tabular-nums text-muted-foreground">
+          {bookedCount(lesson)} bokade
+        </span>
+        <AttendeDialog lesson={lesson} />
+        <EditLessonBtn lesson={lesson} />
+      </span>
+    </li>
+  );
+}

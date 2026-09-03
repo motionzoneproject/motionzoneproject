@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronRight,
   CircleAlert,
   CircleCheck,
   Info,
@@ -94,49 +95,46 @@ export function HealthChecks({ info }: Props) {
               Inga problem hittade.
             </div>
           ) : (
-            <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
               {issues.map((issue) => {
                 const serious = issue.severity === "serious";
                 const Icon = serious ? TriangleAlert : CircleAlert;
 
                 return (
-                  // Knappen kan inte ligga inuti länken — en <button> i en
-                  // <a> är ogiltig och skulle navigera i stället för att
-                  // öppna dialogen. Därför är raden en behållare med länken
-                  // och knapparna som syskon.
-                  <li
-                    key={issue.id}
-                    className="flex flex-wrap items-start gap-3 px-4 py-3"
-                  >
-                    <Icon
-                      className={
-                        serious
-                          ? "mt-0.5 h-4 w-4 shrink-0 text-destructive"
-                          : "mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
-                      }
-                    />
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="text-sm font-medium">
-                        <span className="tabular-nums">{issue.count}</span>{" "}
-                        {issue.label}
+                  // Hela kortet är länken till problemet. Åtgärdsknapparna kan
+                  // inte ligga inuti den — en <button> i en <a> är ogiltig och
+                  // skulle navigera i stället för att öppna dialogen — så de
+                  // ligger som en egen rad under länken, inte bredvid texten.
+                  // Bredvid blir spalterna för smala på mobil.
+                  <li key={issue.id}>
+                    <Link
+                      href={`/admin/health/${issue.id}`}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <Icon
+                        className={
+                          serious
+                            ? "mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                            : "mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        }
+                      />
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="text-sm font-medium">
+                          <span className="tabular-nums">{issue.count}</span>{" "}
+                          {issue.label}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {issue.description}
+                        </div>
+                        <div className="text-sm text-muted-foreground underline underline-offset-4">
+                          Visa problemet
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {issue.description}
-                      </div>
-                      <Link
-                        href={`/admin/health/${issue.id}`}
-                        className="inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                      >
-                        Visa problemet
-                      </Link>
-
-                      <div className="pt-2">
-                        <HowToFix howTo={issue.howTo} compact />
-                      </div>
-                    </div>
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    </Link>
 
                     {issue.fixes.length > 0 && (
-                      <div className="flex flex-col items-stretch gap-2">
+                      <div className="flex flex-wrap items-center gap-2 px-4 pb-3 sm:pl-11">
                         {issue.fixes
                           .slice(0, INLINE_FIX_LIMIT)
                           .map(
@@ -157,7 +155,7 @@ export function HealthChecks({ info }: Props) {
                         {issue.fixes.length > INLINE_FIX_LIMIT && (
                           <Link
                             href={`/admin/health/${issue.id}`}
-                            className="text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
                           >
                             +{issue.fixes.length - INLINE_FIX_LIMIT} till
                           </Link>
@@ -250,7 +248,7 @@ function CheckGroup({
             <div className="mb-2 text-muted-foreground">
               {check.description}
             </div>
-            <HowToFix howTo={check.howTo} compact />
+            <HowToFix howTo={check.howTo} collapsible />
           </li>
         ))}
       </ul>
