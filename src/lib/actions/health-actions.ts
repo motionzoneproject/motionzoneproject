@@ -5,8 +5,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getHealthIssues, type HealthIssue } from "../admin-health";
+import { handleClips } from "../clips";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
+import { createPurchaseFromOrder } from "./orders";
 import { adminSetRole } from "./user-management";
 
 type Result = { success: boolean; msg: string };
@@ -307,5 +309,155 @@ export async function grantTeacherRole(userId: string): Promise<Result> {
   } catch (e) {
     console.error(e);
     return { success: false, msg: "Kunde inte sätta rollen." };
+  }
+}
+
+/**
+ * Tar bort bokningar som inte borde ligga kvar och lägger tillbaka klippen —
+ * samma sak som papperskorgen i närvarodialogen gör, fast utan att man först
+ * måste leta upp lektionen i lektionslistan.
+ *
+ * Bara två fall är entydiga nog att få en knapp: lektionen är inställd (då ska
+ * ingen bokning ligga kvar på den) och samma köp är bokat flera gånger på
+ * samma lektion (då ska en ligga kvar). Allt annat kräver ett beslut om vilken
+ * bokning som är den rätta och görs i närvarodialogen.
+ *
+ * Förutsättningen kontrolleras här och inte bara i kontrollen: översikten kan
+ * vara några minuter gammal, och en avställd lektion kan ha återuppstått.
+ *
+ * @auth Admin
+ */
+export async function removeStaleBooking(
+  lessonId: string,
+  purchaseItemId: string,
+  reason: "cancelled" | "duplicate",
+): Promise<Result> {
+  if (!(await isAdminRole())) {
+    return { success: false, msg: "Ingen behörighet." };
+  }
+
+  try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { cancelled: true },
+    });
+
+    if (!lesson) return { success: false, msg: "Lektionen finns inte längre." };
+
+    if (reason === "cancelled" && !lesson.cancelled) {
+      return {
+        success: false,
+        msg: "Lektionen är inte inställd längre. Ska bokningen ändå bort får du ta den i närvarodialogen.",
+      };
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: { lessonId, purchaseItemId, cancelled: false },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // Vid dubbletter är den äldsta bokningen den riktiga — bara de som lagts
+    // ovanpå den tas bort.
+    const doomed = reason === "duplicate" ? bookings.slice(1) : bookings;
+
+    if (doomed.length === 0) {
+      return {
+        success: false,
+        msg:
+          reason === "duplicate"
+            ? "Det finns inga dubbletter kvar på lektionen."
+            : "Bokningen är redan borttagen.",
+      };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const clips = await handleClips(tx, purchaseItemId, doomed.length);
+      if (!clips.success) {
+        throw new Error(clips.msg ?? "Kunde inte återföra klippen.");
+      }
+
+      await tx.booking.deleteMany({
+        where: { id: { in: doomed.map((booking) => booking.id) } },
+      });
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/lectures");
+    revalidatePath("/admin/students");
+
+    return {
+      success: true,
+      msg:
+        doomed.length === 1
+          ? "Bokningen togs bort och klippet återfördes."
+          : `${doomed.length} bokningar togs bort och lika många klipp återfördes.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte ta bort bokningen." };
+  }
+}
+
+/**
+ * Skapar köpet på en beviljad order som aldrig fick något — kunden har betalat
+ * och fått noll tillgång.
+ *
+ * Kör createPurchaseFromOrder, alltså exakt samma väg som "Bevilja" tar. Den
+ * knappen finns inte kvar i ordervyn när ordern redan är beviljad, och att
+ * bygga en egen variant här skulle betyda två ställen som kan glida isär om
+ * reglerna för kursval, klippkort eller autobokning ändras.
+ *
+ * Sidoeffekterna följer med: kunden får godkännandemailet igen, och
+ * autobokningen bokar bara lektioner som ännu inte varit.
+ *
+ * @auth Admin
+ */
+export async function createMissingPurchase(orderId: string): Promise<Result> {
+  if (!(await isAdminRole())) {
+    return { success: false, msg: "Ingen behörighet." };
+  }
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        status: true,
+        user: { select: { name: true } },
+        _count: { select: { purchases: true } },
+      },
+    });
+
+    if (!order) return { success: false, msg: "Ordern finns inte längre." };
+
+    if (order.status !== "APPROVED") {
+      return {
+        success: false,
+        msg: 'Ordern är inte beviljad. Använd "Bevilja" i ordervyn i stället.',
+      };
+    }
+
+    if (order._count.purchases > 0) {
+      return { success: false, msg: "Ordern har redan ett köp." };
+    }
+
+    await createPurchaseFromOrder(orderId);
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/students");
+
+    return {
+      success: true,
+      msg: `Köpet är skapat. ${order.user.name} har nu tillgång.`,
+    };
+  } catch (e) {
+    console.error(e);
+    // Meddelandet från createPurchaseFromOrder är skrivet för admin ("Du
+    // måste välja minst en kurs för …"), så det säger mer än vårt eget.
+    return {
+      success: false,
+      msg: e instanceof Error ? e.message : "Kunde inte skapa köpet.",
+    };
   }
 }

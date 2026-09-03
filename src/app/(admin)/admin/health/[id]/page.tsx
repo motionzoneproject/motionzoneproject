@@ -1,4 +1,9 @@
-import { ArrowLeft, CircleAlert, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CircleAlert,
+  TriangleAlert,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -65,7 +70,19 @@ export default async function Page({ params }: Props) {
               className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
-                <div className="font-medium">{row.title}</div>
+                {/* Raden länkar dit posten faktiskt lagas, med filtret redan
+                    satt — annars börjar varje åtgärd med att leta upp den. */}
+                {row.href ? (
+                  <Link
+                    href={row.href}
+                    className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline"
+                  >
+                    {row.title}
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                ) : (
+                  <div className="font-medium">{row.title}</div>
+                )}
                 {row.detail && (
                   <div className="text-sm text-muted-foreground">
                     {row.detail}

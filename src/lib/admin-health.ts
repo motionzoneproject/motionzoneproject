@@ -8,7 +8,7 @@
 // från /admin, som redan vaktat att användaren är admin.
 
 import type { Prisma } from "@/generated/prisma/client";
-import { formatShortFriendlyDate } from "./date-utils";
+import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
 import { dbToFormTime } from "./time-convert";
@@ -47,12 +47,44 @@ export type HealthFix =
       productName: string;
       /** Kurserna som skulle läggas till. Tom lista = produkten måste lagas först. */
       courseNames: string[];
+    }
+  | {
+      /**
+       * Skapa köpet som "Bevilja" skulle ha skapat. Ordern är redan beviljad,
+       * så knappen finns inte kvar i ordervyn — men vägen dit är densamma:
+       * createPurchaseFromOrder, med orderns produkter och kundens kursval.
+       */
+      kind: "order-purchase";
+      orderId: string;
+      userName: string;
+      productNames: string[];
+      /** Paket där kundens kursval saknas — då vägrar skapandet. */
+      missingSelections: string[];
+    }
+  | {
+      /**
+       * Ta bort en bokning som inte borde ligga kvar och lägga tillbaka
+       * klippet. Entydigt i två fall: lektionen är inställd, eller samma köp
+       * är bokat flera gånger på samma lektion. Motsvarar papperskorgen i
+       * närvarodialogen, fast utan att behöva leta upp lektionen först.
+       */
+      kind: "booking-remove";
+      lessonId: string;
+      purchaseItemId: string;
+      studentName: string;
+      courseName: string;
+      startTime: Date;
+      reason: "cancelled" | "duplicate";
+      /** Hur många bokningar som försvinner — dubbletter kan vara fler än en. */
+      removes: number;
     };
 
 export type HealthRow = {
   id: string;
   title: string;
   detail?: string;
+  /** Länk till just den här posten i adminpanelen, så man slipper leta. */
+  href?: string;
   fix?: HealthFix;
 };
 
@@ -161,6 +193,26 @@ const STALE_ORDER_DAYS = 14;
 const staleOrderCutoff = () =>
   new Date(Date.now() - STALE_ORDER_DAYS * 24 * 60 * 60 * 1000);
 
+/**
+ * Länk till lektionens dag i lektionslistan. Filtret tar inget lektions-id, så
+ * kurs + datum är så nära en direktlänk vi kommer — men det är en sida med en
+ * handfull rader i stället för alla lektioner i terminen.
+ */
+const lessonHref = (
+  courseId: string,
+  startTime: Date,
+  status?: "cancelled",
+): string => {
+  const day = formatDateToInputStr(startTime);
+  const params = new URLSearchParams({ course: courseId, from: day, to: day });
+  if (status) params.set("status", status);
+  return `/admin/lectures?${params}`;
+};
+
+/** Länk till en lista med sökrutan förifylld — namn, e-post eller order-id. */
+const searchHref = (path: string, query: string): string =>
+  `${path}?q=${encodeURIComponent(query)}`;
+
 const checks: Check[] = [
   {
     id: "product-without-course",
@@ -169,8 +221,8 @@ const checks: Check[] = [
     description: "Går att köpa men ger inte tillgång till någonting.",
     howTo: {
       steps: [
-        "Öppna produkten på /admin/products.",
-        'Klicka "Lägg till kurser i produkt" och välj de kurser köpet ska ge tillgång till.',
+        "Öppna produkten på /admin/products — raden här länkar dit med namnet ifyllt i sökrutan.",
+        'Klicka pennan i kolumnen "Kurser" på produktraden. Dialogen heter "Lägg till kurser i produkt" — kryssa i de kurser köpet ska ge tillgång till.',
         'Kör felsökningen igen och gå till "köp saknar kurstillgång" — där lagar du kunderna som redan hunnit köpa.',
       ],
       caveat:
@@ -191,6 +243,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.name,
         detail: formatPrice(row.price),
+        href: searchHref("/admin/products", row.name),
       }));
     },
   },
@@ -201,8 +254,8 @@ const checks: Check[] = [
     description: "Utan veckoschema skapas inga lektioner att boka.",
     howTo: {
       steps: [
-        "Gå till /admin/termin och öppna terminen kursen ska gå i.",
-        'Klicka "Lägg till kurstillfälle" och välj kursen, veckodag, tid och studio.',
+        "Gå till /admin/termin och klicka kalenderikonen på terminens rad — den öppnar veckoschemat.",
+        'Klicka "Lägg till" högst upp i schemat. Dialogen heter "Lägg till kurstillfälle" — välj kursen, veckodag, tid och studio.',
         "Lektionerna skapas då automatiskt för hela terminen.",
       ],
     },
@@ -232,7 +285,8 @@ const checks: Check[] = [
     howTo: {
       steps: [
         "Gå till /admin/products.",
-        'Öppna en befintlig produkt och klicka "Lägg till kurser i produkt", eller klicka "Skapa en ny produkt" för kursen.',
+        'Antingen: klicka pennan i kolumnen "Kurser" på en befintlig produkt och kryssa i kursen där.',
+        'Eller: klicka "Ny produkt" och skapa en produkt för kursen — kurserna läggs in efteråt, i samma kolumn.',
       ],
     },
     fixHref: "/admin/products",
@@ -260,8 +314,8 @@ const checks: Check[] = [
     description: "Lektionerna visas utan plats för eleverna.",
     howTo: {
       steps: [
-        'Gå till /admin/termin och klicka "Visa veckoschema" på terminen.',
-        'Klicka "Redigera kurstillfälle" på raden och välj sal under "Välj studio".',
+        "Gå till /admin/termin och klicka kalenderikonen på terminens rad — den visar veckoschemat.",
+        'Fäll ut veckodagen, klicka pennan på kurstillfället ("Redigera kurstillfälle") och välj sal under "Välj studio".',
         "Saknas salen i listan? Lägg upp den på /admin/studios först.",
       ],
     },
@@ -297,23 +351,30 @@ const checks: Check[] = [
       "Klippen borde ha återförts när lektionen ställdes in. Eleven har blivit av med ett tillfälle.",
     howTo: {
       steps: [
-        "Gå till /admin/lectures och sätt filtret Status till Inställda.",
-        'Öppna lektionens "Närvaro" och klicka "Ta bort från lektion" på eleven.',
-        "Klippet återförs automatiskt till elevens saldo.",
+        'Klicka "Åtgärda" här — bokningen tas bort och klippet läggs tillbaka på elevens saldo, precis som när man tar bort någon ur närvarolistan.',
+        "Manuellt: öppna lektionen via länken på raden — lektionslistan filtrerad på kursen, dagen och Status: Inställda.",
+        'Klicka knappen i kolumnen "Närvaro" och sedan papperskorgen ("Ta bort från lektion") på eleven.',
       ],
     },
     fixHref: "/admin/lectures?status=cancelled",
     fixLabel: "Till inställda lektioner",
     severity: "serious",
+    fixable: true,
     count: () => prisma.booking.count({ where: bookingOnCancelled }),
     list: async () => {
       const rows = await prisma.booking.findMany({
         where: bookingOnCancelled,
         select: {
           id: true,
+          purchaseItemId: true,
           user: { select: { name: true, email: true } },
           lesson: {
-            select: { startTime: true, course: { select: { name: true } } },
+            select: {
+              id: true,
+              courseId: true,
+              startTime: true,
+              course: { select: { name: true } },
+            },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -323,6 +384,21 @@ const checks: Check[] = [
         id: row.id,
         title: row.user.name,
         detail: `${row.lesson.course.name} · ${formatShortFriendlyDate(row.lesson.startTime)} · ${row.user.email}`,
+        href: lessonHref(
+          row.lesson.courseId,
+          row.lesson.startTime,
+          "cancelled",
+        ),
+        fix: {
+          kind: "booking-remove" as const,
+          lessonId: row.lesson.id,
+          purchaseItemId: row.purchaseItemId,
+          studentName: row.user.name,
+          courseName: row.lesson.course.name,
+          startTime: row.lesson.startTime,
+          reason: "cancelled" as const,
+          removes: 1,
+        },
       }));
     },
   },
@@ -333,8 +409,8 @@ const checks: Check[] = [
     description: "Fler tillfällen har dragits än som fanns. Bokföringsfel.",
     howTo: {
       steps: [
-        "Gå till /admin/students och sök upp eleven.",
-        'Klicka "Ändra produkter" och justera antalet klipp/tillfällen till rätt värde.',
+        "Gå till /admin/students och sök upp eleven — raden här länkar dit med namnet ifyllt.",
+        'Klicka knappen i kolumnen "Produkter" på elevens rad (den visar antalet köp). Dialogen heter "Ändra produkter" — justera antalet klipp/tillfällen till rätt värde där.',
       ],
       caveat:
         "Ta reda på varför saldot blev negativt innan du nollställer — annars uppstår det igen. Dubbelbokningar är en vanlig orsak.",
@@ -378,11 +454,13 @@ const checks: Check[] = [
           id: `item-${row.id}`,
           title: row.purchase.user.name,
           detail: `${row.course.name} · saldo ${row.remainingCount} (kurstillfällen)`,
+          href: searchHref("/admin/students", row.purchase.user.name),
         })),
         ...purchases.map((row) => ({
           id: `purchase-${row.id}`,
           title: row.user.name,
           detail: `${row.product.name} · saldo ${row.remainingCount} (klippkort)`,
+          href: searchHref("/admin/students", row.user.name),
         })),
       ];
     },
@@ -395,8 +473,8 @@ const checks: Check[] = [
       "Kan inte logga in och hantera sina lektioner, och försvinner ur lärarlistorna.",
     howTo: {
       steps: [
-        'Använd "Åtgärda"-knappen här — den sätter rollen direkt.',
-        "Alternativt: /admin/users, sök upp personen och välj Lärare i rollistan.",
+        'Klicka "Åtgärda" här — den sätter rollen direkt.',
+        'Manuellt: gå till /admin/users (raden här länkar dit) och välj "Lärare" i rollistan på personens rad.',
       ],
     },
     fixHref: "/admin/users",
@@ -423,6 +501,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.name,
         detail: `${row.email} · har rollen "${row.role ?? "ingen"}" · undervisar ${row._count.teachingCourses} aktiva kurser`,
+        href: searchHref("/admin/users", row.email),
         fix: {
           kind: "teacher-role" as const,
           userId: row.id,
@@ -472,15 +551,16 @@ const checks: Check[] = [
       "Ordern godkändes men createPurchaseFromOrder skapade aldrig något köp. Kunden har betalat och fått noll tillgång.",
     howTo: {
       steps: [
-        'Det finns ingen knapp för det här idag. Köpet skapas av "Bevilja", och den visas bara för ordrar som väntar på godkännande — den här är redan beviljad.',
-        "Praktisk väg: lägg en ny order åt kunden och bevilja den, och avbryt sedan den trasiga.",
-        "Hör av dig till utvecklare om det gäller flera ordrar — då behövs en reparation i databasen.",
+        'Klicka "Åtgärda" här — köpet skapas från orderns produkter på exakt samma sätt som "Bevilja" gör.',
+        "Kontrollera sedan kunden på /admin/students: autobokning lägger bara in lektioner som ännu inte varit.",
       ],
-      noUiPath: true,
+      caveat:
+        'Kunden får samma "Din plats är beviljad"-mail som vid ett beviljande, och lektioner som redan passerat bokas inte in. Har kunden missat tillfällen på grund av felet får de kompenseras manuellt.',
     },
     fixHref: "/admin/orders?status=APPROVED",
     fixLabel: "Till beviljade ordrar",
     severity: "serious",
+    fixable: true,
     count: () =>
       prisma.order.count({
         where: { status: "APPROVED", purchases: { none: {} } },
@@ -493,6 +573,12 @@ const checks: Check[] = [
           createdAt: true,
           totalPrice: true,
           user: { select: { name: true, email: true } },
+          orderItems: {
+            select: {
+              product: { select: { name: true, maxCourses: true } },
+              _count: { select: { courseSelections: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         take,
@@ -501,6 +587,23 @@ const checks: Check[] = [
         id: row.id,
         title: row.user.name,
         detail: `${formatPrice(row.totalPrice)} · ${formatShortFriendlyDate(row.createdAt)} · ${row.user.email}`,
+        href: `/admin/orders/view?orderId=${row.id}`,
+        fix: {
+          kind: "order-purchase" as const,
+          orderId: row.id,
+          userName: row.user.name,
+          productNames: row.orderItems.map((item) => item.product.name),
+          // Paket där kunden själv väljer kurser går inte att skapa köp för
+          // utan valen — createPurchaseFromOrder vägrar, och det ska dialogen
+          // säga innan man trycker.
+          missingSelections: row.orderItems
+            .filter(
+              (item) =>
+                item.product.maxCourses !== null &&
+                item._count.courseSelections === 0,
+            )
+            .map((item) => item.product.name),
+        },
       }));
     },
   },
@@ -512,9 +615,9 @@ const checks: Check[] = [
       "Köpet finns men har inga purchaseItems, så kunden kan inte boka någonting på det.",
     howTo: {
       steps: [
-        'Saknar produkten kurser? Lägg till dem först på /admin/products via "Lägg till kurser i produkt" — annars finns det inget att hämta.',
-        'Klicka sedan "Hämta från produkt" här. Raderna skapas med samma kurser och antal tillfällen som ett beviljande hade gett.',
-        'Gäller det bara fel kurs på en befintlig rad använder du "Ändra produkter" på elevsidan i stället.',
+        'Saknar produkten kurser? Lägg till dem först på /admin/products — pennan i kolumnen "Kurser" — annars finns det inget att hämta.',
+        'Klicka sedan "Åtgärda" här och "Hämta från produkt". Raderna skapas med samma kurser och antal tillfällen som ett beviljande hade gett.',
+        'Gäller det bara fel kurs på en befintlig rad tar du i stället knappen i kolumnen "Produkter" på /admin/students, dialogen "Ändra produkter".',
       ],
       caveat:
         "Hämtningen vägrar om produkten saknar kurser, eller om det är ett paket där kunden själv väljer kurser och inga val sparats. Då behöver ordern läggas om.",
@@ -546,6 +649,7 @@ const checks: Check[] = [
           id: row.id,
           title: row.user.name,
           detail: `${row.product.name} · ${row.user.email}${courseNames.length === 0 ? " · produkten saknar kurser" : ""}`,
+          href: searchHref("/admin/students", row.user.email),
           fix: {
             kind: "purchase-backfill" as const,
             purchaseId: row.id,
@@ -565,7 +669,7 @@ const checks: Check[] = [
       "Kunden har köpt något som inte ger tillgång till någon kurs. Åtgärda produkten, inte bara ordern.",
     howTo: {
       steps: [
-        'Gå till /admin/products, öppna produkten och klicka "Lägg till kurser i produkt".',
+        'Gå till /admin/products, sök upp produkten och klicka pennan i kolumnen "Kurser" — dialogen heter "Lägg till kurser i produkt".',
       ],
       caveat:
         'Det gör produkten rätt framåt, men kundens redan lagda order får ingen tillgång av det. Gå vidare till "köp saknar kurstillgång" och klicka "Hämta från produkt" på köpet.',
@@ -602,6 +706,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.user.name,
         detail: `${row.orderItems.map((item) => item.product.name).join(", ")} · ${formatShortFriendlyDate(row.createdAt)}`,
+        href: `/admin/orders/view?orderId=${row.id}`,
       }));
     },
   },
@@ -616,9 +721,9 @@ const checks: Check[] = [
       "Bokningens purchaseItem pekar på en annan kurs än lektionen tillhör. Klipp har dragits från fel kurs.",
     howTo: {
       steps: [
-        'Gå till /admin/lectures, öppna lektionens "Närvaro" och klicka "Ta bort från lektion". Klippet återförs.',
+        'Öppna lektionen via länken på raden, klicka knappen i kolumnen "Närvaro" och ta bort eleven med papperskorgen ("Ta bort från lektion"). Klippet återförs.',
         "Boka sedan in eleven på rätt lektion.",
-        'Gäller det hela köpet kan du i stället byta kurs på raden via "Ändra produkter" på elevsidan.',
+        'Gäller det hela köpet byter du i stället kurs på raden: knappen i kolumnen "Produkter" på /admin/students, dialogen "Ändra produkter".',
       ],
     },
     fixHref: "/admin/lectures",
@@ -640,12 +745,14 @@ const checks: Check[] = [
           id: string;
           studentName: string;
           lessonCourse: string;
+          lessonCourseId: string;
           itemCourse: string;
           startTime: Date;
         }[]
       >`
         SELECT b.id, u.name AS "studentName",
-               lc.name AS "lessonCourse", ic.name AS "itemCourse",
+               lc.name AS "lessonCourse", lc.id AS "lessonCourseId",
+               ic.name AS "itemCourse",
                l."startTime"
         FROM "Booking" b
         JOIN "lesson" l ON l.id = b."lessonId"
@@ -661,6 +768,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.studentName,
         detail: `Bokad på "${row.lessonCourse}" ${formatShortFriendlyDate(row.startTime)}, men klippet gäller "${row.itemCourse}"`,
+        href: lessonHref(row.lessonCourseId, row.startTime),
       }));
     },
   },
@@ -672,13 +780,14 @@ const checks: Check[] = [
       "Samma purchaseItem är bokat mer än en gång på samma lektion, så fler klipp har dragits än platser tagits.",
     howTo: {
       steps: [
-        'Gå till /admin/lectures och öppna lektionens "Närvaro".',
-        'Klicka "Ta bort från lektion" på den extra raden — klippet återförs automatiskt.',
+        'Klicka "Åtgärda" här — de extra bokningarna tas bort, en behålls, och ett klipp läggs tillbaka för varje borttagen rad.',
+        'Manuellt: öppna lektionen via länken på raden, klicka knappen i kolumnen "Närvaro" och ta bort den extra raden med papperskorgen ("Ta bort från lektion").',
       ],
     },
     fixHref: "/admin/lectures",
     fixLabel: "Till lektioner",
     severity: "serious",
+    fixable: true,
     count: async () => {
       const rows = await prisma.$queryRaw<{ n: bigint }[]>`
         SELECT COUNT(*)::bigint AS n FROM (
@@ -694,28 +803,43 @@ const checks: Check[] = [
       const rows = await prisma.$queryRaw<
         {
           lessonId: string;
+          purchaseItemId: string;
           studentName: string;
+          courseId: string;
           courseName: string;
           startTime: Date;
           n: bigint;
         }[]
       >`
-        SELECT b."lessonId", u.name AS "studentName", c.name AS "courseName",
+        SELECT b."lessonId", b."purchaseItemId", u.name AS "studentName",
+               c.id AS "courseId", c.name AS "courseName",
                l."startTime", COUNT(*)::bigint AS n
         FROM "Booking" b
         JOIN "lesson" l ON l.id = b."lessonId"
         JOIN "course" c ON c.id = l."courseId"
         JOIN "user" u ON u.id = b."userId"
         WHERE b.cancelled = false
-        GROUP BY b."lessonId", b."purchaseItemId", u.name, c.name, l."startTime"
+        GROUP BY b."lessonId", b."purchaseItemId", u.name, c.id, c.name,
+                 l."startTime"
         HAVING COUNT(*) > 1
         ORDER BY l."startTime" DESC
         LIMIT ${take}
       `;
       return rows.map((row) => ({
-        id: `${row.lessonId}-${row.studentName}`,
+        id: `${row.lessonId}-${row.purchaseItemId}`,
         title: row.studentName,
         detail: `${row.courseName} · ${formatShortFriendlyDate(row.startTime)} · bokad ${row.n} gånger`,
+        href: lessonHref(row.courseId, row.startTime),
+        fix: {
+          kind: "booking-remove" as const,
+          lessonId: row.lessonId,
+          purchaseItemId: row.purchaseItemId,
+          studentName: row.studentName,
+          courseName: row.courseName,
+          startTime: row.startTime,
+          reason: "duplicate" as const,
+          removes: Number(row.n) - 1,
+        },
       }));
     },
   },
@@ -730,7 +854,7 @@ const checks: Check[] = [
       "Samma namn finns som flera separata deltagare hos samma användare. Bokningar och närvaro splittras då mellan dubbletterna.",
     howTo: {
       steps: [
-        'Använd "Åtgärda"-knappen här och välj vilken kopia som ska behållas.',
+        'Klicka "Åtgärda" här och välj vilken kopia som ska behållas.',
         "De andra raderas och deras ordrar och köp flyttas över till den du behåller.",
       ],
     },
@@ -812,6 +936,7 @@ const checks: Check[] = [
             id: copies[0].id,
             title: copies[0].name,
             detail: `${copies.length} kopior tillagda av ${group.userName} · ${linked} kopplade ordrar/köp`,
+            href: searchHref("/admin/students", copies[0].name),
             fix: { kind: "participant-merge" as const, copies },
           },
         ];
@@ -829,8 +954,8 @@ const checks: Check[] = [
       "maxCustomer är 0 utan att produkten är obegränsad, så den visar alltid slutsåld och går aldrig att köpa.",
     howTo: {
       steps: [
-        'Gå till /admin/products och klicka "Ändra produkt".',
-        'Sätt "Platser" till rätt antal, eller kryssa i "Obegränsat antal kunder".',
+        'Gå till /admin/products och klicka pennan längst till höger på produktraden ("Ändra produkt").',
+        'Sätt "Max antal kunder:" till rätt antal, eller kryssa i "Obegränsat antal kunder".',
       ],
     },
     fixHref: "/admin/products",
@@ -848,6 +973,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.name,
         detail: formatPrice(row.price),
+        href: searchHref("/admin/products", row.name),
       }));
     },
   },
@@ -858,7 +984,7 @@ const checks: Check[] = [
     description: `Äldre än ${STALE_ORDER_DAYS} dagar och fortfarande obeslutade. Kunden väntar.`,
     howTo: {
       steps: [
-        "Gå till /admin/orders och öppna fliken Väntar.",
+        'Gå till /admin/orders och öppna fliken "Väntar" — raden här länkar direkt till ordern.',
         'Klicka "Bevilja" eller "Avbryt" på ordern.',
       ],
     },
@@ -891,6 +1017,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.user.name,
         detail: `${formatPrice(row.totalPrice)} · beställd ${formatShortFriendlyDate(row.createdAt)} · ${row.user.email}`,
+        href: `/admin/orders/view?orderId=${row.id}`,
       }));
     },
   },
@@ -901,7 +1028,9 @@ const checks: Check[] = [
     description:
       "Kurser och produkter i terminen kan fortfarande visas och säljas till kunder.",
     howTo: {
-      steps: ['Gå till /admin/termin och klicka "Avaktivera termin".'],
+      steps: [
+        'Gå till /admin/termin och klicka ögat med streck på terminens rad — knappen heter "Avaktivera (dölj för kunder)".',
+      ],
       caveat:
         "Avaktiveringen kan även stänga av kurser och produkter i terminen. Bekräftelserutan visar exakt vad som påverkas — läs den innan du bekräftar.",
     },
@@ -933,7 +1062,7 @@ const checks: Check[] = [
     description: "Ligger kvar som köpbar trots att giltigheten gått ut.",
     howTo: {
       steps: [
-        'Gå till /admin/products och klicka "Avaktivera produkt" om den inte ska säljas längre.',
+        'Gå till /admin/products och klicka ögat med streck på produktens rad ("Avaktivera (dölj för kunder)") om den inte ska säljas längre.',
       ],
       caveat:
         "Sista datum (expireFixedDate) går inte att ändra i produktformuläret idag, så att förlänga giltigheten kräver utvecklare.",
@@ -958,6 +1087,7 @@ const checks: Check[] = [
         detail: row.expireFixedDate
           ? `Gick ut ${formatShortFriendlyDate(row.expireFixedDate)}`
           : undefined,
+        href: searchHref("/admin/products", row.name),
       }));
     },
   },
@@ -983,6 +1113,7 @@ const checks: Check[] = [
         where: lessonWithoutTermin,
         select: {
           id: true,
+          courseId: true,
           startTime: true,
           course: { select: { name: true } },
         },
@@ -993,6 +1124,7 @@ const checks: Check[] = [
         id: row.id,
         title: row.course.name,
         detail: formatShortFriendlyDate(row.startTime),
+        href: lessonHref(row.courseId, row.startTime),
       }));
     },
   },
