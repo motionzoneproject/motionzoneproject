@@ -9,7 +9,7 @@ import { LessonCarousel } from "../LessonCarousel";
 import { CancelledAhead } from "./CancelledAhead";
 import { HealthChecks } from "./HealthChecks";
 import { StatTile } from "./StatTile";
-import { TodayLessonCard } from "./TodayLessonCard";
+import { TodayLessonRow } from "./TodayLessonCard";
 
 /**
  * Adminens översikt svarar på "hur ligger skolan till just nu, och vad kräver
@@ -107,16 +107,16 @@ export function AdminOverview({
             Inga lektioner ligger inbokade idag.
           </div>
         ) : (
-          // Varje kort hämtar närvarodata för sin lektion, så listan strömmas
+          // Varje rad hämtar närvarodata för sin lektion, så listan strömmas
           // in i stället för att hålla upp resten av översikten.
           <Suspense
             fallback={<TodayScheduleSkeleton count={data.today.length} />}
           >
-            <div className="grid gap-3 md:grid-cols-2">
+            <ul className="divide-y divide-border rounded-xl border border-border bg-card">
               {data.today.map((lesson) => (
-                <TodayLessonCard key={lesson.id} lesson={lesson} showTeacher />
+                <TodayLessonRow key={lesson.id} lesson={lesson} />
               ))}
-            </div>
+            </ul>
           </Suspense>
         )}
 
@@ -149,15 +149,14 @@ export function AdminOverview({
   );
 }
 
-/** Platshållare med rätt antal kort, så sidan inte hoppar när de laddats. */
+/** Platshållare med rätt antal rader, så sidan inte hoppar när de laddats. */
 function TodayScheduleSkeleton({ count }: { count: number }) {
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="divide-y divide-border rounded-xl border border-border bg-card">
       {Array.from({ length: count }, (_, index) => index).map((index) => (
-        <div
-          key={index}
-          className="h-36 animate-pulse rounded-xl border border-border bg-card"
-        />
+        <div key={index} className="px-4 py-2">
+          <div className="h-9 animate-pulse rounded bg-muted" />
+        </div>
       ))}
     </div>
   );
