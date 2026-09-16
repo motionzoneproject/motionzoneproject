@@ -2,10 +2,12 @@ import { addDays, subDays } from "date-fns";
 import type { Metadata } from "next";
 import { requireAdminOrTeacher } from "@/lib/actions/admin";
 import { getAttendanceDay } from "@/lib/actions/attendance-actions";
+import { getSessionData } from "@/lib/actions/sessiondata";
 import {
   formatDateToInputStr,
   parseStockholmDateInput,
 } from "@/lib/date-utils";
+import prisma from "@/lib/prisma";
 import { AttendanceDay } from "./components/AttendanceDay";
 
 export const metadata: Metadata = {
@@ -34,6 +36,19 @@ export default async function Page({
     sp?.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date)
       ? sp.date
       : formatDateToInputStr(new Date());
+
+  // Lärare ser bara sina egna lektioner och behöver inget filter. En admin
+  // ser hela skolans dag, och kan smalna av till en lärare.
+  const session = await getSessionData();
+  const isAdmin = session?.user.role === "admin";
+
+  const teachers = isAdmin
+    ? await prisma.user.findMany({
+        where: { role: { in: ["admin", "teacher"] } },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   const lessons = await getAttendanceDay(date, sp?.teacher);
 
@@ -65,6 +80,8 @@ export default async function Page({
         day: heading.day,
         month: heading.month,
       }}
+      teachers={teachers}
+      selectedTeacher={sp?.teacher ?? ""}
     />
   );
 }

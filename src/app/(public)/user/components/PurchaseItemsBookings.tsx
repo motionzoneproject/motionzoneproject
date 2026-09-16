@@ -17,6 +17,8 @@ type BookingForList = {
 
 interface Props {
   bookings: BookingForList[];
+  /** Lärarens närvaromarkering per lektion. Saknas den är närvaro inte tagen. */
+  attendance?: Record<string, "PRESENT" | "ABSENT">;
   labelYourBookings: string;
   labelNoBookings: string;
   initialCount?: number;
@@ -26,11 +28,13 @@ function BookingGrid({
   openBookingId,
   setOpenBookingId,
   isPastGrid,
+  attendance,
 }: {
   bookings: BookingForList[];
   openBookingId: string | null;
   setOpenBookingId: (id: string | null) => void;
   isPastGrid: boolean;
+  attendance?: Record<string, "PRESENT" | "ABSENT">;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -84,6 +88,22 @@ function BookingGrid({
                     {dbToFormTime(b.lesson.endTime)}
                   </span>
                 )}
+
+                {/* Saknas markering har läraren inte tagit närvaro, vilket
+                    inte är samma sak som frånvaro och inte ska visas som det. */}
+                {attendance?.[b.lessonId] && (
+                  <span
+                    className={`mt-1 text-xs font-semibold ${
+                      attendance[b.lessonId] === "PRESENT"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {attendance[b.lessonId] === "PRESENT"
+                      ? "Närvarande"
+                      : "Frånvarande"}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -114,6 +134,7 @@ function BookingGrid({
 
 export function PurchaseItemBookings({
   bookings,
+  attendance,
   labelYourBookings,
   labelNoBookings,
   initialCount = 6,
@@ -153,6 +174,7 @@ export function PurchaseItemBookings({
             openBookingId={openBookingId}
             setOpenBookingId={setOpenBooking}
             isPastGrid={false}
+            attendance={attendance}
           />
         ) : (
           <p className="text-xs text-muted-foreground italic">
@@ -216,6 +238,7 @@ export function PurchaseItemBookings({
                 openBookingId={openBookingId}
                 setOpenBookingId={setOpenBooking}
                 isPastGrid={true}
+                attendance={attendance}
               />
             </div>
           )}

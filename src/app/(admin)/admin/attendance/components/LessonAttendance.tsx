@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCheck, UserPlus } from "lucide-react";
+import { CheckCheck, RotateCcw, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   type AttendanceLesson,
+  releaseBookingForAbsence,
   saveAttendance,
 } from "@/lib/actions/attendance-actions";
 import { ManageRosterDialog } from "./ManageRosterDialog";
@@ -31,6 +32,7 @@ export function LessonAttendance({
 }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [releasing, setReleasing] = useState<string | null>(null);
   const [marks, setMarks] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const student of lesson.students) {
@@ -69,6 +71,22 @@ export function LessonAttendance({
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const release = async (studentKey: string) => {
+    setReleasing(studentKey);
+    try {
+      const res = await releaseBookingForAbsence(lesson.lessonId, studentKey);
+      if (res.success) {
+        toast.success(res.msg);
+        onSaved?.();
+        router.refresh();
+      } else {
+        toast.error(res.msg);
+      }
+    } finally {
+      setReleasing(null);
     }
   };
 
@@ -151,6 +169,27 @@ export function LessonAttendance({
                     </span>
                   </span>
                 </label>
+
+                {/* Uteblivna pass återbetalas inte automatiskt — studion
+                    bedömer fallet. Knappen finns bara så länge bokningen
+                    gör det, så samma tillfälle kan inte lämnas tillbaka
+                    två gånger. */}
+                {student.status === "ABSENT" && student.booked && (
+                  <div className="px-4 pb-3 -mt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={releasing === student.studentKey}
+                      onClick={() => void release(student.studentKey)}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      {releasing === student.studentKey
+                        ? "Lämnar tillbaka..."
+                        : "Lämna tillbaka tillfället"}
+                    </Button>
+                  </div>
+                )}
               </li>
             );
           })}

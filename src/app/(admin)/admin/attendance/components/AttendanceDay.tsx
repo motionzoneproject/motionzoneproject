@@ -27,22 +27,31 @@ export function AttendanceDay({
   previousDate,
   nextDate,
   heading,
+  teachers,
+  selectedTeacher,
 }: {
   date: string;
   lessons: AttendanceLesson[];
   previousDate: string;
   nextDate: string;
   heading: { weekday: string; day: string; month: string };
+  /** Tomt för lärare, som bara ser sina egna lektioner. */
+  teachers: { id: string; name: string }[];
+  selectedTeacher: string;
 }) {
   const [openLesson, setOpenLesson] = useState<string | null>(
     lessons[0]?.lessonId ?? null,
   );
 
+  const teacherQuery = selectedTeacher
+    ? `&teacher=${encodeURIComponent(selectedTeacher)}`
+    : "";
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-16">
       <div className="flex items-center justify-between gap-3 py-6">
         <Button asChild variant="outline" size="sm" className="shrink-0">
-          <Link href={`/admin/attendance?date=${previousDate}`}>
+          <Link href={`/admin/attendance?date=${previousDate}${teacherQuery}`}>
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only sm:not-sr-only">Föregående</span>
           </Link>
@@ -55,7 +64,7 @@ export function AttendanceDay({
         </div>
 
         <Button asChild variant="outline" size="sm" className="shrink-0">
-          <Link href={`/admin/attendance?date=${nextDate}`}>
+          <Link href={`/admin/attendance?date=${nextDate}${teacherQuery}`}>
             <CalendarDays className="h-4 w-4" />
             <span className="sr-only sm:not-sr-only">Nästa datum</span>
             <ChevronRight className="h-4 w-4" />
@@ -65,7 +74,7 @@ export function AttendanceDay({
 
       <form
         method="GET"
-        className="mb-6 flex items-center justify-center gap-2"
+        className="mb-6 flex flex-wrap items-center justify-center gap-2"
       >
         <label htmlFor="date" className="text-xs text-muted-foreground">
           Gå till datum
@@ -77,6 +86,28 @@ export function AttendanceDay({
           defaultValue={date}
           className="h-9 rounded-md border bg-background px-2 text-sm"
         />
+
+        {teachers.length > 0 && (
+          <>
+            <label htmlFor="teacher" className="text-xs text-muted-foreground">
+              Lärare
+            </label>
+            <select
+              id="teacher"
+              name="teacher"
+              defaultValue={selectedTeacher}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="">Alla lärare</option>
+              {teachers.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
         <Button type="submit" variant="ghost" size="sm">
           Visa
         </Button>
@@ -116,11 +147,16 @@ export function AttendanceDay({
                         </span>
                       )}
                     </span>
-                    {lesson.studioName && (
-                      <span className="block text-sm text-muted-foreground">
-                        {lesson.studioName}
-                      </span>
-                    )}
+                    <span className="block text-sm text-muted-foreground">
+                      {[
+                        lesson.studioName,
+                        teachers.length > 0 && !selectedTeacher
+                          ? lesson.teacherName
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
                     <span className="block text-sm text-muted-foreground">
                       {dbToFormTime(lesson.startTime)} -{" "}
                       {dbToFormTime(lesson.endTime)}

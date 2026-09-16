@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getMyAttendance } from "@/lib/actions/attendance-actions";
 import { getUserOrders } from "@/lib/actions/orders";
 import { getMyParticipants } from "@/lib/actions/participants";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
@@ -69,6 +70,7 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
+  const attendance = await getMyAttendance();
   const purchaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
@@ -269,6 +271,7 @@ export default async function Page() {
 
                                 <PurchaseItemBookings
                                   bookings={piBookings}
+                                  attendance={attendance}
                                   labelYourBookings={t.user.yourBookings}
                                   labelNoBookings={t.user.noBookings}
                                 />

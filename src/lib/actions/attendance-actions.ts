@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { AttendanceStatus } from "@/generated/prisma/enums";
+import { handleClips } from "@/lib/clips";
 import { getCourseRoster, type RosterStudent } from "@/lib/course-roster";
 import {
   endOfStockholmDateInput,
@@ -232,4 +233,115 @@ export async function saveAttendance(
     success: true,
     msg: `Närvaron är sparad: ${present} av ${valid.length} närvarande.`,
   };
+}
+
+/**
+ * Lämnar tillbaka tillfället för en elev som var frånvarande.
+ *
+ * Uteblivna pass ska normalt inte återbetalas — annars vore bokningen
+ * meningslös — så det här sker aldrig av sig självt. Studion bedömer fallet
+ * och trycker på knappen.
+ *
+ * Bokningen tas bort och saldot återställs, precis som när en elev plockas
+ * bort från en lektion. Närvaroraden står kvar som frånvarande, så det finns
+ * kvar en uppgift om att eleven var inbokad men inte kom. Och eftersom
+ * knappen bara visas när det finns en bokning kvar går det inte att lämna
+ * tillbaka samma tillfälle två gånger.
+ *
+ * @auth Admin eller lektionens lärare
+ */
+export async function releaseBookingForAbsence(
+  lessonId: string,
+  studentKey: string,
+): Promise<Result> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return { success: false, msg: "Ingen behörighet." };
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: { id: true, teacherId: true },
+  });
+  if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
+
+  if (session.user.role !== "admin" && lesson.teacherId !== session.user.id) {
+    return { success: false, msg: "Det här är inte din lektion." };
+  }
+
+  const mark = await prisma.attendance.findUnique({
+    where: { lessonId_studentKey: { lessonId, studentKey } },
+    select: { status: true },
+  });
+  if (mark?.status !== "ABSENT") {
+    return {
+      success: false,
+      msg: "Markera eleven som frånvarande och spara först.",
+    };
+  }
+
+  // Bokningen tillhör elevens köp, och eleven är antingen en deltagare eller
+  // ett konto — samma nyckel som resten av listan bygger på.
+  const [kind, id] = studentKey.split(":");
+  const booking = await prisma.booking.findFirst({
+    where: {
+      lessonId,
+      purchaseItem: {
+        purchase:
+          kind === "participant"
+            ? { participantId: id }
+            : { userId: id, participantId: null },
+      },
+    },
+    select: { id: true, purchaseItemId: true },
+  });
+
+  if (!booking) {
+    return { success: false, msg: "Eleven har ingen bokning på lektionen." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
+      if (!clipResult.success) {
+        throw new Error(clipResult.msg || "Kunde inte återställa saldo.");
+      }
+      await tx.booking.delete({ where: { id: booking.id } });
+    });
+  } catch (e) {
+    console.error("Kunde inte lämna tillbaka tillfället", e);
+    return { success: false, msg: "Kunde inte lämna tillbaka tillfället." };
+  }
+
+  revalidatePath("/admin/attendance");
+  revalidatePath("/admin/lectures");
+  revalidatePath("/user");
+
+  return { success: true, msg: "Tillfället är tillbaka på elevens saldo." };
+}
+
+/**
+ * Kundens egen närvaro, för profilsidan.
+ *
+ * Nyckeln är lektionen, eftersom kunden bara ser sina egna och sina
+ * deltagares bokningar och aldrig har två på samma lektion. Saknas en rad
+ * har läraren inte tagit närvaro — det är inte samma sak som frånvaro, och
+ * ska inte visas som det.
+ */
+export async function getMyAttendance(): Promise<
+  Record<string, "PRESENT" | "ABSENT">
+> {
+  const session = await getSessionData();
+  if (!session) return {};
+
+  const marks = await prisma.attendance.findMany({
+    where: {
+      OR: [
+        { userId: session.user.id },
+        { participant: { addedByUserId: session.user.id } },
+        { participant: { userId: session.user.id } },
+      ],
+    },
+    select: { lessonId: true, status: true },
+  });
+
+  return Object.fromEntries(marks.map((m) => [m.lessonId, m.status]));
 }
