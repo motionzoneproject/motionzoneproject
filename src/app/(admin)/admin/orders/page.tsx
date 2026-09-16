@@ -69,6 +69,7 @@ type OrderLite = {
   status?: OrderStatus;
   payMethod: number;
   note: string | null;
+  purchases?: { id: string }[];
 };
 
 async function getOrders(): Promise<OrderLite[]> {
@@ -78,6 +79,8 @@ async function getOrders(): Promise<OrderLite[]> {
     orderBy: [{ createdAt: "desc" }],
     include: {
       user: { include: { details: true } },
+      // Köpen skapas först vid beviljande och är det schemadialogen bockar i.
+      purchases: { select: { id: true } },
       orderItems: {
         include: {
           product: {
