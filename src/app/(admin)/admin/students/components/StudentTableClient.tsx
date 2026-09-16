@@ -42,10 +42,10 @@ import {
 } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { ProductEditorDialog } from "../../components/ProductEditorDialog";
+import { ScheduleDialog } from "../../components/ScheduleDialog";
 import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
-import { ScheduleDialog } from "./ScheduleDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
 import type { SelectedStudent, StudentsSelectedType } from "./studentSelection";
 
@@ -514,7 +514,10 @@ export default function StudentTableClient({
                   />
                 </TableCell>
                 <TableCell>
-                  <ScheduleDialog student={student} />
+                  <ScheduleDialog
+                    purchaseIds={student.purchases.map((p) => p.id)}
+                    title={student.name}
+                  />
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

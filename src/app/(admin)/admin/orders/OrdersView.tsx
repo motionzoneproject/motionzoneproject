@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  CalendarRange,
   CheckIcon,
   ChevronDown,
   DollarSignIcon,
@@ -37,6 +38,7 @@ import { formatPrice } from "@/lib/money";
 import { getOrderStatusLabel, type OrderStatus } from "@/lib/order-status";
 import { getCourseName, getPayMethodTxt } from "@/lib/tools";
 import { ProductEditorDialog } from "../components/ProductEditorDialog";
+import { ScheduleDialog } from "../components/ScheduleDialog";
 import CancelOrderBtn from "./components/CancelOrderBtn";
 import DeleteOrderBtn from "./components/DeleteOrderBtn";
 import {
@@ -89,6 +91,7 @@ type OrderLite = {
   invoiceName?: string | null;
   invoiceEmail?: string | null;
   invoicePhone?: string | null;
+  purchases?: { id: string }[];
 };
 
 export default function OrdersView({
@@ -784,6 +787,33 @@ export default function OrdersView({
                           <ProductEditorDialog scope="order" orderId={o.id} />
                         </div>
                       )}
+
+                      {/* Köpen finns först vid beviljande, och det är dem
+                          schemat bockar i. */}
+                      {o.status === "APPROVED" &&
+                        (o.purchases?.length ?? 0) > 0 && (
+                          <div className="w-full">
+                            <ScheduleDialog
+                              purchaseIds={(o.purchases ?? []).map((p) => p.id)}
+                              title={
+                                o.orderItems?.[0]?.participant?.name ??
+                                o.user?.email ??
+                                "kunden"
+                              }
+                              trigger={
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-full justify-start px-2 text-[11px] gap-1.5 shadow-none font-normal"
+                                >
+                                  <CalendarRange className="h-3.5 w-3.5" />
+                                  Schema
+                                </Button>
+                              }
+                            />
+                          </div>
+                        )}
 
                       <div className="w-full">
                         <DeleteOrderBtn orderId={o.id} onDelete={onDelete} />

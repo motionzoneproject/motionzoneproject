@@ -2,7 +2,7 @@
 
 import { CalendarRange, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +19,6 @@ import {
   type PurchaseSchedule,
   setCourseBooking,
 } from "@/lib/actions/schedule-actions";
-import type { StudentSummary } from "../page";
 
 /**
  * Sätter ihop elevens schema: vilka av köpets kurser hen faktiskt går på.
@@ -29,7 +28,18 @@ import type { StudentSummary } from "../page";
  * till tjugotal kurser som eleven inte ska gå allihop — där är den här vyn
  * verktyget som avgör vilka det blir.
  */
-export function ScheduleDialog({ student }: { student: StudentSummary }) {
+export function ScheduleDialog({
+  purchaseIds,
+  title,
+  trigger,
+}: {
+  /** Köpen vars kurser ska gå att bocka i. */
+  purchaseIds: string[];
+  /** Vems schema det gäller, för rubriken. */
+  title: string;
+  /** Egen knapp, när dialogen öppnas från en annan vy. */
+  trigger?: ReactNode;
+}) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +50,7 @@ export function ScheduleDialog({ student }: { student: StudentSummary }) {
     setIsLoading(true);
     try {
       const results = await Promise.all(
-        student.purchases.map((p) => getPurchaseSchedule(p.id)),
+        purchaseIds.map((id) => getPurchaseSchedule(id)),
       );
       setSchedules(
         results.filter(
@@ -80,15 +90,17 @@ export function ScheduleDialog({ student }: { student: StudentSummary }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <CalendarRange className="h-4 w-4" />
-          Schema
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" size="sm">
+            <CalendarRange className="h-4 w-4" />
+            Schema
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Schema för {student.name}</DialogTitle>
+          <DialogTitle>Schema för {title}</DialogTitle>
           <DialogDescription>
             Bocka i de kurser eleven ska gå på. Ibockad betyder inbokad på
             kursens kommande lektioner. Att bocka ur tar bara bort kommande
