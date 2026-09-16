@@ -69,6 +69,9 @@ type OrderLite = {
   status?: OrderStatus;
   payMethod: number;
   note: string | null;
+  invoiceName?: string | null;
+  invoiceEmail?: string | null;
+  invoicePhone?: string | null;
 };
 
 async function getOrders(): Promise<OrderLite[]> {

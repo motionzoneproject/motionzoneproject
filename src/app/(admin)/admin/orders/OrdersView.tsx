@@ -43,6 +43,7 @@ import {
   type EditableProduct,
   EditOrderDialog,
 } from "./components/EditOrderDialog";
+import { InvoiceRecipientDialog } from "./components/InvoiceRecipientDialog";
 import { OrderPackageDialog } from "./components/OrderPackageEditor";
 
 type CourseWithSchedule = Course & { schemaItems?: { weekday: Weekday }[] };
@@ -85,6 +86,9 @@ type OrderLite = {
   note: string | null;
   createdAt: string | Date;
   status?: OrderStatus;
+  invoiceName?: string | null;
+  invoiceEmail?: string | null;
+  invoicePhone?: string | null;
 };
 
 export default function OrdersView({
@@ -134,7 +138,9 @@ export default function OrdersView({
   const active = (sp.get("status")?.toUpperCase() || defaultStatus).toString();
   const paidFilterParam = sp.get("paid")?.toUpperCase();
   const paidFilter =
-    paidFilterParam === "PAID" || paidFilterParam === "UNPAID"
+    paidFilterParam === "PAID" ||
+    paidFilterParam === "UNPAID" ||
+    paidFilterParam === "NO_INVOICE"
       ? paidFilterParam
       : "ALL";
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
@@ -241,6 +247,8 @@ export default function OrdersView({
       result = result.filter((o) => o.isPaid);
     } else if (paidFilter === "UNPAID") {
       result = result.filter((o) => !o.isPaid);
+    } else if (paidFilter === "NO_INVOICE") {
+      result = result.filter((o) => !o.invoiceName);
     }
 
     return result;
@@ -383,6 +391,7 @@ export default function OrdersView({
                 <SelectItem value="ALL">Alla</SelectItem>
                 <SelectItem value="PAID">Betalda</SelectItem>
                 <SelectItem value="UNPAID">Obetalda</SelectItem>
+                <SelectItem value="NO_INVOICE">Faktura saknas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -678,6 +687,17 @@ export default function OrdersView({
                         >
                           {o.isPaid ? "Betald" : "Ej betald"}
                         </button>
+
+                        <InvoiceRecipientDialog
+                          orderId={o.id}
+                          accountName={`${o.user?.details?.firstName ?? ""} ${
+                            o.user?.details?.lastName ?? ""
+                          }`.trim()}
+                          accountEmail={o.user?.email ?? ""}
+                          invoiceName={o.invoiceName ?? null}
+                          invoiceEmail={o.invoiceEmail ?? null}
+                          invoicePhone={o.invoicePhone ?? null}
+                        />
                       </div>
 
                       <div className="text-[11px] text-muted-foreground">
@@ -685,6 +705,24 @@ export default function OrdersView({
                         <span className="font-medium text-foreground">
                           {getPayMethodTxt(o.payMethod, "sv")}
                         </span>
+                      </div>
+
+                      <div className="text-[11px] text-muted-foreground">
+                        <span>Faktura: </span>
+                        {o.invoiceName ? (
+                          <span className="font-medium text-foreground">
+                            {o.invoiceName}
+                            {o.invoiceEmail ? (
+                              <span className="block font-normal text-muted-foreground break-all">
+                                {o.invoiceEmail}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="font-medium text-amber-700 dark:text-amber-400">
+                            Saknas
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
