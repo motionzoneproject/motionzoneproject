@@ -64,6 +64,20 @@ export type HealthFix =
     }
   | {
       /**
+       * Stäng av autobokningen på ett paket som bokar in köparen på samtliga
+       * kopplade kurser. Redan skapade bokningar rörs inte — de plockas bort
+       * per elev i schemadialogen, eftersom en massradering inte kan skilja de
+       * felaktiga från dem eleven faktiskt ska gå på.
+       */
+      kind: "product-autobook";
+      productId: string;
+      productName: string;
+      courseCount: number;
+      /** Köpare som redan blivit inbokade, med antal kurser var. */
+      affected: { studentName: string; email: string; courses: number }[];
+    }
+  | {
+      /**
        * Boka in eleven på kursens kommande lektioner. Produkten autobokar, så
        * bokningarna skulle ha skapats när ordern beviljades — autobook() sväljer
        * sina fel, så ett misslyckande syns ingenstans förrän läraren saknar
@@ -166,6 +180,28 @@ const take = HEALTH_ROW_LIMIT;
  * Kursen måste ha kommande lektioner — en avslutad kurs har inga bokningar
  * kvar att göra, och skulle annars flaggas för evigt när terminen tar slut.
  */
+/**
+ * Aktiva paket utan kursbegränsning som autobokar fler än två kurser.
+ *
+ * Antalet kopplade kurser går inte att filtrera på i en Prisma-where, så
+ * urvalet görs i minnet. Produkttabellen är liten.
+ */
+async function autobookingEverythingProducts() {
+  const products = await prisma.product.findMany({
+    where: { active: true, autobook: true, maxCourses: null },
+    select: { id: true, name: true, _count: { select: { courses: true } } },
+    orderBy: { name: "asc" },
+  });
+
+  return products
+    .filter((product) => product._count.courses > 2)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      courseCount: product._count.courses,
+    }));
+}
+
 function purchaseItemWithoutBookings(): Prisma.PurchaseItemWhereInput {
   return {
     bookings: { none: {} },
@@ -693,6 +729,75 @@ const checks: Check[] = [
           },
         };
       });
+    },
+  },
+  {
+    /**
+     * Ett paket utan kursbegränsning som dessutom autobokar.
+     *
+     * "Ingen begränsning" betyder i koden att samtliga kopplade kurser ingår,
+     * så varje köpare bokas in på allihop. För ett terminskort eller ett
+     * program är det fel — köpet ger tillgång till ett utbud som eleven väljer
+     * ur — och felet märks först när någon köpt och fått tjugotal kurser i sitt
+     * schema.
+     *
+     * Två kurser kan vara helt riktigt, t.ex. en kurs som går två dagar i
+     * veckan. Därför flaggas först produkter med fler än så.
+     */
+    id: "product-autobooks-everything",
+    singular: "produkt bokar in köparen på samtliga kurser",
+    plural: "produkter bokar in köparen på samtliga kurser",
+    description:
+      "Paketet har ingen kursbegränsning, så alla kopplade kurser ingår, och autobokningen bokar in köparen på varenda en.",
+    howTo: {
+      steps: [
+        'Är det ett terminskort eller ett program? Klicka "Åtgärda" och stäng av autobokningen. Köpet ger då tillgång till kurserna utan att boka in eleven på dem.',
+        'Ska kunden välja ett visst antal kurser i kassan sätter du i stället "Begränsa antal valbara kurser" på /admin/products. Autobokningen bokar då bara kundens val.',
+        "Ska köparen verkligen gå samtliga kurser är allt som det ska — lämna produkten i fred.",
+      ],
+      caveat:
+        'Avstängningen gäller framåt. Kunder som redan blivit inbokade behåller sina bokningar, och de plockas bort per elev i kolumnen "Schema" på /admin/students — en massradering skulle inte kunna skilja de felaktiga från kurserna eleven faktiskt går på.',
+    },
+    fixHref: "/admin/products",
+    fixLabel: "Till produkter",
+    severity: "warning",
+    fixable: true,
+    count: async () => (await autobookingEverythingProducts()).length,
+    list: async () => {
+      const products = await autobookingEverythingProducts();
+
+      return Promise.all(
+        products.slice(0, take).map(async (product) => {
+          const purchases = await prisma.purchase.findMany({
+            where: { productId: product.id },
+            select: {
+              user: { select: { name: true, email: true } },
+              participant: { select: { name: true } },
+              _count: { select: { PurchaseItems: true } },
+            },
+          });
+
+          const affected = purchases.map((purchase) => ({
+            studentName: purchase.participant?.name ?? purchase.user.name,
+            email: purchase.user.email,
+            courses: purchase._count.PurchaseItems,
+          }));
+
+          return {
+            id: product.id,
+            title: product.name,
+            detail: `${product.courseCount} kurser ingår · ${affected.length} köp`,
+            href: searchHref("/admin/products", product.name),
+            fix: {
+              kind: "product-autobook" as const,
+              productId: product.id,
+              productName: product.name,
+              courseCount: product.courseCount,
+              affected,
+            },
+          };
+        }),
+      );
     },
   },
   {
