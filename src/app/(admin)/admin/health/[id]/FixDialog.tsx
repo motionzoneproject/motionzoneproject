@@ -21,6 +21,7 @@ import {
   mergeParticipants,
   removeStaleBooking,
 } from "@/lib/actions/health-actions";
+import { setCourseBooking } from "@/lib/actions/schedule-actions";
 import type { HealthFix, ParticipantCopy } from "@/lib/admin-health";
 import { formatShortFriendlyDate } from "@/lib/date-utils";
 
@@ -70,6 +71,15 @@ export function FixDialog({
         )}
         {fix.kind === "purchase-backfill" && (
           <BackfillPurchase
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "course-booking" && (
+          <BookWholeCourse
             fix={fix}
             onDone={() => {
               setOpen(false);
@@ -462,6 +472,71 @@ function CreatePurchase({
       <DialogFooter>
         <Button onClick={submit} disabled={isPending || blocked}>
           {isPending ? "Skapar…" : "Skapa köp"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Bokar in eleven på kursens kommande lektioner.
+ *
+ * Samma sak som ett ordergodkännande skulle ha gjort. Dialogen säger hur många
+ * lektioner det blir och vad saldot är, eftersom det är kundens tillfällen som
+ * dras — och varnar för fallet där någon plockats bort med flit.
+ */
+function BookWholeCourse({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "course-booking" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await setCourseBooking(fix.purchaseItemId, true);
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Boka in på kursen</DialogTitle>
+        <DialogDescription>
+          {fix.studentName} har {fix.productName} men är inte inbokad på en enda
+          lektion i {fix.courseName}, trots att produkten bokar in automatiskt.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 text-sm">
+        <p className="text-muted-foreground">
+          {fix.upcomingLessons} kommande lektioner bokas, så långt saldot
+          räcker. Saldo just nu: {fix.remaining}.
+        </p>
+        <p className="text-muted-foreground">
+          Lektioner som redan varit bokas inte — eleven har inte gått på dem,
+          och de skulle dra klipp i onödan.
+        </p>
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+          Har eleven plockats bort från lektionerna med flit ser det likadant ut
+          som om bokningarna aldrig skapats. Kontrollera att eleven verkligen
+          ska gå kursen.
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending}>
+          {isPending ? "Bokar…" : "Boka in på kursen"}
         </Button>
       </DialogFooter>
     </>

@@ -8,6 +8,7 @@
 // från /admin, som redan vaktat att användaren är admin.
 
 import type { Prisma } from "@/generated/prisma/client";
+import { calcRemainingCount, showRemaining } from "./actions/purchase-helpers";
 import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
@@ -60,6 +61,23 @@ export type HealthFix =
       productNames: string[];
       /** Paket där kundens kursval saknas — då vägrar skapandet. */
       missingSelections: string[];
+    }
+  | {
+      /**
+       * Boka in eleven på kursens kommande lektioner. Produkten autobokar, så
+       * bokningarna skulle ha skapats när ordern beviljades — autobook() sväljer
+       * sina fel, så ett misslyckande syns ingenstans förrän läraren saknar
+       * eleven på lektionen.
+       */
+      kind: "course-booking";
+      purchaseItemId: string;
+      studentName: string;
+      courseName: string;
+      productName: string;
+      /** Hur många lektioner som bokas. */
+      upcomingLessons: number;
+      /** Saldo att boka med, "∞" för obegränsade rader. */
+      remaining: string;
     }
   | {
       /**
@@ -141,6 +159,22 @@ type Check = {
 };
 
 const take = HEALTH_ROW_LIMIT;
+
+/**
+ * Kursrader som skulle ha blivit inbokade men inte blev det.
+ *
+ * Kursen måste ha kommande lektioner — en avslutad kurs har inga bokningar
+ * kvar att göra, och skulle annars flaggas för evigt när terminen tar slut.
+ */
+function purchaseItemWithoutBookings(): Prisma.PurchaseItemWhereInput {
+  return {
+    bookings: { none: {} },
+    purchase: { product: { autobook: true } },
+    course: {
+      lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
+    },
+  };
+}
 
 const productWithoutCourse = {
   active: true,
@@ -659,6 +693,106 @@ const checks: Check[] = [
           },
         };
       });
+    },
+  },
+  {
+    /**
+     * Produkten autobokar, men eleven har inte en enda bokning i kursen.
+     *
+     * Bokningarna skapas när ordern beviljas, av autobook(), som returnerar
+     * tom lista i stället för att kasta vid fel. Slår den fel ser adminen bara
+     * "beviljad" — felet dyker upp först när läraren saknar eleven på
+     * lektionen, eller inte alls.
+     *
+     * Kort och program räknas inte hit: där är noll bokningar det normala,
+     * eftersom schemat sätts ihop för hand. Därav autobook-villkoret.
+     */
+    id: "purchase-without-bookings",
+    singular: "köp är inte inbokat på några lektioner",
+    plural: "köp är inte inbokade på några lektioner",
+    description:
+      "Produkten bokar in kunden automatiskt, men kursraden har noll bokningar trots att kursen har lektioner kvar.",
+    howTo: {
+      steps: [
+        'Klicka "Åtgärda" och "Boka in på kursen". Eleven bokas in på kursens kommande lektioner, precis som ett beviljande hade gjort.',
+        "Lektioner som redan varit bokas aldrig i efterhand — eleven har ju inte gått på dem, och de skulle dra klipp i onödan.",
+        'Ska eleven bara gå vissa kurser använder du i stället kolumnen "Schema" på /admin/students.',
+      ],
+      caveat:
+        "En elev som medvetet plockats bort från alla lektioner ser likadan ut som en som aldrig blev inbokad — borttagna bokningar lämnar inget spår. Kontrollera att eleven verkligen ska gå kursen innan du bokar in.",
+    },
+    fixHref: "/admin/students",
+    fixLabel: "Till elever",
+    severity: "serious",
+    fixable: true,
+    count: () =>
+      prisma.purchaseItem.count({ where: purchaseItemWithoutBookings() }),
+    list: async () => {
+      const rows = await prisma.purchaseItem.findMany({
+        where: purchaseItemWithoutBookings(),
+        select: {
+          id: true,
+          remainingCount: true,
+          unlimited: true,
+          courseId: true,
+          course: { select: { name: true } },
+          purchase: {
+            select: {
+              type: true,
+              remainingCount: true,
+              product: { select: { name: true } },
+              user: { select: { name: true, email: true } },
+              participant: { select: { name: true } },
+            },
+          },
+        },
+        take,
+      });
+
+      const now = new Date();
+
+      return Promise.all(
+        rows.map(async (row) => {
+          const upcomingLessons = await prisma.lesson.count({
+            where: {
+              courseId: row.courseId,
+              cancelled: false,
+              startTime: { gte: now },
+            },
+          });
+
+          const studentName =
+            row.purchase.participant?.name ?? row.purchase.user.name;
+          const remaining = showRemaining(
+            calcRemainingCount({
+              purchase: {
+                type: row.purchase.type,
+                remainingCount: row.purchase.remainingCount,
+              },
+              purchaseItem: {
+                unlimited: row.unlimited,
+                remainingCount: row.remainingCount,
+              },
+            }),
+          );
+
+          return {
+            id: row.id,
+            title: studentName,
+            detail: `${row.course.name} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
+            href: searchHref("/admin/students", row.purchase.user.email),
+            fix: {
+              kind: "course-booking" as const,
+              purchaseItemId: row.id,
+              studentName,
+              courseName: row.course.name,
+              productName: row.purchase.product.name,
+              upcomingLessons,
+              remaining: String(remaining),
+            },
+          };
+        }),
+      );
     },
   },
   {
