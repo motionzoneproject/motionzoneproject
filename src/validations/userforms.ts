@@ -37,6 +37,29 @@ export const AdminEditUserSchema = z.object({
   allowPhotoVideo: z.boolean(),
 });
 
+/**
+ * Fakturamottagaren i kassan och på profilsidan.
+ *
+ * Namnet är obligatoriskt eftersom det pekar ut den betalningsansvariga.
+ * E-posten är obligatorisk men fri — den är en leveransadress och får vara
+ * dansarens egen. Telefon är frivillig.
+ */
+export const InvoiceRecipientSchema = z.object({
+  invoiceName: z
+    .string()
+    .trim()
+    .min(2, "Ange namnet på den som ska betala")
+    .max(150),
+  invoiceEmail: z.email("Ogiltig e-postadress").max(250),
+  invoicePhone: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((v) => v === "" || v.length >= 5, "Ogiltigt telefonnummer"),
+});
+
+export type InvoiceRecipientInput = z.infer<typeof InvoiceRecipientSchema>;
+
 export const UserEmailSchema = z.object({
   currentEmail: z.email("Ogiltig e-postadress").max(250),
   email: z.email("Ogiltig e-postadress").max(250),

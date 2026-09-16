@@ -1,4 +1,4 @@
-import { Clock, Users } from "lucide-react";
+import { Clock, ReceiptText, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
@@ -35,6 +35,7 @@ import BookingCal from "./components/BookingCal";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditEmailForm } from "./components/EditEmailForm";
 import { EditPwForm } from "./components/EditPwForm";
+import { InvoiceRecipientForm } from "./components/InvoiceRecipientForm";
 import OrderHistory from "./components/OrderHistory";
 import { PurchaseItemBookings } from "./components/PurchaseItemsBookings";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
@@ -390,8 +391,25 @@ export default async function Page() {
               </div>
             )}
 
+            {user && !userDetails?.invoiceName && (
+              <div className="my-4 flex items-start gap-2 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                <ReceiptText className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{t.user.invoiceMissing}</span>
+              </div>
+            )}
+
             <div className="my-4 md:flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
               {userDetails && <EditDetailsForm details={userDetails} />}
+              {user && (
+                <InvoiceRecipientForm
+                  accountName={user.name}
+                  accountEmail={user.email}
+                  dateOfBirth={userDetails?.dateOfBirth ?? null}
+                  invoiceName={userDetails?.invoiceName ?? null}
+                  invoiceEmail={userDetails?.invoiceEmail ?? null}
+                  invoicePhone={userDetails?.invoicePhone ?? null}
+                />
+              )}
               <EditPwForm />
               <EditEmailForm />
               {(user?.role === "admin" || user?.role === "teacher") &&
