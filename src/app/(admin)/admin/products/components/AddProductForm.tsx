@@ -27,6 +27,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -44,6 +45,7 @@ import type { Category } from "@/generated/prisma/client";
 import { addNewProduct } from "@/lib/actions/admin";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
+import { DeliverySummary } from "./DeliverySummary";
 
 const formSchema = adminProductSchema;
 
@@ -450,6 +452,11 @@ export default function AddProductForm({
                           className="w-6 h-6"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Kunden bokas in på alla lektioner som ingår, direkt när
+                        ordern godkänns. Lämna avbockad för terminskort och
+                        program där ni sätter ihop kundens schema efteråt.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -498,10 +505,27 @@ export default function AddProductForm({
                           />
                         </FormControl>
 
+                        <FormDescription>
+                          Kunden väljer själv vilka kurser som ingår, i kassan.
+                          Utan begränsning ingår samtliga kopplade kurser i
+                          köpet.
+                        </FormDescription>
+
                         <FormMessage />
                       </FormItem>
                     );
                   }}
+                />
+
+                <DeliverySummary
+                  clipcard={form.watch("clipcard") === true}
+                  autobook={form.watch("autobook") === true}
+                  maxCourses={
+                    typeof form.watch("maxCourses") === "number"
+                      ? (form.watch("maxCourses") as number)
+                      : null
+                  }
+                  courseCount={null}
                 />
 
                 {isBusy ? (
