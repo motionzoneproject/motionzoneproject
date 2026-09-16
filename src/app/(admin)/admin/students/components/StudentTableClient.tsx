@@ -45,6 +45,7 @@ import { ProductEditorDialog } from "../../components/ProductEditorDialog";
 import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
+import { ScheduleDialog } from "./ScheduleDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
 import type { SelectedStudent, StudentsSelectedType } from "./studentSelection";
 
@@ -442,6 +443,7 @@ export default function StudentTableClient({
               <TableHead>Terminer</TableHead>
               <TableHead>Bokningar</TableHead>
               <TableHead>Produkter</TableHead>
+              <TableHead>Schema</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
@@ -510,6 +512,9 @@ export default function StudentTableClient({
                     participantId={student.participantId}
                     triggerLabel={`(${student.purchases.length}st)`}
                   />
+                </TableCell>
+                <TableCell>
+                  <ScheduleDialog student={student} />
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
