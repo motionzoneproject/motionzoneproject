@@ -44,9 +44,11 @@ export function AttendeDialogUI({
       </DialogTrigger>
       <DialogContent id={id} className="max-h-[90dvh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Hantera närvaro ({bookings.length}st)</DialogTitle>
+          <DialogTitle>Hantera bokningar ({bookings.length}st)</DialogTitle>
           <DialogDescription>
-            Lägg till eller ta bort elever från lektionen.
+            Lägg till eller ta bort elever från lektionen. Det här är
+            bokningarna, och ett tillägg drar ett tillfälle ur elevens köp.
+            Närvaron tar du under Närvaro i menyn.
             <br />
             Gäller {courseName} ({formatDateToInputStr(lesson.startTime)}{" "}
             {dbToFormTime(lesson.startTime)}

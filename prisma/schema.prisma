@@ -44,6 +44,11 @@ model User {
   addedParticipants Participant[] @relation("AddedParticipants")
   asParticipant     Participant[] @relation("UserAsParticipant")
 
+  attendance         Attendance[] @relation("AttendanceStudent")
+  markedAttendance   Attendance[] @relation("AttendanceMarkedBy")
+  rosterEntries      CourseRosterEntry[] @relation("RosterStudent")
+  addedRosterEntries CourseRosterEntry[] @relation("RosterAddedBy")
+
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
@@ -157,6 +162,8 @@ model Lesson {
 
   bookings Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
 
+  attendance Attendance[] // Vem som faktiskt var på plats. Fristående från bokningarna.
+
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
 
   schemaItem SchemaItem @relation(fields: [schemaItemId], references: [id], onDelete: Cascade)
@@ -253,6 +260,8 @@ model Course {
   purchaseItems PurchaseItem[]
 
   orderItemsSelections OrderItemCourseSelection[]
+
+  rosterEntries CourseRosterEntry[] // Manuella tillägg och dolda rader i elevlistan.
 
 
 
@@ -624,6 +633,9 @@ model Participant {
   orderItems OrderItem[]
   purchases  Purchase[]
 
+  attendance    Attendance[]
+  rosterEntries CourseRosterEntry[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -795,4 +807,90 @@ model StartPageContent {
   feature3Description_en String? @default("Our studio is equiped with the latest soundsystem and big mirrors for optimal training.")
 
   updatedAt DateTime @updatedAt
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+// Närvaro är ett eget register, fristående från Booking.
+//
+// En bokning säger att eleven har rätt att gå på lektionen och drar ett klipp;
+// närvaron säger om hen faktiskt kom. Att slå ihop dem, som systemet gjorde
+// förut, gör varje bock till en ändring av kundens ekonomi — och gör det
+// omöjligt att markera närvaro för någon som lagts till i listan för hand.
+model Attendance {
+  id String @id @default(uuid())
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Eleven är antingen en deltagare eller ett konto. studentKey är den
+  // sammanslagna nyckeln ("participant:<id>" / "user:<id>") som resten av
+  // adminkoden redan identifierar elever med. Den finns som egen kolumn för
+  // att unikheten ska gå att garantera — Postgres räknar NULL som unikt, så
+  // ett index på de två nullbara kolumnerna hade släppt igenom dubbletter.
+  studentKey String
+
+  userId String?
+  user   User?   @relation("AttendanceStudent", fields: [userId], references: [id], onDelete: Cascade)
+
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  status AttendanceStatus
+
+  markedByUserId String
+  markedBy       User   @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lessonId, studentKey])
+  @@index([lessonId])
+  @@index([userId])
+  @@index([participantId])
+  @@map("attendance")
+}
+
+enum RosterStatus {
+  ADDED
+  HIDDEN
+}
+
+// Manuell justering av en kurs elevlista.
+//
+// Listan härleds ur köpen, och det stämmer bara för en vanlig kurs. Ett
+// terminskort ger kursrader i samtliga kurser det gäller, så köparen dyker upp
+// i tjugotal listor hen aldrig går på; ett program vars kurser kopplades efter
+// köpet ger tvärtom inga rader alls. Den här tabellen är studions möjlighet
+// att rätta båda fallen utan att röra köp, ordrar eller fakturor.
+model CourseRosterEntry {
+  id String @id @default(uuid())
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  studentKey String
+
+  userId String?
+  user   User?   @relation("RosterStudent", fields: [userId], references: [id], onDelete: Cascade)
+
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  status RosterStatus
+
+  addedByUserId String
+  addedBy       User   @relation("RosterAddedBy", fields: [addedByUserId], references: [id], onDelete: Restrict)
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, studentKey])
+  @@index([courseId])
+  @@map("course_roster_entry")
 }

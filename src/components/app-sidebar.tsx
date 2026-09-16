@@ -7,6 +7,7 @@ import {
   BookOpen,
   CalendarDays,
   ChevronsUpDown,
+  ClipboardCheck,
   Crown,
   GraduationCap,
   Home,
@@ -75,6 +76,12 @@ export function AppSidebar() {
       title: "Lektioner",
       url: `/admin/lectures?teacher=${user?.id}&from=${from}&to=${to}`,
       icon: BookOpen,
+      teacherVisible: true,
+    },
+    {
+      title: "Närvaro",
+      url: "/admin/attendance",
+      icon: ClipboardCheck,
       teacherVisible: true,
     },
     {
