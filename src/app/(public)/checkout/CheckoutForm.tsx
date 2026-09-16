@@ -46,6 +46,12 @@ import {
   type ParticipantData,
 } from "@/lib/actions/participants";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import {
+  checkInvoiceName,
+  isMinor,
+  normalizeName,
+} from "@/lib/invoice-recipient";
+import { InvoiceRecipientSchema } from "@/validations/userforms";
 import { SelectPack } from "./components/SelectPack";
 
 export type CheckoutFormProps = {
@@ -66,6 +72,11 @@ export type CheckoutFormProps = {
   userDetails?: {
     postalCode?: string | null;
     allowPhotoVideo?: boolean | null;
+    /** Kontoinnehavarens födelsedatum, styr kravet på fakturamottagare. */
+    dateOfBirth?: Date | null;
+    invoiceName?: string | null;
+    invoiceEmail?: string | null;
+    invoicePhone?: string | null;
   } | null;
   existingParticipants: {
     id: string;
@@ -84,11 +95,6 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
-/** Normalize a name for fuzzy duplicate comparison */
-function normalizeName(name: string) {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 export default function CheckoutForm({
   items,
   user,
@@ -99,6 +105,24 @@ export default function CheckoutForm({
   const router = useRouter();
   const [note, setNote] = useState("");
   const [paymethod, setPaymethod] = useState("1");
+
+  // Fakturamottagaren anges separat från kontot. Ett konto som tillhör en
+  // omyndig kan inte faktureras, så då förifyller vi ingenting — den vuxna
+  // måste skrivas in. För alla andra är kontot en rimlig gissning.
+  const accountIsMinor = isMinor(userDetails?.dateOfBirth ?? null);
+  const [invoice, setInvoice] = useState({
+    invoiceName: userDetails?.invoiceName ?? (accountIsMinor ? "" : user.name),
+    invoiceEmail: userDetails?.invoiceEmail ?? user.email,
+    invoicePhone: userDetails?.invoicePhone ?? "",
+  });
+
+  const invoiceNameClash =
+    invoice.invoiceName.trim().length > 0 &&
+    checkInvoiceName({
+      invoiceName: invoice.invoiceName,
+      accountName: user.name,
+      accountDateOfBirth: userDetails?.dateOfBirth ?? null,
+    }) !== null;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPartialPackDialog, setShowPartialPackDialog] = useState(false);
 
@@ -218,6 +242,26 @@ export default function CheckoutForm({
   // Den faktiska ordersubmit-logiken, separerad från formulärets submit-event
   // så den kan anropas antingen direkt eller efter bekräftelse i dialogen.
   const submitOrder = async () => {
+    // Fakturamottagaren först: det är ingen idé att skapa deltagare och
+    // rader om ordern ändå inte får läggas.
+    const invoiceParsed = InvoiceRecipientSchema.safeParse(invoice);
+    if (!invoiceParsed.success) {
+      toast.error(
+        invoiceParsed.error.issues[0]?.message ?? t("checkout.invoice.heading"),
+      );
+      return;
+    }
+
+    const invoiceNameError = checkInvoiceName({
+      invoiceName: invoice.invoiceName,
+      accountName: user.name,
+      accountDateOfBirth: userDetails?.dateOfBirth ?? null,
+    });
+    if (invoiceNameError) {
+      toast.error(t("checkout.invoice.sameAsAccountMinor"));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -301,6 +345,7 @@ export default function CheckoutForm({
         postalcode: userDetails?.postalCode || undefined,
         note,
         paymethod: Number(paymethod),
+        invoice: invoiceParsed.data,
       });
 
       toast.success(t("checkout.form.orderCreated"));
@@ -636,6 +681,85 @@ export default function CheckoutForm({
                 </div>
               );
             })}
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("checkout.invoice.heading")}
+            </h3>
+
+            <p className="text-xs text-muted-foreground">
+              {t("checkout.invoice.intro")}
+            </p>
+
+            {accountIsMinor && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{t("checkout.invoice.minorNotice")}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs" htmlFor="invoiceName">
+                  {t("checkout.invoice.name")}
+                </Label>
+                <Input
+                  id="invoiceName"
+                  value={invoice.invoiceName}
+                  placeholder={t("checkout.invoice.namePlaceholder")}
+                  onChange={(e) =>
+                    setInvoice((prev) => ({
+                      ...prev,
+                      invoiceName: e.target.value,
+                    }))
+                  }
+                />
+                {invoiceNameClash && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    {t("checkout.invoice.sameAsAccountMinor")}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="invoiceEmail">
+                  {t("checkout.invoice.email")}
+                </Label>
+                <Input
+                  id="invoiceEmail"
+                  type="email"
+                  value={invoice.invoiceEmail}
+                  placeholder={t("checkout.invoice.emailPlaceholder")}
+                  onChange={(e) =>
+                    setInvoice((prev) => ({
+                      ...prev,
+                      invoiceEmail: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t("checkout.invoice.emailHelp")}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="invoicePhone">
+                  {t("checkout.invoice.phoneOptional")}
+                </Label>
+                <Input
+                  id="invoicePhone"
+                  value={invoice.invoicePhone}
+                  placeholder={t("checkout.invoice.phonePlaceholder")}
+                  onChange={(e) =>
+                    setInvoice((prev) => ({
+                      ...prev,
+                      invoicePhone: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2 pt-4 border-t">

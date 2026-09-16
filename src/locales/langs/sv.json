@@ -203,6 +203,19 @@
       "3": "Delbetalning x 3",
       "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
+    "invoice": {
+      "heading": "Vem ska få fakturan?",
+      "intro": "Fakturan skickas efter kursstart. Ange den som är betalningsansvarig, så slipper vi höra av oss och fråga i efterhand.",
+      "minorNotice": "Kontot är registrerat på en person under 18 år. Fyll i vilken vuxen som är betalningsansvarig.",
+      "name": "Betalningsansvarig*",
+      "namePlaceholder": "För- och efternamn",
+      "email": "Skicka fakturan till*",
+      "emailPlaceholder": "namn@example.com",
+      "emailHelp": "Får gärna vara deltagarens egen adress om du vill ha fakturan dit.",
+      "phoneOptional": "Telefon (valfri)",
+      "phonePlaceholder": "07X-XXX XX XX",
+      "sameAsAccountMinor": "Det här är samma namn som kontot, som tillhör en person under 18 år. Ange den vuxna som ska betala."
+    },
     "autobook": {
       "title": "automatisk bokning",
       "desc": "När din order godkänns bokas du automatiskt in på alla kommande kurstillfällen i de kurser som ingår, så långt som klippen räcker."
@@ -474,7 +487,8 @@
       "create": "Skapa lärarprofil",
       "titleEdit": "Redigera lärarprofil",
       "titleCreate": "Skapa lärarprofil"
-    }
+    },
+    "invoiceMissing": "Vi saknar uppgift om vem som ska ha fakturan. Fyll i det under “Vem ska få fakturan?” nedan, så slipper vi höra av oss och fråga."
   },
   "legal": {
     "lastUpdated": "Senast uppdaterad"

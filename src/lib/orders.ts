@@ -18,9 +18,22 @@ export async function createOrder(
     postalcode?: string;
     note?: string; // optional note to include in first status event
     paymethod?: number;
+    /** Vem fakturan ska ställas till — inte nödvändigtvis kontoinnehavaren. */
+    invoiceName?: string;
+    invoiceEmail?: string;
+    invoicePhone?: string;
   },
 ) {
-  const { userId, items, postalcode, note, paymethod } = params;
+  const {
+    userId,
+    items,
+    postalcode,
+    note,
+    paymethod,
+    invoiceName,
+    invoiceEmail,
+    invoicePhone,
+  } = params;
 
   if (!items || items.length === 0) throw new Error("No items provided");
 
@@ -36,6 +49,9 @@ export async function createOrder(
       note,
       payMethod: paymethod || 1,
       totalPrice: total,
+      invoiceName: invoiceName || null,
+      invoiceEmail: invoiceEmail || null,
+      invoicePhone: invoicePhone || null,
       // default status is AWAITING_APPROVAL per schema
     },
   });

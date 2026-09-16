@@ -810,6 +810,10 @@ export async function createPurchaseFromOrder(orderId: string) {
     if (order.user.email) {
       emails.add(order.user.email);
     }
+    // Fakturamottagaren är inte nödvändigtvis kontoinnehavaren.
+    if (order.invoiceEmail) {
+      emails.add(order.invoiceEmail);
+    }
     for (const item of order.orderItems) {
       if (item.participant?.email) {
         emails.add(item.participant.email);

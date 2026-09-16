@@ -71,6 +71,13 @@ model UserDetails {
 
   allowPhotoVideo Boolean   @default(false)
 
+  // Sparad fakturamottagare, används som förifyllning i kassan. Kontot kan
+  // stå i dansarens namn (ofta ett barn), så betalaren är inte härledbar
+  // härifrån utan måste anges separat.
+  invoiceName     String?
+  invoiceEmail    String?
+  invoicePhone    String?
+
   @@map("user_details")
 }
 
@@ -484,6 +491,14 @@ model Order {
   statusEvents OrderStatusEvent[]
 
   payMethod Int @default(1) // 1 = Faktura hela beloppet, 2 = 2 delbetalningar, 3 = 3 delbetalningar
+
+  // Vem fakturan ska ställas till. Snapshot vid köptillfället, inte en
+  // relation: betalaren är inte nödvändigtvis kontoinnehavaren, och ändras
+  // kontot i efterhand ska en redan lagd order stå kvar som den var.
+  // Nullbara för ordrar lagda innan fältet fanns.
+  invoiceName  String?
+  invoiceEmail String?
+  invoicePhone String?
 
   note String?
 
