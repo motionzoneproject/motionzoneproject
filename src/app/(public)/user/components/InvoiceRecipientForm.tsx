@@ -82,9 +82,9 @@ export function InvoiceRecipientForm({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="mx-2">
+        <Button variant="ghost" className="justify-start sm:justify-center">
           <ReceiptText className="h-4 w-4" />
-          {t("checkout.invoice.heading")}
+          {t("checkout.invoice.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[520px]">

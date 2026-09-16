@@ -398,7 +398,7 @@ export default async function Page() {
               </div>
             )}
 
-            <div className="my-4 md:flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
+            <div className="my-4 flex flex-col items-stretch gap-2 rounded-lg border bg-muted/30 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
               {userDetails && <EditDetailsForm details={userDetails} />}
               {user && (
                 <InvoiceRecipientForm
