@@ -48,6 +48,10 @@ export async function getCourseRoster(
           select: {
             type: true,
             remainingCount: true,
+            product: { select: { autobook: true } },
+            // Hur många kurser köpet spänner över. Ett terminskort ger rader
+            // i samtliga, och då säger köpet ingenting om vilken eleven går.
+            _count: { select: { PurchaseItems: true } },
             user: { select: { id: true, name: true } },
             participant: { select: { id: true, name: true } },
           },
@@ -71,30 +75,33 @@ export async function getCourseRoster(
         },
       },
     }),
-    lessonId
-      ? prisma.booking.findMany({
-          where: { lessonId, cancelled: false },
+    // Bokningar i hela kursen. För köp som spänner över många kurser är
+    // bokningen beskedet om vilka eleven faktiskt går på.
+    prisma.booking.findMany({
+      where: { cancelled: false, lesson: { courseId } },
+      select: {
+        lessonId: true,
+        purchaseItem: {
           select: {
-            purchaseItem: {
-              select: {
-                purchase: {
-                  select: { userId: true, participantId: true },
-                },
-              },
-            },
+            purchase: { select: { userId: true, participantId: true } },
           },
-        })
-      : Promise.resolve([]),
+        },
+      },
+    }),
   ]);
 
-  const bookedKeys = new Set(
-    bookings.map((b) =>
-      studentKeyOf({
-        participantId: b.purchaseItem.purchase.participantId,
-        userId: b.purchaseItem.purchase.userId,
-      }),
-    ),
-  );
+  const keyOfBooking = (b: (typeof bookings)[number]) =>
+    studentKeyOf({
+      participantId: b.purchaseItem.purchase.participantId,
+      userId: b.purchaseItem.purchase.userId,
+    });
+
+  const bookedInCourse = new Set(bookings.map(keyOfBooking));
+
+  // Utan lektion (kurslistan i "Hantera elever") räknas hela kursen.
+  const bookedHere = lessonId
+    ? new Set(bookings.filter((b) => b.lessonId === lessonId).map(keyOfBooking))
+    : bookedInCourse;
 
   const hidden = new Set(
     adjustments.filter((a) => a.status === "HIDDEN").map((a) => a.studentKey),
@@ -109,6 +116,19 @@ export async function getCourseRoster(
       userId: user.id,
     });
     if (hidden.has(key)) continue;
+
+    // Ett köp som täcker flera kurser utan att boka in eleven säger bara vad
+    // hen får gå på, inte vad hen går. Ett terminskort ger rader i tjugotal
+    // kurser, och att lista köparen i allihop är just det som gjorde
+    // närvarolistorna oanvändbara. För dem är bokningen beskedet.
+    //
+    // Autobokande produkter är undantaget: där ska eleven ha en bokning, och
+    // saknas den är det ett fel som måste synas i listan, inte försvinna ur
+    // den. Detsamma gäller köp av en enda kurs, där det inte råder något
+    // tvivel om vilken kurs som avses.
+    const manualSchedule =
+      !item.purchase.product.autobook && item.purchase._count.PurchaseItems > 1;
+    if (manualSchedule && !bookedInCourse.has(key)) continue;
 
     const remaining = showRemaining(
       calcRemainingCount({
@@ -135,7 +155,7 @@ export async function getCourseRoster(
       customerName: participant ? user.name : null,
       source: "purchase",
       remaining: String(remaining),
-      booked: bookedKeys.has(key),
+      booked: bookedHere.has(key),
     });
   }
 
@@ -154,7 +174,7 @@ export async function getCourseRoster(
       customerName: adjustment.participant?.addedBy?.name ?? null,
       source: "manual",
       remaining: null,
-      booked: bookedKeys.has(adjustment.studentKey),
+      booked: bookedHere.has(adjustment.studentKey),
     });
   }
 
