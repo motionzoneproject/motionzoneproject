@@ -27,6 +27,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,6 +47,7 @@ import { getProductStats } from "@/lib/actions/purchase-actions";
 import { oreToSek } from "@/lib/money";
 import { uploadImageFromBlob } from "@/lib/uploads";
 import { adminProductSchema } from "@/validations/adminforms";
+import { DeliverySummary } from "./DeliverySummary";
 
 const formSchema = adminProductSchema;
 
@@ -69,6 +71,8 @@ interface Props {
   categoryId?: string;
   autobook: boolean;
   maxCourses: number | null;
+  /** Antal kurser kopplade till produkten, för förklaringsrutan. */
+  courseCount: number;
 }
 
 export default function EditProductForm({
@@ -88,6 +92,7 @@ export default function EditProductForm({
   categoryId,
   autobook,
   maxCourses,
+  courseCount,
 }: Props) {
   const id = useId();
   const form = useForm<EditProductFormInput, unknown, EditProductFormOutput>({
@@ -559,6 +564,11 @@ export default function EditProductForm({
                           className="w-6 h-6"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Kunden bokas in på alla lektioner som ingår, direkt när
+                        ordern godkänns. Lämna avbockad för terminskort och
+                        program där ni sätter ihop kundens schema efteråt.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -604,10 +614,27 @@ export default function EditProductForm({
                           />
                         </FormControl>
 
+                        <FormDescription>
+                          Kunden väljer själv vilka kurser som ingår, i kassan.
+                          Utan begränsning ingår samtliga kopplade kurser i
+                          köpet.
+                        </FormDescription>
+
                         <FormMessage />
                       </FormItem>
                     );
                   }}
+                />
+
+                <DeliverySummary
+                  clipcard={form.watch("clipcard") === true}
+                  autobook={form.watch("autobook") === true}
+                  maxCourses={
+                    typeof form.watch("maxCourses") === "number"
+                      ? (form.watch("maxCourses") as number)
+                      : null
+                  }
+                  courseCount={courseCount}
                 />
 
                 {isBusy ? (
