@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { bookedCount, type LessonWithData } from "@/lib/admin-overview";
 import { dbToFormTime } from "@/lib/time-convert";
+import { AttendanceDialog } from "../../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "../../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../../lectures/components/EditLesson";
 
@@ -68,6 +69,7 @@ export function TodayLessonCard({
       </CardContent>
 
       <CardFooter className="flex flex-wrap items-center gap-4 border-t pt-3 text-xs">
+        <AttendanceDialog lessonId={lesson.id} />
         <AttendeDialog lesson={lesson} />
         <EditLessonBtn lesson={lesson} />
       </CardFooter>
@@ -112,6 +114,7 @@ export function TodayLessonRow({ lesson }: { lesson: LessonWithData }) {
         <span className="tabular-nums text-muted-foreground">
           {bookedCount(lesson)} bokade
         </span>
+        <AttendanceDialog lessonId={lesson.id} />
         <AttendeDialog lesson={lesson} />
         <EditLessonBtn lesson={lesson} />
       </span>

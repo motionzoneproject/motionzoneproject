@@ -2,24 +2,16 @@
 
 import {
   CalendarDays,
-  CheckCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  type AttendanceLesson,
-  saveAttendance,
-} from "@/lib/actions/attendance-actions";
+import type { AttendanceLesson } from "@/lib/actions/attendance-actions";
 import { dbToFormTime } from "@/lib/time-convert";
-import { ManageRosterDialog } from "./ManageRosterDialog";
+import { LessonAttendance } from "./LessonAttendance";
 
 /**
  * Dagens lektioner med en kryssruta per elev.
@@ -42,60 +34,9 @@ export function AttendanceDay({
   nextDate: string;
   heading: { weekday: string; day: string; month: string };
 }) {
-  const router = useRouter();
   const [openLesson, setOpenLesson] = useState<string | null>(
     lessons[0]?.lessonId ?? null,
   );
-  const [marks, setMarks] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    for (const lesson of lessons) {
-      for (const student of lesson.students) {
-        if (student.status !== null) {
-          initial[`${lesson.lessonId}:${student.studentKey}`] =
-            student.status === "PRESENT";
-        }
-      }
-    }
-    return initial;
-  });
-  const [savingLesson, setSavingLesson] = useState<string | null>(null);
-
-  const markKey = (lessonId: string, studentKey: string) =>
-    `${lessonId}:${studentKey}`;
-
-  const setMark = (lessonId: string, studentKey: string, present: boolean) => {
-    setMarks((prev) => ({ ...prev, [markKey(lessonId, studentKey)]: present }));
-  };
-
-  const markAllPresent = (lesson: AttendanceLesson) => {
-    setMarks((prev) => {
-      const next = { ...prev };
-      for (const student of lesson.students) {
-        next[markKey(lesson.lessonId, student.studentKey)] = true;
-      }
-      return next;
-    });
-  };
-
-  const save = async (lesson: AttendanceLesson) => {
-    setSavingLesson(lesson.lessonId);
-    try {
-      const payload = lesson.students.map((student) => ({
-        studentKey: student.studentKey,
-        present: marks[markKey(lesson.lessonId, student.studentKey)] === true,
-      }));
-
-      const res = await saveAttendance(lesson.lessonId, payload);
-      if (res.success) {
-        toast.success(res.msg);
-        router.refresh();
-      } else {
-        toast.error(res.msg);
-      }
-    } finally {
-      setSavingLesson(null);
-    }
-  };
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-16">
@@ -150,11 +91,10 @@ export function AttendanceDay({
           {lessons.map((lesson) => {
             const isOpen = openLesson === lesson.lessonId;
             const marked = lesson.students.filter(
-              (s) =>
-                marks[markKey(lesson.lessonId, s.studentKey)] !== undefined,
+              (s) => s.status !== null,
             ).length;
             const present = lesson.students.filter(
-              (s) => marks[markKey(lesson.lessonId, s.studentKey)] === true,
+              (s) => s.status === "PRESENT",
             ).length;
 
             return (
@@ -165,7 +105,7 @@ export function AttendanceDay({
                 <button
                   type="button"
                   onClick={() => setOpenLesson(isOpen ? null : lesson.lessonId)}
-                  className="flex w-full items-start justify-between gap-3 p-4 text-left hover:bg-muted/40 transition-colors"
+                  className="flex w-full items-start justify-between gap-3 p-4 text-left transition-colors hover:bg-muted/40"
                 >
                   <span className="min-w-0">
                     <span className="block text-lg font-bold leading-tight">
@@ -202,113 +142,7 @@ export function AttendanceDay({
 
                 {isOpen && (
                   <div className="border-t">
-                    <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 p-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAllPresent(lesson)}
-                        disabled={lesson.students.length === 0}
-                      >
-                        <CheckCheck className="h-4 w-4" />
-                        Alla närvarande
-                      </Button>
-
-                      <ManageRosterDialog
-                        courseId={lesson.courseId}
-                        courseName={lesson.courseName}
-                        trigger={
-                          <Button type="button" variant="ghost" size="sm">
-                            <UserPlus className="h-4 w-4" />
-                            Hantera elever
-                          </Button>
-                        }
-                      />
-                    </div>
-
-                    {lesson.students.length === 0 ? (
-                      <p className="p-6 text-center text-sm text-muted-foreground">
-                        Inga elever i listan. Lägg till dem under &ldquo;Hantera
-                        elever&rdquo;.
-                      </p>
-                    ) : (
-                      <ul className="divide-y">
-                        {lesson.students.map((student) => {
-                          const key = markKey(
-                            lesson.lessonId,
-                            student.studentKey,
-                          );
-                          const value = marks[key];
-
-                          return (
-                            <li key={student.studentKey}>
-                              <label
-                                htmlFor={key}
-                                className="flex cursor-pointer items-center gap-4 p-4 hover:bg-muted/40 transition-colors"
-                              >
-                                <Checkbox
-                                  id={key}
-                                  className="h-6 w-6"
-                                  checked={value === true}
-                                  onCheckedChange={(checked) =>
-                                    setMark(
-                                      lesson.lessonId,
-                                      student.studentKey,
-                                      checked === true,
-                                    )
-                                  }
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block text-base">
-                                    {student.name}
-                                  </span>
-                                  <span className="block text-sm font-bold">
-                                    {value === undefined
-                                      ? "Ej markerad"
-                                      : value
-                                        ? "Närvarande"
-                                        : "Frånvarande"}
-                                  </span>
-                                  <span className="block text-xs text-muted-foreground">
-                                    {student.customerName
-                                      ? `Kund: ${student.customerName}`
-                                      : null}
-                                    {student.customerName && student.remaining
-                                      ? " · "
-                                      : null}
-                                    {student.remaining
-                                      ? `${student.remaining} kvar`
-                                      : null}
-                                    {student.source === "manual"
-                                      ? " · tillagd för hand"
-                                      : null}
-                                    {!student.booked && student.remaining
-                                      ? " · ej inbokad"
-                                      : null}
-                                  </span>
-                                </span>
-                              </label>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-
-                    <div className="border-t p-3">
-                      <Button
-                        type="button"
-                        className="w-full"
-                        onClick={() => save(lesson)}
-                        disabled={
-                          savingLesson === lesson.lessonId ||
-                          lesson.students.length === 0
-                        }
-                      >
-                        {savingLesson === lesson.lessonId
-                          ? "Sparar..."
-                          : "Spara närvaro"}
-                      </Button>
-                    </div>
+                    <LessonAttendance lesson={lesson} />
                   </div>
                 )}
               </div>

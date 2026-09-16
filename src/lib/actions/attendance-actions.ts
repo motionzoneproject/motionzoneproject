@@ -106,6 +106,68 @@ export async function getAttendanceDay(
 }
 
 /**
+ * En enskild lektion med elevlista och redan satt närvaro.
+ *
+ * Samma data som getAttendanceDay ger per lektion, men för den som kommer
+ * från översikten eller lektionslistan och redan vet vilken lektion det är.
+ *
+ * @auth Admin eller lärare
+ */
+export async function getLessonAttendance(
+  lessonId: string,
+): Promise<AttendanceLesson | null> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return null;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      id: true,
+      startTime: true,
+      endTime: true,
+      cancelled: true,
+      message: true,
+      courseId: true,
+      teacherId: true,
+      course: { select: { name: true } },
+      teacher: { select: { name: true } },
+      schemaItem: { select: { studio: { select: { name: true } } } },
+    },
+  });
+  if (!lesson) return null;
+
+  if (session.user.role !== "admin" && lesson.teacherId !== session.user.id) {
+    return null;
+  }
+
+  const [roster, marks] = await Promise.all([
+    getCourseRoster(lesson.courseId, lesson.id),
+    prisma.attendance.findMany({
+      where: { lessonId: lesson.id },
+      select: { studentKey: true, status: true },
+    }),
+  ]);
+
+  const byKey = new Map(marks.map((m) => [m.studentKey, m.status]));
+
+  return {
+    lessonId: lesson.id,
+    courseId: lesson.courseId,
+    courseName: lesson.course.name,
+    studioName: lesson.schemaItem.studio?.name ?? null,
+    teacherName: lesson.teacher.name,
+    startTime: lesson.startTime,
+    endTime: lesson.endTime,
+    cancelled: lesson.cancelled,
+    message: lesson.message,
+    students: roster.map((student) => ({
+      ...student,
+      status: byKey.get(student.studentKey) ?? null,
+    })),
+  };
+}
+
+/**
  * Sparar närvaron för en hel lektion i ett svep.
  *
  * Rör varken bokningar eller klipp. Att markera någon som närvarande är ett

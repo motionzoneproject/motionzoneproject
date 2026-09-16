@@ -10,6 +10,7 @@ import type { LessonWithData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { cn } from "@/lib/utils";
+import { AttendanceDialog } from "../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../lectures/components/EditLesson";
 import { LessonCarouselInteractive } from "./LessonCarouselInteractive";
@@ -84,6 +85,7 @@ export function LessonCarousel({
                   <div className="font-bold ">
                     <span className="p-2">Närvaro</span>
                     <br />
+                    <AttendanceDialog lessonId={lesson.id} />
                     <AttendeDialog lesson={lesson} />
                   </div>
                   <div className="font-bold text-center">
