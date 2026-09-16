@@ -204,6 +204,7 @@
       "3description": "Three installments + 45 SEK fee per invoice"
     },
     "invoice": {
+      "trigger": "Invoice recipient",
       "heading": "Who receives the invoice?",
       "intro": "The invoice is sent after the course starts. Tell us who is responsible for payment, so we do not have to ask afterwards.",
       "minorNotice": "This account is registered to someone under 18. Please enter the adult responsible for payment.",

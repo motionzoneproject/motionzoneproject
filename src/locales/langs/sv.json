@@ -204,6 +204,7 @@
       "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
     "invoice": {
+      "trigger": "Fakturamottagare",
       "heading": "Vem ska få fakturan?",
       "intro": "Fakturan skickas efter kursstart. Ange den som är betalningsansvarig, så slipper vi höra av oss och fråga i efterhand.",
       "minorNotice": "Kontot är registrerat på en person under 18 år. Fyll i vilken vuxen som är betalningsansvarig.",

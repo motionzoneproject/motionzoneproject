@@ -112,7 +112,7 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="mx-2">
+        <Button variant="ghost" className="justify-start sm:justify-center">
           <Pencil className="h-4 w-4" />
           {t("user.editDetails.trigger")}
         </Button>
