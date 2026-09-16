@@ -119,6 +119,17 @@ export function ScheduleDialog({ student }: { student: StudentSummary }) {
                   )}
                 </div>
 
+                {schedule.sharedBalance && (
+                  <div className="rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                    Klippkort: kurserna delar på samma pott om{" "}
+                    {schedule.balance} klipp. Bockar du i en hel kurs bokas
+                    eleven in på dess kommande lektioner så långt potten räcker,
+                    och då kan det inte bli några klipp kvar till de andra
+                    kurserna. Vill du fördela dem lägger du in eleven lektion
+                    för lektion under Lektioner i stället.
+                  </div>
+                )}
+
                 <div className="rounded-lg border divide-y">
                   {schedule.rows.map((row) => {
                     const isBooked = row.bookedUpcoming > 0;

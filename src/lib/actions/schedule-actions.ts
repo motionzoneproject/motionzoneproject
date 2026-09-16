@@ -40,6 +40,13 @@ export type PurchaseSchedule = {
   productName: string;
   /** Sant för produkter där schemat sätts ihop manuellt (kort och program). */
   manualSchedule: boolean;
+  /**
+   * Sant för klippkort, där alla kurser delar på samma pott. Att boka in på
+   * en hel kurs kan då förbruka hela kortet på den ena kursen.
+   */
+  sharedBalance: boolean;
+  /** Klippkortets saldo, när potten är gemensam. */
+  balance: string | null;
   rows: ScheduleRow[];
 };
 
@@ -136,11 +143,15 @@ export async function getPurchaseSchedule(
 
   rows.sort((a, b) => a.courseName.localeCompare(b.courseName, "sv"));
 
+  const isClip = purchase.type === "CLIP";
+
   return {
     purchaseId: purchase.id,
     studentName: purchase.participant?.name ?? purchase.user.name,
     productName: purchase.product.name,
     manualSchedule: !purchase.product.autobook,
+    sharedBalance: isClip && purchase.PurchaseItems.length > 1,
+    balance: isClip ? String(purchase.remainingCount ?? 0) : null,
     rows,
   };
 }
