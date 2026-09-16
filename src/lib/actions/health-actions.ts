@@ -461,3 +461,57 @@ export async function createMissingPurchase(orderId: string): Promise<Result> {
     };
   }
 }
+
+/**
+ * Stänger av autobokningen på en produkt som bokar in köparen på allting.
+ *
+ * Ett paket utan kursbegränsning betyder i koden "alla kopplade kurser ingår",
+ * och med autobokning på blir varje köpare inbokad på samtliga. För terminskort
+ * och program är det fel: köpet ger tillgång till ett utbud som eleven väljer
+ * ur, och schemat sätts ihop tillsammans med studion.
+ *
+ * Rör bara produkten. Redan skapade bokningar lämnas kvar, eftersom en
+ * massradering inte kan skilja de felaktiga från dem eleven faktiskt ska gå
+ * på — de plockas bort per elev i schemadialogen under /admin/students.
+ *
+ * @auth Admin
+ */
+export async function disableProductAutobook(
+  productId: string,
+): Promise<Result> {
+  if (!(await isAdminRole())) {
+    return { success: false, msg: "Ingen behörighet." };
+  }
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true, autobook: true },
+    });
+
+    if (!product) return { success: false, msg: "Produkten finns inte." };
+
+    if (!product.autobook) {
+      return {
+        success: true,
+        msg: `Autobokningen är redan avstängd för "${product.name}".`,
+      };
+    }
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { autobook: false },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/products");
+
+    return {
+      success: true,
+      msg: `Autobokningen är avstängd för "${product.name}". Nya köp bokas inte in automatiskt.`,
+    };
+  } catch (e) {
+    console.error(e);
+    return { success: false, msg: "Kunde inte stänga av autobokningen." };
+  }
+}
