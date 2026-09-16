@@ -515,8 +515,11 @@ export async function autobook(
     const participantId = purchase.participantId;
     const product = purchase.product;
 
-    // 1. Produkten måste ha autobokning aktiverad.
-    if (!product.autobook) return [];
+    // 1. Produkten måste ha autobokning aktiverad — men bara när bokningen
+    // sker automatiskt. Terminskort och program har den avstängd just för att
+    // ingen ska bokas in av sig själv, och det är dem schemadialogen finns
+    // för: har en admin bockat i kursen är det ett uttryckligt val.
+    if (!opts?.explicit && !product.autobook) return [];
 
     // 2. Ett klippkort som gäller flera kurser har en gemensam pott, så en
     // automatisk bokning skulle bränna alla klipp på den kurs som råkar komma
