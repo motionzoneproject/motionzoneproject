@@ -198,11 +198,19 @@ export default async function Page() {
                                 b.lesson.startTime.getTime(),
                             );
 
+                          // En kurs kan bara vara "utbytt" i ett paket där
+                          // kunden själv valt kurser. Sparade kursval finns
+                          // bara för dem — en vanlig kurs, ett terminskort
+                          // eller ett program har inga alls, och då fanns det
+                          // ingenting att byta ut. Utan den spärren flaggades
+                          // varje sådan rad som ogiltig på kundens sida.
+                          const selectedCourseIds =
+                            pi.orderItem.courseSelections.map(
+                              (cs) => cs.courseId,
+                            );
                           const isSwapped =
-                            pi.orderItem.courseSelections
-                              .map((cs) => cs.courseId)
-                              .filter((fcs) => fcs === pi.courseId).length ===
-                            0;
+                            selectedCourseIds.length > 0 &&
+                            !selectedCourseIds.includes(pi.courseId);
 
                           return (
                             <AccordionItem
