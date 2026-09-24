@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -36,7 +36,14 @@ import { UserDetailsSchema } from "@/validations/userforms";
 const formSchema = UserDetailsSchema;
 type FormValues = z.infer<typeof formSchema>;
 
-export function EditDetailsForm({ details }: { details: UserDetails }) {
+export function EditDetailsForm({
+  details,
+  trigger,
+}: {
+  details: UserDetails;
+  /** Egen knapp, för banderollen om födelsedatumet saknas. */
+  trigger?: ReactNode;
+}) {
   const { t } = useTranslation();
   const { user, session } = useSession();
   const router = useRouter();
@@ -112,10 +119,12 @@ export function EditDetailsForm({ details }: { details: UserDetails }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="justify-start sm:justify-center">
-          <Pencil className="h-4 w-4" />
-          {t("user.editDetails.trigger")}
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" className="justify-start sm:justify-center">
+            <Pencil className="h-4 w-4" />
+            {t("user.editDetails.trigger")}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[680px]">
         <DialogHeader>

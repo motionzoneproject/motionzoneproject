@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { calculateAge } from "@/lib/date-utils";
 import { type InvoiceRecipientKind, isMinor } from "@/lib/invoice-recipient";
 
 /** En person som går att välja: kontoinnehavaren eller en deltagare. */
@@ -34,7 +35,11 @@ export type InvoiceRecipientLabels = {
   whoPays: string;
   self: string;
   other: string;
+  /** Varför en omyndig inte går att välja, satt efter åldern. */
   minorHint: string;
+  /** Årsenheten efter åldern, t.ex. "år". */
+  years: string;
+  unknownAge: string;
   nameLabel: string;
   namePlaceholder: string;
   emailLabel: string;
@@ -114,6 +119,7 @@ export function InvoiceRecipientPicker({
         <RadioGroup value={selectedKey} onValueChange={pick} className="gap-2">
           {candidates.map((candidate) => {
             const minor = isMinor(candidate.dateOfBirth);
+            const age = calculateAge(candidate.dateOfBirth);
             const id = `${idPrefix}-recipient-${candidate.id}`;
 
             return (
@@ -133,11 +139,22 @@ export function InvoiceRecipientPicker({
                   {candidate.kind === "self"
                     ? `${labels.self} (${candidate.name})`
                     : candidate.name}
-                  {minor && (
-                    <span className="ml-1 text-xs text-amber-700 dark:text-amber-400">
-                      {labels.minorHint}
-                    </span>
-                  )}
+
+                  {/* Åldern syns på alla: annars går en vuxen deltagare inte
+                      att skilja från en vars födelsedatum vi saknar. */}
+                  <span
+                    className={`ml-1 text-xs ${
+                      minor
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {age === null
+                      ? `(${labels.unknownAge})`
+                      : minor
+                        ? `(${age} ${labels.years} – ${labels.minorHint})`
+                        : `(${age} ${labels.years})`}
+                  </span>
                 </Label>
               </div>
             );

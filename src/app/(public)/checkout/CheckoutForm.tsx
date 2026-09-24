@@ -50,13 +50,14 @@ import {
   getOrCreateParticipant,
   type ParticipantData,
 } from "@/lib/actions/participants";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
 import {
   checkInvoiceRecipient,
   type InvoiceRecipientProblem,
   isMinor,
   normalizeName,
 } from "@/lib/invoice-recipient";
+import { ParticipantSchema } from "@/validations/userforms";
 import { SelectPack } from "./components/SelectPack";
 
 export type CheckoutFormProps = {
@@ -77,7 +78,7 @@ export type CheckoutFormProps = {
   userDetails?: {
     postalCode?: string | null;
     allowPhotoVideo?: boolean | null;
-    /** Kontoinnehavarens födelsedatum, styr kravet på fakturamottagare. */
+    /** Kontoinnehavarens fÃ¶delsedatum, styr kravet pÃ¥ fakturamottagare. */
     dateOfBirth?: Date | null;
     invoiceName?: string | null;
     invoiceEmail?: string | null;
@@ -100,7 +101,7 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
-/** Vilken text fakturamottagaren ska få, beroende på vad som sa ifrån. */
+/** Vilken text fakturamottagaren ska fÃ¥, beroende pÃ¥ vad som sa ifrÃ¥n. */
 const INVOICE_MESSAGES: Record<InvoiceRecipientProblem, string> = {
   minorAccount: "checkout.invoice.sameAsAccountMinor",
   minorParticipant: "checkout.invoice.sameAsParticipantMinor",
@@ -120,12 +121,21 @@ export default function CheckoutForm({
   const [note, setNote] = useState("");
   const [paymethod, setPaymethod] = useState("1");
 
-  // Fakturamottagaren anges separat från kontot. Ett konto som tillhör en
-  // omyndig kan inte faktureras, så då förifyller vi ingenting — den vuxna
-  // måste skrivas in. För alla andra är kontot en rimlig gissning.
+  // Åldern hör till deltagaren överallt hen visas: två namn i en lista säger
+  // ingenting om vem som är barn och vem som kan stå för betalningen.
+  const describeAge = (dateOfBirth: Date | string | null | undefined) => {
+    const age = calculateAge(dateOfBirth);
+    return age === null
+      ? ` (${t("checkout.invoice.unknownAge")})`
+      : ` (${age} ${t("checkout.invoice.years")})`;
+  };
+
+  // Fakturamottagaren anges separat frÃ¥n kontot. Ett konto som tillhÃ¶r en
+  // omyndig kan inte faktureras, sÃ¥ dÃ¥ fÃ¶rifyller vi ingenting â€” den vuxna
+  // mÃ¥ste skrivas in. FÃ¶r alla andra Ã¤r kontot en rimlig gissning.
   const accountIsMinor = isMinor(userDetails?.dateOfBirth ?? null);
 
-  // Har kunden sparat en betalare som inte är hen själv börjar vi där.
+  // Har kunden sparat en betalare som inte Ã¤r hen sjÃ¤lv bÃ¶rjar vi dÃ¤r.
   const savedIsSomeoneElse =
     !!userDetails?.invoiceName &&
     normalizeName(userDetails.invoiceName) !== normalizeName(user.name);
@@ -159,8 +169,8 @@ export default function CheckoutForm({
     ),
   );
 
-  // Deltagarna som är valda just nu. De som redan finns går att välja som
-  // betalare, de som skapas i samma veva har ännu inget id och kan bara fångas
+  // Deltagarna som Ã¤r valda just nu. De som redan finns gÃ¥r att vÃ¤lja som
+  // betalare, de som skapas i samma veva har Ã¤nnu inget id och kan bara fÃ¥ngas
   // av namnkontrollen om man skriver in dem som "annan".
   const { invoiceCandidates, newParticipants } = useMemo(() => {
     const byId = new Map(existingParticipants.map((p) => [p.id, p]));
@@ -199,7 +209,7 @@ export default function CheckoutForm({
     return { invoiceCandidates: candidates, newParticipants: created };
   }, [slots, existingParticipants, user, userDetails?.dateOfBirth]);
 
-  // Samma kontroll som servern gör, så felet syns innan man trycker.
+  // Samma kontroll som servern gÃ¶r, sÃ¥ felet syns innan man trycker.
   const chosen = invoiceCandidates.find(
     (c) => c.id === (invoice.participantId ?? "self"),
   );
@@ -235,7 +245,7 @@ export default function CheckoutForm({
   );
 
   // Filter out the current user from the existing participants dropdown
-  // because we have the "Jag själv" checkbox for that.
+  // because we have the "Jag sjÃ¤lv" checkbox for that.
   const otherParticipants = existingParticipants.filter((p) => {
     const isMainUser =
       p.userId === user.id || (p.email && p.email === user.email);
@@ -316,11 +326,11 @@ export default function CheckoutForm({
 
   const hasEmptyPackSelection = emptyPacks.length > 0;
 
-  // Den faktiska ordersubmit-logiken, separerad från formulärets submit-event
-  // så den kan anropas antingen direkt eller efter bekräftelse i dialogen.
+  // Den faktiska ordersubmit-logiken, separerad frÃ¥n formulÃ¤rets submit-event
+  // sÃ¥ den kan anropas antingen direkt eller efter bekrÃ¤ftelse i dialogen.
   const submitOrder = async () => {
-    // Fakturamottagaren först: det är ingen idé att skapa deltagare och
-    // rader om ordern ändå inte får läggas.
+    // Fakturamottagaren fÃ¶rst: det Ã¤r ingen idÃ© att skapa deltagare och
+    // rader om ordern Ã¤ndÃ¥ inte fÃ¥r lÃ¤ggas.
     if (invoiceProblem) {
       toast.error(t(INVOICE_MESSAGES[invoiceProblem]));
       return;
@@ -355,15 +365,18 @@ export default function CheckoutForm({
             return;
           }
 
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (
-            !slot.customData.dateOfBirth ||
-            !dateRegex.test(slot.customData.dateOfBirth) ||
-            Number.isNaN(new Date(slot.customData.dateOfBirth).getTime())
-          ) {
-            throw new Error(
-              `Ogiltigt eller saknat födelsedatum för deltagare till ${it.name}.`,
+          // Samma regel som servern och profilsidan anvÃ¤nder: fÃ¶delsedatumet
+          // avgÃ¶r om deltagaren Ã¤r omyndig, och det styr vem som kan faktureras.
+          const dateOfBirthOk = ParticipantSchema.shape.dateOfBirth.safeParse(
+            slot.customData.dateOfBirth,
+          ).success;
+
+          if (!dateOfBirthOk) {
+            toast.error(
+              t("checkout.form.missingDateForProduct", { name: it.name }),
             );
+            setIsSubmitting(false);
+            return;
           }
 
           const p = await getOrCreateParticipant(slot.customData);
@@ -376,8 +389,8 @@ export default function CheckoutForm({
           return;
         }
 
-        // Kräver minst 1 vald kurs för paket med maxCourses satt.
-        // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
+        // KrÃ¤ver minst 1 vald kurs fÃ¶r paket med maxCourses satt.
+        // FullstÃ¤ndigt val krÃ¤vs inte lÃ¤ngre - partiellt val bekrÃ¤ftas via dialog.
         const maxCourses = it.product.maxCourses;
         let selectedCourseIds: string[] | undefined;
         if (maxCourses != null) {
@@ -523,6 +536,9 @@ export default function CheckoutForm({
                             {otherParticipants.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
                                 {p.name}
+                                <span className="text-xs text-muted-foreground">
+                                  {describeAge(p.dateOfBirth)}
+                                </span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -778,6 +794,8 @@ export default function CheckoutForm({
                 self: t("checkout.invoice.self"),
                 other: t("checkout.invoice.other"),
                 minorHint: t("checkout.invoice.minorHint"),
+                years: t("checkout.invoice.years"),
+                unknownAge: t("checkout.invoice.unknownAge"),
                 nameLabel: t("checkout.invoice.name"),
                 namePlaceholder: t("checkout.invoice.namePlaceholder"),
                 emailLabel: t("checkout.invoice.email"),
@@ -882,7 +900,7 @@ export default function CheckoutForm({
         </form>
       </CardContent>
 
-      {/* Bekräftelsedialog för paket med ofullständigt (men giltigt) kursval */}
+      {/* BekrÃ¤ftelsedialog fÃ¶r paket med ofullstÃ¤ndigt (men giltigt) kursval */}
       <Dialog
         open={showPartialPackDialog}
         onOpenChange={setShowPartialPackDialog}

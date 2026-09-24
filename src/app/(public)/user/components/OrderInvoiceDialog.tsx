@@ -43,11 +43,11 @@ export type InvoiceOrder = {
 };
 
 /**
- * Fakturamottagaren på en eller flera av kundens egna ordrar.
+ * Fakturamottagaren pÃ¥ en eller flera av kundens egna ordrar.
  *
- * Uppgiften sitter på ordern, så den fylls i därifrån. Flera ordrar åt gången
- * finns för att samma person betalar för hela familjen — banderollen högst upp
- * skickar in alla som saknar uppgiften på en gång.
+ * Uppgiften sitter pÃ¥ ordern, sÃ¥ den fylls i dÃ¤rifrÃ¥n. Flera ordrar Ã¥t gÃ¥ngen
+ * finns fÃ¶r att samma person betalar fÃ¶r hela familjen â€” banderollen hÃ¶gst upp
+ * skickar in alla som saknar uppgiften pÃ¥ en gÃ¥ng.
  */
 export function OrderInvoiceDialog({
   orders,
@@ -74,10 +74,10 @@ export function OrderInvoiceDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Kontot kan tillhöra ett barn, och då är kontonamnet fel svar.
+  // Kontot kan tillhÃ¶ra ett barn, och dÃ¥ Ã¤r kontonamnet fel svar.
   const accountIsMinor = isMinor(dateOfBirth);
 
-  // Deltagarna på de ordrar dialogen gäller, var och en bara en gång.
+  // Deltagarna pÃ¥ de ordrar dialogen gÃ¤ller, var och en bara en gÃ¥ng.
   const candidates = useMemo(() => {
     const list: InvoiceCandidate[] = [
       {
@@ -108,8 +108,8 @@ export function OrderInvoiceDialog({
     return list;
   }, [orders, accountName, accountEmail, dateOfBirth]);
 
-  // Gäller dialogen en enda order som redan har uppgiften är det den som ska
-  // rättas. Annars är kontots förifyllning bästa gissningen.
+  // GÃ¤ller dialogen en enda order som redan har uppgiften Ã¤r det den som ska
+  // rÃ¤ttas. Annars Ã¤r kontots fÃ¶rifyllning bÃ¤sta gissningen.
   const single = orders.length === 1 ? orders[0] : null;
   const startName = single?.invoiceName ?? savedInvoice.invoiceName ?? "";
   const startIsSelf =
@@ -191,6 +191,8 @@ export function OrderInvoiceDialog({
             self: t("checkout.invoice.self"),
             other: t("checkout.invoice.other"),
             minorHint: t("checkout.invoice.minorHint"),
+            years: t("checkout.invoice.years"),
+            unknownAge: t("checkout.invoice.unknownAge"),
             nameLabel: t("checkout.invoice.name"),
             namePlaceholder: t("checkout.invoice.namePlaceholder"),
             emailLabel: t("checkout.invoice.email"),

@@ -1,4 +1,4 @@
-import { Clock, Users } from "lucide-react";
+import { Cake, Clock, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { calculateAge } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
 import { getDictionary } from "@/locales/get-dictionary";
@@ -139,6 +141,26 @@ export default async function Page() {
             </div>
           </CardHeader>
           <CardContent>
+            {userDetails && !userDetails.dateOfBirth && (
+              <div className="mb-6 flex flex-col gap-3 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="flex items-start gap-2">
+                  <Cake className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{t.user.dateOfBirthMissing}</span>
+                </div>
+                <EditDetailsForm
+                  details={userDetails}
+                  trigger={
+                    <Button
+                      size="sm"
+                      className="shrink-0 self-start sm:self-auto"
+                    >
+                      {t.user.orderInvoice.fillIn}
+                    </Button>
+                  }
+                />
+              </div>
+            )}
+
             {user && (
               <MissingInvoiceNotice
                 orders={ordersMissingInvoice}
@@ -320,7 +342,20 @@ export default async function Page() {
                       className="p-3 border rounded-lg bg-muted/20 flex justify-between items-center group"
                     >
                       <div>
-                        <p className="font-medium text-sm">{p.name}</p>
+                        <p className="font-medium text-sm">
+                          {p.name}
+                          {/* Åldern hör till deltagaren: den avgör både vad
+                              som får bokas och vem som kan faktureras. */}
+                          {calculateAge(p.dateOfBirth) === null ? (
+                            <span className="ml-1 text-xs font-normal text-amber-700 dark:text-amber-400">
+                              ({t.user.ageMissing})
+                            </span>
+                          ) : (
+                            <span className="ml-1 text-xs font-normal text-muted-foreground">
+                              ({calculateAge(p.dateOfBirth)} {t.user.years})
+                            </span>
+                          )}
+                        </p>
                         {p.email && (
                           <p className="text-xs text-muted-foreground">
                             {p.email}

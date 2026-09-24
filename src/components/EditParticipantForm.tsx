@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import * as z from "zod";
+import type * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -27,14 +27,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { updateParticipant } from "@/lib/actions/participants";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import { ParticipantSchema } from "@/validations/userforms";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Namn måste vara minst 2 tecken"),
-  email: z.string().email("Ogiltig e-post").or(z.literal("")),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  allowPhotoVideo: z.boolean(),
-});
+const formSchema = ParticipantSchema;
 
 interface EditParticipantFormProps {
   participant: {
@@ -88,7 +83,6 @@ export default function EditParticipantForm({
     try {
       await updateParticipant(participant.id, {
         ...values,
-        dateOfBirth: values.dateOfBirth || undefined,
         email: values.email || undefined,
       });
       toast.success("Deltagare uppdaterad!");
@@ -120,7 +114,7 @@ export default function EditParticipantForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Namn</FormLabel>
+                  <FormLabel>Namn*</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -159,7 +153,7 @@ export default function EditParticipantForm({
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Födelsedatum (valfri)</FormLabel>
+                  <FormLabel>Födelsedatum*</FormLabel>
                   <FormControl>
                     <Input {...field} type="date" />
                   </FormControl>

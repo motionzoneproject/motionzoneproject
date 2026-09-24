@@ -38,6 +38,31 @@ export const AdminEditUserSchema = z.object({
 });
 
 /**
+ * En deltagare, var den än läggs till: i kassan, på profilsidan eller av
+ * admin på en order.
+ *
+ * Namnet är obligatoriskt för att elevlistorna ska gå att läsa — en rad utan
+ * namn säger ingenting om vem som står i salen. Födelsedatumet är
+ * obligatoriskt för att avgöra om deltagaren är omyndig: det styr vem som kan
+ * faktureras, och utan det får kunden intyga åldern i stället för att vi bara
+ * vet den.
+ */
+export const ParticipantSchema = z.object({
+  name: z.string().trim().min(2, "Namn måste vara minst 2 tecken").max(150),
+  email: z.email("Ogiltig e-post").max(250).or(z.literal("")).optional(),
+  phone: z.string().trim().max(40).optional(),
+  dateOfBirth: z.iso.date("Ange födelsedatum (ÅÅÅÅ-MM-DD)").refine((value) => {
+    // Ett datum i framtiden eller långt tillbaka är en felskrivning, och
+    // just den felskrivningen gör en vuxen till omyndig eller tvärtom.
+    const date = new Date(value);
+    return date <= new Date() && date.getFullYear() >= 1900;
+  }, "Kontrollera födelsedatumet"),
+  allowPhotoVideo: z.boolean(),
+});
+
+export type ParticipantInput = z.infer<typeof ParticipantSchema>;
+
+/**
  * Fakturamottagaren i kassan, på profilsidan och i adminvyn.
  *
  * Kunden väljer en person i stället för att skriva ett namn: kontoinnehavaren,
