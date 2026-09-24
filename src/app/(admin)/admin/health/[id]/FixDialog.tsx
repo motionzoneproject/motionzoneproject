@@ -523,12 +523,19 @@ function BookWholeCourse({
       <DialogHeader>
         <DialogTitle>Boka in på kursen</DialogTitle>
         <DialogDescription>
-          {fix.studentName} har {fix.productName} men är inte inbokad på en enda
-          lektion i {fix.courseName}, trots att produkten bokar in automatiskt.
+          {fix.studentName} har {fix.productName} och står i elevlistan för{" "}
+          {fix.courseName}, men är inte inbokad på en enda lektion där.
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-2 text-sm">
+        {!fix.productAutobook && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+            {fix.productName} är en enskild kurs med autobokningen avstängd, så
+            ingen som köper den blir inbokad. Slå på autobokning på produkten,
+            annars hamnar nästa köpare i samma läge.
+          </div>
+        )}
         <p className="text-muted-foreground">
           {fix.upcomingLessons} kommande lektioner bokas, så långt saldot
           räcker. Saldo just nu: {fix.remaining}.
