@@ -2,6 +2,7 @@ import { PaginationBar } from "@/components/PaginationBar";
 import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import { placesStudentInCourse } from "@/lib/course-roster";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
@@ -144,6 +145,7 @@ const purchaseSelect = {
     select: {
       id: true,
       name: true,
+      autobook: true,
     },
   },
   PurchaseItems: {
@@ -165,6 +167,7 @@ const purchaseSelect = {
         select: {
           id: true,
           name: true,
+          teacherId: true,
           schemaItems: {
             select: {
               termin: {
@@ -253,12 +256,14 @@ const pendingOrderItemSelect = {
     select: {
       id: true,
       name: true,
+      autobook: true,
       courses: {
         select: {
           course: {
             select: {
               id: true,
               name: true,
+              teacherId: true,
               schemaItems: {
                 select: {
                   termin: {
@@ -281,6 +286,7 @@ const pendingOrderItemSelect = {
         select: {
           id: true,
           name: true,
+          teacherId: true,
           schemaItems: {
             select: {
               termin: {
@@ -300,6 +306,54 @@ const pendingOrderItemSelect = {
 type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
   select: typeof pendingOrderItemSelect;
 }>;
+
+/**
+ * Kurserna ett köp placerar eleven i, enligt regeln i course-roster. Köpets
+ * alla kursrader finns kvar som tillgång under köpet; det här är de kurser
+ * eleven räknas in i, och det är dem kursfiltret och kurskolumnen visar.
+ */
+function placedCourses(purchase: StudentPurchaseRow) {
+  const courseCount = purchase.PurchaseItems.length;
+
+  return purchase.PurchaseItems.filter((item) =>
+    placesStudentInCourse({
+      courseId: item.courseId,
+      selectedCourseIds: (item.orderItem?.courseSelections ?? []).map(
+        (selection) => selection.courseId,
+      ),
+      autobook: purchase.product.autobook,
+      courseCount,
+      activeBookings: item.bookings.length,
+    }),
+  ).map((item) => item.course);
+}
+
+/** Kurserna en obeviljad orderrad gäller: kundens kursval, annars produktens. */
+function orderedCourses(item: StudentPendingOrderItemRow) {
+  const selected = item.courseSelections.map((selection) => selection.course);
+  return selected.length > 0
+    ? selected
+    : item.product.courses.map((link) => link.course);
+}
+
+/**
+ * Samma regel för en obeviljad order. Bokningar finns inte än, så ett
+ * terminskort eller program placerar ingen förrän schemat satts.
+ */
+function placedPendingCourses(item: StudentPendingOrderItemRow) {
+  const courses = orderedCourses(item);
+
+  return courses.filter((course) =>
+    placesStudentInCourse({
+      courseId: course.id,
+      // Kursvalen är redan tillämpade i orderedCourses.
+      selectedCourseIds: [],
+      autobook: item.product.autobook,
+      courseCount: courses.length,
+      activeBookings: 0,
+    }),
+  );
+}
 
 function buildStudentSummaries(
   purchasesWithData: StudentPurchaseRow[],
@@ -361,6 +415,10 @@ function buildStudentSummaries(
     };
     existing.hasApprovedPurchase = true;
 
+    const placedCourseIds = new Set(
+      placedCourses(purchase).map((course) => course.id),
+    );
+
     const purchaseItems: StudentPurchaseItemSummary[] =
       purchase.PurchaseItems.filter((item) => {
         const selections = item.orderItem?.courseSelections ?? [];
@@ -371,10 +429,12 @@ function buildStudentSummaries(
         // Annars är det en vanlig produkt/kurs där alla PurchaseItems gäller
         return true;
       }).map((item) => {
-        existing.courseMap.set(item.course.id, {
-          id: item.course.id,
-          name: item.course.name,
-        });
+        if (placedCourseIds.has(item.course.id)) {
+          existing.courseMap.set(item.course.id, {
+            id: item.course.id,
+            name: item.course.name,
+          });
+        }
 
         for (const schemaItem of item.course.schemaItems) {
           existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
@@ -459,17 +519,13 @@ function buildStudentSummaries(
     };
     existing.hasPendingOrder = true;
 
-    const selectedCourses = item.courseSelections.map(
-      (selection) => selection.course,
-    );
-    const courses =
-      selectedCourses.length > 0
-        ? selectedCourses
-        : item.product.courses.map((link) => link.course);
+    const courses = orderedCourses(item);
+
+    for (const course of placedPendingCourses(item)) {
+      existing.courseMap.set(course.id, { id: course.id, name: course.name });
+    }
 
     for (const course of courses) {
-      existing.courseMap.set(course.id, { id: course.id, name: course.name });
-
       for (const schemaItem of course.schemaItems) {
         existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
       }
@@ -822,7 +878,7 @@ export default async function Page({
     AND: pendingOrderItemFilters,
   };
 
-  const purchasesWithData =
+  const fetchedPurchases =
     approval === "unapproved"
       ? []
       : await prisma.purchase.findMany({
@@ -830,13 +886,36 @@ export default async function Page({
           select: purchaseSelect,
         });
 
-  const pendingOrderItems =
+  const fetchedPendingOrderItems =
     approval === "approved"
       ? []
       : await prisma.orderItem.findMany({
           where: pendingOrderItemWhere,
           select: pendingOrderItemSelect,
         });
+
+  // Databasfiltret ovan tar med alla som har tillgång till kursen. Kurs- och
+  // lärarfiltret ska visa vilka som går den, så här tillämpas regeln i
+  // course-roster: ett terminskort räknas bara där eleven är inbokad.
+  // Produktfiltret och sökningen lämnas i fred — det är där man hittar en
+  // nyköpt elev som ännu inte fått något schema.
+  const matchesPlacement = (courses: { id: string; teacherId: string }[]) =>
+    (!course || courses.some((c) => c.id === course)) &&
+    (!teacher || courses.some((c) => c.teacherId === teacher));
+
+  const filterByPlacement = Boolean(course || teacher);
+
+  const purchasesWithData = filterByPlacement
+    ? fetchedPurchases.filter((purchase) =>
+        matchesPlacement(placedCourses(purchase)),
+      )
+    : fetchedPurchases;
+
+  const pendingOrderItems = filterByPlacement
+    ? fetchedPendingOrderItems.filter((item) =>
+        matchesPlacement(placedPendingCourses(item)),
+      )
+    : fetchedPendingOrderItems;
 
   // Under "unapproved" filtret hoppas hela purchase-queryn över (perf), men
   // vi behöver ändå veta vilka av de synade eleverna redan har ett beviljat

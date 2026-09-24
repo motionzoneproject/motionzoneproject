@@ -143,12 +143,14 @@ function CoursesDialog({ student }: { student: StudentSummary }) {
     <CountDialogButton
       count={student.courses.length}
       title={`Kurser för ${student.name}`}
-      description="Visar alla kurser eleven har via sina purchases."
+      description="Kurserna eleven går. Ett terminskort eller program räknas bara på de kurser eleven är inbokad på — resten av kurserna det ger finns under Schema."
     >
       <div className="space-y-2">
         {student.courses.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            Inga kurser hittades.
+            {student.purchases.length > 0
+              ? "Inga kurser ännu. Ett terminskort eller program syns på en kurs först när eleven är inbokad där — sätt det under Schema."
+              : "Inga kurser hittades."}
           </div>
         ) : (
           student.courses.map((course) => (
