@@ -88,6 +88,11 @@ export type HealthFix =
       studentName: string;
       courseName: string;
       productName: string;
+      /**
+       * Falskt när produkten är en enskild kurs utan autobokning. Då hamnar
+       * nästa köpare i samma läge, och det är produkten som ska rättas.
+       */
+      productAutobook: boolean;
       /** Hur många lektioner som bokas. */
       upcomingLessons: number;
       /** Saldo att boka med, "∞" för obegränsade rader. */
@@ -202,10 +207,18 @@ async function autobookingEverythingProducts() {
     }));
 }
 
+/**
+ * Kursrader som placerar eleven i kursen men saknar bokningar. Samma regel
+ * som elevlistan (course-roster): en produkt som autobokar, eller en enskild
+ * kurs. Terminskort, program och klippkort över flera kurser räknas inte —
+ * där är noll bokningar det normala tills schemat satts.
+ */
 function purchaseItemWithoutBookings(): Prisma.PurchaseItemWhereInput {
   return {
     bookings: { none: {} },
-    purchase: { product: { autobook: true } },
+    purchase: {
+      product: { OR: [{ autobook: true }, { type: "COURSE" }] },
+    },
     course: {
       lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
     },
@@ -802,21 +815,22 @@ const checks: Check[] = [
   },
   {
     /**
-     * Produkten autobokar, men eleven har inte en enda bokning i kursen.
+     * Köpet placerar eleven i kursen, men hen har inte en enda bokning där.
      *
-     * Bokningarna skapas när ordern beviljas, av autobook(), som returnerar
-     * tom lista i stället för att kasta vid fel. Slår den fel ser adminen bara
-     * "beviljad" — felet dyker upp först när läraren saknar eleven på
-     * lektionen, eller inte alls.
+     * Två orsaker. Bokningarna skapas när ordern beviljas, av autobook(), som
+     * returnerar tom lista i stället för att kasta vid fel — slår den fel ser
+     * adminen bara "beviljad". Eller så är en enskild kurs sparad utan
+     * autobokning, och då bokas ingen in alls. I båda fallen står eleven i
+     * elevlistan men saknas på lektionerna.
      *
      * Kort och program räknas inte hit: där är noll bokningar det normala,
-     * eftersom schemat sätts ihop för hand. Därav autobook-villkoret.
+     * eftersom schemat sätts ihop för hand.
      */
     id: "purchase-without-bookings",
     singular: "köp är inte inbokat på några lektioner",
     plural: "köp är inte inbokade på några lektioner",
     description:
-      "Produkten bokar in kunden automatiskt, men kursraden har noll bokningar trots att kursen har lektioner kvar.",
+      "Köpet gäller en enskild kurs eller en produkt som bokar in automatiskt, men kursraden har noll bokningar trots att kursen har lektioner kvar.",
     howTo: {
       steps: [
         'Klicka "Åtgärda" och "Boka in på kursen". Eleven bokas in på kursens kommande lektioner, precis som ett beviljande hade gjort.',
@@ -845,7 +859,7 @@ const checks: Check[] = [
             select: {
               type: true,
               remainingCount: true,
-              product: { select: { name: true } },
+              product: { select: { name: true, autobook: true } },
               user: { select: { name: true, email: true } },
               participant: { select: { name: true } },
             },
@@ -892,6 +906,7 @@ const checks: Check[] = [
               studentName,
               courseName: row.course.name,
               productName: row.purchase.product.name,
+              productAutobook: row.purchase.product.autobook,
               upcomingLessons,
               remaining: String(remaining),
             },
