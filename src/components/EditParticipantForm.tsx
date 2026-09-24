@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type * as z from "zod";
@@ -40,10 +40,13 @@ interface EditParticipantFormProps {
     dateOfBirth?: Date | string | null;
     allowPhotoVideo: boolean;
   };
+  /** Egen knapp, för banderollen om något saknas på deltagaren. */
+  trigger?: ReactNode;
 }
 
 export default function EditParticipantForm({
   participant,
+  trigger,
 }: EditParticipantFormProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -98,10 +101,12 @@ export default function EditParticipantForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Pencil className="h-4 w-4" />
-          <span className="sr-only">Redigera</span>
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" size="icon">
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Redigera</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[425px]">
         <DialogHeader>

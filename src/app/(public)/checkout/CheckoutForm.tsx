@@ -805,6 +805,8 @@ export default function CheckoutForm({
                 phonePlaceholder: t("checkout.invoice.phonePlaceholder"),
                 adultConfirm: t("checkout.invoice.adultConfirm"),
                 adultConfirmHelp: t("checkout.invoice.adultConfirmHelp"),
+                noOwnEmail: t("checkout.invoice.noOwnEmail"),
+                emailToMinor: t("checkout.invoice.emailToMinor"),
               }}
             />
 

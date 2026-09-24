@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import type z from "zod";
-import type { AdminEditUserSchema } from "@/validations/userforms";
+import { AdminEditUserSchema } from "@/validations/userforms";
 import { auth } from "../auth";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
@@ -105,11 +105,20 @@ export async function adminUpdateUserDetails(
   const isAdmin = await isAdminRole();
   if (!isAdmin) return { success: false, error: "Ej behörig." };
 
+  // Formuläret kräver födelsedatum, men kravet fanns bara i webbläsaren:
+  // servern skrev glatt null om fältet kom tomt. Samma schema gäller nu i
+  // båda ändar, så admin inte kan spara bort uppgiften av misstag.
+  const parsed = AdminEditUserSchema.safeParse(values);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Kontrollera uppgifterna.",
+    };
+  }
+
   try {
     const fullName = `${values.firstName} ${values.lastName}`.trim();
-    const dateOfBirth = values.dateOfBirth
-      ? formToDbDate(values.dateOfBirth)
-      : null;
+    const dateOfBirth = formToDbDate(parsed.data.dateOfBirth);
 
     await prisma.$transaction([
       prisma.user.update({

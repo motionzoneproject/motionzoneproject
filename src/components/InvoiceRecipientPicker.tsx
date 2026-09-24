@@ -49,6 +49,9 @@ export type InvoiceRecipientLabels = {
   phonePlaceholder: string;
   adultConfirm: string;
   adultConfirmHelp: string;
+  /** Innehåller {{name}}. */
+  noOwnEmail: string;
+  emailToMinor: string;
 };
 
 /**
@@ -82,6 +85,12 @@ export function InvoiceRecipientPicker({
     value.kind === "other" ? "other" : (value.participantId ?? "self");
 
   const selected = candidates.find((c) => c.id === selectedKey);
+
+  // Kontot självt, för att kunna säga ifrån när fakturan skulle gå till ett
+  // barns adress trots att betalaren är vuxen.
+  const self = candidates.find((c) => c.kind === "self");
+  const accountEmail = self?.email ?? "";
+  const accountIsMinor = isMinor(self?.dateOfBirth);
 
   // Vi vet bara åldern på den vi känner igen och har födelsedatum för.
   const ageUnknown = value.kind === "other" || !selected?.dateOfBirth;
@@ -204,6 +213,24 @@ export function InvoiceRecipientPicker({
           onChange={(e) => onChange({ ...value, invoiceEmail: e.target.value })}
         />
         <p className="text-[11px] text-muted-foreground">{labels.emailHelp}</p>
+
+        {/* Deltagare saknar ofta egen adress, och då står kontots kvar i
+            fältet. Det ska synas, så att fakturan inte tyst hamnar hos fel
+            person. */}
+        {selected && selected.kind === "participant" && !selected.email && (
+          <p className="text-[11px] text-amber-700 dark:text-amber-400">
+            {labels.noOwnEmail.replace("{{name}}", selected.name)}
+          </p>
+        )}
+
+        {/* Betalaren är vuxen, men adressen tillhör ett konto som står på ett
+            barn. Vi blockerar inte — en förälder kan använda barnets adress —
+            men det ska vara ett val och inte en slump. */}
+        {accountIsMinor && value.invoiceEmail === accountEmail && (
+          <p className="text-[11px] text-amber-700 dark:text-amber-400">
+            {labels.emailToMinor}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1">

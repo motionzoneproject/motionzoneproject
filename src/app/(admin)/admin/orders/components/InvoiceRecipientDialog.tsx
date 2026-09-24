@@ -159,6 +159,10 @@ export function InvoiceRecipientDialog({
             adultConfirm: "Personen är över 18 år",
             adultConfirmHelp:
               "Vi har inget födelsedatum för den här personen, och en omyndig kan inte faktureras.",
+            noOwnEmail:
+              "{{name}} har ingen egen e-postadress, så adressen ovan är kontots.",
+            emailToMinor:
+              "Adressen tillhör kontot, som står på en person under 18 år. Fyll hellre i betalarens egen adress.",
           }}
         />
 

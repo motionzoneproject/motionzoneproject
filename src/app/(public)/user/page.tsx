@@ -85,6 +85,12 @@ export default async function Page() {
       !order.invoiceName && !order.isPaid && order.status !== "CANCELLED",
   );
 
+  // Utan födelsedatum kan vi inte avgöra om någon får stå som
+  // betalningsansvarig, och kunden får intyga åldern i stället. Det är kunden
+  // som sitter på svaret, så frågan hör hemma här.
+  const accountMissesDateOfBirth = !!userDetails && !userDetails.dateOfBirth;
+  const participantsMissingAge = myParticipants.filter((p) => !p.dateOfBirth);
+
   const savedInvoice = {
     invoiceName: userDetails?.invoiceName ?? null,
     invoiceEmail: userDetails?.invoiceEmail ?? null,
@@ -141,23 +147,38 @@ export default async function Page() {
             </div>
           </CardHeader>
           <CardContent>
-            {userDetails && !userDetails.dateOfBirth && (
-              <div className="mb-6 flex flex-col gap-3 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+            {(accountMissesDateOfBirth ||
+              participantsMissingAge.length > 0) && (
+              <div className="mb-6 space-y-2 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
                 <div className="flex items-start gap-2">
                   <Cake className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{t.user.dateOfBirthMissing}</span>
+                  <span>{t.user.ageMissingNotice}</span>
                 </div>
-                <EditDetailsForm
-                  details={userDetails}
-                  trigger={
-                    <Button
-                      size="sm"
-                      className="shrink-0 self-start sm:self-auto"
-                    >
-                      {t.user.orderInvoice.fillIn}
-                    </Button>
-                  }
-                />
+
+                <div className="flex flex-wrap gap-2 pl-6">
+                  {accountMissesDateOfBirth && userDetails && (
+                    <EditDetailsForm
+                      details={userDetails}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t.user.ageMissingForMe}
+                        </Button>
+                      }
+                    />
+                  )}
+
+                  {participantsMissingAge.map((p) => (
+                    <EditParticipantForm
+                      key={p.id}
+                      participant={p}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t.user.ageMissingFor.replace("{{name}}", p.name)}
+                        </Button>
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
