@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import type { Course } from "@/generated/prisma/client";
 import { clearCart } from "@/lib/cart";
-import { checkInvoiceName } from "@/lib/invoice-recipient";
+import { checkInvoiceName, INVOICE_NAME_ERRORS } from "@/lib/invoice-recipient";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
 import { InvoiceRecipientSchema } from "@/validations/userforms";
@@ -57,12 +57,28 @@ export async function createCheckout(params: {
     select: { dateOfBirth: true },
   });
 
-  const invoiceNameError = checkInvoiceName({
+  // Deltagarna är redan skapade när ordern läggs, så namnen går att slå upp.
+  // Står en av dem som betalningsansvarig och är under 18 är det barnets namn
+  // som fyllts i, vilket är hela anledningen till att fältet finns.
+  const participantIds = items
+    .map((itm) => itm.participantId)
+    .filter((id): id is string => Boolean(id));
+
+  const orderParticipants = participantIds.length
+    ? await prisma.participant.findMany({
+        where: { id: { in: participantIds } },
+        select: { name: true, dateOfBirth: true },
+      })
+    : [];
+
+  const invoiceNameProblem = checkInvoiceName({
     invoiceName: invoice.invoiceName,
     accountName: session.user.name,
     accountDateOfBirth: buyerDetails?.dateOfBirth,
+    participants: orderParticipants,
   });
-  if (invoiceNameError) throw new Error(invoiceNameError);
+  if (invoiceNameProblem)
+    throw new Error(INVOICE_NAME_ERRORS[invoiceNameProblem]);
 
   // Prevent duplicate registrations of the same participant to the same product in a single checkout
   const seenRegistrations = new Set<string>();
@@ -198,10 +214,18 @@ export async function createCheckout(params: {
         invoicePhone: invoice.invoicePhone,
       });
 
-      // Spara som kundens förifyllning till nästa gång.
-      await tx.userDetails.updateMany({
+      // Spara som kundens förifyllning till nästa gång. Upsert, inte update:
+      // alla konton har inte en userDetails-rad, och för dem hade en update
+      // tyst gjort ingenting — nästa köp hade frågat om samma sak igen.
+      await tx.userDetails.upsert({
         where: { userId: session.user.id },
-        data: {
+        update: {
+          invoiceName: invoice.invoiceName,
+          invoiceEmail: invoice.invoiceEmail,
+          invoicePhone: invoice.invoicePhone || null,
+        },
+        create: {
+          userId: session.user.id,
           invoiceName: invoice.invoiceName,
           invoiceEmail: invoice.invoiceEmail,
           invoicePhone: invoice.invoicePhone || null,

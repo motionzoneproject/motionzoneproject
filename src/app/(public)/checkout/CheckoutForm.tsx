@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Info, InfoIcon, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ import {
 import { formatDateToInputStr } from "@/lib/date-utils";
 import {
   checkInvoiceName,
+  type InvoiceNameProblem,
   isMinor,
   normalizeName,
 } from "@/lib/invoice-recipient";
@@ -95,6 +96,12 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
+/** Vilken text fakturanamnet ska få, beroende på vilken regel som sa ifrån. */
+const INVOICE_NAME_MESSAGES: Record<InvoiceNameProblem, string> = {
+  minorAccount: "checkout.invoice.sameAsAccountMinor",
+  minorParticipant: "checkout.invoice.sameAsParticipantMinor",
+};
+
 export default function CheckoutForm({
   items,
   user,
@@ -116,13 +123,6 @@ export default function CheckoutForm({
     invoicePhone: userDetails?.invoicePhone ?? "",
   });
 
-  const invoiceNameClash =
-    invoice.invoiceName.trim().length > 0 &&
-    checkInvoiceName({
-      invoiceName: invoice.invoiceName,
-      accountName: user.name,
-      accountDateOfBirth: userDetails?.dateOfBirth ?? null,
-    }) !== null;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPartialPackDialog, setShowPartialPackDialog] = useState(false);
 
@@ -143,6 +143,43 @@ export default function CheckoutForm({
       ]),
     ),
   );
+
+  // Deltagarna som är valda just nu, för kontrollen av fakturanamnet. "Jag
+  // själv" är kontot och täcks av kontrollen mot kontonamnet.
+  const chosenParticipants = useMemo(() => {
+    const byId = new Map(existingParticipants.map((p) => [p.id, p]));
+    const chosen: { name: string; dateOfBirth?: string | null }[] = [];
+
+    for (const slot of Object.values(slots)) {
+      if (slot.isSelf) continue;
+
+      if (slot.participantId && slot.participantId !== "new") {
+        const existing = byId.get(slot.participantId);
+        if (existing)
+          chosen.push({
+            name: existing.name,
+            dateOfBirth: existing.dateOfBirth,
+          });
+      } else if (slot.customData?.name) {
+        chosen.push({
+          name: slot.customData.name,
+          dateOfBirth: slot.customData.dateOfBirth,
+        });
+      }
+    }
+
+    return chosen;
+  }, [slots, existingParticipants]);
+
+  const invoiceNameProblem =
+    invoice.invoiceName.trim().length > 0
+      ? checkInvoiceName({
+          invoiceName: invoice.invoiceName,
+          accountName: user.name,
+          accountDateOfBirth: userDetails?.dateOfBirth ?? null,
+          participants: chosenParticipants,
+        })
+      : null;
 
   // Course selections per slot (for PACK products with maxCourses set)
   // key: slot key, value: array of selected courseIds (length === maxCourses)
@@ -252,13 +289,8 @@ export default function CheckoutForm({
       return;
     }
 
-    const invoiceNameError = checkInvoiceName({
-      invoiceName: invoice.invoiceName,
-      accountName: user.name,
-      accountDateOfBirth: userDetails?.dateOfBirth ?? null,
-    });
-    if (invoiceNameError) {
-      toast.error(t("checkout.invoice.sameAsAccountMinor"));
+    if (invoiceNameProblem) {
+      toast.error(t(INVOICE_NAME_MESSAGES[invoiceNameProblem]));
       return;
     }
 
@@ -715,9 +747,9 @@ export default function CheckoutForm({
                     }))
                   }
                 />
-                {invoiceNameClash && (
+                {invoiceNameProblem && (
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    {t("checkout.invoice.sameAsAccountMinor")}
+                    {t(INVOICE_NAME_MESSAGES[invoiceNameProblem])}
                   </p>
                 )}
               </div>

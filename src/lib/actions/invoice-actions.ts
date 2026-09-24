@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { checkInvoiceName } from "@/lib/invoice-recipient";
+import { checkInvoiceName, INVOICE_NAME_ERRORS } from "@/lib/invoice-recipient";
 import {
   type InvoiceRecipientInput,
   InvoiceRecipientSchema,
@@ -38,12 +38,21 @@ export async function saveInvoiceRecipient(
     select: { dateOfBirth: true },
   });
 
-  const nameError = checkInvoiceName({
+  // Kundens egna deltagare — oftast barnen. Sparas uppgiften här blir den
+  // förifylld i kassan, så samma krav måste gälla redan nu.
+  const participants = await prisma.participant.findMany({
+    where: { addedByUserId: session.user.id },
+    select: { name: true, dateOfBirth: true },
+  });
+
+  const nameProblem = checkInvoiceName({
     invoiceName: parsed.data.invoiceName,
     accountName: session.user.name,
     accountDateOfBirth: details?.dateOfBirth,
+    participants,
   });
-  if (nameError) return { success: false, msg: nameError };
+  if (nameProblem)
+    return { success: false, msg: INVOICE_NAME_ERRORS[nameProblem] };
 
   await prisma.userDetails.upsert({
     where: { userId: session.user.id },
@@ -96,16 +105,25 @@ export async function setOrderInvoiceRecipient(
       user: {
         select: { name: true, details: { select: { dateOfBirth: true } } },
       },
+      orderItems: {
+        select: {
+          participant: { select: { name: true, dateOfBirth: true } },
+        },
+      },
     },
   });
   if (!order) return { success: false, msg: "Ordern hittades inte." };
 
-  const nameError = checkInvoiceName({
+  const nameProblem = checkInvoiceName({
     invoiceName: parsed.data.invoiceName,
     accountName: order.user.name,
     accountDateOfBirth: order.user.details?.dateOfBirth,
+    participants: order.orderItems
+      .map((it) => it.participant)
+      .filter((p) => p !== null),
   });
-  if (nameError) return { success: false, msg: nameError };
+  if (nameProblem)
+    return { success: false, msg: INVOICE_NAME_ERRORS[nameProblem] };
 
   await prisma.order.update({
     where: { id: orderId },

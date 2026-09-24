@@ -214,7 +214,8 @@
       "emailHelp": "Får gärna vara deltagarens egen adress om du vill ha fakturan dit.",
       "phoneOptional": "Telefon (valfri)",
       "phonePlaceholder": "07X-XXX XX XX",
-      "sameAsAccountMinor": "Det här är samma namn som kontot, som tillhör en person under 18 år. Ange den vuxna som ska betala."
+      "sameAsAccountMinor": "Det här är samma namn som kontot, som tillhör en person under 18 år. Ange den vuxna som ska betala.",
+      "sameAsParticipantMinor": "Det här är namnet på en deltagare under 18 år. Ange den vuxna som är betalningsansvarig."
     },
     "autobook": {
       "title": "automatisk bokning",
