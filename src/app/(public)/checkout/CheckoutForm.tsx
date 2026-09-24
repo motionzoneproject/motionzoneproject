@@ -78,7 +78,7 @@ export type CheckoutFormProps = {
   userDetails?: {
     postalCode?: string | null;
     allowPhotoVideo?: boolean | null;
-    /** Kontoinnehavarens fÃ¶delsedatum, styr kravet pÃ¥ fakturamottagare. */
+    /** Kontoinnehavarens födelsedatum, styr kravet på fakturamottagare. */
     dateOfBirth?: Date | null;
     invoiceName?: string | null;
     invoiceEmail?: string | null;
@@ -101,7 +101,7 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
-/** Vilken text fakturamottagaren ska fÃ¥, beroende pÃ¥ vad som sa ifrÃ¥n. */
+/** Vilken text fakturamottagaren ska få, beroende på vad som sa ifrån. */
 const INVOICE_MESSAGES: Record<InvoiceRecipientProblem, string> = {
   minorAccount: "checkout.invoice.sameAsAccountMinor",
   minorParticipant: "checkout.invoice.sameAsParticipantMinor",
@@ -130,12 +130,12 @@ export default function CheckoutForm({
       : ` (${age} ${t("checkout.invoice.years")})`;
   };
 
-  // Fakturamottagaren anges separat frÃ¥n kontot. Ett konto som tillhÃ¶r en
-  // omyndig kan inte faktureras, sÃ¥ dÃ¥ fÃ¶rifyller vi ingenting â€” den vuxna
-  // mÃ¥ste skrivas in. FÃ¶r alla andra Ã¤r kontot en rimlig gissning.
+  // Fakturamottagaren anges separat från kontot. Ett konto som tillhör en
+  // omyndig kan inte faktureras, så då förifyller vi ingenting — den vuxna
+  // måste skrivas in. För alla andra är kontot en rimlig gissning.
   const accountIsMinor = isMinor(userDetails?.dateOfBirth ?? null);
 
-  // Har kunden sparat en betalare som inte Ã¤r hen sjÃ¤lv bÃ¶rjar vi dÃ¤r.
+  // Har kunden sparat en betalare som inte är hen själv börjar vi där.
   const savedIsSomeoneElse =
     !!userDetails?.invoiceName &&
     normalizeName(userDetails.invoiceName) !== normalizeName(user.name);
@@ -169,8 +169,8 @@ export default function CheckoutForm({
     ),
   );
 
-  // Deltagarna som Ã¤r valda just nu. De som redan finns gÃ¥r att vÃ¤lja som
-  // betalare, de som skapas i samma veva har Ã¤nnu inget id och kan bara fÃ¥ngas
+  // Deltagarna som är valda just nu. De som redan finns går att välja som
+  // betalare, de som skapas i samma veva har ännu inget id och kan bara fångas
   // av namnkontrollen om man skriver in dem som "annan".
   const { invoiceCandidates, newParticipants } = useMemo(() => {
     const byId = new Map(existingParticipants.map((p) => [p.id, p]));
@@ -209,7 +209,7 @@ export default function CheckoutForm({
     return { invoiceCandidates: candidates, newParticipants: created };
   }, [slots, existingParticipants, user, userDetails?.dateOfBirth]);
 
-  // Samma kontroll som servern gÃ¶r, sÃ¥ felet syns innan man trycker.
+  // Samma kontroll som servern gör, så felet syns innan man trycker.
   const chosen = invoiceCandidates.find(
     (c) => c.id === (invoice.participantId ?? "self"),
   );
@@ -245,7 +245,7 @@ export default function CheckoutForm({
   );
 
   // Filter out the current user from the existing participants dropdown
-  // because we have the "Jag sjÃ¤lv" checkbox for that.
+  // because we have the "Jag själv" checkbox for that.
   const otherParticipants = existingParticipants.filter((p) => {
     const isMainUser =
       p.userId === user.id || (p.email && p.email === user.email);
@@ -326,11 +326,11 @@ export default function CheckoutForm({
 
   const hasEmptyPackSelection = emptyPacks.length > 0;
 
-  // Den faktiska ordersubmit-logiken, separerad frÃ¥n formulÃ¤rets submit-event
-  // sÃ¥ den kan anropas antingen direkt eller efter bekrÃ¤ftelse i dialogen.
+  // Den faktiska ordersubmit-logiken, separerad från formulärets submit-event
+  // så den kan anropas antingen direkt eller efter bekräftelse i dialogen.
   const submitOrder = async () => {
-    // Fakturamottagaren fÃ¶rst: det Ã¤r ingen idÃ© att skapa deltagare och
-    // rader om ordern Ã¤ndÃ¥ inte fÃ¥r lÃ¤ggas.
+    // Fakturamottagaren först: det är ingen idé att skapa deltagare och
+    // rader om ordern ändå inte får läggas.
     if (invoiceProblem) {
       toast.error(t(INVOICE_MESSAGES[invoiceProblem]));
       return;
@@ -365,8 +365,8 @@ export default function CheckoutForm({
             return;
           }
 
-          // Samma regel som servern och profilsidan anvÃ¤nder: fÃ¶delsedatumet
-          // avgÃ¶r om deltagaren Ã¤r omyndig, och det styr vem som kan faktureras.
+          // Samma regel som servern och profilsidan använder: födelsedatumet
+          // avgör om deltagaren är omyndig, och det styr vem som kan faktureras.
           const dateOfBirthOk = ParticipantSchema.shape.dateOfBirth.safeParse(
             slot.customData.dateOfBirth,
           ).success;
@@ -389,8 +389,8 @@ export default function CheckoutForm({
           return;
         }
 
-        // KrÃ¤ver minst 1 vald kurs fÃ¶r paket med maxCourses satt.
-        // FullstÃ¤ndigt val krÃ¤vs inte lÃ¤ngre - partiellt val bekrÃ¤ftas via dialog.
+        // Kräver minst 1 vald kurs för paket med maxCourses satt.
+        // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
         const maxCourses = it.product.maxCourses;
         let selectedCourseIds: string[] | undefined;
         if (maxCourses != null) {
@@ -902,7 +902,7 @@ export default function CheckoutForm({
         </form>
       </CardContent>
 
-      {/* BekrÃ¤ftelsedialog fÃ¶r paket med ofullstÃ¤ndigt (men giltigt) kursval */}
+      {/* Bekräftelsedialog för paket med ofullständigt (men giltigt) kursval */}
       <Dialog
         open={showPartialPackDialog}
         onOpenChange={setShowPartialPackDialog}

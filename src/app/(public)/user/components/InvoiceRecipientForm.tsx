@@ -23,10 +23,10 @@ import { saveInvoiceRecipient } from "@/lib/actions/invoice-actions";
 import { isMinor, normalizeName } from "@/lib/invoice-recipient";
 
 /**
- * Kontots sparade fakturamottagare â€” fÃ¶rifyllningen till nÃ¤sta anmÃ¤lan.
+ * Kontots sparade fakturamottagare — förifyllningen till nästa anmälan.
  *
- * Samma val som i kassan, men utan intyget om Ã¥lder: hÃ¤r stÃ¤lls ingen faktura
- * ut. Intyget hÃ¶r till ordern och begÃ¤rs nÃ¤r anmÃ¤lan gÃ¶rs.
+ * Samma val som i kassan, men utan intyget om ålder: här ställs ingen faktura
+ * ut. Intyget hör till ordern och begärs när anmälan görs.
  */
 export function InvoiceRecipientForm({
   accountName,
@@ -55,7 +55,7 @@ export function InvoiceRecipientForm({
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Ã„r kontot registrerat pÃ¥ ett barn kan fakturan inte gÃ¥ till samma person.
+  // Är kontot registrerat på ett barn kan fakturan inte gå till samma person.
   const accountIsMinor = isMinor(dateOfBirth);
 
   const candidates = useMemo<InvoiceCandidate[]>(
