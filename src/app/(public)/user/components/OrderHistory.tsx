@@ -33,7 +33,10 @@ type OrderItem = {
     maxCourses: number | null;
   };
   participant?: {
+    id: string;
     name: string;
+    email?: string | null;
+    dateOfBirth?: Date | string | null;
   } | null;
 };
 

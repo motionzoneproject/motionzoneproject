@@ -500,6 +500,12 @@ model Order {
   invoiceEmail String?
   invoicePhone String?
 
+  // Kunden intygade att mottagaren är myndig. Behövs bara när vi inte kan veta
+  // det själva: en fritt inskriven person, eller en vald person utan
+  // födelsedatum. Tidpunkt i stället för boolean, så det går att se när
+  // intyget gavs om en faktura skulle bestridas.
+  invoiceAdultConfirmedAt DateTime?
+
   note String?
 
   createdAt DateTime @default(now())

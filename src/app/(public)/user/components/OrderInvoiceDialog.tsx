@@ -1,12 +1,14 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
-import { useForm } from "react-hook-form";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type z from "zod";
+import {
+  type InvoiceCandidate,
+  InvoiceRecipientPicker,
+  type InvoiceRecipientValue,
+} from "@/components/InvoiceRecipientPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,26 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { setOwnOrdersInvoiceRecipient } from "@/lib/actions/invoice-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
-import { isMinor } from "@/lib/invoice-recipient";
+import { isMinor, normalizeName } from "@/lib/invoice-recipient";
 import { formatPrice } from "@/lib/money";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
-import { InvoiceRecipientSchema } from "@/validations/userforms";
-
-const formSchema = InvoiceRecipientSchema;
-type FormValues = z.infer<typeof formSchema>;
 
 export type InvoiceOrder = {
   id: string;
@@ -44,6 +32,14 @@ export type InvoiceOrder = {
   invoiceName?: string | null;
   invoiceEmail?: string | null;
   invoicePhone?: string | null;
+  orderItems?: {
+    participant?: {
+      id: string;
+      name: string;
+      dateOfBirth?: Date | string | null;
+      email?: string | null;
+    } | null;
+  }[];
 };
 
 /**
@@ -76,42 +72,80 @@ export function OrderInvoiceDialog({
   const lang: AppLang = normalizeLang(i18n.language);
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Kontot kan tillhöra ett barn, och då är kontonamnet fel svar. Förifyll
-  // hellre ingenting än det.
+  // Kontot kan tillhöra ett barn, och då är kontonamnet fel svar.
   const accountIsMinor = isMinor(dateOfBirth);
+
+  // Deltagarna på de ordrar dialogen gäller, var och en bara en gång.
+  const candidates = useMemo(() => {
+    const list: InvoiceCandidate[] = [
+      {
+        id: "self",
+        kind: "self",
+        name: accountName,
+        email: accountEmail,
+        dateOfBirth,
+      },
+    ];
+
+    for (const order of orders) {
+      for (const item of order.orderItems ?? []) {
+        const participant = item.participant;
+        if (!participant) continue;
+        if (list.some((c) => c.id === participant.id)) continue;
+
+        list.push({
+          id: participant.id,
+          kind: "participant",
+          name: participant.name,
+          email: participant.email,
+          dateOfBirth: participant.dateOfBirth,
+        });
+      }
+    }
+
+    return list;
+  }, [orders, accountName, accountEmail, dateOfBirth]);
 
   // Gäller dialogen en enda order som redan har uppgiften är det den som ska
   // rättas. Annars är kontots förifyllning bästa gissningen.
   const single = orders.length === 1 ? orders[0] : null;
-  const fallbackName =
-    savedInvoice.invoiceName ?? (accountIsMinor ? "" : accountName);
+  const startName = single?.invoiceName ?? savedInvoice.invoiceName ?? "";
+  const startIsSelf =
+    !accountIsMinor &&
+    (startName === "" ||
+      normalizeName(startName) === normalizeName(accountName));
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      invoiceName: single?.invoiceName ?? fallbackName,
-      invoiceEmail:
-        single?.invoiceEmail ?? savedInvoice.invoiceEmail ?? accountEmail,
-      invoicePhone: single?.invoicePhone ?? savedInvoice.invoicePhone ?? "",
-    },
+  const [value, setValue] = useState<InvoiceRecipientValue>({
+    kind: startIsSelf ? "self" : "other",
+    invoiceName: startIsSelf ? "" : startName,
+    invoiceEmail:
+      single?.invoiceEmail ?? savedInvoice.invoiceEmail ?? accountEmail,
+    invoicePhone: single?.invoicePhone ?? savedInvoice.invoicePhone ?? "",
+    adultConfirmed: false,
   });
 
-  async function onSubmit(values: FormValues) {
-    const res = await setOwnOrdersInvoiceRecipient(
-      orders.map((o) => o.id),
-      values,
-    );
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      const res = await setOwnOrdersInvoiceRecipient(
+        orders.map((o) => o.id),
+        value,
+      );
 
-    if (!res.success) {
-      toast.error(res.msg ?? t("checkout.invoice.heading"));
-      return;
+      if (!res.success) {
+        toast.error(res.msg ?? t("checkout.invoice.heading"));
+        return;
+      }
+
+      toast.success(res.msg ?? "");
+      setIsOpen(false);
+      router.refresh();
+    } finally {
+      setIsSaving(false);
     }
-
-    toast.success(res.msg ?? "");
-    setIsOpen(false);
-    router.refresh();
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -147,74 +181,33 @@ export function OrderInvoiceDialog({
           </ul>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="invoiceName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("checkout.invoice.name")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("checkout.invoice.namePlaceholder")}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <InvoiceRecipientPicker
+          candidates={candidates}
+          value={value}
+          onChange={setValue}
+          idPrefix={`order-${orders[0]?.id ?? "invoice"}`}
+          labels={{
+            whoPays: t("checkout.invoice.pickWho"),
+            self: t("checkout.invoice.self"),
+            other: t("checkout.invoice.other"),
+            minorHint: t("checkout.invoice.minorHint"),
+            nameLabel: t("checkout.invoice.name"),
+            namePlaceholder: t("checkout.invoice.namePlaceholder"),
+            emailLabel: t("checkout.invoice.email"),
+            emailPlaceholder: t("checkout.invoice.emailPlaceholder"),
+            emailHelp: t("checkout.invoice.emailHelp"),
+            phoneLabel: t("checkout.invoice.phoneOptional"),
+            phonePlaceholder: t("checkout.invoice.phonePlaceholder"),
+            adultConfirm: t("checkout.invoice.adultConfirm"),
+            adultConfirmHelp: t("checkout.invoice.adultConfirmHelp"),
+          }}
+        />
 
-            <FormField
-              control={form.control}
-              name="invoiceEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("checkout.invoice.email")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder={t("checkout.invoice.emailPlaceholder")}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t("checkout.invoice.emailHelp")}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="invoicePhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("checkout.invoice.phoneOptional")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("checkout.invoice.phonePlaceholder")}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
-              className="w-full"
-            >
-              {form.formState.isSubmitting
-                ? t("user.editDetails.submitting")
-                : t("user.editDetails.submit")}
-            </Button>
-          </form>
-        </Form>
+        <Button type="button" onClick={save} disabled={isSaving}>
+          {isSaving
+            ? t("user.editDetails.submitting")
+            : t("user.editDetails.submit")}
+        </Button>
       </DialogContent>
     </Dialog>
   );

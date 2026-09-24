@@ -694,6 +694,12 @@ export default function OrdersView({
                             o.user?.details?.lastName ?? ""
                           }`.trim()}
                           accountEmail={o.user?.email ?? ""}
+                          accountDateOfBirth={
+                            o.user?.details?.dateOfBirth ?? null
+                          }
+                          participants={(o.orderItems ?? [])
+                            .map((it) => it.participant)
+                            .filter((p) => p != null)}
                           invoiceName={o.invoiceName ?? null}
                           invoiceEmail={o.invoiceEmail ?? null}
                           invoicePhone={o.invoicePhone ?? null}

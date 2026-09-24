@@ -22,6 +22,7 @@ export async function createOrder(
     invoiceName?: string;
     invoiceEmail?: string;
     invoicePhone?: string;
+    invoiceAdultConfirmedAt?: Date | null;
   },
 ) {
   const {
@@ -33,6 +34,7 @@ export async function createOrder(
     invoiceName,
     invoiceEmail,
     invoicePhone,
+    invoiceAdultConfirmedAt,
   } = params;
 
   if (!items || items.length === 0) throw new Error("No items provided");
@@ -52,6 +54,7 @@ export async function createOrder(
       invoiceName: invoiceName || null,
       invoiceEmail: invoiceEmail || null,
       invoicePhone: invoicePhone || null,
+      invoiceAdultConfirmedAt: invoiceAdultConfirmedAt ?? null,
       // default status is AWAITING_APPROVAL per schema
     },
   });

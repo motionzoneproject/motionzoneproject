@@ -38,24 +38,29 @@ export const AdminEditUserSchema = z.object({
 });
 
 /**
- * Fakturamottagaren i kassan och på profilsidan.
+ * Fakturamottagaren i kassan, på profilsidan och i adminvyn.
  *
- * Namnet är obligatoriskt eftersom det pekar ut den betalningsansvariga.
+ * Kunden väljer en person i stället för att skriva ett namn: kontoinnehavaren,
+ * en deltagare på ordern, eller "annan". För de två första hämtar servern
+ * namnet från den valda personen — klientens namn går inte att lita på, och
+ * poängen med valet är just att vi vet vem det är.
+ *
  * E-posten är obligatorisk men fri — den är en leveransadress och får vara
- * dansarens egen. Telefon är frivillig.
+ * dansarens egen. Telefon är frivillig. adultConfirmed är kundens intyg om att
+ * mottagaren är myndig, och krävs när vi inte kan avgöra det själva.
  */
 export const InvoiceRecipientSchema = z.object({
-  invoiceName: z
-    .string()
-    .trim()
-    .min(2, "Ange namnet på den som ska betala")
-    .max(150),
+  kind: z.enum(["self", "participant", "other"]),
+  participantId: z.string().max(64).optional(),
+  /** Används bara när kind är "other". */
+  invoiceName: z.string().trim().max(150).optional(),
   invoiceEmail: z.email("Ogiltig e-postadress").max(250),
   invoicePhone: z
     .string()
     .trim()
     .max(40)
     .refine((v) => v === "" || v.length >= 5, "Ogiltigt telefonnummer"),
+  adultConfirmed: z.boolean(),
 });
 
 export type InvoiceRecipientInput = z.infer<typeof InvoiceRecipientSchema>;

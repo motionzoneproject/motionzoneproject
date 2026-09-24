@@ -1,8 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  type InvoiceCandidate,
+  InvoiceRecipientPicker,
+  type InvoiceRecipientValue,
+} from "@/components/InvoiceRecipientPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,15 +18,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { setOrderInvoiceRecipient } from "@/lib/actions/invoice-actions";
+import { normalizeName } from "@/lib/invoice-recipient";
 
 type Props = {
   orderId: string;
   /** Kontoinnehavarens namn, som förslag när fakturamottagaren saknas. */
   accountName: string;
   accountEmail: string;
+  accountDateOfBirth?: Date | string | null;
+  /** Deltagarna på ordern, som alternativ att välja bland. */
+  participants: {
+    id: string;
+    name: string;
+    email?: string | null;
+    dateOfBirth?: Date | string | null;
+  }[];
   invoiceName: string | null;
   invoiceEmail: string | null;
   invoicePhone: string | null;
@@ -37,6 +49,8 @@ export function InvoiceRecipientDialog({
   orderId,
   accountName,
   accountEmail,
+  accountDateOfBirth,
+  participants,
   invoiceName,
   invoiceEmail,
   invoicePhone,
@@ -44,10 +58,39 @@ export function InvoiceRecipientDialog({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [form, setForm] = useState({
-    invoiceName: invoiceName ?? "",
+
+  const candidates = useMemo<InvoiceCandidate[]>(
+    () => [
+      {
+        id: "self",
+        kind: "self",
+        name: accountName,
+        email: accountEmail,
+        dateOfBirth: accountDateOfBirth,
+      },
+      ...participants.map((p) => ({
+        id: p.id,
+        kind: "participant" as const,
+        name: p.name,
+        email: p.email,
+        dateOfBirth: p.dateOfBirth,
+      })),
+    ],
+    [accountName, accountEmail, accountDateOfBirth, participants],
+  );
+
+  // En uppgift som redan finns är oftast någon annan än kontoinnehavaren —
+  // det är därför den fylldes i. Matchar den kontot börjar vi där i stället.
+  const startIsSelf =
+    !!accountName &&
+    (!invoiceName || normalizeName(invoiceName) === normalizeName(accountName));
+
+  const [form, setForm] = useState<InvoiceRecipientValue>({
+    kind: startIsSelf ? "self" : "other",
+    invoiceName: startIsSelf ? "" : (invoiceName ?? ""),
     invoiceEmail: invoiceEmail ?? "",
     invoicePhone: invoicePhone ?? "",
+    adultConfirmed: false,
   });
 
   const missing = !invoiceName;
@@ -93,50 +136,29 @@ export function InvoiceRecipientDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label className="text-xs" htmlFor={`inv-name-${orderId}`}>
-              Betalningsansvarig
-            </Label>
-            <Input
-              id={`inv-name-${orderId}`}
-              value={form.invoiceName}
-              placeholder="För- och efternamn"
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, invoiceName: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs" htmlFor={`inv-mail-${orderId}`}>
-              Skicka fakturan till
-            </Label>
-            <Input
-              id={`inv-mail-${orderId}`}
-              type="email"
-              value={form.invoiceEmail}
-              placeholder="namn@example.com"
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, invoiceEmail: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs" htmlFor={`inv-phone-${orderId}`}>
-              Telefon (valfri)
-            </Label>
-            <Input
-              id={`inv-phone-${orderId}`}
-              value={form.invoicePhone}
-              placeholder="07X-XXX XX XX"
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, invoicePhone: e.target.value }))
-              }
-            />
-          </div>
-        </div>
+        <InvoiceRecipientPicker
+          candidates={candidates}
+          value={form}
+          onChange={setForm}
+          idPrefix={`inv-${orderId}`}
+          labels={{
+            whoPays: "Vem ska betala?",
+            self: "Kontoinnehavaren",
+            other: "Annan person",
+            minorHint: "(under 18 – kan inte faktureras)",
+            nameLabel: "Betalningsansvarig",
+            namePlaceholder: "För- och efternamn",
+            emailLabel: "Skicka fakturan till",
+            emailPlaceholder: "namn@example.com",
+            emailHelp:
+              "Adressen fakturan skickas till. Får vara deltagarens egen.",
+            phoneLabel: "Telefon (valfri)",
+            phonePlaceholder: "07X-XXX XX XX",
+            adultConfirm: "Personen är över 18 år",
+            adultConfirmHelp:
+              "Vi har inget födelsedatum för den här personen, och en omyndig kan inte faktureras.",
+          }}
+        />
 
         <DialogFooter className="sm:justify-between gap-2">
           <Button

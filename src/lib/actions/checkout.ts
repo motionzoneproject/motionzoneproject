@@ -3,10 +3,16 @@
 import { redirect } from "next/navigation";
 import type { Course } from "@/generated/prisma/client";
 import { clearCart } from "@/lib/cart";
-import { checkInvoiceName, INVOICE_NAME_ERRORS } from "@/lib/invoice-recipient";
+import {
+  INVOICE_RECIPIENT_ERRORS,
+  resolveInvoiceRecipient,
+} from "@/lib/invoice-recipient";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
-import { InvoiceRecipientSchema } from "@/validations/userforms";
+import {
+  type InvoiceRecipientInput,
+  InvoiceRecipientSchema,
+} from "@/validations/userforms";
 import prisma from "../prisma";
 import { getProductStats } from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
@@ -26,11 +32,7 @@ export async function createCheckout(params: {
   note?: string;
   paymethod?: number;
   /** Vem fakturan ska ställas till. Obligatorisk — se validate nedan. */
-  invoice: {
-    invoiceName: string;
-    invoiceEmail: string;
-    invoicePhone: string;
-  };
+  invoice: InvoiceRecipientInput;
 }) {
   const session = await getSessionData();
   if (!session) throw new Error("Unauthorized");
@@ -57,9 +59,8 @@ export async function createCheckout(params: {
     select: { dateOfBirth: true },
   });
 
-  // Deltagarna är redan skapade när ordern läggs, så namnen går att slå upp.
-  // Står en av dem som betalningsansvarig och är under 18 är det barnets namn
-  // som fyllts i, vilket är hela anledningen till att fältet finns.
+  // Deltagarna är redan skapade när ordern läggs, så den valda personen går
+  // att slå upp här — och det är servern som avgör vad hen heter.
   const participantIds = items
     .map((itm) => itm.participantId)
     .filter((id): id is string => Boolean(id));
@@ -67,18 +68,22 @@ export async function createCheckout(params: {
   const orderParticipants = participantIds.length
     ? await prisma.participant.findMany({
         where: { id: { in: participantIds } },
-        select: { name: true, dateOfBirth: true },
+        select: { id: true, name: true, dateOfBirth: true },
       })
     : [];
 
-  const invoiceNameProblem = checkInvoiceName({
-    invoiceName: invoice.invoiceName,
-    accountName: session.user.name,
-    accountDateOfBirth: buyerDetails?.dateOfBirth,
+  const resolved = resolveInvoiceRecipient({
+    choice: invoice,
+    account: {
+      name: session.user.name,
+      dateOfBirth: buyerDetails?.dateOfBirth,
+    },
     participants: orderParticipants,
   });
-  if (invoiceNameProblem)
-    throw new Error(INVOICE_NAME_ERRORS[invoiceNameProblem]);
+  if ("problem" in resolved)
+    throw new Error(INVOICE_RECIPIENT_ERRORS[resolved.problem]);
+
+  const recipient = resolved.recipient;
 
   // Prevent duplicate registrations of the same participant to the same product in a single checkout
   const seenRegistrations = new Set<string>();
@@ -209,9 +214,10 @@ export async function createCheckout(params: {
         postalcode,
         note,
         paymethod,
-        invoiceName: invoice.invoiceName,
-        invoiceEmail: invoice.invoiceEmail,
-        invoicePhone: invoice.invoicePhone,
+        invoiceName: recipient.invoiceName,
+        invoiceEmail: recipient.invoiceEmail,
+        invoicePhone: recipient.invoicePhone ?? undefined,
+        invoiceAdultConfirmedAt: recipient.invoiceAdultConfirmedAt,
       });
 
       // Spara som kundens förifyllning till nästa gång. Upsert, inte update:
@@ -220,15 +226,15 @@ export async function createCheckout(params: {
       await tx.userDetails.upsert({
         where: { userId: session.user.id },
         update: {
-          invoiceName: invoice.invoiceName,
-          invoiceEmail: invoice.invoiceEmail,
-          invoicePhone: invoice.invoicePhone || null,
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
         },
         create: {
           userId: session.user.id,
-          invoiceName: invoice.invoiceName,
-          invoiceEmail: invoice.invoiceEmail,
-          invoicePhone: invoice.invoicePhone || null,
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
         },
       });
 
@@ -278,11 +284,7 @@ export async function createCheckoutAndRedirect(params: {
   items: CheckoutItem[];
   postalcode?: string;
   note?: string;
-  invoice: {
-    invoiceName: string;
-    invoiceEmail: string;
-    invoicePhone: string;
-  };
+  invoice: InvoiceRecipientInput;
 }) {
   const result = await createCheckout(params);
   redirect(result.successRedirect);

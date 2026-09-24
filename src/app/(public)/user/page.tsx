@@ -419,6 +419,7 @@ export default async function Page() {
                   invoiceName={userDetails?.invoiceName ?? null}
                   invoiceEmail={userDetails?.invoiceEmail ?? null}
                   invoicePhone={userDetails?.invoicePhone ?? null}
+                  participants={myParticipants}
                 />
               </div>
             )}

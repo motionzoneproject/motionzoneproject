@@ -38,6 +38,7 @@ type OrderLite = {
     details?: {
       firstName?: string | null;
       lastName?: string | null;
+      dateOfBirth?: string | Date | null;
     } | null;
   } | null;
   orderItems?:

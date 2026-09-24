@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { checkInvoiceName, INVOICE_NAME_ERRORS } from "@/lib/invoice-recipient";
+import {
+  INVOICE_RECIPIENT_ERRORS,
+  resolveInvoiceRecipient,
+} from "@/lib/invoice-recipient";
 import {
   type InvoiceRecipientInput,
   InvoiceRecipientSchema,
@@ -38,34 +41,38 @@ export async function saveInvoiceRecipient(
     select: { dateOfBirth: true },
   });
 
-  // Kundens egna deltagare — oftast barnen. Sparas uppgiften här blir den
-  // förifylld i kassan, så samma krav måste gälla redan nu.
+  // Kundens egna deltagare — oftast barnen. De går att välja här, och de som
+  // är omyndiga avvisas på samma sätt som i kassan.
   const participants = await prisma.participant.findMany({
     where: { addedByUserId: session.user.id },
-    select: { name: true, dateOfBirth: true },
+    select: { id: true, name: true, dateOfBirth: true },
   });
 
-  const nameProblem = checkInvoiceName({
-    invoiceName: parsed.data.invoiceName,
-    accountName: session.user.name,
-    accountDateOfBirth: details?.dateOfBirth,
+  const resolved = resolveInvoiceRecipient({
+    choice: parsed.data,
+    account: { name: session.user.name, dateOfBirth: details?.dateOfBirth },
     participants,
+    // Ingen faktura ställs ut här, uppgiften är bara en förifyllning. Intyget
+    // om att mottagaren är myndig hör till ordern och begärs i kassan.
+    requireConfirmation: false,
   });
-  if (nameProblem)
-    return { success: false, msg: INVOICE_NAME_ERRORS[nameProblem] };
+  if ("problem" in resolved)
+    return { success: false, msg: INVOICE_RECIPIENT_ERRORS[resolved.problem] };
+
+  const recipient = resolved.recipient;
 
   await prisma.userDetails.upsert({
     where: { userId: session.user.id },
     update: {
-      invoiceName: parsed.data.invoiceName,
-      invoiceEmail: parsed.data.invoiceEmail,
-      invoicePhone: parsed.data.invoicePhone || null,
+      invoiceName: recipient.invoiceName,
+      invoiceEmail: recipient.invoiceEmail,
+      invoicePhone: recipient.invoicePhone,
     },
     create: {
       userId: session.user.id,
-      invoiceName: parsed.data.invoiceName,
-      invoiceEmail: parsed.data.invoiceEmail,
-      invoicePhone: parsed.data.invoicePhone || null,
+      invoiceName: recipient.invoiceName,
+      invoiceEmail: recipient.invoiceEmail,
+      invoicePhone: recipient.invoicePhone,
     },
   });
 
@@ -115,7 +122,7 @@ export async function setOwnOrdersInvoiceRecipient(
       status: true,
       orderItems: {
         select: {
-          participant: { select: { name: true, dateOfBirth: true } },
+          participant: { select: { id: true, name: true, dateOfBirth: true } },
         },
       },
     },
@@ -136,27 +143,31 @@ export async function setOwnOrdersInvoiceRecipient(
     select: { dateOfBirth: true, invoiceName: true },
   });
 
-  // Deltagarna skiljer sig mellan ordrarna, så varje order prövas för sig.
-  for (const order of orders) {
-    const nameProblem = checkInvoiceName({
-      invoiceName: parsed.data.invoiceName,
-      accountName: session.user.name,
-      accountDateOfBirth: details?.dateOfBirth,
-      participants: order.orderItems
-        .map((it) => it.participant)
-        .filter((p) => p !== null),
-    });
-    if (nameProblem)
-      return { success: false, msg: INVOICE_NAME_ERRORS[nameProblem] };
-  }
+  // Deltagarna från samtliga ordrar går att välja. Vilken order en vuxen
+  // deltagare råkar stå på spelar ingen roll — det är personen som ska betala,
+  // och namnet är ändå det som hamnar på fakturan.
+  const participants = orders
+    .flatMap((order) => order.orderItems.map((it) => it.participant))
+    .filter((p) => p !== null);
+
+  const resolved = resolveInvoiceRecipient({
+    choice: parsed.data,
+    account: { name: session.user.name, dateOfBirth: details?.dateOfBirth },
+    participants,
+  });
+  if ("problem" in resolved)
+    return { success: false, msg: INVOICE_RECIPIENT_ERRORS[resolved.problem] };
+
+  const recipient = resolved.recipient;
 
   await prisma.$transaction(async (tx) => {
     await tx.order.updateMany({
       where: { id: { in: orders.map((o) => o.id) } },
       data: {
-        invoiceName: parsed.data.invoiceName,
-        invoiceEmail: parsed.data.invoiceEmail,
-        invoicePhone: parsed.data.invoicePhone || null,
+        invoiceName: recipient.invoiceName,
+        invoiceEmail: recipient.invoiceEmail,
+        invoicePhone: recipient.invoicePhone,
+        invoiceAdultConfirmedAt: recipient.invoiceAdultConfirmedAt,
       },
     });
 
@@ -168,15 +179,15 @@ export async function setOwnOrdersInvoiceRecipient(
       await tx.userDetails.upsert({
         where: { userId: session.user.id },
         update: {
-          invoiceName: parsed.data.invoiceName,
-          invoiceEmail: parsed.data.invoiceEmail,
-          invoicePhone: parsed.data.invoicePhone || null,
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
         },
         create: {
           userId: session.user.id,
-          invoiceName: parsed.data.invoiceName,
-          invoiceEmail: parsed.data.invoiceEmail,
-          invoicePhone: parsed.data.invoicePhone || null,
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
         },
       });
     }
@@ -225,30 +236,35 @@ export async function setOrderInvoiceRecipient(
       },
       orderItems: {
         select: {
-          participant: { select: { name: true, dateOfBirth: true } },
+          participant: { select: { id: true, name: true, dateOfBirth: true } },
         },
       },
     },
   });
   if (!order) return { success: false, msg: "Ordern hittades inte." };
 
-  const nameProblem = checkInvoiceName({
-    invoiceName: parsed.data.invoiceName,
-    accountName: order.user.name,
-    accountDateOfBirth: order.user.details?.dateOfBirth,
+  const resolved = resolveInvoiceRecipient({
+    choice: parsed.data,
+    account: {
+      name: order.user.name,
+      dateOfBirth: order.user.details?.dateOfBirth,
+    },
     participants: order.orderItems
       .map((it) => it.participant)
       .filter((p) => p !== null),
   });
-  if (nameProblem)
-    return { success: false, msg: INVOICE_NAME_ERRORS[nameProblem] };
+  if ("problem" in resolved)
+    return { success: false, msg: INVOICE_RECIPIENT_ERRORS[resolved.problem] };
+
+  const recipient = resolved.recipient;
 
   await prisma.order.update({
     where: { id: orderId },
     data: {
-      invoiceName: parsed.data.invoiceName,
-      invoiceEmail: parsed.data.invoiceEmail,
-      invoicePhone: parsed.data.invoicePhone || null,
+      invoiceName: recipient.invoiceName,
+      invoiceEmail: recipient.invoiceEmail,
+      invoicePhone: recipient.invoicePhone,
+      invoiceAdultConfirmedAt: recipient.invoiceAdultConfirmedAt,
     },
   });
 

@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {
+  type InvoiceCandidate,
+  InvoiceRecipientPicker,
+  type InvoiceRecipientValue,
+} from "@/components/InvoiceRecipientPicker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,12 +52,11 @@ import {
 } from "@/lib/actions/participants";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import {
-  checkInvoiceName,
-  type InvoiceNameProblem,
+  checkInvoiceRecipient,
+  type InvoiceRecipientProblem,
   isMinor,
   normalizeName,
 } from "@/lib/invoice-recipient";
-import { InvoiceRecipientSchema } from "@/validations/userforms";
 import { SelectPack } from "./components/SelectPack";
 
 export type CheckoutFormProps = {
@@ -96,10 +100,13 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
-/** Vilken text fakturanamnet ska få, beroende på vilken regel som sa ifrån. */
-const INVOICE_NAME_MESSAGES: Record<InvoiceNameProblem, string> = {
+/** Vilken text fakturamottagaren ska få, beroende på vad som sa ifrån. */
+const INVOICE_MESSAGES: Record<InvoiceRecipientProblem, string> = {
   minorAccount: "checkout.invoice.sameAsAccountMinor",
   minorParticipant: "checkout.invoice.sameAsParticipantMinor",
+  unconfirmedAge: "checkout.invoice.confirmAdultFirst",
+  missingName: "checkout.invoice.nameRequired",
+  unknownParticipant: "checkout.invoice.unknownParticipant",
 };
 
 export default function CheckoutForm({
@@ -117,10 +124,18 @@ export default function CheckoutForm({
   // omyndig kan inte faktureras, så då förifyller vi ingenting — den vuxna
   // måste skrivas in. För alla andra är kontot en rimlig gissning.
   const accountIsMinor = isMinor(userDetails?.dateOfBirth ?? null);
-  const [invoice, setInvoice] = useState({
-    invoiceName: userDetails?.invoiceName ?? (accountIsMinor ? "" : user.name),
+
+  // Har kunden sparat en betalare som inte är hen själv börjar vi där.
+  const savedIsSomeoneElse =
+    !!userDetails?.invoiceName &&
+    normalizeName(userDetails.invoiceName) !== normalizeName(user.name);
+
+  const [invoice, setInvoice] = useState<InvoiceRecipientValue>({
+    kind: accountIsMinor || savedIsSomeoneElse ? "other" : "self",
+    invoiceName: savedIsSomeoneElse ? (userDetails?.invoiceName ?? "") : "",
     invoiceEmail: userDetails?.invoiceEmail ?? user.email,
     invoicePhone: userDetails?.invoicePhone ?? "",
+    adultConfirmed: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,42 +159,67 @@ export default function CheckoutForm({
     ),
   );
 
-  // Deltagarna som är valda just nu, för kontrollen av fakturanamnet. "Jag
-  // själv" är kontot och täcks av kontrollen mot kontonamnet.
-  const chosenParticipants = useMemo(() => {
+  // Deltagarna som är valda just nu. De som redan finns går att välja som
+  // betalare, de som skapas i samma veva har ännu inget id och kan bara fångas
+  // av namnkontrollen om man skriver in dem som "annan".
+  const { invoiceCandidates, newParticipants } = useMemo(() => {
     const byId = new Map(existingParticipants.map((p) => [p.id, p]));
-    const chosen: { name: string; dateOfBirth?: string | null }[] = [];
+    const candidates: InvoiceCandidate[] = [
+      {
+        id: "self",
+        kind: "self",
+        name: user.name,
+        email: user.email,
+        dateOfBirth: userDetails?.dateOfBirth ?? null,
+      },
+    ];
+    const created: { name: string; dateOfBirth?: string | null }[] = [];
 
     for (const slot of Object.values(slots)) {
       if (slot.isSelf) continue;
 
       if (slot.participantId && slot.participantId !== "new") {
         const existing = byId.get(slot.participantId);
-        if (existing)
-          chosen.push({
+        if (existing && !candidates.some((c) => c.id === existing.id))
+          candidates.push({
+            id: existing.id,
+            kind: "participant",
             name: existing.name,
+            email: existing.email,
             dateOfBirth: existing.dateOfBirth,
           });
       } else if (slot.customData?.name) {
-        chosen.push({
+        created.push({
           name: slot.customData.name,
           dateOfBirth: slot.customData.dateOfBirth,
         });
       }
     }
 
-    return chosen;
-  }, [slots, existingParticipants]);
+    return { invoiceCandidates: candidates, newParticipants: created };
+  }, [slots, existingParticipants, user, userDetails?.dateOfBirth]);
 
-  const invoiceNameProblem =
-    invoice.invoiceName.trim().length > 0
-      ? checkInvoiceName({
-          invoiceName: invoice.invoiceName,
-          accountName: user.name,
-          accountDateOfBirth: userDetails?.dateOfBirth ?? null,
-          participants: chosenParticipants,
-        })
-      : null;
+  // Samma kontroll som servern gör, så felet syns innan man trycker.
+  const chosen = invoiceCandidates.find(
+    (c) => c.id === (invoice.participantId ?? "self"),
+  );
+
+  const invoiceProblem = checkInvoiceRecipient({
+    kind: invoice.kind,
+    chosenName:
+      invoice.kind === "other" ? invoice.invoiceName : (chosen?.name ?? ""),
+    chosenDateOfBirth:
+      invoice.kind === "other" ? null : (chosen?.dateOfBirth ?? null),
+    adultConfirmed: invoice.adultConfirmed,
+    accountName: user.name,
+    accountDateOfBirth: userDetails?.dateOfBirth ?? null,
+    participants: [
+      ...invoiceCandidates
+        .filter((c) => c.kind === "participant")
+        .map((c) => ({ name: c.name, dateOfBirth: c.dateOfBirth })),
+      ...newParticipants,
+    ],
+  });
 
   // Course selections per slot (for PACK products with maxCourses set)
   // key: slot key, value: array of selected courseIds (length === maxCourses)
@@ -281,16 +321,13 @@ export default function CheckoutForm({
   const submitOrder = async () => {
     // Fakturamottagaren först: det är ingen idé att skapa deltagare och
     // rader om ordern ändå inte får läggas.
-    const invoiceParsed = InvoiceRecipientSchema.safeParse(invoice);
-    if (!invoiceParsed.success) {
-      toast.error(
-        invoiceParsed.error.issues[0]?.message ?? t("checkout.invoice.heading"),
-      );
+    if (invoiceProblem) {
+      toast.error(t(INVOICE_MESSAGES[invoiceProblem]));
       return;
     }
 
-    if (invoiceNameProblem) {
-      toast.error(t(INVOICE_NAME_MESSAGES[invoiceNameProblem]));
+    if (!invoice.invoiceEmail.trim()) {
+      toast.error(t("checkout.invoice.emailRequired"));
       return;
     }
 
@@ -377,7 +414,7 @@ export default function CheckoutForm({
         postalcode: userDetails?.postalCode || undefined,
         note,
         paymethod: Number(paymethod),
-        invoice: invoiceParsed.data,
+        invoice,
       });
 
       toast.success(t("checkout.form.orderCreated"));
@@ -731,67 +768,34 @@ export default function CheckoutForm({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1 sm:col-span-2">
-                <Label className="text-xs" htmlFor="invoiceName">
-                  {t("checkout.invoice.name")}
-                </Label>
-                <Input
-                  id="invoiceName"
-                  value={invoice.invoiceName}
-                  placeholder={t("checkout.invoice.namePlaceholder")}
-                  onChange={(e) =>
-                    setInvoice((prev) => ({
-                      ...prev,
-                      invoiceName: e.target.value,
-                    }))
-                  }
-                />
-                {invoiceNameProblem && (
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    {t(INVOICE_NAME_MESSAGES[invoiceNameProblem])}
-                  </p>
-                )}
-              </div>
+            <InvoiceRecipientPicker
+              candidates={invoiceCandidates}
+              value={invoice}
+              onChange={setInvoice}
+              idPrefix="checkout"
+              labels={{
+                whoPays: t("checkout.invoice.pickWho"),
+                self: t("checkout.invoice.self"),
+                other: t("checkout.invoice.other"),
+                minorHint: t("checkout.invoice.minorHint"),
+                nameLabel: t("checkout.invoice.name"),
+                namePlaceholder: t("checkout.invoice.namePlaceholder"),
+                emailLabel: t("checkout.invoice.email"),
+                emailPlaceholder: t("checkout.invoice.emailPlaceholder"),
+                emailHelp: t("checkout.invoice.emailHelp"),
+                phoneLabel: t("checkout.invoice.phoneOptional"),
+                phonePlaceholder: t("checkout.invoice.phonePlaceholder"),
+                adultConfirm: t("checkout.invoice.adultConfirm"),
+                adultConfirmHelp: t("checkout.invoice.adultConfirmHelp"),
+              }}
+            />
 
-              <div className="space-y-1">
-                <Label className="text-xs" htmlFor="invoiceEmail">
-                  {t("checkout.invoice.email")}
-                </Label>
-                <Input
-                  id="invoiceEmail"
-                  type="email"
-                  value={invoice.invoiceEmail}
-                  placeholder={t("checkout.invoice.emailPlaceholder")}
-                  onChange={(e) =>
-                    setInvoice((prev) => ({
-                      ...prev,
-                      invoiceEmail: e.target.value,
-                    }))
-                  }
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  {t("checkout.invoice.emailHelp")}
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs" htmlFor="invoicePhone">
-                  {t("checkout.invoice.phoneOptional")}
-                </Label>
-                <Input
-                  id="invoicePhone"
-                  value={invoice.invoicePhone}
-                  placeholder={t("checkout.invoice.phonePlaceholder")}
-                  onChange={(e) =>
-                    setInvoice((prev) => ({
-                      ...prev,
-                      invoicePhone: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
+            {(invoiceProblem === "minorAccount" ||
+              invoiceProblem === "minorParticipant") && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {t(INVOICE_MESSAGES[invoiceProblem])}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2 pt-4 border-t">
