@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Course, Style, User } from "@/generated/prisma/client";
+import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import DeleteCourseBtn from "./components/DelCourseBtn";
@@ -28,16 +29,43 @@ export default async function CourseItem({
     where: { courseId: course.id },
   });
 
-  // Räknar alla sålda produkter med tillgång till kursen
-  const soldProducts = await prisma.purchase.count({
-    where: {
-      PurchaseItems: {
-        some: {
-          courseId: course.id,
+  // Elever som går kursen, enligt samma regel som elevlistan länken leder
+  // till. Att räkna alla köp med tillgång gav terminskortens och programmens
+  // köpare i nästan varje kurs.
+  const courseRows = await prisma.purchaseItem.findMany({
+    where: { courseId: course.id },
+    select: {
+      courseId: true,
+      orderItem: {
+        select: { courseSelections: { select: { courseId: true } } },
+      },
+      _count: { select: { bookings: { where: { cancelled: false } } } },
+      purchase: {
+        select: {
+          userId: true,
+          participantId: true,
+          product: { select: { autobook: true } },
+          _count: { select: { PurchaseItems: true } },
         },
       },
     },
   });
+
+  const students = new Set(
+    courseRows
+      .filter((row) =>
+        placesStudentInCourse({
+          courseId: row.courseId,
+          selectedCourseIds: row.orderItem.courseSelections.map(
+            (selection) => selection.courseId,
+          ),
+          autobook: row.purchase.product.autobook,
+          courseCount: row.purchase._count.PurchaseItems,
+          activeBookings: row._count.bookings,
+        }),
+      )
+      .map((row) => studentKeyOf(row.purchase)),
+  );
 
   return (
     <TableRow className={!course.active ? "opacity-60" : ""}>
@@ -55,7 +83,7 @@ export default async function CourseItem({
       <TableCell>{teacherName ?? "Saknas"}</TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <span>{soldProducts}st</span>
+          <span>{students.size}st</span>
           <Link
             href={
               `../admin/students?course=${course.id}` /**fix: finns ej kursfilter ännu i admin/students, så kolla sen när det kommeer så det blir rätt. */
