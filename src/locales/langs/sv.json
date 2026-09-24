@@ -228,7 +228,7 @@
       "emailToMinor": "Adressen tillhör kontot, som är registrerat på en person under 18 år. Fyll gärna i betalarens egen adress i stället.",
       "confirmAdultFirst": "Bekräfta att personen är över 18 år innan du slutför anmälan.",
       "nameRequired": "Ange namnet på den som ska betala.",
-      "emailRequired": "Ange e-postadressen fakturan ska skickas till.",
+      "emailRequired": "Ange en giltig e-postadress som fakturan ska skickas till.",
       "unknownParticipant": "Den valda personen finns inte kvar i beställningen. Ladda om sidan och försök igen.",
       "sameAsAccountMinor": "Det här är samma namn som kontot, som tillhör en person under 18 år. Ange den vuxna som ska betala.",
       "sameAsParticipantMinor": "Det här är namnet på en deltagare under 18 år. Ange den vuxna som är betalningsansvarig."

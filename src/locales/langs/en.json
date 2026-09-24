@@ -228,7 +228,7 @@
       "emailToMinor": "This address belongs to the account, which is registered to someone under 18. Consider entering the payer's own address instead.",
       "confirmAdultFirst": "Please confirm that this person is over 18 before completing your enrolment.",
       "nameRequired": "Please enter the name of the person paying.",
-      "emailRequired": "Please enter the email address the invoice should be sent to.",
+      "emailRequired": "Please enter a valid email address for the invoice.",
       "unknownParticipant": "The selected person is no longer part of this order. Reload the page and try again.",
       "sameAsAccountMinor": "That is the same name as the account, which belongs to someone under 18. Please enter the adult who will pay.",
       "sameAsParticipantMinor": "That is the name of a participant under 18. Please enter the adult responsible for payment."

@@ -57,7 +57,10 @@ import {
   isMinor,
   normalizeName,
 } from "@/lib/invoice-recipient";
-import { ParticipantSchema } from "@/validations/userforms";
+import {
+  InvoiceRecipientSchema,
+  ParticipantSchema,
+} from "@/validations/userforms";
 import { SelectPack } from "./components/SelectPack";
 
 export type CheckoutFormProps = {
@@ -336,7 +339,13 @@ export default function CheckoutForm({
       return;
     }
 
-    if (!invoice.invoiceEmail.trim()) {
+    // Samma regel som servern: en giltig adress, inte bara ett ifyllt fält.
+    // Kontrolleras här så att inga deltagare skapas för en order som servern
+    // ändå skulle stoppa.
+    const invoiceEmail = invoice.invoiceEmail.trim();
+    if (
+      !InvoiceRecipientSchema.shape.invoiceEmail.safeParse(invoiceEmail).success
+    ) {
       toast.error(t("checkout.invoice.emailRequired"));
       return;
     }
@@ -427,7 +436,7 @@ export default function CheckoutForm({
         postalcode: userDetails?.postalCode || undefined,
         note,
         paymethod: Number(paymethod),
-        invoice,
+        invoice: { ...invoice, invoiceEmail },
       });
 
       toast.success(t("checkout.form.orderCreated"));
