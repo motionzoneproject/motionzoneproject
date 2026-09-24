@@ -1436,6 +1436,16 @@ export async function addUserInLesson(
     });
 
     if (!pitem) return { success: false, msg: "Ingen purchaseItem hittades." };
+
+    // Bokningen ska göras på den bokades eget köp. Kontrollen ovan säger bara
+    // att en kund bokar in sig själv, inte att kursraden är hens — med en
+    // annan kunds purchaseItemId gick det att boka på någon annans köp och
+    // dra av deras saldo. Gäller alla roller: en bokning där userId inte är
+    // köpets ägare är en trasig rad, oavsett vem som skapade den.
+    if (pitem.purchase.userId !== validated.userId) {
+      return { success: false, msg: "Kursraden tillhör inte eleven." };
+    }
+
     // Kontrollera om purchaseItem redan har använts på lektionen.
 
     const existingBooking = await prisma.booking.findFirst({
