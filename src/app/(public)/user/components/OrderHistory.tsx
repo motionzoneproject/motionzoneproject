@@ -21,6 +21,7 @@ import { getOrderStatusLabel } from "@/lib/order-status";
 import { getCourseName } from "@/lib/tools";
 import type { AppLang } from "@/locales/config-lang";
 import { normalizeLang } from "@/locales/config-lang";
+import { OrderInvoiceDialog } from "./OrderInvoiceDialog";
 
 type OrderItem = {
   id: string;
@@ -41,14 +42,32 @@ type Order = {
   totalPrice: number | string | unknown;
   status: string;
   createdAt: Date;
+  isPaid?: boolean;
+  invoiceName?: string | null;
+  invoiceEmail?: string | null;
+  invoicePhone?: string | null;
   orderItems: OrderItem[];
 };
 
 interface OrderHistoryProps {
   orders: Order[];
+  accountName: string;
+  accountEmail: string;
+  dateOfBirth: Date | null;
+  savedInvoice: {
+    invoiceName: string | null;
+    invoiceEmail: string | null;
+    invoicePhone: string | null;
+  };
 }
 
-export default function OrderHistory({ orders }: OrderHistoryProps) {
+export default function OrderHistory({
+  orders,
+  accountName,
+  accountEmail,
+  dateOfBirth,
+  savedInvoice,
+}: OrderHistoryProps) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -70,6 +89,45 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
       default:
         return <Badge variant="outline">{label}</Badge>;
     }
+  };
+
+  /**
+   * Fakturamottagaren hör till ordern, så den visas och rättas per rad.
+   * En betald order står kvar som den är — fakturan har redan gått iväg och
+   * uppgiften är då en historik över vem den ställdes till.
+   */
+  const renderInvoiceRecipient = (order: Order) => {
+    const canEdit = !order.isPaid && order.status !== "CANCELLED";
+
+    if (!canEdit)
+      return order.invoiceName ? (
+        <span className="block text-xs text-muted-foreground">
+          {order.invoiceName}
+        </span>
+      ) : null;
+
+    return (
+      <OrderInvoiceDialog
+        orders={[order]}
+        accountName={accountName}
+        accountEmail={accountEmail}
+        dateOfBirth={dateOfBirth}
+        savedInvoice={savedInvoice}
+        trigger={
+          <Button
+            variant="link"
+            size="sm"
+            className={`h-auto p-0 text-xs ${
+              order.invoiceName
+                ? "text-muted-foreground"
+                : "text-amber-700 dark:text-amber-400"
+            }`}
+          >
+            {order.invoiceName ?? t("user.orderInvoice.missingBadge")}
+          </Button>
+        }
+      />
+    );
   };
 
   return (
@@ -122,7 +180,12 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                       ? formatPrice(Number(order.totalPrice), lang)
                       : "-"}
                   </td>
-                  <td className="p-3">{getStatusBadge(order.status)}</td>
+                  <td className="p-3">
+                    <div className="space-y-1">
+                      {getStatusBadge(order.status)}
+                      {renderInvoiceRecipient(order)}
+                    </div>
+                  </td>
                   <td className="p-3 text-right">
                     <Dialog>
                       <DialogTrigger asChild>
@@ -165,6 +228,27 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                                 {t("user.orderHistory.statusLabel")}
                               </span>
                               {getStatusBadge(selectedOrder.status)}
+                            </div>
+                            <div className="flex justify-between gap-4 text-sm">
+                              <span className="text-muted-foreground">
+                                {t("checkout.invoice.trigger")}
+                              </span>
+                              <span className="text-right">
+                                {selectedOrder.invoiceName ? (
+                                  <>
+                                    {selectedOrder.invoiceName}
+                                    {selectedOrder.invoiceEmail && (
+                                      <span className="block text-xs text-muted-foreground">
+                                        {selectedOrder.invoiceEmail}
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-amber-700 dark:text-amber-400">
+                                    {t("user.orderInvoice.missingBadge")}
+                                  </span>
+                                )}
+                              </span>
                             </div>
 
                             <div className="border-t pt-4">

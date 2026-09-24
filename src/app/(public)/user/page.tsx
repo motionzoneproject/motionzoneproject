@@ -1,4 +1,4 @@
-import { Clock, ReceiptText, Users } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
@@ -36,6 +36,7 @@ import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditEmailForm } from "./components/EditEmailForm";
 import { EditPwForm } from "./components/EditPwForm";
 import { InvoiceRecipientForm } from "./components/InvoiceRecipientForm";
+import { MissingInvoiceNotice } from "./components/MissingInvoiceNotice";
 import OrderHistory from "./components/OrderHistory";
 import { PurchaseItemBookings } from "./components/PurchaseItemsBookings";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
@@ -73,6 +74,20 @@ export default async function Page() {
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
+
+  // Fakturamottagaren sitter på ordern, så det är ordrarna som avgör om något
+  // saknas — inte kontots förifyllning. Betalda och avbokade lämnas utanför:
+  // där är fakturan redan skickad eller inte längre aktuell.
+  const ordersMissingInvoice = orders.filter(
+    (order) =>
+      !order.invoiceName && !order.isPaid && order.status !== "CANCELLED",
+  );
+
+  const savedInvoice = {
+    invoiceName: userDetails?.invoiceName ?? null,
+    invoiceEmail: userDetails?.invoiceEmail ?? null,
+    invoicePhone: userDetails?.invoicePhone ?? null,
+  };
 
   const groupedPurchases = purchaseItems.reduce(
     (acc, item) => {
@@ -124,6 +139,16 @@ export default async function Page() {
             </div>
           </CardHeader>
           <CardContent>
+            {user && (
+              <MissingInvoiceNotice
+                orders={ordersMissingInvoice}
+                accountName={user.name}
+                accountEmail={user.email}
+                dateOfBirth={userDetails?.dateOfBirth ?? null}
+                savedInvoice={savedInvoice}
+              />
+            )}
+
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
               {t.user.bookings}
             </h3>
@@ -360,7 +385,43 @@ export default async function Page() {
               </div>
             )}
 
-            <OrderHistory orders={orders} />
+            <OrderHistory
+              orders={orders}
+              accountName={user?.name ?? ""}
+              accountEmail={user?.email ?? ""}
+              dateOfBirth={userDetails?.dateOfBirth ?? null}
+              savedInvoice={savedInvoice}
+            />
+
+            {user && (
+              <div className="mt-4 flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {t.user.orderInvoice.savedTitle}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {userDetails?.invoiceName
+                      ? `${userDetails.invoiceName}${
+                          userDetails.invoiceEmail
+                            ? ` · ${userDetails.invoiceEmail}`
+                            : ""
+                        }`
+                      : t.user.orderInvoice.savedEmpty}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t.user.orderInvoice.savedHelp}
+                  </p>
+                </div>
+                <InvoiceRecipientForm
+                  accountName={user.name}
+                  accountEmail={user.email}
+                  dateOfBirth={userDetails?.dateOfBirth ?? null}
+                  invoiceName={userDetails?.invoiceName ?? null}
+                  invoiceEmail={userDetails?.invoiceEmail ?? null}
+                  invoicePhone={userDetails?.invoicePhone ?? null}
+                />
+              </div>
+            )}
 
             {userDetails && (
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border bg-muted/30">
@@ -391,25 +452,8 @@ export default async function Page() {
               </div>
             )}
 
-            {user && !userDetails?.invoiceName && (
-              <div className="my-4 flex items-start gap-2 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
-                <ReceiptText className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{t.user.invoiceMissing}</span>
-              </div>
-            )}
-
             <div className="my-4 flex flex-col items-stretch gap-2 rounded-lg border bg-muted/30 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
               {userDetails && <EditDetailsForm details={userDetails} />}
-              {user && (
-                <InvoiceRecipientForm
-                  accountName={user.name}
-                  accountEmail={user.email}
-                  dateOfBirth={userDetails?.dateOfBirth ?? null}
-                  invoiceName={userDetails?.invoiceName ?? null}
-                  invoiceEmail={userDetails?.invoiceEmail ?? null}
-                  invoicePhone={userDetails?.invoicePhone ?? null}
-                />
-              )}
               <EditPwForm />
               <EditEmailForm />
               {(user?.role === "admin" || user?.role === "teacher") &&

@@ -490,7 +490,18 @@
       "titleEdit": "Edit teacher profile",
       "titleCreate": "Create teacher profile"
     },
-    "invoiceMissing": "We do not know who should receive the invoice. Fill it in under “Who receives the invoice?” below, so we do not have to ask."
+    "orderInvoice": {
+      "intro": "The invoice is sent after the course starts. Tell us who is responsible for payment, so we do not have to ask afterwards.",
+      "missingOne": "We do not know who should receive the invoice for one of your enrolments.",
+      "missingMany": "We do not know who should receive the invoice for {{count}} of your enrolments.",
+      "fillIn": "Fill in",
+      "missingBadge": "Invoice recipient missing",
+      "appliesToOne": "Applies to this order:",
+      "appliesToMany": "Applies to {{count}} orders:",
+      "savedTitle": "Saved invoice recipient",
+      "savedEmpty": "None saved yet",
+      "savedHelp": "Used to prefill your next enrolment. Changing it leaves orders you have already placed untouched."
+    }
   },
   "legal": {
     "lastUpdated": "Last updated"

@@ -490,7 +490,18 @@
       "titleEdit": "Redigera lärarprofil",
       "titleCreate": "Skapa lärarprofil"
     },
-    "invoiceMissing": "Vi saknar uppgift om vem som ska ha fakturan. Fyll i det under “Vem ska få fakturan?” nedan, så slipper vi höra av oss och fråga."
+    "orderInvoice": {
+      "intro": "Fakturan skickas efter kursstart. Ange den som är betalningsansvarig, så slipper vi höra av oss och fråga.",
+      "missingOne": "Vi saknar uppgift om vem som ska få fakturan för en av dina anmälningar.",
+      "missingMany": "Vi saknar uppgift om vem som ska få fakturan för {{count}} av dina anmälningar.",
+      "fillIn": "Fyll i",
+      "missingBadge": "Faktura saknas",
+      "appliesToOne": "Gäller den här ordern:",
+      "appliesToMany": "Gäller {{count}} ordrar:",
+      "savedTitle": "Sparad fakturamottagare",
+      "savedEmpty": "Ingen sparad ännu",
+      "savedHelp": "Används som förifyllning vid nästa anmälan. Ändrar du den står redan lagda ordrar kvar som de är."
+    }
   },
   "legal": {
     "lastUpdated": "Senast uppdaterad"
