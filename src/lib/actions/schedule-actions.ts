@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
+import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
 import { calcRemainingCount, showRemaining } from "./purchase-helpers";
@@ -10,6 +11,19 @@ import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 
 type Result = { success: boolean; msg: string };
+
+/**
+ * Det som behövs för kursens fullständiga namn. Kursnamnet ensamt räcker
+ * inte: "Balett" och "Jazzdans" finns i flera åldrar och nivåer, och i
+ * schemadialogen måste admin kunna se vilken som är vilken.
+ */
+const courseNameSelect = {
+  name: true,
+  minAge: true,
+  maxAge: true,
+  adult: true,
+  level: true,
+} as const;
 
 /**
  * En kurs i ett köp, sedd som "går eleven den här kursen eller inte".
@@ -76,7 +90,7 @@ export async function getPurchaseSchedule(
           courseId: true,
           remainingCount: true,
           unlimited: true,
-          course: { select: { name: true } },
+          course: { select: courseNameSelect },
         },
       },
     },
@@ -119,7 +133,7 @@ export async function getPurchaseSchedule(
       return {
         purchaseItemId: item.id,
         courseId: item.courseId,
-        courseName: item.course.name,
+        courseName: getCourseName(item.course),
         upcomingLessons,
         bookedUpcoming,
         bookedTotal,
@@ -228,10 +242,11 @@ export async function setCourseBooking(
 ): Promise<Result> {
   const purchaseItem = await prisma.purchaseItem.findUnique({
     where: { id: purchaseItemId },
-    select: { id: true, courseId: true, course: { select: { name: true } } },
+    select: { id: true, courseId: true, course: { select: courseNameSelect } },
   });
 
   if (!purchaseItem) return { success: false, msg: "Kursraden hittades inte." };
+  const courseName = getCourseName(purchaseItem.course);
 
   if (!(await mayManageCourse(purchaseItem.courseId))) {
     return { success: false, msg: "Ingen behörighet." };
@@ -246,7 +261,7 @@ export async function setCourseBooking(
       if (created.length === 0) {
         return {
           success: false,
-          msg: `Inget att boka i ${purchaseItem.course.name}. Kursen kan sakna kommande lektioner, eller så är saldot slut.`,
+          msg: `Inget att boka i ${courseName}. Kursen kan sakna kommande lektioner, eller så är saldot slut.`,
         };
       }
 
@@ -256,7 +271,7 @@ export async function setCourseBooking(
 
       return {
         success: true,
-        msg: `Inbokad på ${created.length} lektioner i ${purchaseItem.course.name}.`,
+        msg: `Inbokad på ${created.length} lektioner i ${courseName}.`,
       };
     }
 
@@ -273,7 +288,7 @@ export async function setCourseBooking(
     if (futureBookings.length === 0) {
       return {
         success: false,
-        msg: `Eleven har inga kommande bokningar i ${purchaseItem.course.name}.`,
+        msg: `Eleven har inga kommande bokningar i ${courseName}.`,
       };
     }
 
@@ -298,7 +313,7 @@ export async function setCourseBooking(
 
     return {
       success: true,
-      msg: `Utbokad från ${futureBookings.length} kommande lektioner i ${purchaseItem.course.name}.`,
+      msg: `Utbokad från ${futureBookings.length} kommande lektioner i ${courseName}.`,
     };
   } catch (e) {
     console.error("setCourseBooking misslyckades", e);
