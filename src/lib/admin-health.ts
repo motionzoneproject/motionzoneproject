@@ -13,7 +13,7 @@ import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
 import { dbToFormTime } from "./time-convert";
-import { getVeckodag } from "./tools";
+import { getCourseName, getVeckodag } from "./tools";
 
 export type HealthSeverity = "warning" | "serious";
 
@@ -854,7 +854,15 @@ const checks: Check[] = [
           remainingCount: true,
           unlimited: true,
           courseId: true,
-          course: { select: { name: true } },
+          course: {
+            select: {
+              name: true,
+              minAge: true,
+              maxAge: true,
+              adult: true,
+              level: true,
+            },
+          },
           purchase: {
             select: {
               type: true,
@@ -898,13 +906,13 @@ const checks: Check[] = [
           return {
             id: row.id,
             title: studentName,
-            detail: `${row.course.name} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
+            detail: `${getCourseName(row.course)} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
             href: searchHref("/admin/students", row.purchase.user.email),
             fix: {
               kind: "course-booking" as const,
               purchaseItemId: row.id,
               studentName,
-              courseName: row.course.name,
+              courseName: getCourseName(row.course),
               productName: row.purchase.product.name,
               productAutobook: row.purchase.product.autobook,
               upcomingLessons,

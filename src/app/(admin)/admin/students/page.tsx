@@ -6,6 +6,7 @@ import { placesStudentInCourse } from "@/lib/course-roster";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 import StudentsFilter from "./components/StudentsFilter";
 import StudentTableClient from "./components/StudentTableClient";
 
@@ -100,6 +101,18 @@ export type StudentSummary = {
   addedManually?: boolean;
 };
 
+/**
+ * Fälten kursens fullständiga namn byggs av. "Balett" och "Jazzdans" finns i
+ * flera åldrar och nivåer, så kursnamnet ensamt går inte att skilja på.
+ */
+const courseNameFields = {
+  name: true,
+  minAge: true,
+  maxAge: true,
+  adult: true,
+  level: true,
+} as const;
+
 const purchaseSelect = {
   id: true,
   type: true,
@@ -168,7 +181,7 @@ const purchaseSelect = {
       course: {
         select: {
           id: true,
-          name: true,
+          ...courseNameFields,
           teacherId: true,
           schemaItems: {
             select: {
@@ -264,7 +277,7 @@ const pendingOrderItemSelect = {
           course: {
             select: {
               id: true,
-              name: true,
+              ...courseNameFields,
               teacherId: true,
               schemaItems: {
                 select: {
@@ -287,7 +300,7 @@ const pendingOrderItemSelect = {
       course: {
         select: {
           id: true,
-          name: true,
+          ...courseNameFields,
           teacherId: true,
           schemaItems: {
             select: {
@@ -434,7 +447,7 @@ function buildStudentSummaries(
         if (placedCourseIds.has(item.course.id)) {
           existing.courseMap.set(item.course.id, {
             id: item.course.id,
-            name: item.course.name,
+            name: getCourseName(item.course),
           });
         }
 
@@ -447,7 +460,7 @@ function buildStudentSummaries(
             id: booking.id,
             lessonId: booking.lessonId,
             purchaseItemId: item.id,
-            courseName: item.course.name,
+            courseName: getCourseName(item.course),
             startTime: booking.lesson.startTime,
             endTime: booking.lesson.endTime,
           });
@@ -456,7 +469,7 @@ function buildStudentSummaries(
         return {
           id: item.id,
           courseId: item.course.id,
-          courseName: item.course.name,
+          courseName: getCourseName(item.course),
           remainingCount: item.remainingCount,
           unlimited: item.unlimited,
           bookingsCount: item.bookings.length,
@@ -524,7 +537,10 @@ function buildStudentSummaries(
     const courses = orderedCourses(item);
 
     for (const course of placedPendingCourses(item)) {
-      existing.courseMap.set(course.id, { id: course.id, name: course.name });
+      existing.courseMap.set(course.id, {
+        id: course.id,
+        name: getCourseName(course),
+      });
     }
 
     for (const course of courses) {
@@ -540,7 +556,7 @@ function buildStudentSummaries(
       isPaid: item.order.isPaid,
       product: item.product,
       courses: courses
-        .map((course) => ({ id: course.id, name: course.name }))
+        .map((course) => ({ id: course.id, name: getCourseName(course) }))
         .sort((a, b) => a.name.localeCompare(b.name, "sv")),
     });
 
@@ -598,7 +614,7 @@ async function applyRosterEntries(
       courseId: true,
       studentKey: true,
       status: true,
-      course: { select: { id: true, name: true, teacherId: true } },
+      course: { select: { id: true, ...courseNameFields, teacherId: true } },
     },
   });
   if (entries.length === 0 && !filters.course && !filters.teacher)
@@ -623,9 +639,10 @@ async function applyRosterEntries(
     const student = byKey.get(entry.studentKey);
     if (!student || student.courses.some((c) => c.id === entry.courseId))
       continue;
-    student.courses = [...student.courses, entry.course].sort((a, b) =>
-      a.name.localeCompare(b.name, "sv"),
-    );
+    student.courses = [
+      ...student.courses,
+      { id: entry.course.id, name: getCourseName(entry.course) },
+    ].sort((a, b) => a.name.localeCompare(b.name, "sv"));
   }
 
   if (!filters.course && !filters.teacher) return students;
@@ -705,7 +722,7 @@ async function applyRosterEntries(
   const coursesFor = (key: string) =>
     missing
       .filter((e) => e.studentKey === key)
-      .map((e) => ({ id: e.course.id, name: e.course.name }));
+      .map((e) => ({ id: e.course.id, name: getCourseName(e.course) }));
 
   const empty = {
     terminer: [],
@@ -1204,7 +1221,7 @@ export default async function Page({
           course
             ? (courses
                 .filter((c) => c.id === course)
-                .map((c) => ({ id: c.id, name: c.name }))[0] ?? null)
+                .map((c) => ({ id: c.id, name: getCourseName(c) }))[0] ?? null)
             : null
         }
       />
