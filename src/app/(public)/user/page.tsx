@@ -29,6 +29,7 @@ import {
 import { getSessionData } from "@/lib/actions/sessiondata";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { AutobookBtn } from "./AutobookBtn";
 import BookingCal from "./components/BookingCal";
@@ -173,11 +174,7 @@ export default async function Page() {
                     <AccordionContent className="border-t pt-4 pb-2">
                       <Accordion type="multiple" className="space-y-2">
                         {group.items.map((pi) => {
-                          const courseName = pick(
-                            pi.course,
-                            "name",
-                            lang,
-                          ) as string;
+                          const courseName = getCourseName(pi.course, lang);
 
                           const remaining = calcRemainingCount({
                             purchase: pi.purchase,
