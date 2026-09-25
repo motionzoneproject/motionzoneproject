@@ -162,7 +162,15 @@ export type UserPurchaseWithProduct = Prisma.PurchaseItemGetPayload<{
   include: {
     orderItem: { include: { courseSelections: true } };
     course: {
-      select: { name: true; name_en: true };
+      select: {
+        name: true;
+        name_en: true;
+        minAge: true;
+        maxAge: true;
+        adult: true;
+        level: true;
+        level_en: true;
+      };
     };
     purchase: {
       select: {
@@ -198,8 +206,18 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
       include: {
         orderItem: { include: { courseSelections: true } },
         course: {
-          // <--- NYTT: Hämtar kursnamnet direkt
-          select: { name: true, name_en: true },
+          // Allt det fullständiga namnet byggs av. Kursnamnet ensamt skiljer
+          // inte på åldrar och nivåer, och på ett terminskort är det i den här
+          // listan kunden väljer vilken kurs hen ska boka.
+          select: {
+            name: true,
+            name_en: true,
+            minAge: true,
+            maxAge: true,
+            adult: true,
+            level: true,
+            level_en: true,
+          },
         },
         purchase: {
           select: {
