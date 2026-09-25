@@ -96,6 +96,8 @@ export type StudentSummary = {
   pendingOrderItems: StudentPendingOrderItemSummary[];
   hasApprovedPurchase: boolean;
   hasPendingOrder: boolean;
+  /** Sant när eleven lagts till i den filtrerade kursen för hand, utan köp. */
+  addedManually?: boolean;
 };
 
 const purchaseSelect = {
@@ -569,6 +571,210 @@ function buildStudentSummaries(
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
+const detailsSelect = {
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  address: true,
+  postalCode: true,
+  city: true,
+  allowPhotoVideo: true,
+  dateOfBirth: true,
+} satisfies Prisma.UserDetailsSelect;
+
+/**
+ * Lägger studions manuella ändringar ovanpå listan som härletts ur köp och
+ * bokningar. En borttagning vinner alltid: kursen försvinner ur elevens
+ * kurskolumn, och eleven ur kurs- och lärarfiltret. Ett manuellt tillägg
+ * lägger till kursen, och elever som bara finns som tillägg — utan köp —
+ * läggs till i listan när man filtrerar på kursen eller läraren.
+ */
+async function applyRosterEntries(
+  students: StudentSummary[],
+  filters: { course: string; teacher: string; product: string; query: string },
+): Promise<StudentSummary[]> {
+  const entries = await prisma.courseRosterEntry.findMany({
+    select: {
+      courseId: true,
+      studentKey: true,
+      status: true,
+      course: { select: { id: true, name: true, teacherId: true } },
+    },
+  });
+  if (entries.length === 0 && !filters.course && !filters.teacher)
+    return students;
+
+  const removed = new Set(
+    entries
+      .filter((e) => e.status === "REMOVED")
+      .map((e) => `${e.studentKey}|${e.courseId}`),
+  );
+  const added = entries.filter((e) => e.status === "ADDED");
+
+  const byKey = new Map(students.map((s) => [s.studentKey, s]));
+
+  for (const student of students) {
+    student.courses = student.courses.filter(
+      (c) => !removed.has(`${student.studentKey}|${c.id}`),
+    );
+  }
+
+  for (const entry of added) {
+    const student = byKey.get(entry.studentKey);
+    if (!student || student.courses.some((c) => c.id === entry.courseId))
+      continue;
+    student.courses = [...student.courses, entry.course].sort((a, b) =>
+      a.name.localeCompare(b.name, "sv"),
+    );
+  }
+
+  if (!filters.course && !filters.teacher) return students;
+
+  const inScope = (courseId: string, teacherId: string) =>
+    (!filters.course || courseId === filters.course) &&
+    (!filters.teacher || teacherId === filters.teacher);
+
+  const teacherCourseIds = filters.teacher
+    ? new Set(
+        (
+          await prisma.course.findMany({
+            where: { teacherId: filters.teacher },
+            select: { id: true },
+          })
+        ).map((c) => c.id),
+      )
+    : null;
+
+  const result = students.filter((s) =>
+    s.courses.some(
+      (c) =>
+        (!filters.course || c.id === filters.course) &&
+        (!teacherCourseIds || teacherCourseIds.has(c.id)),
+    ),
+  );
+
+  // Produktfiltret gäller köp, och en manuellt tillagd elev har inget.
+  if (filters.product) return result;
+
+  const listed = new Set(result.map((s) => s.studentKey));
+  const missing = added.filter(
+    (e) => inScope(e.courseId, e.course.teacherId) && !listed.has(e.studentKey),
+  );
+  if (missing.length === 0) return result;
+
+  const participantIds = missing
+    .map((e) => e.studentKey.split(":"))
+    .filter(([kind]) => kind === "participant")
+    .map(([, id]) => id);
+  const userIds = missing
+    .map((e) => e.studentKey.split(":"))
+    .filter(([kind]) => kind === "user")
+    .map(([, id]) => id);
+
+  const [participants, users] = await Promise.all([
+    prisma.participant.findMany({
+      where: { id: { in: participantIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        allowPhotoVideo: true,
+        dateOfBirth: true,
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            details: { select: detailsSelect },
+          },
+        },
+      },
+    }),
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        details: { select: detailsSelect },
+      },
+    }),
+  ]);
+
+  const coursesFor = (key: string) =>
+    missing
+      .filter((e) => e.studentKey === key)
+      .map((e) => ({ id: e.course.id, name: e.course.name }));
+
+  const empty = {
+    terminer: [],
+    bookings: [],
+    purchases: [],
+    pendingOrderItems: [],
+    hasApprovedPurchase: false,
+    hasPendingOrder: false,
+    addedManually: true,
+  };
+
+  const extra: StudentSummary[] = [
+    ...participants.map((p) => ({
+      ...empty,
+      studentKey: `participant:${p.id}`,
+      userId: p.addedBy.id,
+      participantId: p.id,
+      name: p.name,
+      customerName: p.addedBy.name,
+      dateOfBirth: p.dateOfBirth,
+      user: {
+        id: p.addedBy.id,
+        name: p.addedBy.name,
+        email: p.addedBy.email,
+        details: p.addedBy.details,
+      },
+      participant: {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        allowPhotoVideo: p.allowPhotoVideo,
+        dateOfBirth: p.dateOfBirth,
+        addedBy: {
+          id: p.addedBy.id,
+          name: p.addedBy.name,
+          email: p.addedBy.email,
+        },
+      },
+      courses: coursesFor(`participant:${p.id}`),
+    })),
+    ...users.map((u) => ({
+      ...empty,
+      studentKey: `user:${u.id}`,
+      userId: u.id,
+      participantId: null,
+      name: u.name,
+      customerName: null,
+      dateOfBirth: u.details?.dateOfBirth ?? null,
+      user: { id: u.id, name: u.name, email: u.email, details: u.details },
+      participant: null,
+      courses: coursesFor(`user:${u.id}`),
+    })),
+  ];
+
+  const q = filters.query.trim().toLowerCase();
+  const matchingExtra = q
+    ? extra.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.user.email.toLowerCase().includes(q),
+      )
+    : extra;
+
+  return [...result, ...matchingExtra].sort((a, b) =>
+    a.name.localeCompare(b.name, "sv"),
+  );
+}
+
 export default async function Page({
   searchParams,
 }: {
@@ -953,11 +1159,18 @@ export default async function Page({
     );
   }
 
-  const allStudents = buildStudentSummaries(
+  const builtStudents = buildStudentSummaries(
     purchasesWithData,
     pendingOrderItems,
     approvedStudentKeys,
   );
+
+  const allStudents = await applyRosterEntries(builtStudents, {
+    course,
+    teacher,
+    product,
+    query,
+  });
 
   const ITEMS_PER_PAGE = 10;
   const currentPage = Number(params.page) || 1;
@@ -985,7 +1198,16 @@ export default async function Page({
         <span>Totalt {totalStudents} elever</span>
       </div>
 
-      <StudentTableClient students={pageStudents} />
+      <StudentTableClient
+        students={pageStudents}
+        course={
+          course
+            ? (courses
+                .filter((c) => c.id === course)
+                .map((c) => ({ id: c.id, name: c.name }))[0] ?? null)
+            : null
+        }
+      />
 
       {totalPages > 1 && (
         <div className="mt-4">
