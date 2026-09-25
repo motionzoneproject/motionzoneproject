@@ -759,8 +759,11 @@ export default function OrdersView({
                               purchaseIds={(o.purchases ?? []).map((p) => p.id)}
                               title={
                                 o.orderItems?.[0]?.participant?.name ??
-                                o.user?.email ??
-                                "kunden"
+                                (`${o.user?.details?.firstName ?? ""} ${
+                                  o.user?.details?.lastName ?? ""
+                                }`.trim() ||
+                                  o.user?.email ||
+                                  "kunden")
                               }
                               trigger={
                                 <Button
