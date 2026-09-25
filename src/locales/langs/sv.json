@@ -203,6 +203,10 @@
       "3": "Delbetalning x 3",
       "3description": "Tre delbetalningar + 45kr avgift / faktura"
     },
+    "manualSchedule": {
+      "title": "Du väljer själv vilka kurser du går",
+      "desc": "Produkten ger tillgång till flera kurser men bokar inte in dig automatiskt. När ordern godkänts går du till din profilsida och trycker \"Boka in på hela kursen\" på de kurser du vill gå. Du kan också boka enstaka lektioner i kalendern."
+    },
     "autobook": {
       "title": "automatisk bokning",
       "desc": "När din order godkänns bokas du automatiskt in på alla kommande kurstillfällen i de kurser som ingår, så långt som klippen räcker."

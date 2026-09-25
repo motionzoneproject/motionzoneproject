@@ -57,7 +57,7 @@ export function describeDelivery({
           warning: emptyWarning,
         }
       : {
-          text: `${val}, men bokas inte in automatiskt. Ni bokar in kunden under Elever.`,
+          text: `${val}, men bokas inte in automatiskt. Kunden bokar in sig själv på profilsidan, eller så bokar ni in hen under Elever.`,
           warning: emptyWarning,
         };
   }
@@ -74,7 +74,7 @@ export function describeDelivery({
   }
 
   return {
-    text: `Kunden får tillgång till ${kurser} men bokas inte in automatiskt. Ni sätter ihop ett personligt schema åt kunden under Elever. Så fungerar terminskort och program.`,
+    text: `Kunden får tillgång till ${kurser} men bokas inte in automatiskt. Kunden bokar in sig på en hel kurs i taget på sin profilsida, eller så sätter ni ihop schemat åt hen under Elever. Så fungerar terminskort och program.`,
     warning: emptyWarning,
   };
 }

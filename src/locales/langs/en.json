@@ -203,6 +203,10 @@
       "3": "Installments x 3",
       "3description": "Three installments + 45 SEK fee per invoice"
     },
+    "manualSchedule": {
+      "title": "You choose which courses you attend",
+      "desc": "This product gives access to several courses but does not book you in automatically. Once your order is approved, go to your profile page and press \"Book the whole course\" on the courses you want to attend. You can also book single lessons in the calendar."
+    },
     "autobook": {
       "title": "Automatic booking",
       "desc": "Once your order is approved, you will be automatically booked into all upcoming class sessions for the included courses, for as long as your pass credits last."

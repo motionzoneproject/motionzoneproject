@@ -633,6 +633,25 @@ export default function CheckoutForm({
                         </div>
                       </div>
                     )}
+
+                  {/* Terminskort och program bokar inte in någon av sig själv.
+                      Utan den här rutan trodde kunden att det gjorde det —
+                      introtexten ovan lovar automatisk bokning för en kurs. */}
+                  {!it.product.autobook &&
+                    it.product.type !== "CLIP" &&
+                    it.courses.length > 1 && (
+                      <div className="mt-3 pt-3 border-t border-dashed">
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border/50">
+                          <InfoIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <span>
+                            <strong className="font-medium text-foreground block mb-1.5">
+                              {t("checkout.manualSchedule.title")}
+                            </strong>
+                            {t("checkout.manualSchedule.desc")}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                 </div>
               );
             })}
