@@ -44,6 +44,9 @@ model User {
   addedParticipants Participant[] @relation("AddedParticipants")
   asParticipant     Participant[] @relation("UserAsParticipant")
 
+  rosterEntries        CourseRosterEntry[] @relation("RosterStudent")
+  changedRosterEntries CourseRosterEntry[] @relation("RosterChangedBy")
+
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
@@ -246,6 +249,8 @@ model Course {
   purchaseItems PurchaseItem[]
 
   orderItemsSelections OrderItemCourseSelection[]
+
+  rosterEntries CourseRosterEntry[] // Manuella tillägg och borttagningar i elevlistan.
 
 
 
@@ -494,6 +499,51 @@ model Order {
   @@map("order")
 }
 
+enum RosterStatus {
+  ADDED
+  REMOVED
+}
+
+// Studions manuella ändring av vem som går en kurs.
+//
+// Vem som går en kurs härleds ur köp och bokningar (se src/lib/course-roster.ts).
+// Tabellen finns bara för det bokningarna inte kan uttrycka: en elev som slutat
+// men har gamla bokningar som ska stå kvar som historik, en enskild kurs som
+// alltid räknas oavsett bokningar, och en elev utan något köp för kursen —
+// provlektion eller kontant betalning. Allt som kan bli en bokning blir en
+// bokning; raderna här är undantagen.
+model CourseRosterEntry {
+  id String @id @default(uuid())
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Eleven är en deltagare eller ett konto. studentKey ("participant:<id>" /
+  // "user:<id>") är nyckeln resten av adminkoden använder. Den finns som egen
+  // kolumn för att unikheten ska gå att garantera — Postgres räknar NULL som
+  // unikt, så ett index på de två nullbara kolumnerna hade släppt igenom
+  // dubbletter.
+  studentKey String
+
+  userId String?
+  user   User?   @relation("RosterStudent", fields: [userId], references: [id], onDelete: Cascade)
+
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  status RosterStatus
+
+  changedByUserId String
+  changedBy       User   @relation("RosterChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, studentKey])
+  @@index([courseId])
+  @@map("course_roster_entry")
+}
+
 model OrderItemCourseSelection {
   id          String    @id @default(uuid())
 
@@ -608,6 +658,8 @@ model Participant {
 
   orderItems OrderItem[]
   purchases  Purchase[]
+
+  rosterEntries CourseRosterEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -44,6 +44,10 @@ import { dbToFormTime } from "@/lib/time-convert";
 import { ProductEditorDialog } from "../../components/ProductEditorDialog";
 import { ScheduleDialog } from "../../components/ScheduleDialog";
 import type { StudentSummary } from "../page";
+import {
+  AddStudentToCourseDialog,
+  RemoveFromCourseButton,
+} from "./CourseRosterControls";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
@@ -251,8 +255,11 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
 
 export default function StudentTableClient({
   students,
+  course = null,
 }: {
   students: StudentSummary[];
+  /** Kursen listan är filtrerad på. Då går elever att lägga till och ta bort. */
+  course?: { id: string; name: string } | null;
 }) {
   const [selectedStudents, setSelectedStudents] =
     useState<StudentsSelectedType>({});
@@ -417,6 +424,13 @@ export default function StudentTableClient({
         </Dialog>
 
         <MailDialog selectedStudents={selectedList} />
+
+        {course && (
+          <AddStudentToCourseDialog
+            courseId={course.id}
+            courseName={course.name}
+          />
+        )}
       </div>
 
       <div className="mt-2">
@@ -472,6 +486,14 @@ export default function StudentTableClient({
                         Ej beviljad än
                       </Badge>
                     ) : null}
+                    {student.addedManually ? (
+                      <Badge
+                        variant="outline"
+                        title="Tillagd i kursen för hand, utan köp"
+                      >
+                        Tillagd manuellt
+                      </Badge>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
@@ -494,7 +516,9 @@ export default function StudentTableClient({
                   <DetailsDialog
                     id={student.participantId ?? student.userId}
                     isParticipant={!!student.participantId}
-                    hasApprovedPurchase={student.hasApprovedPurchase}
+                    hasApprovedPurchase={
+                      student.hasApprovedPurchase || !!student.addedManually
+                    }
                   />
                 </TableCell>
                 <TableCell>{student.customerName ?? "-"}</TableCell>
@@ -523,6 +547,15 @@ export default function StudentTableClient({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {course && (
+                      <RemoveFromCourseButton
+                        courseId={course.id}
+                        courseName={course.name}
+                        studentKey={student.studentKey}
+                        studentName={student.name}
+                        addedManually={!!student.addedManually}
+                      />
+                    )}
                     {student.participant ? (
                       <EditParticipantForm participant={student.participant} />
                     ) : (

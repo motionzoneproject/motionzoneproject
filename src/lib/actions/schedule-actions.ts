@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
+import { mayManageCourse } from "@/lib/course-access";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
 import { calcRemainingCount, showRemaining } from "./purchase-helpers";
@@ -49,19 +50,6 @@ export type PurchaseSchedule = {
   balance: string | null;
   rows: ScheduleRow[];
 };
-
-async function mayManageCourse(courseId: string): Promise<boolean> {
-  const session = await getSessionData();
-  if (!session) return false;
-  if (session.user.role === "admin") return true;
-
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { teacherId: true },
-  });
-
-  return course?.teacherId === session.user.id;
-}
 
 /**
  * Hämtar ett köps kurser med bokningsläge, för schemadialogen.

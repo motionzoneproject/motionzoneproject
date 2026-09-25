@@ -67,6 +67,16 @@ export default async function CourseItem({
       .map((row) => studentKeyOf(row.purchase)),
   );
 
+  // Studions manuella ändringar vinner, precis som i elevlistan.
+  const rosterEntries = await prisma.courseRosterEntry.findMany({
+    where: { courseId: course.id },
+    select: { studentKey: true, status: true },
+  });
+  for (const entry of rosterEntries) {
+    if (entry.status === "REMOVED") students.delete(entry.studentKey);
+    else students.add(entry.studentKey);
+  }
+
   return (
     <TableRow className={!course.active ? "opacity-60" : ""}>
       <TableCell className="font-medium max-w-[360px] whitespace-normal">
