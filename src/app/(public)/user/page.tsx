@@ -262,6 +262,7 @@ export default async function Page() {
                                       purchaseItemId={pi.id}
                                       remainingClips={remaining}
                                       disabled={false}
+                                      sharedPot={pi.purchase.type === "CLIP"}
                                     />
                                   </div>
                                 )}

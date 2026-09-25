@@ -156,6 +156,73 @@ export async function getPurchaseSchedule(
   };
 }
 
+/** Varför en kund inte kunde boka in sig, så klienten kan översätta. */
+export type BookMyCourseResult =
+  | { success: true; count: number }
+  | {
+      success: false;
+      reason: "unauthorized" | "notSelected" | "nothingToBook" | "error";
+    };
+
+/**
+ * Kunden bokar in sig själv, eller sin deltagare, på en hel kurs.
+ *
+ * Samma sak som schemadialogen gör åt admin, fast för kundens eget köp. Ett
+ * terminskort eller program bokar inte in någon av sig själv — utan det här
+ * var kundens enda väg att boka en lektion i taget i kalendern, och knappen
+ * på kursraden sa bara "inga nya lektioner" utan att göra något.
+ *
+ * autobook() anropas uttryckligen, eftersom kunden pekat ut kursen. Men det
+ * släpper också spärren för paketens kursval, så den kontrolleras här: i ett
+ * paket där kunden valt kurser går bara de valda att boka.
+ *
+ * @auth Köpets ägare
+ */
+export async function bookMyCourse(
+  purchaseItemId: string,
+): Promise<BookMyCourseResult> {
+  const session = await getSessionData();
+  if (!session) return { success: false, reason: "unauthorized" };
+
+  const item = await prisma.purchaseItem.findUnique({
+    where: { id: purchaseItemId },
+    select: {
+      courseId: true,
+      purchase: { select: { userId: true } },
+      orderItem: {
+        select: { courseSelections: { select: { courseId: true } } },
+      },
+    },
+  });
+
+  if (!item || item.purchase.userId !== session.user.id) {
+    return { success: false, reason: "unauthorized" };
+  }
+
+  const selected = item.orderItem.courseSelections.map((s) => s.courseId);
+  if (selected.length > 0 && !selected.includes(item.courseId)) {
+    return { success: false, reason: "notSelected" };
+  }
+
+  try {
+    const created = await autobook(purchaseItemId, undefined, {
+      explicit: true,
+    });
+
+    if (created.length === 0)
+      return { success: false, reason: "nothingToBook" };
+
+    revalidatePath("/user");
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/lectures");
+
+    return { success: true, count: created.length };
+  } catch (e) {
+    console.error("bookMyCourse misslyckades", e);
+    return { success: false, reason: "error" };
+  }
+}
+
 /**
  * Bokar in eller ut en elev på en hel kurs.
  *

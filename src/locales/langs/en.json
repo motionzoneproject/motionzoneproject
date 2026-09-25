@@ -418,11 +418,15 @@
       "swapped": "Invalid. Swapped in package."
     },
     "autobook": {
-      "running": "Auto-booking...",
-      "label": "Auto-book",
-      "successCount": "{{count}} lessons auto-booked.",
-      "noNew": "No new lessons to auto-book.",
-      "error": "Could not auto-book lessons."
+      "running": "Booking...",
+      "label": "Book the whole course",
+      "successCount": "Booked into {{count}} lessons.",
+      "noNew": "Nothing more to book in this course. All upcoming lessons are already booked, or the balance has run out.",
+      "notSelected": "This course is not one of the courses you chose in your package.",
+      "error": "Could not book the course.",
+      "clipTitle": "Book the whole course?",
+      "clipDesc": "The courses on a clip card share the same balance. The course's upcoming lessons are booked as far as your clips go, currently {{count}} clips.",
+      "cancel": "Cancel"
     },
     "editDetails": {
       "trigger": "Edit details",

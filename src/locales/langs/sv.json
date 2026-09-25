@@ -418,11 +418,15 @@
       "swapped": "Ogiltig. Utbytt i paket."
     },
     "autobook": {
-      "running": "Autobokar...",
-      "label": "Autoboka",
-      "successCount": "{{count}} lektioner autobokades.",
-      "noNew": "Inga nya lektioner att autoboka.",
-      "error": "Kunde inte autoboka lektioner."
+      "running": "Bokar in...",
+      "label": "Boka in på hela kursen",
+      "successCount": "Inbokad på {{count}} lektioner.",
+      "noNew": "Inget mer att boka i kursen. Alla kommande lektioner är redan bokade, eller så är saldot slut.",
+      "notSelected": "Kursen ingår inte bland de kurser du valde i paketet.",
+      "error": "Kunde inte boka in på kursen.",
+      "clipTitle": "Boka in på hela kursen?",
+      "clipDesc": "Klippkortets kurser delar på samma saldo. Kursens kommande lektioner bokas så långt klippen räcker, just nu {{count}} klipp.",
+      "cancel": "Avbryt"
     },
     "editDetails": {
       "trigger": "Ändra uppgifter",
