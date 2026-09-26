@@ -398,8 +398,8 @@ function RemoveBooking({
             : `Samma köp är bokat ${fix.removes + 1} gånger på lektionen. Den första bokningen behålls, ${fix.removes} tas bort och lika många klipp läggs tillbaka.`}
         </p>
         <p>
-          Det är samma sak som papperskorgen i närvarodialogen gör. Vill du se
-          hela närvarolistan först ligger lektionen bakom länken på raden.
+          Det är samma sak som papperskorgen i lektionens bokningar gör. Vill du
+          se alla bokningar först ligger lektionen bakom länken på raden.
         </p>
       </div>
 

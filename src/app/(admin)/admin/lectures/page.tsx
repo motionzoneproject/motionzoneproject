@@ -175,6 +175,7 @@ export default async function LecturePage({ searchParams }: Props) {
                   <TableHead>Kurs</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Närvaro</TableHead>
+                  <TableHead>Bokningar</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
               </TableHeader>

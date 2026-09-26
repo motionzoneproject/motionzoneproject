@@ -25,15 +25,18 @@ import {
 
 /**
  * "Hantera elever" för en kurs: vem som går den, och att lägga till eller ta
- * bort. Öppnas från kurssidan och från lektionens närvarodialog, och visar
+ * bort. Öppnas från kurssidan, lektionens bokningar och närvaron, och visar
  * samma lista som elevlistan filtrerad på kursen — samma regel överallt.
  */
 export function CourseRosterDialog({
   courseId,
   trigger,
+  onClosed,
 }: {
   courseId: string;
   trigger?: ReactNode;
+  /** Körs när dialogen stängs, för en vy som själv hämtat listan. */
+  onClosed?: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -50,7 +53,10 @@ export function CourseRosterDialog({
     setOpen(next);
     if (next) load();
     // Antalet på kurssidan och listorna bakom ska spegla ändringarna.
-    else router.refresh();
+    else {
+      router.refresh();
+      onClosed?.();
+    }
   };
 
   return (
@@ -74,10 +80,10 @@ export function CourseRosterDialog({
             återställs, lektioner som varit står kvar. Lägg till en elev med köp
             så bokas hen in; utan köp läggs hen till för hand.
             <br />
-            Listan ligger till grund för närvarolistorna: den som bokas in här
-            står med på kursens kommande lektioner, och den som tas bort
-            försvinner från dem. En elev som lagts till för hand har inga
-            bokningar och syns därför inte på lektionerna.
+            Listan ligger till grund för närvarolistorna: alla här står med när
+            närvaron tas på kursens lektioner, även den som lagts till för hand
+            och saknar bokning. Den som tas bort försvinner från kommande
+            lektioner.
           </DialogDescription>
         </DialogHeader>
 
