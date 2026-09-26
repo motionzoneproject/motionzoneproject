@@ -549,9 +549,14 @@ export async function autobook(
     )
       return [];
 
+    const isAdmin = sessionUser.role === "admin";
+
     // 3. Om produkten begränsar antal valbara kurser (maxCourses satt),
-    // autoboka bara den/de kurser kunden faktiskt valde vid köpet.
-    if (product.maxCourses !== null && !opts?.explicit) {
+    // autoboka bara den/de kurser kunden faktiskt valde vid köpet. Bara en
+    // admin kan välja bort spärren: funktionen är en server action och går
+    // att anropa direkt, så en kund som skickar explicit ska inte kunna boka
+    // en kurs hen bytt bort i paketet.
+    if (product.maxCourses !== null && !(opts?.explicit && isAdmin)) {
       const selection = await db.orderItemCourseSelection.findUnique({
         where: {
           orderItemId_courseId: {
@@ -565,7 +570,6 @@ export async function autobook(
     }
 
     // Säkerhetscheck: admin får boka för andra, övriga bara för sina egna köp.
-    const isAdmin = sessionUser.role === "admin";
     if (!isAdmin && purchase.userId !== sessionUser.id) return [];
 
     const aClip = calcRemainingCount({ purchase, purchaseItem });
