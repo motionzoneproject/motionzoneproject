@@ -5,6 +5,7 @@ import {
   getUsersWithPurchasedProductsWithCourseInIt,
   type StudentWithPurchaseItemsWithCourse,
 } from "@/lib/actions/admin";
+import { getBookingAttendance } from "@/lib/actions/attendance-actions";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import { AttendeDialogUI } from "./AttendenceDialogUI";
 
@@ -18,9 +19,13 @@ export async function AttendeDialog({ lesson }: Props) {
   const studentsAndPurchases: StudentWithPurchaseItemsWithCourse[] =
     await getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId);
 
-  const bookings: BookingWithUserAndParticipant[] = await getBookings(
-    lesson.id,
-  );
+  const [bookings, attendance]: [
+    BookingWithUserAndParticipant[],
+    Awaited<ReturnType<typeof getBookingAttendance>>,
+  ] = await Promise.all([
+    getBookings(lesson.id),
+    getBookingAttendance(lesson.id),
+  ]);
 
   return (
     <AttendeDialogUI
@@ -28,6 +33,7 @@ export async function AttendeDialog({ lesson }: Props) {
       lesson={lesson}
       studentsAndPurchases={studentsAndPurchases}
       bookings={bookings}
+      attendance={attendance}
     />
   );
 }

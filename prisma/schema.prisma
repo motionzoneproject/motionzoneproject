@@ -47,6 +47,9 @@ model User {
   rosterEntries        CourseRosterEntry[] @relation("RosterStudent")
   changedRosterEntries CourseRosterEntry[] @relation("RosterChangedBy")
 
+  attendance       Attendance[] @relation("AttendanceStudent")
+  markedAttendance Attendance[] @relation("AttendanceMarkedBy")
+
   role       String? // So can only be one of the enum roles.
   banned     Boolean?  @default(false)
   banReason  String?
@@ -152,6 +155,8 @@ model Lesson {
   teacher   User   @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Restrict) // Hämtas från den Course som den tillhör(som en lärare skapat, och därmed teacherId) när lesson skapas.
 
   bookings Booking[] // Kopplar till bokningar, och där också vilka användare som bokat tillfället.
+
+  attendance Attendance[] // Vem som faktiskt var på plats. Fristående från bokningarna.
 
   schemaItemId String // Vilket schema är det som skapat tillfället. Tänker också att det blir lättare att om man flyttar schemaItem till nu dag / tid, så uppdaterar vi med kod alla med just detta schemaItemId.
 
@@ -499,6 +504,53 @@ model Order {
   @@map("order")
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+// Närvaro är ett eget register, fristående från Booking.
+//
+// En bokning säger att eleven har rätt att gå på lektionen och drar ett klipp;
+// närvaron säger om hen faktiskt kom. Att slå ihop dem, som systemet gjorde
+// förut, gör varje bock till en ändring av kundens ekonomi — och gör det
+// omöjligt att markera närvaro för någon som lagts till i kursen för hand.
+//
+// Vilka som står i listan avgörs av kursens elevlista (src/lib/course-roster.ts
+// och CourseRosterEntry), samma lista som "Hantera elever" visar.
+model Attendance {
+  id String @id @default(uuid())
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Eleven är en deltagare eller ett konto. studentKey ("participant:<id>" /
+  // "user:<id>") finns som egen kolumn för att unikheten ska gå att
+  // garantera — Postgres räknar NULL som unikt, så ett index på de två
+  // nullbara kolumnerna hade släppt igenom dubbletter.
+  studentKey String
+
+  userId String?
+  user   User?   @relation("AttendanceStudent", fields: [userId], references: [id], onDelete: Cascade)
+
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  status AttendanceStatus
+
+  markedByUserId String
+  markedBy       User   @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lessonId, studentKey])
+  @@index([lessonId])
+  @@index([userId])
+  @@index([participantId])
+  @@map("attendance")
+}
+
 enum RosterStatus {
   ADDED
   REMOVED
@@ -660,6 +712,7 @@ model Participant {
   purchases  Purchase[]
 
   rosterEntries CourseRosterEntry[]
+  attendance    Attendance[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

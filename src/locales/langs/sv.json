@@ -394,7 +394,10 @@
       "submitBook": "Boka",
       "close": "Close",
       "yourselfFallback": "Du",
-      "delErrorPrefix": "Något gick fel, kunde inte ta bort bokning."
+      "delErrorPrefix": "Något gick fel, kunde inte ta bort bokning.",
+      "attendance": "Närvaro",
+      "legendPresent": "Närvarande",
+      "legendAbsent": "Frånvarande"
     },
     "orderHistory": {
       "title": "Orderhistorik",
@@ -482,7 +485,15 @@
       "create": "Skapa lärarprofil",
       "titleEdit": "Redigera lärarprofil",
       "titleCreate": "Skapa lärarprofil"
-    }
+    },
+    "attendanceTitle": "Närvaro",
+    "attendanceDescription": "Lektionerna där läraren har tagit närvaro.",
+    "attendanceEmpty": "Ingen närvaro registrerad ännu.",
+    "attendancePresent": "Närvarande",
+    "attendanceAbsent": "Frånvarande",
+    "attendanceSummary": "{{present}} av {{total}} lektioner närvarande",
+    "attendanceShowAll": "Visa all närvaro ({{count}}st)",
+    "attendanceShowLess": "Visa mindre"
   },
   "legal": {
     "lastUpdated": "Senast uppdaterad"

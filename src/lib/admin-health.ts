@@ -103,7 +103,7 @@ export type HealthFix =
        * Ta bort en bokning som inte borde ligga kvar och lägga tillbaka
        * klippet. Entydigt i två fall: lektionen är inställd, eller samma köp
        * är bokat flera gånger på samma lektion. Motsvarar papperskorgen i
-       * närvarodialogen, fast utan att behöva leta upp lektionen först.
+       * lektionens bokningsdialog, fast utan att behöva leta upp lektionen först.
        */
       kind: "booking-remove";
       lessonId: string;
@@ -434,9 +434,9 @@ const checks: Check[] = [
       "Klippen borde ha återförts när lektionen ställdes in. Eleven har blivit av med ett tillfälle.",
     howTo: {
       steps: [
-        'Klicka "Åtgärda" här — bokningen tas bort och klippet läggs tillbaka på elevens saldo, precis som när man tar bort någon ur närvarolistan.',
+        'Klicka "Åtgärda" här — bokningen tas bort och klippet läggs tillbaka på elevens saldo, precis som när man tar bort någon ur lektionens bokningar.',
         "Manuellt: öppna lektionen via länken på raden — lektionslistan filtrerad på kursen, dagen och Status: Inställda.",
-        'Klicka knappen i kolumnen "Närvaro" och sedan papperskorgen ("Ta bort från lektion") på eleven.',
+        'Klicka knappen i kolumnen "Bokningar" och sedan papperskorgen ("Ta bort från lektion") på eleven.',
       ],
     },
     fixHref: "/admin/lectures?status=cancelled",
@@ -983,7 +983,7 @@ const checks: Check[] = [
       "Bokningens purchaseItem pekar på en annan kurs än lektionen tillhör. Klipp har dragits från fel kurs.",
     howTo: {
       steps: [
-        'Öppna lektionen via länken på raden, klicka knappen i kolumnen "Närvaro" och ta bort eleven med papperskorgen ("Ta bort från lektion"). Klippet återförs.',
+        'Öppna lektionen via länken på raden, klicka knappen i kolumnen "Bokningar" och ta bort eleven med papperskorgen ("Ta bort från lektion"). Klippet återförs.',
         "Boka sedan in eleven på rätt lektion.",
         'Gäller det hela köpet byter du i stället kurs på raden: knappen i kolumnen "Produkter" på /admin/students, dialogen "Ändra produkter".',
       ],
@@ -1043,7 +1043,7 @@ const checks: Check[] = [
     howTo: {
       steps: [
         'Klicka "Åtgärda" här — de extra bokningarna tas bort, en behålls, och ett klipp läggs tillbaka för varje borttagen rad.',
-        'Manuellt: öppna lektionen via länken på raden, klicka knappen i kolumnen "Närvaro" och ta bort den extra raden med papperskorgen ("Ta bort från lektion").',
+        'Manuellt: öppna lektionen via länken på raden, klicka knappen i kolumnen "Bokningar" och ta bort den extra raden med papperskorgen ("Ta bort från lektion").',
       ],
     },
     fixHref: "/admin/lectures",

@@ -17,7 +17,14 @@ import type {
   PurchaseItem,
   User,
 } from "@/generated/prisma/client";
+import type { AttendanceStatus } from "@/generated/prisma/enums";
 import { removeUserFromLesson } from "@/lib/actions/admin";
+
+const attendanceLabel = {
+  PRESENT: { text: "Närvarande", className: "text-emerald-600" },
+  ABSENT: { text: "Frånvarande", className: "text-amber-600" },
+  none: { text: "Ingen närvaro", className: "text-amber-600" },
+};
 
 export function AttendeceItem({
   booking,
@@ -25,13 +32,19 @@ export function AttendeceItem({
   participant,
   purchaseItem,
   product,
+  attendance,
 }: {
   booking: Booking;
   participant: Participant | null;
   user: User;
   purchaseItem: PurchaseItem;
   product: Product;
+  /** Elevens närvaro på lektionen. Undefined när närvaron inte är tagen. */
+  attendance?: AttendanceStatus | null;
 }) {
+  const label =
+    attendance === undefined ? null : attendanceLabel[attendance ?? "none"];
+
   const ownerName = user.name;
   const partName = participant?.name ?? ownerName;
   const displayName =
@@ -44,7 +57,17 @@ export function AttendeceItem({
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{displayName}</ItemTitle>
-        <ItemDescription>Produkt: {product.name}</ItemDescription>
+        <ItemDescription>
+          Produkt: {product.name}
+          {label && (
+            <>
+              {" · "}
+              <span className={`font-medium ${label.className}`}>
+                {label.text}
+              </span>
+            </>
+          )}
+        </ItemDescription>
       </ItemContent>
       <ItemActions>
         <Button

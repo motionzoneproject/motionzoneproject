@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
-import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
-import { getCourseName } from "@/lib/tools";
+import {
+  type LoadedCourseRoster,
+  loadCourseRoster,
+  type RosterStudent,
+} from "@/lib/course-roster-data";
 import prisma from "../prisma";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
@@ -233,30 +236,12 @@ export async function addStudentToCourse(
   };
 }
 
-export type CourseRosterStudent = {
-  studentKey: string;
-  name: string;
-  /** Kunden som köpt, när eleven är en deltagare. */
-  customerName: string | null;
-  /** Produkterna som placerar eleven i kursen. Tom för en manuellt tillagd. */
-  products: string[];
-  /** Bokningar i kursen som inte är avbokade, kommande och tidigare. */
-  bookings: number;
-  addedManually: boolean;
-};
-
-export type CourseRoster = {
-  courseId: string;
-  courseName: string;
-  students: CourseRosterStudent[];
-};
+export type CourseRosterStudent = RosterStudent;
+export type CourseRoster = LoadedCourseRoster;
 
 /**
- * Vem som går en kurs, för "Hantera elever".
- *
- * Samma regel som elevlistan och antalet på kurssidan: köpen och bokningarna
- * enligt course-roster, sedan studions egna ändringar — en borttagning vinner
- * alltid, ett manuellt tillägg läggs till. Samma lista, var den än öppnas.
+ * Vem som går en kurs, för "Hantera elever". Listan byggs i
+ * course-roster-data, som även närvaron använder.
  *
  * @auth Admin eller kursens lärare
  */
@@ -264,112 +249,7 @@ export async function getCourseRoster(
   courseId: string,
 ): Promise<CourseRoster | null> {
   if (!(await mayManageCourse(courseId))) return null;
-
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: {
-      id: true,
-      name: true,
-      minAge: true,
-      maxAge: true,
-      adult: true,
-      level: true,
-    },
-  });
-  if (!course) return null;
-
-  const [rows, entries] = await Promise.all([
-    prisma.purchaseItem.findMany({
-      where: { courseId },
-      select: {
-        courseId: true,
-        orderItem: {
-          select: { courseSelections: { select: { courseId: true } } },
-        },
-        _count: { select: { bookings: { where: { cancelled: false } } } },
-        purchase: {
-          select: {
-            userId: true,
-            participantId: true,
-            user: { select: { name: true } },
-            participant: { select: { name: true } },
-            product: { select: { name: true, autobook: true } },
-            _count: { select: { PurchaseItems: true } },
-          },
-        },
-      },
-    }),
-    prisma.courseRosterEntry.findMany({
-      where: { courseId },
-      select: {
-        studentKey: true,
-        status: true,
-        user: { select: { name: true } },
-        participant: {
-          select: { name: true, addedBy: { select: { name: true } } },
-        },
-      },
-    }),
-  ]);
-
-  const removed = new Set(
-    entries.filter((e) => e.status === "REMOVED").map((e) => e.studentKey),
-  );
-
-  const students = new Map<string, CourseRosterStudent>();
-
-  for (const row of rows) {
-    const placed = placesStudentInCourse({
-      courseId: row.courseId,
-      selectedCourseIds: row.orderItem.courseSelections.map((s) => s.courseId),
-      autobook: row.purchase.product.autobook,
-      courseCount: row.purchase._count.PurchaseItems,
-      activeBookings: row._count.bookings,
-    });
-    if (!placed) continue;
-
-    const key = studentKeyOf(row.purchase);
-    if (removed.has(key)) continue;
-
-    const existing = students.get(key);
-    if (existing) {
-      existing.products.push(row.purchase.product.name);
-      existing.bookings += row._count.bookings;
-      continue;
-    }
-
-    students.set(key, {
-      studentKey: key,
-      name: row.purchase.participant?.name ?? row.purchase.user.name,
-      customerName: row.purchase.participant ? row.purchase.user.name : null,
-      products: [row.purchase.product.name],
-      bookings: row._count.bookings,
-      addedManually: false,
-    });
-  }
-
-  for (const entry of entries) {
-    if (entry.status !== "ADDED" || students.has(entry.studentKey)) continue;
-    const name = entry.participant?.name ?? entry.user?.name;
-    if (!name) continue;
-
-    students.set(entry.studentKey, {
-      studentKey: entry.studentKey,
-      name,
-      customerName: entry.participant?.addedBy.name ?? null,
-      products: [],
-      bookings: 0,
-      addedManually: true,
-    });
-  }
-
-  return {
-    courseId: course.id,
-    courseName: getCourseName(course),
-    students: [...students.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, "sv"),
-    ),
-  };
+  return loadCourseRoster(courseId);
 }
 
 /**

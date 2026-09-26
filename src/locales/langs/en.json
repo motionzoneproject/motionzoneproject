@@ -394,7 +394,10 @@
       "submitBook": "Book",
       "close": "Close",
       "yourselfFallback": "You",
-      "delErrorPrefix": "Something went wrong, could not remove booking."
+      "delErrorPrefix": "Something went wrong, could not remove booking.",
+      "attendance": "Attendance",
+      "legendPresent": "Present",
+      "legendAbsent": "Absent"
     },
     "orderHistory": {
       "title": "Order history",
@@ -482,7 +485,15 @@
       "create": "Create teacher profile",
       "titleEdit": "Edit teacher profile",
       "titleCreate": "Create teacher profile"
-    }
+    },
+    "attendanceTitle": "Attendance",
+    "attendanceDescription": "Lessons where the teacher has taken attendance.",
+    "attendanceEmpty": "No attendance recorded yet.",
+    "attendancePresent": "Present",
+    "attendanceAbsent": "Absent",
+    "attendanceSummary": "{{present}} of {{total}} lessons attended",
+    "attendanceShowAll": "Show all attendance ({{count}})",
+    "attendanceShowLess": "Show less"
   },
   "legal": {
     "lastUpdated": "Last updated"

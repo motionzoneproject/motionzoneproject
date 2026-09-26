@@ -314,13 +314,13 @@ export async function grantTeacherRole(userId: string): Promise<Result> {
 
 /**
  * Tar bort bokningar som inte borde ligga kvar och lägger tillbaka klippen —
- * samma sak som papperskorgen i närvarodialogen gör, fast utan att man först
+ * samma sak som papperskorgen i bokningsdialogen gör, fast utan att man först
  * måste leta upp lektionen i lektionslistan.
  *
  * Bara två fall är entydiga nog att få en knapp: lektionen är inställd (då ska
  * ingen bokning ligga kvar på den) och samma köp är bokat flera gånger på
  * samma lektion (då ska en ligga kvar). Allt annat kräver ett beslut om vilken
- * bokning som är den rätta och görs i närvarodialogen.
+ * bokning som är den rätta och görs i bokningsdialogen.
  *
  * Förutsättningen kontrolleras här och inte bara i kontrollen: översikten kan
  * vara några minuter gammal, och en avställd lektion kan ha återuppstått.
@@ -347,7 +347,7 @@ export async function removeStaleBooking(
     if (reason === "cancelled" && !lesson.cancelled) {
       return {
         success: false,
-        msg: "Lektionen är inte inställd längre. Ska bokningen ändå bort får du ta den i närvarodialogen.",
+        msg: "Lektionen är inte inställd längre. Ska bokningen ändå bort får du ta den under lektionens bokningar.",
       };
     }
 

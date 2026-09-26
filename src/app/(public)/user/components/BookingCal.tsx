@@ -13,6 +13,7 @@ import {
   ItemContent,
   ItemDescription,
 } from "@/components/ui/item";
+import type { MyAttendance } from "@/lib/actions/attendance-actions";
 import {
   calcRemainingCount,
   hasRemainingCount,
@@ -39,13 +40,21 @@ interface Props {
   bookings: BookingWithLesson[]; // Alla bokningar gjorda av kunden.
   purchaseItems: UserPurchaseWithProduct[]; // Alla produkter (purchaseItems) som tillhör kunden, med info om vilka kurser kunden kan boka med en viss produkt.
   initDate?: Date;
+  /** Lärarens närvaromarkeringar för kunden och deltagarna. */
+  attendance?: MyAttendance[];
 }
+
+// En liten prick under datumet. Dagen kan redan vara en ifylld cirkel för en
+// bokning, så pricken får en ring i bakgrundsfärgen för att synas mot den.
+const dot =
+  "after:absolute after:bottom-0 after:left-1/2 after:size-2 after:-translate-x-1/2 after:rounded-full after:ring-2 after:ring-background";
 
 export default function BookingCal({
   lessons,
   bookings,
   purchaseItems,
   initDate,
+  attendance = [],
 }: Props) {
   const { t, i18n } = useTranslation();
   const lang: AppLang = normalizeLang(i18n.language);
@@ -137,6 +146,32 @@ export default function BookingCal({
     [allRelevantLessons],
   );
 
+  // Närvaron är ett eget register och visas för sig, oberoende av bokningarna.
+  // En dag där någon var närvarande får en grön prick; annars, om någon var
+  // frånvarande, en gul.
+  const { presentDays, absentDays } = useMemo(() => {
+    const present = new Map<string, Date>();
+    const absent = new Map<string, Date>();
+    for (const a of attendance) {
+      const key = formatDateToInputStr(a.startTime);
+      if (a.status === "PRESENT") present.set(key, a.startTime);
+      else absent.set(key, a.startTime);
+    }
+    for (const key of present.keys()) absent.delete(key);
+    return {
+      presentDays: [...present.values()],
+      absentDays: [...absent.values()],
+    };
+  }, [attendance]);
+
+  const selectedDateAttendance = useMemo(() => {
+    if (!date) return [];
+    const selectedDateStr = formatDateToInputStr(date);
+    return attendance.filter(
+      (a) => formatDateToInputStr(a.startTime) === selectedDateStr,
+    );
+  }, [date, attendance]);
+
   // 2. Hitta lektioner för den valda dagen baserat på alla relevanta lektioner
   const selectedDateLessons = useMemo(() => {
     if (!date) return [];
@@ -163,6 +198,12 @@ export default function BookingCal({
               isBooked: bookedDays,
               cancelled: cancelledDays,
               isAvailable: availableDays,
+              attendedPresent: presentDays,
+              attendedAbsent: absentDays,
+            }}
+            modifiersClassNames={{
+              attendedPresent: `${dot} after:bg-emerald-500`,
+              attendedAbsent: `${dot} after:bg-amber-500`,
             }}
             modifiersStyles={{
               isBooked: {
@@ -195,6 +236,22 @@ export default function BookingCal({
             <div className="h-3 w-3 rounded-full bg-red-500" />
             <span>{t("user.booking.legendCancelled")}</span>
           </div>
+          {attendance.length > 0 && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="flex h-3 w-3 items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                </div>
+                <span>{t("user.booking.legendPresent")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-3 w-3 items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                </div>
+                <span>{t("user.booking.legendAbsent")}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -208,6 +265,32 @@ export default function BookingCal({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {selectedDateAttendance.length > 0 && (
+              <div className="space-y-1.5 border-b pb-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("user.booking.attendance")}
+                </p>
+                {selectedDateAttendance.map((a) => (
+                  <p key={a.id} className="text-sm">
+                    {dbToFormTime(a.startTime)} {a.courseName[lang]}
+                    {" · "}
+                    {a.participantName ?? t("user.booking.yourselfShort")}
+                    {" · "}
+                    <span
+                      className={`font-semibold ${
+                        a.status === "PRESENT"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {a.status === "PRESENT"
+                        ? t("user.attendancePresent")
+                        : t("user.attendanceAbsent")}
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
                 const lessonPurchaseItems = purchaseItems.filter(
