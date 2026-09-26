@@ -1,11 +1,12 @@
-import { EditIcon, EyeOffIcon, Search } from "lucide-react";
+import { EditIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Course, Style, User } from "@/generated/prisma/client";
-import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
+import { getCourseRoster } from "@/lib/actions/roster-actions";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
+import { CourseRosterDialog } from "../components/CourseRosterDialog";
 import DeleteCourseBtn from "./components/DelCourseBtn";
 import ToggleCourseActiveBtn from "./components/ToggleCourseActiveBtn";
 import EditCourseForm from "./forms/EditCourseForm";
@@ -29,53 +30,11 @@ export default async function CourseItem({
     where: { courseId: course.id },
   });
 
-  // Elever som går kursen, enligt samma regel som elevlistan länken leder
-  // till. Att räkna alla köp med tillgång gav terminskortens och programmens
-  // köpare i nästan varje kurs.
-  const courseRows = await prisma.purchaseItem.findMany({
-    where: { courseId: course.id },
-    select: {
-      courseId: true,
-      orderItem: {
-        select: { courseSelections: { select: { courseId: true } } },
-      },
-      _count: { select: { bookings: { where: { cancelled: false } } } },
-      purchase: {
-        select: {
-          userId: true,
-          participantId: true,
-          product: { select: { autobook: true } },
-          _count: { select: { PurchaseItems: true } },
-        },
-      },
-    },
-  });
-
-  const students = new Set(
-    courseRows
-      .filter((row) =>
-        placesStudentInCourse({
-          courseId: row.courseId,
-          selectedCourseIds: row.orderItem.courseSelections.map(
-            (selection) => selection.courseId,
-          ),
-          autobook: row.purchase.product.autobook,
-          courseCount: row.purchase._count.PurchaseItems,
-          activeBookings: row._count.bookings,
-        }),
-      )
-      .map((row) => studentKeyOf(row.purchase)),
-  );
-
-  // Studions manuella ändringar vinner, precis som i elevlistan.
-  const rosterEntries = await prisma.courseRosterEntry.findMany({
-    where: { courseId: course.id },
-    select: { studentKey: true, status: true },
-  });
-  for (const entry of rosterEntries) {
-    if (entry.status === "REMOVED") students.delete(entry.studentKey);
-    else students.add(entry.studentKey);
-  }
+  // Elever som går kursen, från samma funktion som "Hantera elever" visar —
+  // antalet och listan kan då inte säga olika saker. Att räkna alla köp med
+  // tillgång gav terminskortens och programmens köpare i nästan varje kurs.
+  const roster = await getCourseRoster(course.id);
+  const studentCount = roster?.students.length ?? 0;
 
   return (
     <TableRow className={!course.active ? "opacity-60" : ""}>
@@ -93,16 +52,8 @@ export default async function CourseItem({
       <TableCell>{teacherName ?? "Saknas"}</TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <span>{students.size}st</span>
-          <Link
-            href={
-              `../admin/students?course=${course.id}` /**fix: finns ej kursfilter ännu i admin/students, så kolla sen när det kommeer så det blir rätt. */
-            }
-          >
-            <Button variant="ghost">
-              <Search className="h-4 w-4" /> Elever
-            </Button>
-          </Link>
+          <span>{studentCount}st</span>
+          <CourseRosterDialog courseId={course.id} />
         </div>
       </TableCell>
       <TableCell>

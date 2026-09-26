@@ -102,7 +102,7 @@ export default async function Page({
             <TableRow>
               <TableHead>Kurs</TableHead>
               <TableHead>Lärare</TableHead>
-              <TableHead>Sålda produkter / sök elever</TableHead>
+              <TableHead>Elever</TableHead>
               <TableHead>Lektioner</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>

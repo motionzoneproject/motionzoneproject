@@ -41,13 +41,13 @@ import {
   formatFriendlyDateTime,
 } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
-import { ProductEditorDialog } from "../../components/ProductEditorDialog";
-import { ScheduleDialog } from "../../components/ScheduleDialog";
-import type { StudentSummary } from "../page";
 import {
   AddStudentToCourseDialog,
   RemoveFromCourseButton,
-} from "./CourseRosterControls";
+} from "../../components/CourseRosterControls";
+import { ProductEditorDialog } from "../../components/ProductEditorDialog";
+import { ScheduleDialog } from "../../components/ScheduleDialog";
+import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
 import StudentUserEditDialog from "./StudentUserEditDialog";
