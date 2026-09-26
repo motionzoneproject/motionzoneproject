@@ -1432,7 +1432,10 @@ export async function addUserInLesson(
     // hämta purchaseItem och purchase för kontroller
     const pitem = await prisma.purchaseItem.findUnique({
       where: { id: validated.purchaseItemId },
-      include: { purchase: true, course: true },
+      include: {
+        purchase: { include: { participant: { select: { userId: true } } } },
+        course: true,
+      },
     });
 
     if (!pitem) return { success: false, msg: "Ingen purchaseItem hittades." };
@@ -1440,9 +1443,16 @@ export async function addUserInLesson(
     // Bokningen ska göras på den bokades eget köp. Kontrollen ovan säger bara
     // att en kund bokar in sig själv, inte att kursraden är hens — med en
     // annan kunds purchaseItemId gick det att boka på någon annans köp och
-    // dra av deras saldo. Gäller alla roller: en bokning där userId inte är
-    // köpets ägare är en trasig rad, oavsett vem som skapade den.
-    if (pitem.purchase.userId !== validated.userId) {
+    // dra av deras saldo. Gäller alla roller.
+    //
+    // Köpet är den bokades när hen äger det, eller när hen är deltagaren på
+    // det med ett eget konto: en förälder köper, och den vuxna eller äldre
+    // deltagaren bokar själv. Profilsidan visar dem köpet, och deras
+    // bokningar hämtas och avbokas på deras eget userId.
+    const ownsPurchase = pitem.purchase.userId === validated.userId;
+    const isPurchaseParticipant =
+      pitem.purchase.participant?.userId === validated.userId;
+    if (!ownsPurchase && !isPurchaseParticipant) {
       return { success: false, msg: "Kursraden tillhör inte eleven." };
     }
 
