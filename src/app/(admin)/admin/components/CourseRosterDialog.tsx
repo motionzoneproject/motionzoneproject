@@ -73,6 +73,11 @@ export function CourseRosterDialog({
             Ta bort en elev som slutat: kommande bokningar tas bort och saldot
             återställs, lektioner som varit står kvar. Lägg till en elev med köp
             så bokas hen in; utan köp läggs hen till för hand.
+            <br />
+            Listan ligger till grund för närvarolistorna: den som bokas in här
+            står med på kursens kommande lektioner, och den som tas bort
+            försvinner från dem. En elev som lagts till för hand har inga
+            bokningar och syns därför inte på lektionerna.
           </DialogDescription>
         </DialogHeader>
 
