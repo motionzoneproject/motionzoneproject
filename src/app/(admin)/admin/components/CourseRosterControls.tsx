@@ -151,17 +151,53 @@ export function AddStudentSearch({
               <div className="font-medium">{candidate.name}</div>
               <div className="text-xs text-muted-foreground">
                 {candidate.detail}
+                {!candidate.hasPurchase && (
+                  <span className="text-amber-700 dark:text-amber-400">
+                    {" · inget köp i kursen"}
+                  </span>
+                )}
               </div>
             </div>
-            <Button
-              size="sm"
-              onClick={() => add(candidate)}
-              disabled={pendingKey !== null}
-            >
-              {pendingKey === candidate.studentKey
-                ? "Lägger till…"
-                : "Lägg till"}
-            </Button>
+            {candidate.hasPurchase ? (
+              <Button
+                size="sm"
+                onClick={() => add(candidate)}
+                disabled={pendingKey !== null}
+              >
+                {pendingKey === candidate.studentKey
+                  ? "Lägger till…"
+                  : "Lägg till"}
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" disabled={pendingKey !== null}>
+                    {pendingKey === candidate.studentKey
+                      ? "Lägger till…"
+                      : "Lägg till"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Lägga till {candidate.name} utan köp?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Eleven har inget köp i kursen. Hen blir inte fakturerad
+                      och ser inte kursen på sin profil. Passar för en
+                      provlektion eller kontant betalning — eleven listas då i
+                      felkontrollen som en påminnelse.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => add(candidate)}>
+                      Lägg till ändå
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         ))}
         {!isSearching && searched && results.length === 0 && (

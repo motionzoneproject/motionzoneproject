@@ -9,6 +9,7 @@
 
 import type { Prisma } from "@/generated/prisma/client";
 import { calcRemainingCount, showRemaining } from "./actions/purchase-helpers";
+import { studentKeyOf } from "./course-roster";
 import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
@@ -185,6 +186,68 @@ const take = HEALTH_ROW_LIMIT;
  * Kursen måste ha kommande lektioner — en avslutad kurs har inga bokningar
  * kvar att göra, och skulle annars flaggas för evigt när terminen tar slut.
  */
+/**
+ * Elever som lagts till i en kurs för hand och saknar köp i den.
+ *
+ * Tillägget finns för provlektioner och kontant betalning, men det finns
+ * ingen order bakom, så eleven syns aldrig bland ordrarna och faktureras
+ * aldrig av sig själv. Bara kurser med lektioner kvar räknas: en avslutad
+ * kurs går inte att följa upp, och skulle annars flaggas för evigt.
+ *
+ * Ett tillägg där eleven har ett köp i kursen — till exempel när en lärare
+ * lagt till och bokningen väntar på admin — räknas inte hit.
+ */
+async function manualStudentsWithoutPurchase() {
+  const entries = await prisma.courseRosterEntry.findMany({
+    where: {
+      status: "ADDED",
+      course: {
+        lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
+      },
+    },
+    select: {
+      id: true,
+      courseId: true,
+      studentKey: true,
+      createdAt: true,
+      course: {
+        select: {
+          name: true,
+          minAge: true,
+          maxAge: true,
+          adult: true,
+          level: true,
+        },
+      },
+      user: { select: { name: true, email: true } },
+      participant: {
+        select: {
+          name: true,
+          addedBy: { select: { name: true, email: true } },
+        },
+      },
+      changedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  if (entries.length === 0) return [];
+
+  const items = await prisma.purchaseItem.findMany({
+    where: { courseId: { in: [...new Set(entries.map((e) => e.courseId))] } },
+    select: {
+      courseId: true,
+      purchase: { select: { userId: true, participantId: true } },
+    },
+  });
+  const withPurchase = new Set(
+    items.map((i) => `${i.courseId}|${studentKeyOf(i.purchase)}`),
+  );
+
+  return entries.filter(
+    (e) => !withPurchase.has(`${e.courseId}|${e.studentKey}`),
+  );
+}
+
 /**
  * Aktiva paket utan kursbegränsning som autobokar fler än två kurser.
  *
@@ -921,6 +984,44 @@ const checks: Check[] = [
           };
         }),
       );
+    },
+  },
+  {
+    id: "manual-student-without-purchase",
+    singular: "elev är tillagd i en kurs utan köp",
+    plural: "elever är tillagda i kurser utan köp",
+    description:
+      'Eleven lades till för hand i "Hantera elever" och har inget köp i kursen. Det finns ingen order bakom, så eleven faktureras inte och ser inte kursen på sin profilsida.',
+    howTo: {
+      steps: [
+        "Kontrollera om eleven har betalat på annat sätt, till exempel kontant eller Swish, eller om det var en provlektion.",
+        "Ska eleven fortsätta och betala via hemsidan: be kunden anmäla sig till kursen, eller lägg ordern åt kunden. Tillägget försvinner då ur den här listan av sig själv.",
+        'Ska eleven inte gå kursen: raden här öppnar elevlistan filtrerad på kursen. Klicka personen med minustecken ("Ta bort från kursen") längst till höger på elevens rad, eller gör samma sak under "Hantera elever" på /admin/courses.',
+      ],
+      caveat:
+        "Har eleven redan betalat på annat sätt står hen kvar här tills kursen är slut. Det finns inget sätt att bocka av en rad, så använd listan som påminnelse, inte som en att göra-lista som ska bli tom.",
+    },
+    fixHref: "/admin/courses",
+    fixLabel: "Till kurser",
+    severity: "warning",
+    count: async () => (await manualStudentsWithoutPurchase()).length,
+    list: async () => {
+      const rows = await manualStudentsWithoutPurchase();
+      return rows.slice(0, take).map((row) => {
+        const studentName = row.participant?.name ?? row.user?.name ?? "Okänd";
+        return {
+          id: row.id,
+          title: studentName,
+          detail: [
+            getCourseName(row.course),
+            row.participant ? `kund: ${row.participant.addedBy.name}` : null,
+            `tillagd av ${row.changedBy.name} ${formatShortFriendlyDate(row.createdAt)}`,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          href: `/admin/students?course=${row.courseId}`,
+        };
+      });
     },
   },
   {
