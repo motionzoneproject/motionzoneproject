@@ -15,6 +15,11 @@ export type RosterCandidate = {
   studentKey: string;
   name: string;
   detail: string;
+  /**
+   * Har ett köp som gäller kursen. Utan köp läggs eleven till för hand, och
+   * det ska admin få veta innan: då finns ingen order och ingen faktura.
+   */
+  hasPurchase: boolean;
 };
 
 type ParsedKey =
@@ -413,16 +418,35 @@ export async function searchStudentsForCourse(
     }),
   ]);
 
+  const items = await prisma.purchaseItem.findMany({
+    where: {
+      courseId,
+      OR: [
+        { purchase: { participantId: { in: participants.map((p) => p.id) } } },
+        {
+          purchase: {
+            participantId: null,
+            userId: { in: users.map((u) => u.id) },
+          },
+        },
+      ],
+    },
+    select: { purchase: { select: { userId: true, participantId: true } } },
+  });
+  const withPurchase = new Set(items.map((i) => studentKeyOf(i.purchase)));
+
   return [
     ...participants.map((p) => ({
       studentKey: `participant:${p.id}`,
       name: p.name,
       detail: `Deltagare · kund: ${p.addedBy.name}${p.email ? ` · ${p.email}` : ""}`,
+      hasPurchase: withPurchase.has(`participant:${p.id}`),
     })),
     ...users.map((u) => ({
       studentKey: `user:${u.id}`,
       name: u.name,
       detail: `Konto · ${u.email}`,
+      hasPurchase: withPurchase.has(`user:${u.id}`),
     })),
   ];
 }
