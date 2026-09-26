@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
+import { studentKeyOf } from "@/lib/course-roster";
 import {
   type LoadedCourseRoster,
   loadCourseRoster,
