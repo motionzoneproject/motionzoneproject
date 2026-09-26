@@ -227,13 +227,17 @@ export async function addStudentToCourse(
 
   revalidateRosterViews();
 
-  return {
-    success: true,
-    msg:
-      items.length > 0
-        ? `${name} är tillagd i kursen. Saldot räckte inte till några bokningar.`
-        : `${name} är tillagd i kursen utan köp — ingen bokning och inget saldo.`,
-  };
+  // Varför inget bokades: bara admin får boka på någon annans köp, så en
+  // lärare lägger alltid till för hand. För admin är saldot slut, eller så
+  // saknar kursen kommande lektioner.
+  const msg =
+    items.length === 0
+      ? `${name} är tillagd i kursen utan köp — ingen bokning och inget saldo.`
+      : session.user.role !== "admin"
+        ? `${name} är tillagd i kursen. Bokningar på elevens köp görs av admin.`
+        : `${name} är tillagd i kursen, men inga lektioner bokades — saldot är slut eller så saknar kursen kommande lektioner.`;
+
+  return { success: true, msg };
 }
 
 export type CourseRosterStudent = RosterStudent;
