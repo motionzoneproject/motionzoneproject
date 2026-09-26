@@ -9,7 +9,9 @@ import {
 import type { LessonWithData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import { getCourseName } from "@/lib/tools";
 import { cn } from "@/lib/utils";
+import { AttendanceDialog } from "../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../lectures/components/EditLesson";
 import { LessonCarouselInteractive } from "./LessonCarouselInteractive";
@@ -53,7 +55,7 @@ export function LessonCarousel({
                   {formatLongFriendlyDate(new Date(lesson.startTime))}
                 </div>
                 <CardTitle className="text-lg leading-tight line-clamp-2">
-                  {lesson.course.name}
+                  {getCourseName(lesson.course)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-2 space-y-2 text-sm">
@@ -79,19 +81,10 @@ export function LessonCarousel({
                   {lesson.message} {lesson.cancelled && "(Inställd)"}
                 </div>
               </CardContent>
-              <CardFooter className="pt-2 border-t text-xs flex flex-col justify-between text-foreground  gap-2">
-                <div className="flex  justify-between gap-6 w-full">
-                  <div className="font-bold ">
-                    <span className="p-2">Närvaro</span>
-                    <br />
-                    <AttendeDialog lesson={lesson} />
-                  </div>
-                  <div className="font-bold text-center">
-                    <span className="p-2">Status</span>
-                    <br />
-                    <EditLessonBtn lesson={lesson} />
-                  </div>
-                </div>
+              <CardFooter className="flex flex-wrap items-center gap-2 border-t pt-2 text-xs">
+                <AttendanceDialog lessonId={lesson.id} />
+                <AttendeDialog lesson={lesson} />
+                <EditLessonBtn lesson={lesson} />
               </CardFooter>
             </Card>
           </div>

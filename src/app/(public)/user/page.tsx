@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getMyAttendance } from "@/lib/actions/attendance-actions";
 import { getUserOrders } from "@/lib/actions/orders";
 import { getMyParticipants } from "@/lib/actions/participants";
 import { calcRemainingCount } from "@/lib/actions/purchase-helpers";
@@ -34,6 +35,7 @@ import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import { getDictionary } from "@/locales/get-dictionary";
 import { AutobookBtn } from "./AutobookBtn";
+import { AttendanceHistory } from "./components/AttendanceHistory";
 import BookingCal from "./components/BookingCal";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditEmailForm } from "./components/EditEmailForm";
@@ -73,6 +75,7 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
+  const attendance = await getMyAttendance();
   const purchaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
@@ -200,7 +203,10 @@ export default async function Page() {
               purchaseItems={purchaseItems}
               lessons={lessons}
               bookings={bookings}
+              attendance={attendance}
             />
+
+            <AttendanceHistory attendance={attendance} />
 
             <div className="mt-8 space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">

@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { bookedCount, type LessonWithData } from "@/lib/admin-overview";
 import { dbToFormTime } from "@/lib/time-convert";
+import { getCourseName } from "@/lib/tools";
+import { AttendanceDialog } from "../../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "../../lectures/components/attendence/AttendenceDialog";
 import { EditLessonBtn } from "../../lectures/components/EditLesson";
 
@@ -13,7 +15,7 @@ interface TodayLessonCardProps {
 }
 
 /**
- * En lektion idag, med närvaro och redigering direkt på kortet. Delas av
+ * En lektion idag, med närvaro, bokningar och redigering direkt på kortet. Delas av
  * admin- och lärarvyn så de inte glider isär — enda skillnaden är om lärarens
  * namn visas.
  */
@@ -26,7 +28,7 @@ export function TodayLessonCard({
       <CardContent className="space-y-2 pb-2">
         <div className="flex items-start justify-between gap-2">
           <span className="text-base font-semibold leading-tight">
-            {lesson.course.name}
+            {getCourseName(lesson.course)}
           </span>
           {lesson.cancelled && (
             <Badge
@@ -67,7 +69,8 @@ export function TodayLessonCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-wrap items-center gap-4 border-t pt-3 text-xs">
+      <CardFooter className="flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
+        <AttendanceDialog lessonId={lesson.id} />
         <AttendeDialog lesson={lesson} />
         <EditLessonBtn lesson={lesson} />
       </CardFooter>
@@ -89,7 +92,7 @@ export function TodayLessonRow({ lesson }: { lesson: LessonWithData }) {
         {dbToFormTime(new Date(lesson.endTime))}
       </span>
 
-      <span className="font-medium">{lesson.course.name}</span>
+      <span className="font-medium">{getCourseName(lesson.course)}</span>
 
       {lesson.schemaItem.studio && (
         <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -112,6 +115,7 @@ export function TodayLessonRow({ lesson }: { lesson: LessonWithData }) {
         <span className="tabular-nums text-muted-foreground">
           {bookedCount(lesson)} bokade
         </span>
+        <AttendanceDialog lessonId={lesson.id} />
         <AttendeDialog lesson={lesson} />
         <EditLessonBtn lesson={lesson} />
       </span>

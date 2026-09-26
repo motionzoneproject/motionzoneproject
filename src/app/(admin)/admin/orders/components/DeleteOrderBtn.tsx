@@ -79,8 +79,7 @@ export default function DeleteOrderBtn({
             <br />
             <br />
             Om ordern är godkänd förlorar kunden tillgång till sina produkter,
-            och bokningar (även gamla) försvinner helt ur systemet, inklusive
-            närvarohistorik för admin.
+            och bokningar (även gamla) försvinner helt ur systemet.
             <br />
             <br />
             Deltagare som skapats i samband med köpet finns kvar för kunden vid

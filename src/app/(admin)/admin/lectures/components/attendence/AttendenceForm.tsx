@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { AttendanceStatus } from "@/generated/prisma/enums";
 import {
   addUserInLesson,
   type BookingWithUserAndParticipant,
@@ -49,6 +50,8 @@ interface Props {
   lessonId: string;
   studentsAndPurchases: StudentWithPurchaseItemsWithCourse[];
   bookings: BookingWithUserAndParticipant[];
+  attendanceTaken: boolean;
+  statusOf: (b: BookingWithUserAndParticipant) => AttendanceStatus | null;
 }
 
 const formSchema = AddStudentToLessonForm;
@@ -62,6 +65,8 @@ export function AttendenceForm({
   lessonId,
   bookings,
   studentsAndPurchases,
+  attendanceTaken,
+  statusOf,
 }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
@@ -233,6 +238,7 @@ export function AttendenceForm({
           purchaseItem={b.purchaseItem}
           user={b.user}
           product={b.purchaseItem.purchase.product}
+          attendance={attendanceTaken ? statusOf(b) : undefined}
         />
       ))}
     </div>

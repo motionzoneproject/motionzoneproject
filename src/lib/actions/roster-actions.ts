@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
-import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
-import { getCourseName } from "@/lib/tools";
+import { studentKeyOf } from "@/lib/course-roster";
+import {
+  collectRosters,
+  type LoadedCourseRoster,
+  loadCourseRoster,
+  type RosterStudent,
+} from "@/lib/course-roster-data";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
 import { autobook } from "./server-actions";
@@ -249,36 +254,12 @@ export async function addStudentToCourse(
   return { success: true, msg };
 }
 
-export type CourseRosterStudent = {
-  studentKey: string;
-  name: string;
-  /** Kunden som köpt, när eleven är en deltagare. */
-  customerName: string | null;
-  /** Produkterna som placerar eleven i kursen. Tom för en manuellt tillagd. */
-  products: string[];
-  /** Bokningar i kursen som inte är avbokade, kommande och tidigare. */
-  bookings: number;
-  addedManually: boolean;
-  /**
-   * Bara på en order som väntar på godkännande. Eleven bokas in när ordern
-   * beviljas; till dess finns inget att ta bort, ordern nekas i stället.
-   */
-  pending: boolean;
-};
-
-export type CourseRoster = {
-  courseId: string;
-  courseName: string;
-  students: CourseRosterStudent[];
-};
+export type CourseRosterStudent = RosterStudent;
+export type CourseRoster = LoadedCourseRoster;
 
 /**
- * Vem som går en kurs, för "Hantera elever".
- *
- * Samma regel som elevlistan och antalet på kurssidan: köpen och bokningarna
- * enligt course-roster, ordrar som väntar på godkännande, sedan studions egna
- * ändringar — en borttagning vinner alltid, ett manuellt tillägg läggs till.
- * Samma lista, var den än öppnas.
+ * Vem som går en kurs, för "Hantera elever". Listan byggs i
+ * course-roster-data, som även närvaron och antalet på kurssidan använder.
  *
  * @auth Admin eller kursens lärare
  */
@@ -286,34 +267,11 @@ export async function getCourseRoster(
   courseId: string,
 ): Promise<CourseRoster | null> {
   if (!(await mayManageCourse(courseId))) return null;
-
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: {
-      id: true,
-      name: true,
-      minAge: true,
-      maxAge: true,
-      adult: true,
-      level: true,
-    },
-  });
-  if (!course) return null;
-
-  const rosters = await collectRosters([courseId]);
-  const students = rosters.get(courseId) ?? new Map();
-
-  return {
-    courseId: course.id,
-    courseName: getCourseName(course),
-    students: [...students.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, "sv"),
-    ),
-  };
+  return loadCourseRoster(courseId);
 }
 
 /**
- * Antalet elever per kurs, för kurssidan. Samma regel som "Hantera elever",
+ * Antalet elever per kurs, för kurssidan. Samma lista som "Hantera elever",
  * men för alla kurser på sidan i två frågor i stället för fyra per kurs.
  *
  * @auth Admin
@@ -327,189 +285,6 @@ export async function getCourseStudentCounts(
   return Object.fromEntries(
     courseIds.map((id) => [id, rosters.get(id)?.size ?? 0]),
   );
-}
-
-/**
- * Vem som går kurserna: köpen och bokningarna enligt course-roster, ordrar
- * som väntar på godkännande enligt samma regel, sedan studions egna
- * ändringar. En borttagning vinner alltid, ett manuellt tillägg läggs till. Gemensam för listan och antalet, så att de inte kan
- * säga olika saker.
- */
-async function collectRosters(
-  courseIds: string[],
-): Promise<Map<string, Map<string, CourseRosterStudent>>> {
-  const [rows, pendingItems, entries] = await Promise.all([
-    prisma.purchaseItem.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        orderItem: {
-          select: { courseSelections: { select: { courseId: true } } },
-        },
-        _count: { select: { bookings: { where: { cancelled: false } } } },
-        purchase: {
-          select: {
-            userId: true,
-            participantId: true,
-            user: { select: { name: true } },
-            participant: { select: { name: true } },
-            product: { select: { name: true, autobook: true } },
-            _count: { select: { PurchaseItems: true } },
-          },
-        },
-      },
-    }),
-    // Ordrar som väntar på godkännande, som elevlistan visar som "Ej
-    // beviljad än". Kursvalen gäller före produktens kurser.
-    prisma.orderItem.findMany({
-      where: {
-        order: { status: "AWAITING_APPROVAL" },
-        OR: [
-          { courseSelections: { some: { courseId: { in: courseIds } } } },
-          {
-            courseSelections: { none: {} },
-            product: { courses: { some: { courseId: { in: courseIds } } } },
-          },
-        ],
-      },
-      select: {
-        participantId: true,
-        participant: { select: { name: true } },
-        order: { select: { userId: true, user: { select: { name: true } } } },
-        product: {
-          select: {
-            name: true,
-            autobook: true,
-            courses: { select: { courseId: true } },
-          },
-        },
-        courseSelections: { select: { courseId: true } },
-      },
-    }),
-    prisma.courseRosterEntry.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        studentKey: true,
-        status: true,
-        user: { select: { name: true } },
-        participant: {
-          select: { name: true, addedBy: { select: { name: true } } },
-        },
-      },
-    }),
-  ]);
-
-  const removed = new Set(
-    entries
-      .filter((e) => e.status === "REMOVED")
-      .map((e) => `${e.courseId}|${e.studentKey}`),
-  );
-
-  const rosters = new Map<string, Map<string, CourseRosterStudent>>();
-  const rosterOf = (courseId: string) => {
-    let roster = rosters.get(courseId);
-    if (!roster) {
-      roster = new Map();
-      rosters.set(courseId, roster);
-    }
-    return roster;
-  };
-
-  for (const row of rows) {
-    const placed = placesStudentInCourse({
-      courseId: row.courseId,
-      selectedCourseIds: row.orderItem.courseSelections.map((s) => s.courseId),
-      autobook: row.purchase.product.autobook,
-      courseCount: row.purchase._count.PurchaseItems,
-      activeBookings: row._count.bookings,
-    });
-    if (!placed) continue;
-
-    const key = studentKeyOf(row.purchase);
-    if (removed.has(`${row.courseId}|${key}`)) continue;
-
-    const students = rosterOf(row.courseId);
-    const existing = students.get(key);
-    if (existing) {
-      existing.products.push(row.purchase.product.name);
-      existing.bookings += row._count.bookings;
-      continue;
-    }
-
-    students.set(key, {
-      studentKey: key,
-      name: row.purchase.participant?.name ?? row.purchase.user.name,
-      customerName: row.purchase.participant ? row.purchase.user.name : null,
-      products: [row.purchase.product.name],
-      bookings: row._count.bookings,
-      addedManually: false,
-      pending: false,
-    });
-  }
-
-  const wanted = new Set(courseIds);
-  for (const item of pendingItems) {
-    const ordered =
-      item.courseSelections.length > 0
-        ? item.courseSelections.map((s) => s.courseId)
-        : item.product.courses.map((c) => c.courseId);
-    const key = studentKeyOf({
-      participantId: item.participantId,
-      userId: item.order.userId,
-    });
-
-    for (const courseId of ordered) {
-      if (!wanted.has(courseId) || removed.has(`${courseId}|${key}`)) continue;
-      const placed = placesStudentInCourse({
-        courseId,
-        // Kursvalen är redan tillämpade i ordered.
-        selectedCourseIds: [],
-        autobook: item.product.autobook,
-        courseCount: ordered.length,
-        activeBookings: 0,
-      });
-      if (!placed) continue;
-
-      const students = rosterOf(courseId);
-      const existing = students.get(key);
-      if (existing) {
-        if (!existing.products.includes(item.product.name))
-          existing.products.push(item.product.name);
-        continue;
-      }
-
-      students.set(key, {
-        studentKey: key,
-        name: item.participant?.name ?? item.order.user.name,
-        customerName: item.participant ? item.order.user.name : null,
-        products: [item.product.name],
-        bookings: 0,
-        addedManually: false,
-        pending: true,
-      });
-    }
-  }
-
-  for (const entry of entries) {
-    if (entry.status !== "ADDED") continue;
-    const students = rosterOf(entry.courseId);
-    if (students.has(entry.studentKey)) continue;
-    const name = entry.participant?.name ?? entry.user?.name;
-    if (!name) continue;
-
-    students.set(entry.studentKey, {
-      studentKey: entry.studentKey,
-      name,
-      customerName: entry.participant?.addedBy.name ?? null,
-      products: [],
-      bookings: 0,
-      addedManually: true,
-      pending: false,
-    });
-  }
-
-  return rosters;
 }
 
 /**
