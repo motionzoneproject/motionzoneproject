@@ -17,11 +17,7 @@ import {
 } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
-import {
-  calcRemainingCount,
-  hasRemainingCount,
-  showRemaining,
-} from "./purchase-helpers";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 type Result = { success: boolean; msg: string };
@@ -32,11 +28,8 @@ export type AttendanceStudent = {
   participantId: string | null;
   name: string;
   customerName: string | null;
-  /** Saldot som text, "∞" för obegränsat. Null utan köp. */
-  remaining: string | null;
-  addedManually: boolean;
-  /** Står med på en order som väntar på godkännande. */
-  pending: boolean;
+  /** Har en bokning på lektionen. Bara upplysning — närvaron rör den inte. */
+  booked: boolean;
   /**
    * Står i kursens elevlista. Den som inte gör det finns med för att hen
    * redan har en markering på lektionen — till exempel en elev som tagits
@@ -115,7 +108,7 @@ async function lessonStudents(lesson: {
   id: string;
   courseId: string;
 }): Promise<AttendanceStudent[]> {
-  const [roster, marks] = await Promise.all([
+  const [roster, marks, bookings] = await Promise.all([
     loadCourseRoster(lesson.courseId),
     prisma.attendance.findMany({
       where: { lessonId: lesson.id },
@@ -130,8 +123,21 @@ async function lessonStudents(lesson: {
         },
       },
     }),
+    prisma.booking.findMany({
+      where: { lessonId: lesson.id, cancelled: false },
+      select: {
+        purchaseItem: {
+          select: {
+            purchase: { select: { userId: true, participantId: true } },
+          },
+        },
+      },
+    }),
   ]);
 
+  const bookedKeys = new Set(
+    bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
+  );
   const statusByKey = new Map(marks.map((m) => [m.studentKey, m.status]));
   const students = new Map<string, AttendanceStudent>();
 
@@ -142,10 +148,7 @@ async function lessonStudents(lesson: {
       participantId: s.participantId,
       name: s.name,
       customerName: s.customerName,
-      remaining:
-        s.remaining === null ? null : String(showRemaining(s.remaining)),
-      addedManually: s.addedManually,
-      pending: s.pending,
+      booked: false,
       inCourse: true,
       status: null,
     });
@@ -161,16 +164,18 @@ async function lessonStudents(lesson: {
       participantId: mark.participantId,
       name,
       customerName: mark.participant?.addedBy.name ?? null,
-      remaining: null,
-      addedManually: false,
-      pending: false,
+      booked: false,
       inCourse: false,
       status: null,
     });
   }
 
   return [...students.values()]
-    .map((s) => ({ ...s, status: statusByKey.get(s.studentKey) ?? null }))
+    .map((s) => ({
+      ...s,
+      booked: bookedKeys.has(s.studentKey),
+      status: statusByKey.get(s.studentKey) ?? null,
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
