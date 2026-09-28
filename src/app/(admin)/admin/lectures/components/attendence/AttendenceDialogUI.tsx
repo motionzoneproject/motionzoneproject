@@ -91,6 +91,7 @@ export function AttendeDialogUI({
           taken={attendance.taken}
           missing={missing}
           total={active.length}
+          presentWithoutBooking={attendance.presentWithoutBooking}
         />
         <AttendenceForm
           lessonId={lesson.id}

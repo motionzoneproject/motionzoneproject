@@ -11,7 +11,11 @@ import {
 } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
-import { showRemaining } from "./purchase-helpers";
+import {
+  calcRemainingCount,
+  hasRemainingCount,
+  showRemaining,
+} from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 type Result = { success: boolean; msg: string };
@@ -317,10 +321,26 @@ export async function saveAttendance(
   };
 }
 
+/** En elev som var närvarande men inte har någon bokning på lektionen. */
+export type PresentWithoutBooking = {
+  studentKey: string;
+  name: string;
+  /**
+   * Kursraden att boka på: elevens köp i kursen med saldo kvar. Null när
+   * köp saknas — eleven är då tillagd för hand — eller saldot är slut.
+   */
+  purchaseItemId: string | null;
+  /** Köpets ägare, som bokningen görs på. */
+  ownerUserId: string | null;
+  reason: "bookable" | "noPurchase" | "noBalance";
+};
+
 export type BookingAttendance = {
   /** Någon på lektionen har markerats, alltså är närvaron tagen. */
   taken: boolean;
   byStudentKey: Record<string, AttendanceStatus>;
+  /** Närvarande utan bokning: gick utan att ha bokat, eller saknar köp. */
+  presentWithoutBooking: PresentWithoutBooking[];
 };
 
 /**
@@ -328,26 +348,104 @@ export type BookingAttendance = {
  *
  * Bokningarna och närvaron hålls isär. Dialogen visar bara bredvid varje
  * bokning om eleven markerats, så att studion ser vilka bokningar som saknar
- * närvaro.
+ * närvaro — och omvänt vilka som var där utan att ha bokat, så att de kan
+ * bokas in i efterhand.
  *
  * @auth Admin eller lektionens lärare
  */
 export async function getBookingAttendance(
   lessonId: string,
 ): Promise<BookingAttendance> {
-  const empty = { taken: false, byStudentKey: {} };
+  const empty = { taken: false, byStudentKey: {}, presentWithoutBooking: [] };
   const session = await requireTeacherOrAdmin();
   if (!session) return empty;
 
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    select: { teacherId: true, course: { select: { teacherId: true } } },
+    select: {
+      courseId: true,
+      teacherId: true,
+      course: { select: { teacherId: true } },
+    },
   });
   if (!lesson || !mayTakeAttendance(session, lesson)) return empty;
 
-  const marks = await prisma.attendance.findMany({
-    where: { lessonId },
-    select: { studentKey: true, status: true },
+  const [marks, bookings] = await Promise.all([
+    prisma.attendance.findMany({
+      where: { lessonId },
+      select: {
+        studentKey: true,
+        status: true,
+        userId: true,
+        participantId: true,
+        user: { select: { name: true } },
+        participant: { select: { name: true } },
+      },
+    }),
+    prisma.booking.findMany({
+      where: { lessonId, cancelled: false },
+      select: {
+        purchaseItem: {
+          select: {
+            purchase: { select: { userId: true, participantId: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const booked = new Set(
+    bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
+  );
+  const unbooked = marks.filter(
+    (m) => m.status === "PRESENT" && !booked.has(m.studentKey),
+  );
+
+  // Elevernas köp i kursen, för att kunna boka in dem direkt.
+  const items = unbooked.length
+    ? await prisma.purchaseItem.findMany({
+        where: {
+          courseId: lesson.courseId,
+          OR: unbooked.map((m) =>
+            m.participantId
+              ? { purchase: { participantId: m.participantId } }
+              : { purchase: { userId: m.userId ?? "", participantId: null } },
+          ),
+        },
+        select: {
+          id: true,
+          unlimited: true,
+          remainingCount: true,
+          purchase: {
+            select: {
+              userId: true,
+              participantId: true,
+              type: true,
+              remainingCount: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const presentWithoutBooking = unbooked.map((m): PresentWithoutBooking => {
+    const own = items.filter((i) => studentKeyOf(i.purchase) === m.studentKey);
+    const withBalance = own.find((i) =>
+      hasRemainingCount(
+        calcRemainingCount({ purchase: i.purchase, purchaseItem: i }),
+      ),
+    );
+    return {
+      studentKey: m.studentKey,
+      name: m.participant?.name ?? m.user?.name ?? "Okänd",
+      purchaseItemId: withBalance?.id ?? null,
+      ownerUserId: withBalance?.purchase.userId ?? null,
+      reason: withBalance
+        ? "bookable"
+        : own.length
+          ? "noBalance"
+          : "noPurchase",
+    };
   });
 
   return {
@@ -355,6 +453,7 @@ export async function getBookingAttendance(
     byStudentKey: Object.fromEntries(
       marks.map((m) => [m.studentKey, m.status]),
     ),
+    presentWithoutBooking,
   };
 }
 
