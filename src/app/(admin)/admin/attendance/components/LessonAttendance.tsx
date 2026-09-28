@@ -13,12 +13,13 @@ import {
 } from "@/lib/actions/attendance-actions";
 import { CourseRosterDialog } from "../../components/CourseRosterDialog";
 
+/**
+ * Bara det som hjälper att känna igen eleven. Köp och saldo hör till
+ * bokningarna, inte hit.
+ */
 function studentDetails(student: AttendanceStudent): string {
   return [
     student.customerName ? `Kund: ${student.customerName}` : null,
-    student.remaining !== null ? `${student.remaining} kvar` : null,
-    student.addedManually ? "tillagd för hand" : null,
-    student.pending ? "ej beviljad än" : null,
     !student.inCourse ? "inte längre i kursen" : null,
   ]
     .filter(Boolean)
@@ -155,6 +156,11 @@ export function LessonAttendance({
                       {studentDetails(student)}
                     </span>
                   </span>
+                  {student.booked && (
+                    <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                      Bokad
+                    </span>
+                  )}
                 </label>
               </li>
             );
