@@ -5,6 +5,7 @@
 // aldrig från något som inte redan vet vem användaren är.
 
 import type { Prisma } from "@/generated/prisma/client";
+import { studentKeyOf } from "./course-roster";
 import prisma from "./prisma";
 
 export type LessonWithData = Prisma.LessonGetPayload<{
@@ -176,9 +177,96 @@ async function getStats(now: Date, teacherId?: string): Promise<OverviewStats> {
   };
 }
 
+/** Hur långt bakåt översikten letar efter lektioner att stämma av. */
+const FOLLOW_UP_DAYS = 7;
+
+export type AttendanceFollowUp = {
+  lesson: LessonWithData;
+  /** Lektionen har bokningar men ingen markering alls. */
+  notTaken: boolean;
+  /** Bokade som inte markerats närvarande. Bara när närvaron är tagen. */
+  bookedNotPresent: number;
+  /** Markerade närvarande utan bokning på lektionen. */
+  presentNotBooked: number;
+};
+
+/**
+ * Lektioner den senaste veckan där bokningarna och närvaron inte stämmer.
+ *
+ * Närvaron och bokningarna är skilda register och rör aldrig varandra av sig
+ * själva, så det är här studion fångar det som behöver följas upp: en lärare
+ * som inte tagit närvaro, en elev som bokat men inte kom (bokningen kan tas
+ * bort och klippet lämnas tillbaka), eller en elev som kom utan att ha bokat
+ * (bokas in i efterhand, eller går utan köp).
+ *
+ * Bara avslutade, ej inställda lektioner. En vecka bakåt räcker för att
+ * hinna följa upp, utan att listan växer med allt som aldrig stämts av.
+ * Utan teacherId gäller det hela skolan; med, lärarens egna lektioner.
+ */
+export async function getAttendanceFollowUp(
+  now: Date,
+  teacherId?: string,
+): Promise<AttendanceFollowUp[]> {
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      cancelled: false,
+      endTime: { lt: now, gte: new Date(now.getTime() - days(FOLLOW_UP_DAYS)) },
+      ...(teacherId ? { OR: [{ teacherId }, { course: { teacherId } }] } : {}),
+    },
+    include: {
+      ...lessonInclude,
+      bookings: {
+        include: {
+          purchaseItem: {
+            select: {
+              purchase: { select: { userId: true, participantId: true } },
+            },
+          },
+        },
+      },
+      attendance: { select: { studentKey: true, status: true } },
+    },
+    orderBy: { startTime: "desc" },
+  });
+
+  const result: AttendanceFollowUp[] = [];
+
+  for (const lesson of lessons) {
+    const active = lesson.bookings.filter((b) => !b.cancelled);
+    const marks = new Map(
+      lesson.attendance.map((m) => [m.studentKey, m.status]),
+    );
+    const bookedKeys = new Set(
+      active.map((b) => studentKeyOf(b.purchaseItem.purchase)),
+    );
+
+    const taken = marks.size > 0;
+    const notTaken = !taken && active.length > 0;
+    const bookedNotPresent = taken
+      ? [...bookedKeys].filter((key) => marks.get(key) !== "PRESENT").length
+      : 0;
+    const presentNotBooked = lesson.attendance.filter(
+      (m) => m.status === "PRESENT" && !bookedKeys.has(m.studentKey),
+    ).length;
+
+    if (notTaken || bookedNotPresent > 0 || presentNotBooked > 0) {
+      const { attendance: _attendance, ...rest } = lesson;
+      result.push({
+        lesson: rest,
+        notTaken,
+        bookedNotPresent,
+        presentNotBooked,
+      });
+    }
+  }
+
+  return result;
+}
+
 export type AdminOverview = {
   today: LessonWithData[];
   cancelledAhead: LessonWithData[];
+  followUp: AttendanceFollowUp[];
   stats: OverviewStats;
   actions: PendingActions;
   own: OwnLessons;
@@ -191,23 +279,32 @@ export async function getAdminOverview(
 ): Promise<AdminOverview> {
   const now = new Date();
 
-  const [today, cancelledAhead, stats, awaitingApproval, unpaid, own] =
-    await Promise.all([
-      getLessonsOnDay(dayStart, dayEnd),
-      getCancelledAhead(now),
-      getStats(now),
-      // Motsvarar exakt det "Väntar"-filtret på /admin/orders visar, så
-      // siffran här stämmer med listan man klickar sig till.
-      prisma.order.count({ where: { status: "AWAITING_APPROVAL" } }),
-      prisma.order.count({
-        where: { isPaid: false, status: { not: "CANCELLED" } },
-      }),
-      getOwnLessons(userId),
-    ]);
+  const [
+    today,
+    cancelledAhead,
+    followUp,
+    stats,
+    awaitingApproval,
+    unpaid,
+    own,
+  ] = await Promise.all([
+    getLessonsOnDay(dayStart, dayEnd),
+    getCancelledAhead(now),
+    getAttendanceFollowUp(now),
+    getStats(now),
+    // Motsvarar exakt det "Väntar"-filtret på /admin/orders visar, så
+    // siffran här stämmer med listan man klickar sig till.
+    prisma.order.count({ where: { status: "AWAITING_APPROVAL" } }),
+    prisma.order.count({
+      where: { isPaid: false, status: { not: "CANCELLED" } },
+    }),
+    getOwnLessons(userId),
+  ]);
 
   return {
     today,
     cancelledAhead,
+    followUp,
     stats,
     actions: { awaitingApproval, unpaid },
     own,
@@ -217,6 +314,7 @@ export async function getAdminOverview(
 export type TeacherOverview = {
   today: LessonWithData[];
   cancelledAhead: LessonWithData[];
+  followUp: AttendanceFollowUp[];
   stats: OverviewStats;
   own: OwnLessons;
 };
@@ -228,12 +326,13 @@ export async function getTeacherOverview(
 ): Promise<TeacherOverview> {
   const now = new Date();
 
-  const [today, cancelledAhead, stats, own] = await Promise.all([
+  const [today, cancelledAhead, followUp, stats, own] = await Promise.all([
     getLessonsOnDay(dayStart, dayEnd, userId),
     getCancelledAhead(now, userId),
+    getAttendanceFollowUp(now, userId),
     getStats(now, userId),
     getOwnLessons(userId),
   ]);
 
-  return { today, cancelledAhead, stats, own };
+  return { today, cancelledAhead, followUp, stats, own };
 }
