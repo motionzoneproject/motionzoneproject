@@ -2,11 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import type { AttendanceStatus } from "@/generated/prisma/enums";
+import {
+  attendanceStartedAt,
+  compareLesson,
+  compareLessonInclude,
+} from "@/lib/attendance-compare";
 import { handleClips } from "@/lib/clips";
 import { studentKeyOf } from "@/lib/course-roster";
 import { loadCourseRoster } from "@/lib/course-roster-data";
 import {
   endOfStockholmDateInput,
+  formatDateToInputStr,
   parseStockholmDateInput,
 } from "@/lib/date-utils";
 import { getCourseName } from "@/lib/tools";
@@ -231,6 +237,92 @@ export async function getAttendanceDay(
   });
 
   return Promise.all(lessons.map(toAttendanceLesson));
+}
+
+/** Hur en dag ser ut i närvarokalendern. */
+export type AttendanceDayStatus = {
+  /**
+   * Röd: en lektion som börjat har bokningar men ingen närvaro. Grön:
+   * närvaron är tagen. Rött väger tyngst — det är det som behöver göras.
+   */
+  ring: "red" | "green" | null;
+  /** Närvaron som är tagen stämmer med bokningarna (grön) eller inte (orange). */
+  fill: "green" | "orange" | null;
+};
+
+/**
+ * Närvarons läge per dag för kalendern på närvarosidan.
+ *
+ * Samma jämförelse som översiktens "Stäm av närvaro". En lektion som inte
+ * börjat ännu räknas inte som saknad — där finns ingen närvaro att ta — och
+ * inte heller en från innan närvaro togs första gången.
+ *
+ * @auth Admin eller lärare. En lärare ser bara sina egna lektioner.
+ */
+export async function getAttendanceCalendar(
+  fromDate: string,
+  toDate: string,
+  teacherId?: string,
+): Promise<Record<string, AttendanceDayStatus>> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return {};
+
+  const dateInput = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateInput.test(fromDate) || !dateInput.test(toDate)) return {};
+
+  const scopedTeacherId =
+    session.user.role === "teacher" ? session.user.id : teacherId;
+
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      cancelled: false,
+      startTime: {
+        gte: parseStockholmDateInput(fromDate),
+        lte: endOfStockholmDateInput(toDate),
+      },
+      ...(scopedTeacherId
+        ? {
+            OR: [
+              { teacherId: scopedTeacherId },
+              { course: { teacherId: scopedTeacherId } },
+            ],
+          }
+        : {}),
+    },
+    select: { startTime: true, ...compareLessonInclude },
+  });
+
+  const now = Date.now();
+  const since = (await attendanceStartedAt())?.getTime() ?? null;
+  const days: Record<
+    string,
+    { missing: boolean; taken: boolean; mismatch: boolean }
+  > = {};
+
+  for (const lesson of lessons) {
+    const key = formatDateToInputStr(lesson.startTime);
+    days[key] ??= { missing: false, taken: false, mismatch: false };
+    const day = days[key];
+    const result = compareLesson(lesson);
+
+    const start = lesson.startTime.getTime();
+    if (result.notTaken && start < now && since !== null && start >= since)
+      day.missing = true;
+    if (result.taken) day.taken = true;
+    if (result.mismatch) day.mismatch = true;
+  }
+
+  return Object.fromEntries(
+    Object.entries(days)
+      .filter(([, d]) => d.missing || d.taken)
+      .map(([key, d]) => [
+        key,
+        {
+          ring: d.missing ? "red" : d.taken ? "green" : null,
+          fill: d.taken ? (d.mismatch ? "orange" : "green") : null,
+        },
+      ]),
+  );
 }
 
 /**

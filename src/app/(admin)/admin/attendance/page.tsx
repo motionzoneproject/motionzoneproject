@@ -8,6 +8,7 @@ import {
   parseStockholmDateInput,
 } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
+import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
 import { AttendanceDay } from "./components/AttendanceDay";
 
 export const metadata: Metadata = {
@@ -52,6 +53,18 @@ export default async function Page({
 
   const lessons = await getAttendanceDay(date, sp?.teacher);
 
+  // Bokningsdialogen är en serverkomponent som hämtar sina egna data, så den
+  // renderas här och följer med dagsvyn per lektion.
+  const lessonRows = await prisma.lesson.findMany({
+    where: { id: { in: lessons.map((l) => l.lessonId) } },
+  });
+  const bookingDialogs = Object.fromEntries(
+    lessonRows.map((lesson) => [
+      lesson.id,
+      <AttendeDialog key={lesson.id} lesson={lesson} />,
+    ]),
+  );
+
   const asDate = parseStockholmDateInput(date);
   const heading = {
     weekday: new Intl.DateTimeFormat("sv-SE", {
@@ -82,6 +95,7 @@ export default async function Page({
       }}
       teachers={teachers}
       selectedTeacher={sp?.teacher ?? ""}
+      bookingDialogs={bookingDialogs}
     />
   );
 }
