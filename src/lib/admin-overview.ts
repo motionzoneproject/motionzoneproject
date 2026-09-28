@@ -5,7 +5,7 @@
 // aldrig från något som inte redan vet vem användaren är.
 
 import type { Prisma } from "@/generated/prisma/client";
-import { studentKeyOf } from "./course-roster";
+import { attendanceStartedAt, compareLesson } from "./attendance-compare";
 import prisma from "./prisma";
 
 export type LessonWithData = Prisma.LessonGetPayload<{
@@ -229,27 +229,17 @@ export async function getAttendanceFollowUp(
     orderBy: { startTime: "desc" },
   });
 
+  const since = await attendanceStartedAt();
   const result: AttendanceFollowUp[] = [];
 
   for (const lesson of lessons) {
-    const active = lesson.bookings.filter((b) => !b.cancelled);
-    const marks = new Map(
-      lesson.attendance.map((m) => [m.studentKey, m.status]),
-    );
-    const bookedKeys = new Set(
-      active.map((b) => studentKeyOf(b.purchaseItem.purchase)),
-    );
+    const comparison = compareLesson(lesson);
+    const { bookedNotPresent, presentNotBooked, mismatch } = comparison;
+    // Före första närvaron fanns inget att ta, så det räknas inte som saknat.
+    const notTaken =
+      comparison.notTaken && since !== null && lesson.startTime >= since;
 
-    const taken = marks.size > 0;
-    const notTaken = !taken && active.length > 0;
-    const bookedNotPresent = taken
-      ? [...bookedKeys].filter((key) => marks.get(key) !== "PRESENT").length
-      : 0;
-    const presentNotBooked = lesson.attendance.filter(
-      (m) => m.status === "PRESENT" && !bookedKeys.has(m.studentKey),
-    ).length;
-
-    if (notTaken || bookedNotPresent > 0 || presentNotBooked > 0) {
+    if (notTaken || mismatch) {
       const { attendance: _attendance, ...rest } = lesson;
       result.push({
         lesson: rest,
