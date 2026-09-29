@@ -1,3 +1,5 @@
+import { TZDate } from "@date-fns/tz";
+
 /**
  * Fakturamottagaren anges separat från kontot.
  *
@@ -23,15 +25,23 @@ function toDate(value: Date | string | null | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/** Ålder i hela år vid ett givet datum. */
-export function ageAt(dateOfBirth: Date, at: Date = new Date()): number {
-  let age = at.getFullYear() - dateOfBirth.getFullYear();
-  const monthDiff = at.getMonth() - dateOfBirth.getMonth();
+const TIME_ZONE = "Europe/Stockholm";
 
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && at.getDate() < dateOfBirth.getDate())
-  )
+/**
+ * Ålder i hela år vid ett givet datum.
+ *
+ * Födelsedatum sparas som midnatt svensk tid, alltså kvällen innan i UTC.
+ * Båda datumen läses därför i svensk tid, så att servern (som kör i UTC)
+ * och webbläsaren kommer fram till samma dag.
+ */
+export function ageAt(dateOfBirth: Date, at: Date = new Date()): number {
+  const birth = new TZDate(dateOfBirth.getTime(), TIME_ZONE);
+  const now = new TZDate(at.getTime(), TIME_ZONE);
+
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate()))
     age--;
 
   return age;

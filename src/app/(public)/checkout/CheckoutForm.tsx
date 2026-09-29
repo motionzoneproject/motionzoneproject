@@ -339,15 +339,84 @@ export default function CheckoutForm({
       return;
     }
 
-    // Samma regel som servern: en giltig adress, inte bara ett ifyllt fält.
-    // Kontrolleras här så att inga deltagare skapas för en order som servern
-    // ändå skulle stoppa.
+    // Allt nedan kontrolleras innan något sparas, med samma scheman som
+    // servern. Ett fel som först servern hittar kommer efter att deltagarna
+    // redan skapats, och i produktion döljer Next.js felets text — kunden får
+    // ett allmänt fel och vet inte vad som ska rättas.
     const invoiceEmail = invoice.invoiceEmail.trim();
-    if (
-      !InvoiceRecipientSchema.shape.invoiceEmail.safeParse(invoiceEmail).success
-    ) {
-      toast.error(t("checkout.invoice.emailRequired"));
+    const invoiceCheck = InvoiceRecipientSchema.safeParse({
+      ...invoice,
+      invoiceEmail,
+    });
+
+    if (!invoiceCheck.success) {
+      const field = invoiceCheck.error.issues[0]?.path[0];
+      toast.error(
+        t(
+          field === "invoiceEmail"
+            ? "checkout.invoice.emailRequired"
+            : field === "invoicePhone"
+              ? "checkout.invoice.phoneInvalid"
+              : "checkout.invoice.checkDetails",
+        ),
+      );
       return;
+    }
+
+    const selectedCourseIdsBySlot: (string[] | undefined)[] = [];
+
+    for (let idx = 0; idx < flattenedItems.length; idx++) {
+      const it = flattenedItems[idx];
+      const key = `slot-${idx}`;
+      const slot = slots[key] || { isSelf: false };
+
+      if (
+        !slot.isSelf &&
+        !(slot.participantId && slot.participantId !== "new")
+      ) {
+        if (!slot.customData) {
+          toast.error(
+            t("checkout.form.missingParticipantForProduct", { name: it.name }),
+          );
+          return;
+        }
+
+        // Samma regel som servern och profilsidan använder: bland annat
+        // avgör födelsedatumet om deltagaren är omyndig, och det styr vem som
+        // kan faktureras.
+        const participantCheck = ParticipantSchema.safeParse(slot.customData);
+        if (!participantCheck.success) {
+          const field = participantCheck.error.issues[0]?.path[0];
+          toast.error(
+            t(
+              field === "name"
+                ? "checkout.form.missingNameForProduct"
+                : field === "dateOfBirth"
+                  ? "checkout.form.missingDateForProduct"
+                  : field === "email"
+                    ? "checkout.form.invalidEmailForProduct"
+                    : "checkout.form.checkParticipantForProduct",
+              { name: it.name },
+            ),
+          );
+          return;
+        }
+      }
+
+      // Kräver minst 1 vald kurs för paket med maxCourses satt.
+      // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
+      if (it.product.maxCourses != null) {
+        const picked = (courseSelections[key] ?? []).filter(Boolean);
+        if (picked.length === 0) {
+          toast.error(t("checkout.pack.needAtLeastOne", { name: it.name }));
+          return;
+        }
+        if (new Set(picked).size !== picked.length) {
+          toast.error(t("checkout.pack.duplicateSelection", { name: it.name }));
+          return;
+        }
+        selectedCourseIdsBySlot[idx] = picked;
+      }
     }
 
     setIsSubmitting(true);
@@ -359,6 +428,7 @@ export default function CheckoutForm({
         const it = flattenedItems[idx];
         const key = `slot-${idx}`;
         const slot = slots[key] || { isSelf: false };
+        const selectedCourseIds = selectedCourseIdsBySlot[idx];
         let participantId: string | null = null;
 
         if (slot.isSelf) {
@@ -366,57 +436,8 @@ export default function CheckoutForm({
         } else if (slot.participantId && slot.participantId !== "new") {
           participantId = slot.participantId;
         } else if (slot.customData) {
-          if (!slot.customData.name) {
-            toast.error(
-              t("checkout.form.missingNameForProduct", { name: it.name }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
-
-          // Samma regel som servern och profilsidan använder: födelsedatumet
-          // avgör om deltagaren är omyndig, och det styr vem som kan faktureras.
-          const dateOfBirthOk = ParticipantSchema.shape.dateOfBirth.safeParse(
-            slot.customData.dateOfBirth,
-          ).success;
-
-          if (!dateOfBirthOk) {
-            toast.error(
-              t("checkout.form.missingDateForProduct", { name: it.name }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
-
           const p = await getOrCreateParticipant(slot.customData);
           participantId = p.id;
-        } else {
-          toast.error(
-            t("checkout.form.missingParticipantForProduct", { name: it.name }),
-          );
-          setIsSubmitting(false);
-          return;
-        }
-
-        // Kräver minst 1 vald kurs för paket med maxCourses satt.
-        // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
-        const maxCourses = it.product.maxCourses;
-        let selectedCourseIds: string[] | undefined;
-        if (maxCourses != null) {
-          const picked = (courseSelections[key] ?? []).filter(Boolean);
-          if (picked.length === 0) {
-            toast.error(t("checkout.pack.needAtLeastOne", { name: it.name }));
-            setIsSubmitting(false);
-            return;
-          }
-          if (new Set(picked).size !== picked.length) {
-            toast.error(
-              t("checkout.pack.duplicateSelection", { name: it.name }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
-          selectedCourseIds = picked;
         }
 
         orderItems.push({

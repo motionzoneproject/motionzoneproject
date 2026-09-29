@@ -94,7 +94,7 @@ export async function saveInvoiceRecipient(
  * familjen, och att fylla i samma uppgift en gång per order vore onödigt.
  *
  * En betald order lämnas i fred. Då är fakturan redan skickad, och uppgiften
- * är en historik över vem den gick till.
+ * är en historik över vem den gick till. Detsamma gäller en avbruten order.
  */
 export async function setOwnOrdersInvoiceRecipient(
   orderIds: string[],
@@ -136,6 +136,13 @@ export async function setOwnOrdersInvoiceRecipient(
     return {
       success: false,
       msg: "Ordern är redan betald och fakturauppgiften kan inte ändras. Hör av dig till oss om något blivit fel.",
+    };
+
+  // Samma regel som profilsidan: en avbruten order är historik.
+  if (orders.some((o) => o.status === "CANCELLED"))
+    return {
+      success: false,
+      msg: "Ordern är avbruten och fakturauppgiften kan inte ändras.",
     };
 
   const details = await prisma.userDetails.findUnique({
