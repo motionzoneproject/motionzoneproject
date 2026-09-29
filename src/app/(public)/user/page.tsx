@@ -195,11 +195,18 @@ export default async function Page() {
                                 b.lesson.startTime.getTime(),
                             );
 
+                          // En kurs kan bara vara utbytt i ett paket där kunden
+                          // själv valt kurser, för det är bara där kursval
+                          // sparas. En vanlig kurs, ett terminskort eller ett
+                          // program har inga alls, och då finns inget att vara
+                          // utbytt ifrån. Samma regel som elevlistan i admin.
+                          const selectedCourseIds =
+                            pi.orderItem.courseSelections.map(
+                              (cs) => cs.courseId,
+                            );
                           const isSwapped =
-                            pi.orderItem.courseSelections
-                              .map((cs) => cs.courseId)
-                              .filter((fcs) => fcs === pi.courseId).length ===
-                            0;
+                            selectedCourseIds.length > 0 &&
+                            !selectedCourseIds.includes(pi.courseId);
 
                           return (
                             <AccordionItem
