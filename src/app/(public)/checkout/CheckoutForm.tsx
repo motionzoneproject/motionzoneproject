@@ -100,7 +100,11 @@ export type CheckoutFormProps = {
 
 type SlotData = {
   isSelf: boolean;
-  participantId?: string; // used if selecting existing
+  /**
+   * Ett sparat deltagar-id, "new" för en ny person, eller "slot:<nyckel>"
+   * för samma nya person som skrivits in på en annan produkt i kundkorgen.
+   */
+  participantId?: string;
   customData?: ParticipantData; // used if creating new
 };
 
@@ -112,6 +116,21 @@ const INVOICE_MESSAGES: Record<InvoiceRecipientProblem, string> = {
   missingName: "checkout.invoice.nameRequired",
   unknownParticipant: "checkout.invoice.unknownParticipant",
 };
+
+const SLOT_REF = "slot:";
+
+/** Slotten skriver in en ny person, som andra slottar kan peka på. */
+function isNewPersonSlot(slot: SlotData | undefined): boolean {
+  if (!slot || slot.isSelf) return false;
+  return !slot.participantId || slot.participantId === "new";
+}
+
+/** Slotten den här pekar på, om den valt en ny person från en annan produkt. */
+function refTarget(slot: SlotData | undefined): string | null {
+  return slot?.participantId?.startsWith(SLOT_REF)
+    ? slot.participantId.slice(SLOT_REF.length)
+    : null;
+}
 
 export default function CheckoutForm({
   items,
@@ -189,7 +208,9 @@ export default function CheckoutForm({
     const created: { name: string; dateOfBirth?: string | null }[] = [];
 
     for (const slot of Object.values(slots)) {
-      if (slot.isSelf) continue;
+      // En slot som pekar på en ny person från en annan produkt är samma
+      // person, och räknas redan på den produkten.
+      if (slot.isSelf || refTarget(slot)) continue;
 
       if (slot.participantId && slot.participantId !== "new") {
         const existing = byId.get(slot.participantId);
@@ -256,11 +277,37 @@ export default function CheckoutForm({
   });
 
   const updateSlot = (key: string, data: Partial<SlotData>) => {
-    setSlots((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], ...data },
-    }));
+    setSlots((prev) => {
+      const next = { ...prev, [key]: { ...prev[key], ...data } };
+      // Slutar en slot att skriva in en ny person — "Jag själv" eller en
+      // sparad deltagare — finns det inget kvar för andra slottar att peka på.
+      // De får då ett eget, tomt formulär i stället.
+      for (const [otherKey, other] of Object.entries(next)) {
+        const target = refTarget(other);
+        if (target && !isNewPersonSlot(next[target])) {
+          next[otherKey] = { ...other, participantId: undefined };
+        }
+      }
+      return next;
+    });
   };
+
+  const productNameBySlot = Object.fromEntries(
+    flattenedItems.map((it, idx) => [`slot-${idx}`, it.name]),
+  );
+
+  /**
+   * Nya personer som skrivits in på andra produkter i kundkorgen. De finns
+   * inte i databasen förrän ordern skickas, men ska gå att välja på nästa
+   * produkt — annars fick samma barn skrivas in två gånger, och då stoppade
+   * dubblettvarningen beställningen.
+   */
+  const newPeopleInCart = (currentKey: string) =>
+    flattenedItems
+      .map((_, idx) => `slot-${idx}`)
+      .filter((key) => key !== currentKey && isNewPersonSlot(slots[key]))
+      .map((key) => ({ key, name: slots[key]?.customData?.name?.trim() ?? "" }))
+      .filter((p) => p.name);
 
   /**
    * Returns duplicate warnings for a given slot's typed name.
@@ -289,7 +336,7 @@ export default function CheckoutForm({
 
     for (const [slotKey, slot] of Object.entries(currentSlots)) {
       if (slotKey === currentKey) continue;
-      if (slot.isSelf) continue;
+      if (!isNewPersonSlot(slot)) continue;
       const otherName = slot.customData?.name || "";
       if (otherName && normalizeName(otherName) === normalized) {
         return { type: "slot", match: { name: otherName, slotKey } };
@@ -302,11 +349,9 @@ export default function CheckoutForm({
   const hasDuplicates = flattenedItems.some((_, idx) => {
     const key = `slot-${idx}`;
     const slot = slots[key] || { isSelf: false };
-    const isNewForm = slot.participantId === "new" || !slot.participantId;
     const typedName = slot.customData?.name || "";
     return (
-      !slot.isSelf &&
-      isNewForm &&
+      isNewPersonSlot(slot) &&
       getDuplicateWarning(key, typedName, slots) !== null
     );
   });
@@ -370,10 +415,15 @@ export default function CheckoutForm({
       const key = `slot-${idx}`;
       const slot = slots[key] || { isSelf: false };
 
-      if (
-        !slot.isSelf &&
-        !(slot.participantId && slot.participantId !== "new")
-      ) {
+      const target = refTarget(slot);
+      if (target && !isNewPersonSlot(slots[target])) {
+        toast.error(
+          t("checkout.form.missingParticipantForProduct", { name: it.name }),
+        );
+        return;
+      }
+
+      if (isNewPersonSlot(slot)) {
         if (!slot.customData) {
           toast.error(
             t("checkout.form.missingParticipantForProduct", { name: it.name }),
@@ -424,20 +474,35 @@ export default function CheckoutForm({
     try {
       const orderItems = [];
 
+      // Först skapas de nya personerna, en gång var. En slot som valt samma
+      // person från en annan produkt får sedan samma deltagare. Uppgifterna
+      // är redan kontrollerade ovan.
+      const createdBySlot: Record<string, string> = {};
+      for (let idx = 0; idx < flattenedItems.length; idx++) {
+        const key = `slot-${idx}`;
+        const slot = slots[key] || { isSelf: false };
+        if (!isNewPersonSlot(slot) || !slot.customData) continue;
+
+        const p = await getOrCreateParticipant(slot.customData);
+        createdBySlot[key] = p.id;
+      }
+
       for (let idx = 0; idx < flattenedItems.length; idx++) {
         const it = flattenedItems[idx];
         const key = `slot-${idx}`;
         const slot = slots[key] || { isSelf: false };
+        const target = refTarget(slot);
         const selectedCourseIds = selectedCourseIdsBySlot[idx];
         let participantId: string | null = null;
 
         if (slot.isSelf) {
           participantId = null;
+        } else if (target) {
+          participantId = createdBySlot[target] ?? null;
         } else if (slot.participantId && slot.participantId !== "new") {
           participantId = slot.participantId;
-        } else if (slot.customData) {
-          const p = await getOrCreateParticipant(slot.customData);
-          participantId = p.id;
+        } else {
+          participantId = createdBySlot[key] ?? null;
         }
 
         orderItems.push({
@@ -511,13 +576,13 @@ export default function CheckoutForm({
             {flattenedItems.map((it, idx) => {
               const key = `slot-${idx}`;
               const slot = slots[key] || { isSelf: false };
-              const isNewForm =
-                slot.participantId === "new" || !slot.participantId;
+              const isNewForm = isNewPersonSlot(slot);
               const typedName = slot.customData?.name || "";
-              const dupWarning =
-                !slot.isSelf && isNewForm
-                  ? getDuplicateWarning(key, typedName, slots)
-                  : null;
+              const dupWarning = isNewForm
+                ? getDuplicateWarning(key, typedName, slots)
+                : null;
+              const cartPeople = newPeopleInCart(key);
+              const target = refTarget(slot);
               const maxCourses = it.product.maxCourses;
 
               return (
@@ -563,6 +628,28 @@ export default function CheckoutForm({
                             <SelectItem value="new">
                               {t("checkout.form.newPerson")}
                             </SelectItem>
+                            {cartPeople.map((p) => (
+                              <SelectItem
+                                key={p.key}
+                                value={`${SLOT_REF}${p.key}`}
+                              >
+                                {t("checkout.form.newFromCart", {
+                                  name: p.name,
+                                  product: productNameBySlot[p.key],
+                                })}
+                              </SelectItem>
+                            ))}
+                            {/* Ett val som pekar på en slot vars namn just nu
+                                är tomt ska ändå kunna visas som valt. */}
+                            {target &&
+                              !cartPeople.some((p) => p.key === target) && (
+                                <SelectItem value={`${SLOT_REF}${target}`}>
+                                  {t("checkout.form.newFromCart", {
+                                    name: "…",
+                                    product: productNameBySlot[target],
+                                  })}
+                                </SelectItem>
+                              )}
                             {otherParticipants.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
                                 {p.name}
@@ -630,6 +717,23 @@ export default function CheckoutForm({
                                           "checkout.form.duplicateUseExisting",
                                           { name: dupWarning.match.name },
                                         )}
+                                      </button>
+                                    )}
+                                  {dupWarning.type === "slot" &&
+                                    dupWarning.match.slotKey && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          updateSlot(key, {
+                                            participantId: `${SLOT_REF}${dupWarning.match.slotKey}`,
+                                            customData: undefined,
+                                          })
+                                        }
+                                        className="rounded bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-300 transition-colors dark:bg-amber-800 dark:text-amber-100 dark:hover:bg-amber-700"
+                                      >
+                                        {t("checkout.form.duplicateUseSlot", {
+                                          name: dupWarning.match.name,
+                                        })}
                                       </button>
                                     )}
                                   {dupWarning.type === "self" && (
