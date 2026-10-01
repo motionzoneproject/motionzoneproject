@@ -3,8 +3,16 @@
 import { redirect } from "next/navigation";
 import type { Course } from "@/generated/prisma/client";
 import { clearCart } from "@/lib/cart";
+import {
+  INVOICE_RECIPIENT_ERRORS,
+  resolveInvoiceRecipient,
+} from "@/lib/invoice-recipient";
 import { generateOrderConfirmationHtml, sendMail } from "@/lib/mail";
 import { createOrder, getOrderById } from "@/lib/orders";
+import {
+  type InvoiceRecipientInput,
+  InvoiceRecipientSchema,
+} from "@/validations/userforms";
 import prisma from "../prisma";
 import { getProductStats } from "./purchase-actions";
 import { getSessionData } from "./sessiondata";
@@ -23,6 +31,8 @@ export async function createCheckout(params: {
   postalcode?: string;
   note?: string;
   paymethod?: number;
+  /** Vem fakturan ska ställas till. Obligatorisk — se validate nedan. */
+  invoice: InvoiceRecipientInput;
 }) {
   const session = await getSessionData();
   if (!session) throw new Error("Unauthorized");
@@ -31,6 +41,49 @@ export async function createCheckout(params: {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("No items provided");
   }
+
+  // Fakturamottagaren valideras på servern också: klienten kan ha hoppat
+  // över rutan, och fakturan skickas manuellt i efterhand — saknas uppgiften
+  // vid anmälan får studion jaga den när eleven redan börjat kursen.
+  const invoiceResult = InvoiceRecipientSchema.safeParse(params.invoice ?? {});
+  if (!invoiceResult.success) {
+    throw new Error(
+      invoiceResult.error.issues[0]?.message ??
+        "Fyll i vem som ska få fakturan.",
+    );
+  }
+  const invoice = invoiceResult.data;
+
+  const buyerDetails = await prisma.userDetails.findUnique({
+    where: { userId: session.user.id },
+    select: { dateOfBirth: true },
+  });
+
+  // Deltagarna är redan skapade när ordern läggs, så den valda personen går
+  // att slå upp här — och det är servern som avgör vad hen heter.
+  const participantIds = items
+    .map((itm) => itm.participantId)
+    .filter((id): id is string => Boolean(id));
+
+  const orderParticipants = participantIds.length
+    ? await prisma.participant.findMany({
+        where: { id: { in: participantIds } },
+        select: { id: true, name: true, dateOfBirth: true },
+      })
+    : [];
+
+  const resolved = resolveInvoiceRecipient({
+    choice: invoice,
+    account: {
+      name: session.user.name,
+      dateOfBirth: buyerDetails?.dateOfBirth,
+    },
+    participants: orderParticipants,
+  });
+  if ("problem" in resolved)
+    throw new Error(INVOICE_RECIPIENT_ERRORS[resolved.problem]);
+
+  const recipient = resolved.recipient;
 
   // Prevent duplicate registrations of the same participant to the same product in a single checkout
   const seenRegistrations = new Set<string>();
@@ -161,6 +214,28 @@ export async function createCheckout(params: {
         postalcode,
         note,
         paymethod,
+        invoiceName: recipient.invoiceName,
+        invoiceEmail: recipient.invoiceEmail,
+        invoicePhone: recipient.invoicePhone ?? undefined,
+        invoiceAdultConfirmedAt: recipient.invoiceAdultConfirmedAt,
+      });
+
+      // Spara som kundens förifyllning till nästa gång. Upsert, inte update:
+      // alla konton har inte en userDetails-rad, och för dem hade en update
+      // tyst gjort ingenting — nästa köp hade frågat om samma sak igen.
+      await tx.userDetails.upsert({
+        where: { userId: session.user.id },
+        update: {
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
+        },
+        create: {
+          userId: session.user.id,
+          invoiceName: recipient.invoiceName,
+          invoiceEmail: recipient.invoiceEmail,
+          invoicePhone: recipient.invoicePhone,
+        },
       });
 
       return order;
@@ -174,32 +249,21 @@ export async function createCheckout(params: {
 
     // ev. fix: vi kanske ska skicka en kopia även till motionzone?
 
-    if (fullOrder?.user.email) {
+    if (fullOrder) {
+      // Kontoinnehavaren, fakturamottagaren och deltagarna kan vara tre olika
+      // personer. Fakturamottagaren måste få bekräftelsen — det är hen som
+      // ska betala, och fakturan kommer först veckor senare.
+      const recipients = new Set<string>();
+      if (fullOrder.user.email) recipients.add(fullOrder.user.email);
+      if (fullOrder.invoiceEmail) recipients.add(fullOrder.invoiceEmail);
+      for (const it of fullOrder.orderItems) {
+        if (it.participant?.email) recipients.add(it.participant.email);
+      }
+
       const html = await generateOrderConfirmationHtml(fullOrder);
-      await sendMail(
-        fullOrder.user.email,
-        `Orderbekräftelse - Order #${order.id}`,
-        html,
-      );
-
-      fullOrder.orderItems.map(async (it) => {
-        if (
-          it.participant?.email !== fullOrder.user.email &&
-          it.participant?.email
-        ) {
-          // Här kan vi skicka till deltagaren med? ja.
-
-          const html = await generateOrderConfirmationHtml({
-            ...fullOrder,
-          });
-
-          await sendMail(
-            it.participant?.email,
-            `Orderbekräftelse, kopia till deltagare - Order #${order.id}`,
-            html,
-          );
-        }
-      });
+      for (const email of recipients) {
+        await sendMail(email, `Orderbekräftelse - Order #${order.id}`, html);
+      }
     }
   } catch (emailError) {
     // We don't want to fail the checkout if the email fails, but we should log it
@@ -220,6 +284,7 @@ export async function createCheckoutAndRedirect(params: {
   items: CheckoutItem[];
   postalcode?: string;
   note?: string;
+  invoice: InvoiceRecipientInput;
 }) {
   const result = await createCheckout(params);
   redirect(result.successRedirect);

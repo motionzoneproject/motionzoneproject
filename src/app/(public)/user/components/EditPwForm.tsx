@@ -72,7 +72,7 @@ export function EditPwForm() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="mx-2">
+        <Button variant="ghost" className="justify-start sm:justify-center">
           <Pencil className="h-4 w-4" />
           {t("user.editPw.trigger")}
         </Button>

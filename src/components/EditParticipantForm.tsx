@@ -3,10 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import * as z from "zod";
+import type * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -27,14 +27,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { updateParticipant } from "@/lib/actions/participants";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import { ParticipantSchema } from "@/validations/userforms";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Namn måste vara minst 2 tecken"),
-  email: z.string().email("Ogiltig e-post").or(z.literal("")),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  allowPhotoVideo: z.boolean(),
-});
+const formSchema = ParticipantSchema;
 
 interface EditParticipantFormProps {
   participant: {
@@ -45,10 +40,13 @@ interface EditParticipantFormProps {
     dateOfBirth?: Date | string | null;
     allowPhotoVideo: boolean;
   };
+  /** Egen knapp, för banderollen om något saknas på deltagaren. */
+  trigger?: ReactNode;
 }
 
 export default function EditParticipantForm({
   participant,
+  trigger,
 }: EditParticipantFormProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -88,7 +86,6 @@ export default function EditParticipantForm({
     try {
       await updateParticipant(participant.id, {
         ...values,
-        dateOfBirth: values.dateOfBirth || undefined,
         email: values.email || undefined,
       });
       toast.success("Deltagare uppdaterad!");
@@ -104,10 +101,12 @@ export default function EditParticipantForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Pencil className="h-4 w-4" />
-          <span className="sr-only">Redigera</span>
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" size="icon">
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Redigera</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-auto sm:max-w-[425px]">
         <DialogHeader>
@@ -120,7 +119,7 @@ export default function EditParticipantForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Namn</FormLabel>
+                  <FormLabel>Namn*</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -159,7 +158,7 @@ export default function EditParticipantForm({
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Födelsedatum (valfri)</FormLabel>
+                  <FormLabel>Födelsedatum*</FormLabel>
                   <FormControl>
                     <Input {...field} type="date" />
                   </FormControl>

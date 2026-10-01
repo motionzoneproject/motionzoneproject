@@ -98,6 +98,9 @@ export type OrderDetail = {
   statusEvents?: StatusEventLite[];
   payMethod: number;
   note: string | null;
+  invoiceName?: string | null;
+  invoiceEmail?: string | null;
+  invoicePhone?: string | null;
 } | null;
 
 function calculateAge(dob: string | Date | null | undefined) {
@@ -352,6 +355,31 @@ export default function OrderDetailsClient() {
                 <span className="font-bold text-sm">
                   {getPayMethodTxt(order.payMethod, "sv")}
                 </span>
+
+                <div className="pt-3 mt-3 border-t">
+                  <span className="text-muted-foreground block mb-1">
+                    Fakturan ställs till:
+                  </span>
+                  {order.invoiceName ? (
+                    <>
+                      <span className="font-bold text-sm block">
+                        {order.invoiceName}
+                      </span>
+                      <span className="text-sm break-all">
+                        {order.invoiceEmail}
+                      </span>
+                      {order.invoicePhone ? (
+                        <span className="text-sm block">
+                          {order.invoicePhone}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="font-bold text-sm text-amber-700 dark:text-amber-400">
+                      Saknas — fyll i via listan på /admin/orders
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="">
                 <span className="text-muted-foreground mb-3">Notering:</span>

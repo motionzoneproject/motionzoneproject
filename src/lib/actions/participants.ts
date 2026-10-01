@@ -1,5 +1,6 @@
 "use server";
 
+import { ParticipantSchema } from "@/validations/userforms";
 import prisma from "../prisma";
 import { formToDbDate } from "../time-convert";
 import { getSessionData } from "./sessiondata";
@@ -8,6 +9,7 @@ export type ParticipantData = {
   name: string;
   email?: string;
   phone?: string;
+  /** Obligatoriskt när deltagaren skapas — se ParticipantSchema. */
   dateOfBirth?: string;
   allowPhotoVideo: boolean;
   userId?: string;
@@ -78,13 +80,24 @@ export async function getOrCreateParticipant(data: ParticipantData) {
   });
   if (existingByName) return existingByName;
 
+  // Namn och födelsedatum krävs, och kontrollen sitter här: formulären i
+  // kassan, på profilsidan och i adminvyn skapar alla deltagare genom den
+  // här funktionen, och ett av dem har alltid fått glömma något.
+  const parsed = ParticipantSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ??
+        "Deltagaren saknar namn eller födelsedatum.",
+    );
+  }
+
   // Create new participant record
   return prisma.participant.create({
     data: {
-      name: data.name,
+      name: parsed.data.name,
       email: data.email,
       phone: data.phone,
-      dateOfBirth: formToDbDate(data.dateOfBirth || ""),
+      dateOfBirth: formToDbDate(parsed.data.dateOfBirth),
       allowPhotoVideo: data.allowPhotoVideo,
       userId: userId,
       addedByUserId: session.user.id,
@@ -110,6 +123,15 @@ export async function updateParticipant(
   const isAdmin = session.user.role === "admin";
   if (!isAdmin && existing.addedByUserId !== session.user.id) {
     throw new Error("No permission to edit this participant");
+  }
+
+  // Samma krav som när deltagaren skapades: en ändring får inte tömma
+  // namnet eller födelsedatumet. Fält som inte skickas med lämnas i fred.
+  const patch = ParticipantSchema.partial().safeParse(data);
+  if (!patch.success) {
+    throw new Error(
+      patch.error.issues[0]?.message ?? "Kontrollera deltagarens uppgifter.",
+    );
   }
 
   // If email changed, we might want to re-link or un-link the userId

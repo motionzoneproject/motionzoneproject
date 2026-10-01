@@ -1,4 +1,4 @@
-import { Clock, Users } from "lucide-react";
+import { Cake, Clock, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import EditParticipantForm from "@/components/EditParticipantForm";
@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
   type UserPurchaseWithProduct,
 } from "@/lib/actions/server-actions";
 import { getSessionData } from "@/lib/actions/sessiondata";
+import { calculateAge } from "@/lib/date-utils";
 import { pick } from "@/lib/i18n/pick";
 import prisma from "@/lib/prisma";
 import { getDictionary } from "@/locales/get-dictionary";
@@ -35,6 +37,8 @@ import BookingCal from "./components/BookingCal";
 import { EditDetailsForm } from "./components/EditDetailsForm";
 import { EditEmailForm } from "./components/EditEmailForm";
 import { EditPwForm } from "./components/EditPwForm";
+import { InvoiceRecipientForm } from "./components/InvoiceRecipientForm";
+import { MissingInvoiceNotice } from "./components/MissingInvoiceNotice";
 import OrderHistory from "./components/OrderHistory";
 import { PurchaseItemBookings } from "./components/PurchaseItemsBookings";
 import { TeacherProfileDialog } from "./components/TeacherProfileDialog";
@@ -72,6 +76,26 @@ export default async function Page() {
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
   const orders = await getUserOrders();
+
+  // Fakturamottagaren sitter på ordern, så det är ordrarna som avgör om något
+  // saknas — inte kontots förifyllning. Betalda och avbokade lämnas utanför:
+  // där är fakturan redan skickad eller inte längre aktuell.
+  const ordersMissingInvoice = orders.filter(
+    (order) =>
+      !order.invoiceName && !order.isPaid && order.status !== "CANCELLED",
+  );
+
+  // Utan födelsedatum kan vi inte avgöra om någon får stå som
+  // betalningsansvarig, och kunden får intyga åldern i stället. Det är kunden
+  // som sitter på svaret, så frågan hör hemma här.
+  const accountMissesDateOfBirth = !!userDetails && !userDetails.dateOfBirth;
+  const participantsMissingAge = myParticipants.filter((p) => !p.dateOfBirth);
+
+  const savedInvoice = {
+    invoiceName: userDetails?.invoiceName ?? null,
+    invoiceEmail: userDetails?.invoiceEmail ?? null,
+    invoicePhone: userDetails?.invoicePhone ?? null,
+  };
 
   const groupedPurchases = purchaseItems.reduce(
     (acc, item) => {
@@ -123,6 +147,51 @@ export default async function Page() {
             </div>
           </CardHeader>
           <CardContent>
+            {(accountMissesDateOfBirth ||
+              participantsMissingAge.length > 0) && (
+              <div className="mb-6 space-y-2 rounded-lg border border-amber-400/60 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="flex items-start gap-2">
+                  <Cake className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{t.user.ageMissingNotice}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pl-6">
+                  {accountMissesDateOfBirth && userDetails && (
+                    <EditDetailsForm
+                      details={userDetails}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t.user.ageMissingForMe}
+                        </Button>
+                      }
+                    />
+                  )}
+
+                  {participantsMissingAge.map((p) => (
+                    <EditParticipantForm
+                      key={p.id}
+                      participant={p}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t.user.ageMissingFor.replace("{{name}}", p.name)}
+                        </Button>
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {user && (
+              <MissingInvoiceNotice
+                orders={ordersMissingInvoice}
+                accountName={user.name}
+                accountEmail={user.email}
+                dateOfBirth={userDetails?.dateOfBirth ?? null}
+                savedInvoice={savedInvoice}
+              />
+            )}
+
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
               {t.user.bookings}
             </h3>
@@ -301,7 +370,20 @@ export default async function Page() {
                       className="p-3 border rounded-lg bg-muted/20 flex justify-between items-center group"
                     >
                       <div>
-                        <p className="font-medium text-sm">{p.name}</p>
+                        <p className="font-medium text-sm">
+                          {p.name}
+                          {/* Åldern hör till deltagaren: den avgör både vad
+                              som får bokas och vem som kan faktureras. */}
+                          {calculateAge(p.dateOfBirth) === null ? (
+                            <span className="ml-1 text-xs font-normal text-amber-700 dark:text-amber-400">
+                              ({t.user.ageMissing})
+                            </span>
+                          ) : (
+                            <span className="ml-1 text-xs font-normal text-muted-foreground">
+                              ({calculateAge(p.dateOfBirth)} {t.user.years})
+                            </span>
+                          )}
+                        </p>
                         {p.email && (
                           <p className="text-xs text-muted-foreground">
                             {p.email}
@@ -366,7 +448,44 @@ export default async function Page() {
               </div>
             )}
 
-            <OrderHistory orders={orders} />
+            <OrderHistory
+              orders={orders}
+              accountName={user?.name ?? ""}
+              accountEmail={user?.email ?? ""}
+              dateOfBirth={userDetails?.dateOfBirth ?? null}
+              savedInvoice={savedInvoice}
+            />
+
+            {user && (
+              <div className="mt-4 flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {t.user.orderInvoice.savedTitle}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {userDetails?.invoiceName
+                      ? `${userDetails.invoiceName}${
+                          userDetails.invoiceEmail
+                            ? ` · ${userDetails.invoiceEmail}`
+                            : ""
+                        }`
+                      : t.user.orderInvoice.savedEmpty}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t.user.orderInvoice.savedHelp}
+                  </p>
+                </div>
+                <InvoiceRecipientForm
+                  accountName={user.name}
+                  accountEmail={user.email}
+                  dateOfBirth={userDetails?.dateOfBirth ?? null}
+                  invoiceName={userDetails?.invoiceName ?? null}
+                  invoiceEmail={userDetails?.invoiceEmail ?? null}
+                  invoicePhone={userDetails?.invoicePhone ?? null}
+                  participants={myParticipants}
+                />
+              </div>
+            )}
 
             {userDetails && (
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border bg-muted/30">
@@ -397,7 +516,7 @@ export default async function Page() {
               </div>
             )}
 
-            <div className="my-4 md:flex justify-around gap-4 p-2 rounded-lg border bg-muted/30">
+            <div className="my-4 flex flex-col items-stretch gap-2 rounded-lg border bg-muted/30 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
               {userDetails && <EditDetailsForm details={userDetails} />}
               <EditPwForm />
               <EditEmailForm />

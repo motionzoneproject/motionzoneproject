@@ -37,6 +37,59 @@ export const AdminEditUserSchema = z.object({
   allowPhotoVideo: z.boolean(),
 });
 
+/**
+ * En deltagare, var den än läggs till: i kassan, på profilsidan eller av
+ * admin på en order.
+ *
+ * Namnet är obligatoriskt för att elevlistorna ska gå att läsa — en rad utan
+ * namn säger ingenting om vem som står i salen. Födelsedatumet är
+ * obligatoriskt för att avgöra om deltagaren är omyndig: det styr vem som kan
+ * faktureras, och utan det får kunden intyga åldern i stället för att vi bara
+ * vet den.
+ */
+export const ParticipantSchema = z.object({
+  name: z.string().trim().min(2, "Namn måste vara minst 2 tecken").max(150),
+  email: z.email("Ogiltig e-post").max(250).or(z.literal("")).optional(),
+  phone: z.string().trim().max(40).optional(),
+  dateOfBirth: z.iso.date("Ange födelsedatum (ÅÅÅÅ-MM-DD)").refine((value) => {
+    // Ett datum i framtiden eller långt tillbaka är en felskrivning, och
+    // just den felskrivningen gör en vuxen till omyndig eller tvärtom.
+    const date = new Date(value);
+    return date <= new Date() && date.getFullYear() >= 1900;
+  }, "Kontrollera födelsedatumet"),
+  allowPhotoVideo: z.boolean(),
+});
+
+export type ParticipantInput = z.infer<typeof ParticipantSchema>;
+
+/**
+ * Fakturamottagaren i kassan, på profilsidan och i adminvyn.
+ *
+ * Kunden väljer en person i stället för att skriva ett namn: kontoinnehavaren,
+ * en deltagare på ordern, eller "annan". För de två första hämtar servern
+ * namnet från den valda personen — klientens namn går inte att lita på, och
+ * poängen med valet är just att vi vet vem det är.
+ *
+ * E-posten är obligatorisk men fri — den är en leveransadress och får vara
+ * dansarens egen. Telefon är frivillig. adultConfirmed är kundens intyg om att
+ * mottagaren är myndig, och krävs när vi inte kan avgöra det själva.
+ */
+export const InvoiceRecipientSchema = z.object({
+  kind: z.enum(["self", "participant", "other"]),
+  participantId: z.string().max(64).optional(),
+  /** Används bara när kind är "other". */
+  invoiceName: z.string().trim().max(150).optional(),
+  invoiceEmail: z.email("Ogiltig e-postadress").max(250),
+  invoicePhone: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((v) => v === "" || v.length >= 5, "Ogiltigt telefonnummer"),
+  adultConfirmed: z.boolean(),
+});
+
+export type InvoiceRecipientInput = z.infer<typeof InvoiceRecipientSchema>;
+
 export const UserEmailSchema = z.object({
   currentEmail: z.email("Ogiltig e-postadress").max(250),
   email: z.email("Ogiltig e-postadress").max(250),

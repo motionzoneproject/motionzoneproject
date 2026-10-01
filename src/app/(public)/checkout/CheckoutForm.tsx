@@ -2,9 +2,14 @@
 
 import { AlertTriangle, Info, InfoIcon, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {
+  type InvoiceCandidate,
+  InvoiceRecipientPicker,
+  type InvoiceRecipientValue,
+} from "@/components/InvoiceRecipientPicker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -45,7 +50,17 @@ import {
   getOrCreateParticipant,
   type ParticipantData,
 } from "@/lib/actions/participants";
-import { formatDateToInputStr } from "@/lib/date-utils";
+import { calculateAge, formatDateToInputStr } from "@/lib/date-utils";
+import {
+  checkInvoiceRecipient,
+  type InvoiceRecipientProblem,
+  isMinor,
+  normalizeName,
+} from "@/lib/invoice-recipient";
+import {
+  InvoiceRecipientSchema,
+  ParticipantSchema,
+} from "@/validations/userforms";
 import { SelectPack } from "./components/SelectPack";
 
 export type CheckoutFormProps = {
@@ -66,6 +81,11 @@ export type CheckoutFormProps = {
   userDetails?: {
     postalCode?: string | null;
     allowPhotoVideo?: boolean | null;
+    /** Kontoinnehavarens födelsedatum, styr kravet på fakturamottagare. */
+    dateOfBirth?: Date | null;
+    invoiceName?: string | null;
+    invoiceEmail?: string | null;
+    invoicePhone?: string | null;
   } | null;
   existingParticipants: {
     id: string;
@@ -88,6 +108,15 @@ type SlotData = {
   customData?: ParticipantData; // used if creating new
 };
 
+/** Vilken text fakturamottagaren ska få, beroende på vad som sa ifrån. */
+const INVOICE_MESSAGES: Record<InvoiceRecipientProblem, string> = {
+  minorAccount: "checkout.invoice.sameAsAccountMinor",
+  minorParticipant: "checkout.invoice.sameAsParticipantMinor",
+  unconfirmedAge: "checkout.invoice.confirmAdultFirst",
+  missingName: "checkout.invoice.nameRequired",
+  unknownParticipant: "checkout.invoice.unknownParticipant",
+};
+
 const SLOT_REF = "slot:";
 
 /** Slotten skriver in en ny person, som andra slottar kan peka på. */
@@ -103,11 +132,6 @@ function refTarget(slot: SlotData | undefined): string | null {
     : null;
 }
 
-/** Normalize a name for fuzzy duplicate comparison */
-function normalizeName(name: string) {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 export default function CheckoutForm({
   items,
   user,
@@ -118,6 +142,34 @@ export default function CheckoutForm({
   const router = useRouter();
   const [note, setNote] = useState("");
   const [paymethod, setPaymethod] = useState("1");
+
+  // Åldern hör till deltagaren överallt hen visas: två namn i en lista säger
+  // ingenting om vem som är barn och vem som kan stå för betalningen.
+  const describeAge = (dateOfBirth: Date | string | null | undefined) => {
+    const age = calculateAge(dateOfBirth);
+    return age === null
+      ? ` (${t("checkout.invoice.unknownAge")})`
+      : ` (${age} ${t("checkout.invoice.years")})`;
+  };
+
+  // Fakturamottagaren anges separat från kontot. Ett konto som tillhör en
+  // omyndig kan inte faktureras, så då förifyller vi ingenting — den vuxna
+  // måste skrivas in. För alla andra är kontot en rimlig gissning.
+  const accountIsMinor = isMinor(userDetails?.dateOfBirth ?? null);
+
+  // Har kunden sparat en betalare som inte är hen själv börjar vi där.
+  const savedIsSomeoneElse =
+    !!userDetails?.invoiceName &&
+    normalizeName(userDetails.invoiceName) !== normalizeName(user.name);
+
+  const [invoice, setInvoice] = useState<InvoiceRecipientValue>({
+    kind: accountIsMinor || savedIsSomeoneElse ? "other" : "self",
+    invoiceName: savedIsSomeoneElse ? (userDetails?.invoiceName ?? "") : "",
+    invoiceEmail: userDetails?.invoiceEmail ?? user.email,
+    invoicePhone: userDetails?.invoicePhone ?? "",
+    adultConfirmed: false,
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPartialPackDialog, setShowPartialPackDialog] = useState(false);
 
@@ -138,6 +190,70 @@ export default function CheckoutForm({
       ]),
     ),
   );
+
+  // Deltagarna som är valda just nu. De som redan finns går att välja som
+  // betalare, de som skapas i samma veva har ännu inget id och kan bara fångas
+  // av namnkontrollen om man skriver in dem som "annan".
+  const { invoiceCandidates, newParticipants } = useMemo(() => {
+    const byId = new Map(existingParticipants.map((p) => [p.id, p]));
+    const candidates: InvoiceCandidate[] = [
+      {
+        id: "self",
+        kind: "self",
+        name: user.name,
+        email: user.email,
+        dateOfBirth: userDetails?.dateOfBirth ?? null,
+      },
+    ];
+    const created: { name: string; dateOfBirth?: string | null }[] = [];
+
+    for (const slot of Object.values(slots)) {
+      // En slot som pekar på en ny person från en annan produkt är samma
+      // person, och räknas redan på den produkten.
+      if (slot.isSelf || refTarget(slot)) continue;
+
+      if (slot.participantId && slot.participantId !== "new") {
+        const existing = byId.get(slot.participantId);
+        if (existing && !candidates.some((c) => c.id === existing.id))
+          candidates.push({
+            id: existing.id,
+            kind: "participant",
+            name: existing.name,
+            email: existing.email,
+            dateOfBirth: existing.dateOfBirth,
+          });
+      } else if (slot.customData?.name) {
+        created.push({
+          name: slot.customData.name,
+          dateOfBirth: slot.customData.dateOfBirth,
+        });
+      }
+    }
+
+    return { invoiceCandidates: candidates, newParticipants: created };
+  }, [slots, existingParticipants, user, userDetails?.dateOfBirth]);
+
+  // Samma kontroll som servern gör, så felet syns innan man trycker.
+  const chosen = invoiceCandidates.find(
+    (c) => c.id === (invoice.participantId ?? "self"),
+  );
+
+  const invoiceProblem = checkInvoiceRecipient({
+    kind: invoice.kind,
+    chosenName:
+      invoice.kind === "other" ? invoice.invoiceName : (chosen?.name ?? ""),
+    chosenDateOfBirth:
+      invoice.kind === "other" ? null : (chosen?.dateOfBirth ?? null),
+    adultConfirmed: invoice.adultConfirmed,
+    accountName: user.name,
+    accountDateOfBirth: userDetails?.dateOfBirth ?? null,
+    participants: [
+      ...invoiceCandidates
+        .filter((c) => c.kind === "participant")
+        .map((c) => ({ name: c.name, dateOfBirth: c.dateOfBirth })),
+      ...newParticipants,
+    ],
+  });
 
   // Course selections per slot (for PACK products with maxCourses set)
   // key: slot key, value: array of selected courseIds (length === maxCourses)
@@ -261,49 +377,114 @@ export default function CheckoutForm({
   // Den faktiska ordersubmit-logiken, separerad från formulärets submit-event
   // så den kan anropas antingen direkt eller efter bekräftelse i dialogen.
   const submitOrder = async () => {
+    // Fakturamottagaren först: det är ingen idé att skapa deltagare och
+    // rader om ordern ändå inte får läggas.
+    if (invoiceProblem) {
+      toast.error(t(INVOICE_MESSAGES[invoiceProblem]));
+      return;
+    }
+
+    // Allt nedan kontrolleras innan något sparas, med samma scheman som
+    // servern. Ett fel som först servern hittar kommer efter att deltagarna
+    // redan skapats, och i produktion döljer Next.js felets text — kunden får
+    // ett allmänt fel och vet inte vad som ska rättas.
+    const invoiceEmail = invoice.invoiceEmail.trim();
+    const invoiceCheck = InvoiceRecipientSchema.safeParse({
+      ...invoice,
+      invoiceEmail,
+    });
+
+    if (!invoiceCheck.success) {
+      const field = invoiceCheck.error.issues[0]?.path[0];
+      toast.error(
+        t(
+          field === "invoiceEmail"
+            ? "checkout.invoice.emailRequired"
+            : field === "invoicePhone"
+              ? "checkout.invoice.phoneInvalid"
+              : "checkout.invoice.checkDetails",
+        ),
+      );
+      return;
+    }
+
+    const selectedCourseIdsBySlot: (string[] | undefined)[] = [];
+
+    for (let idx = 0; idx < flattenedItems.length; idx++) {
+      const it = flattenedItems[idx];
+      const key = `slot-${idx}`;
+      const slot = slots[key] || { isSelf: false };
+
+      const target = refTarget(slot);
+      if (target && !isNewPersonSlot(slots[target])) {
+        toast.error(
+          t("checkout.form.missingParticipantForProduct", { name: it.name }),
+        );
+        return;
+      }
+
+      if (isNewPersonSlot(slot)) {
+        if (!slot.customData) {
+          toast.error(
+            t("checkout.form.missingParticipantForProduct", { name: it.name }),
+          );
+          return;
+        }
+
+        // Samma regel som servern och profilsidan använder: bland annat
+        // avgör födelsedatumet om deltagaren är omyndig, och det styr vem som
+        // kan faktureras.
+        const participantCheck = ParticipantSchema.safeParse(slot.customData);
+        if (!participantCheck.success) {
+          const field = participantCheck.error.issues[0]?.path[0];
+          toast.error(
+            t(
+              field === "name"
+                ? "checkout.form.missingNameForProduct"
+                : field === "dateOfBirth"
+                  ? "checkout.form.missingDateForProduct"
+                  : field === "email"
+                    ? "checkout.form.invalidEmailForProduct"
+                    : "checkout.form.checkParticipantForProduct",
+              { name: it.name },
+            ),
+          );
+          return;
+        }
+      }
+
+      // Kräver minst 1 vald kurs för paket med maxCourses satt.
+      // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
+      if (it.product.maxCourses != null) {
+        const picked = (courseSelections[key] ?? []).filter(Boolean);
+        if (picked.length === 0) {
+          toast.error(t("checkout.pack.needAtLeastOne", { name: it.name }));
+          return;
+        }
+        if (new Set(picked).size !== picked.length) {
+          toast.error(t("checkout.pack.duplicateSelection", { name: it.name }));
+          return;
+        }
+        selectedCourseIdsBySlot[idx] = picked;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       const orderItems = [];
 
       // Först skapas de nya personerna, en gång var. En slot som valt samma
-      // person från en annan produkt får sedan samma deltagare.
+      // person från en annan produkt får sedan samma deltagare. Uppgifterna
+      // är redan kontrollerade ovan.
       const createdBySlot: Record<string, string> = {};
       for (let idx = 0; idx < flattenedItems.length; idx++) {
-        const it = flattenedItems[idx];
         const key = `slot-${idx}`;
         const slot = slots[key] || { isSelf: false };
-        if (!isNewPersonSlot(slot)) continue;
+        if (!isNewPersonSlot(slot) || !slot.customData) continue;
 
-        if (slot.customData) {
-          if (!slot.customData.name) {
-            toast.error(
-              t("checkout.form.missingNameForProduct", { name: it.name }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
-
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (
-            !slot.customData.dateOfBirth ||
-            !dateRegex.test(slot.customData.dateOfBirth) ||
-            Number.isNaN(new Date(slot.customData.dateOfBirth).getTime())
-          ) {
-            throw new Error(
-              `Ogiltigt eller saknat födelsedatum för deltagare till ${it.name}.`,
-            );
-          }
-
-          const p = await getOrCreateParticipant(slot.customData);
-          createdBySlot[key] = p.id;
-        } else {
-          toast.error(
-            t("checkout.form.missingParticipantForProduct", { name: it.name }),
-          );
-          setIsSubmitting(false);
-          return;
-        }
+        const p = await getOrCreateParticipant(slot.customData);
+        createdBySlot[key] = p.id;
       }
 
       for (let idx = 0; idx < flattenedItems.length; idx++) {
@@ -311,46 +492,17 @@ export default function CheckoutForm({
         const key = `slot-${idx}`;
         const slot = slots[key] || { isSelf: false };
         const target = refTarget(slot);
+        const selectedCourseIds = selectedCourseIdsBySlot[idx];
         let participantId: string | null = null;
 
         if (slot.isSelf) {
           participantId = null;
         } else if (target) {
           participantId = createdBySlot[target] ?? null;
-          if (!participantId) {
-            toast.error(
-              t("checkout.form.missingParticipantForProduct", {
-                name: it.name,
-              }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
         } else if (slot.participantId && slot.participantId !== "new") {
           participantId = slot.participantId;
         } else {
-          participantId = createdBySlot[key];
-        }
-
-        // Kräver minst 1 vald kurs för paket med maxCourses satt.
-        // Fullständigt val krävs inte längre - partiellt val bekräftas via dialog.
-        const maxCourses = it.product.maxCourses;
-        let selectedCourseIds: string[] | undefined;
-        if (maxCourses != null) {
-          const picked = (courseSelections[key] ?? []).filter(Boolean);
-          if (picked.length === 0) {
-            toast.error(t("checkout.pack.needAtLeastOne", { name: it.name }));
-            setIsSubmitting(false);
-            return;
-          }
-          if (new Set(picked).size !== picked.length) {
-            toast.error(
-              t("checkout.pack.duplicateSelection", { name: it.name }),
-            );
-            setIsSubmitting(false);
-            return;
-          }
-          selectedCourseIds = picked;
+          participantId = createdBySlot[key] ?? null;
         }
 
         orderItems.push({
@@ -370,6 +522,7 @@ export default function CheckoutForm({
         postalcode: userDetails?.postalCode || undefined,
         note,
         paymethod: Number(paymethod),
+        invoice: { ...invoice, invoiceEmail },
       });
 
       toast.success(t("checkout.form.orderCreated"));
@@ -500,6 +653,9 @@ export default function CheckoutForm({
                             {otherParticipants.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
                                 {p.name}
+                                <span className="text-xs text-muted-foreground">
+                                  {describeAge(p.dateOfBirth)}
+                                </span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -744,6 +900,56 @@ export default function CheckoutForm({
                 </div>
               );
             })}
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("checkout.invoice.heading")}
+            </h3>
+
+            <p className="text-xs text-muted-foreground">
+              {t("checkout.invoice.intro")}
+            </p>
+
+            {accountIsMinor && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{t("checkout.invoice.minorNotice")}</span>
+              </div>
+            )}
+
+            <InvoiceRecipientPicker
+              candidates={invoiceCandidates}
+              value={invoice}
+              onChange={setInvoice}
+              idPrefix="checkout"
+              labels={{
+                whoPays: t("checkout.invoice.pickWho"),
+                self: t("checkout.invoice.self"),
+                other: t("checkout.invoice.other"),
+                minorHint: t("checkout.invoice.minorHint"),
+                years: t("checkout.invoice.years"),
+                unknownAge: t("checkout.invoice.unknownAge"),
+                nameLabel: t("checkout.invoice.name"),
+                namePlaceholder: t("checkout.invoice.namePlaceholder"),
+                emailLabel: t("checkout.invoice.email"),
+                emailPlaceholder: t("checkout.invoice.emailPlaceholder"),
+                emailHelp: t("checkout.invoice.emailHelp"),
+                phoneLabel: t("checkout.invoice.phoneOptional"),
+                phonePlaceholder: t("checkout.invoice.phonePlaceholder"),
+                adultConfirm: t("checkout.invoice.adultConfirm"),
+                adultConfirmHelp: t("checkout.invoice.adultConfirmHelp"),
+                noOwnEmail: t("checkout.invoice.noOwnEmail"),
+                emailToMinor: t("checkout.invoice.emailToMinor"),
+              }}
+            />
+
+            {(invoiceProblem === "minorAccount" ||
+              invoiceProblem === "minorParticipant") && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {t(INVOICE_MESSAGES[invoiceProblem])}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2 pt-4 border-t">
