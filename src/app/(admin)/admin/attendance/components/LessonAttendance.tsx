@@ -156,6 +156,11 @@ export function LessonAttendance({
                       {studentDetails(student)}
                     </span>
                   </span>
+                  {student.pending && (
+                    <span className="shrink-0 rounded-full border border-amber-500/50 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">
+                      Ej beviljad
+                    </span>
+                  )}
                   {student.booked && (
                     <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                       Bokad
