@@ -604,10 +604,20 @@ const detailsSelect = {
  * kurskolumn, och eleven ur kurs- och lärarfiltret. Ett manuellt tillägg
  * lägger till kursen, och elever som bara finns som tillägg — utan köp —
  * läggs till i listan när man filtrerar på kursen eller läraren.
+ *
+ * Övriga filter gäller tilläggen också: terminen avgörs av kursen, och en
+ * elev utan köp har ingen order som väntar på godkännande.
  */
 async function applyRosterEntries(
   students: StudentSummary[],
-  filters: { course: string; teacher: string; product: string; query: string },
+  filters: {
+    course: string;
+    teacher: string;
+    product: string;
+    termin: string;
+    approval: "all" | "approved" | "unapproved";
+    query: string;
+  },
 ): Promise<StudentSummary[]> {
   const entries = await prisma.courseRosterEntry.findMany({
     select: {
@@ -670,12 +680,27 @@ async function applyRosterEntries(
     ),
   );
 
-  // Produktfiltret gäller köp, och en manuellt tillagd elev har inget.
-  if (filters.product) return result;
+  // Produktfiltret gäller köp, och en manuellt tillagd elev har inget. Hen
+  // har inte heller någon order som väntar på godkännande.
+  if (filters.product || filters.approval === "unapproved") return result;
+
+  const terminCourseIds = filters.termin
+    ? new Set(
+        (
+          await prisma.course.findMany({
+            where: { schemaItems: { some: { terminId: filters.termin } } },
+            select: { id: true },
+          })
+        ).map((c) => c.id),
+      )
+    : null;
 
   const listed = new Set(result.map((s) => s.studentKey));
   const missing = added.filter(
-    (e) => inScope(e.courseId, e.course.teacherId) && !listed.has(e.studentKey),
+    (e) =>
+      inScope(e.courseId, e.course.teacherId) &&
+      (!terminCourseIds || terminCourseIds.has(e.courseId)) &&
+      !listed.has(e.studentKey),
   );
   if (missing.length === 0) return result;
 
@@ -778,12 +803,18 @@ async function applyRosterEntries(
     })),
   ];
 
+  // Samma fält som sökningen bland köpen: elevens och kundens namn, e-post
+  // och kursnamnet. Produkten finns inte för ett tillägg.
   const q = filters.query.trim().toLowerCase();
   const matchingExtra = q
-    ? extra.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.user.email.toLowerCase().includes(q),
+    ? extra.filter((s) =>
+        [
+          s.name,
+          s.user.name,
+          s.user.email,
+          s.participant?.email,
+          ...s.courses.map((c) => c.name),
+        ].some((field) => field?.toLowerCase().includes(q)),
       )
     : extra;
 
@@ -1186,6 +1217,8 @@ export default async function Page({
     course,
     teacher,
     product,
+    termin,
+    approval,
     query,
   });
 

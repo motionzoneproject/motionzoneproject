@@ -9,7 +9,7 @@
 
 import type { Prisma } from "@/generated/prisma/client";
 import { calcRemainingCount, showRemaining } from "./actions/purchase-helpers";
-import { studentKeyOf } from "./course-roster";
+import { placesStudentInCourse, studentKeyOf } from "./course-roster";
 import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
@@ -251,12 +251,20 @@ async function manualStudentsWithoutPurchase() {
 /**
  * Aktiva paket utan kursbegränsning som autobokar fler än två kurser.
  *
+ * Klippkort räknas inte: ett klippkort över flera kurser har en gemensam
+ * pott, och autobook() bokar aldrig in det av sig själv, oavsett flaggan.
+ *
  * Antalet kopplade kurser går inte att filtrera på i en Prisma-where, så
  * urvalet görs i minnet. Produkttabellen är liten.
  */
 async function autobookingEverythingProducts() {
   const products = await prisma.product.findMany({
-    where: { active: true, autobook: true, maxCourses: null },
+    where: {
+      active: true,
+      autobook: true,
+      maxCourses: null,
+      type: { not: "CLIP" },
+    },
     select: { id: true, name: true, _count: { select: { courses: true } } },
     orderBy: { name: "asc" },
   });
@@ -272,34 +280,68 @@ async function autobookingEverythingProducts() {
 
 /**
  * Kursrader som placerar eleven i kursen men saknar bokningar. Samma regel
- * som elevlistan (course-roster): en produkt som autobokar, eller en enskild
- * kurs. Terminskort, program och klippkort över flera kurser räknas inte —
- * där är noll bokningar det normala tills schemat satts.
+ * som elevlistan (placesStudentInCourse): en kurs som bytts bort i paketet
+ * räknas inte, en produkt som autobokar räknas, och ett köp som bara ger en
+ * kurs räknas. Terminskort, program och klippkort över flera kurser räknas
+ * inte — där är noll bokningar det normala tills schemat satts.
  *
  * En elev som studion tagit bort från kursen räknas inte heller: där är noll
  * bokningar meningen, och åtgärden skulle boka in hen igen.
+ *
+ * Antalet kursrader i köpet går inte att filtrera på i en Prisma-where, så
+ * regeln tillämpas i minnet. Urvalet är redan begränsat till kursrader utan
+ * bokningar i kurser med lektioner kvar.
  */
-async function purchaseItemWithoutBookings(): Promise<Prisma.PurchaseItemWhereInput> {
+async function purchaseItemsWithoutBookings(): Promise<string[]> {
   const removed = await prisma.courseRosterEntry.findMany({
     where: { status: "REMOVED" },
-    select: { courseId: true, userId: true, participantId: true },
+    select: { courseId: true, studentKey: true },
+  });
+  const removedKeys = new Set(
+    removed.map((e) => `${e.courseId}|${e.studentKey}`),
+  );
+
+  const candidates = await prisma.purchaseItem.findMany({
+    where: {
+      bookings: { none: {} },
+      course: {
+        lessons: {
+          some: { cancelled: false, startTime: { gte: new Date() } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      courseId: true,
+      orderItem: {
+        select: { courseSelections: { select: { courseId: true } } },
+      },
+      purchase: {
+        select: {
+          userId: true,
+          participantId: true,
+          product: { select: { autobook: true } },
+          _count: { select: { PurchaseItems: true } },
+        },
+      },
+    },
   });
 
-  return {
-    bookings: { none: {} },
-    purchase: {
-      product: { OR: [{ autobook: true }, { type: "COURSE" }] },
-    },
-    course: {
-      lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
-    },
-    NOT: removed.map((e) => ({
-      courseId: e.courseId,
-      purchase: e.participantId
-        ? { participantId: e.participantId }
-        : { userId: e.userId ?? "", participantId: null },
-    })),
-  };
+  return candidates
+    .filter(
+      (item) =>
+        !removedKeys.has(`${item.courseId}|${studentKeyOf(item.purchase)}`) &&
+        placesStudentInCourse({
+          courseId: item.courseId,
+          selectedCourseIds: item.orderItem.courseSelections.map(
+            (s) => s.courseId,
+          ),
+          autobook: item.purchase.product.autobook,
+          courseCount: item.purchase._count.PurchaseItems,
+          activeBookings: 0,
+        }),
+    )
+    .map((item) => item.id);
 }
 
 const productWithoutCourse = {
@@ -921,11 +963,10 @@ const checks: Check[] = [
     fixLabel: "Till elever",
     severity: "serious",
     fixable: true,
-    count: async () =>
-      prisma.purchaseItem.count({ where: await purchaseItemWithoutBookings() }),
+    count: async () => (await purchaseItemsWithoutBookings()).length,
     list: async () => {
       const rows = await prisma.purchaseItem.findMany({
-        where: await purchaseItemWithoutBookings(),
+        where: { id: { in: await purchaseItemsWithoutBookings() } },
         select: {
           id: true,
           remainingCount: true,

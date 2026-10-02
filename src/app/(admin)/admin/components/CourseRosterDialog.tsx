@@ -113,6 +113,9 @@ export function CourseRosterDialog({
                       {student.addedManually && (
                         <Badge variant="outline">Tillagd manuellt</Badge>
                       )}
+                      {student.pending && (
+                        <Badge variant="outline">Ej beviljad än</Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       {student.products.map((product) => (
@@ -130,14 +133,18 @@ export function CourseRosterDialog({
                       </span>
                     </div>
                   </div>
-                  <RemoveFromCourseButton
-                    courseId={roster.courseId}
-                    courseName={roster.courseName}
-                    studentKey={student.studentKey}
-                    studentName={student.name}
-                    addedManually={student.addedManually}
-                    onRemoved={load}
-                  />
+                  {/* En obeviljad order har inget att ta bort än: den nekas
+                      under Ordrar, och beviljas den bokas eleven in. */}
+                  {!student.pending && (
+                    <RemoveFromCourseButton
+                      courseId={roster.courseId}
+                      courseName={roster.courseName}
+                      studentKey={student.studentKey}
+                      studentName={student.name}
+                      addedManually={student.addedManually}
+                      onRemoved={load}
+                    />
+                  )}
                 </div>
               ))}
             </div>
