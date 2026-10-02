@@ -45,10 +45,9 @@ export function AttendanceFollowUp({
           </span>
         </h2>
         <p className="text-sm text-muted-foreground">
-          Lektioner senaste veckan där närvaron saknas, eller inte stämmer med
-          bokningarna. Bokade som inte kom kan tas bort under Bokningar, så
-          tillfället går tillbaka; den som kom utan att ha bokat kan bokas in
-          där.
+          Lektioner senaste veckan där närvaron saknas, eller där någon var
+          närvarande utan bokning. Den som kom utan att ha bokat kan bokas in
+          under Bokningar.
         </p>
       </div>
 
@@ -117,8 +116,9 @@ function FollowUpList({
                 Närvaro ej tagen
               </Badge>
             )}
+            {/* Bara upplysning: en missad lektion ger inget tillbaka. */}
             {bookedNotPresent > 0 && (
-              <Badge variant="outline" className={amber}>
+              <Badge variant="outline" className="text-muted-foreground">
                 {bookedNotPresent} bokad{bookedNotPresent === 1 ? "" : "e"} utan
                 närvaro
               </Badge>

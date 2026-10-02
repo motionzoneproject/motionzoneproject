@@ -7,7 +7,6 @@ import {
   compareLesson,
   compareLessonInclude,
 } from "@/lib/attendance-compare";
-import { handleClips } from "@/lib/clips";
 import { studentKeyOf } from "@/lib/course-roster";
 import { loadCourseRoster } from "@/lib/course-roster-data";
 import {
@@ -558,93 +557,6 @@ export async function getBookingAttendance(
       marks.map((m) => [m.studentKey, m.status]),
     ),
     presentWithoutBooking,
-  };
-}
-
-/**
- * Tar bort bokningarna på en lektion där eleven inte markerats som
- * närvarande, och lägger tillbaka tillfällena på elevernas saldon — samma sak
- * som papperskorgen gör, för alla på en gång.
- *
- * Görs bara på studions uttryckliga begäran, och bara när närvaron är tagen
- * på lektionen. Annars går det inte att skilja en elev som inte kom från en
- * lektion där ingen bockat av, och då skulle alla bokningar försvinna.
- *
- * @auth Admin eller lektionens lärare
- */
-export async function removeBookingsWithoutAttendance(
-  lessonId: string,
-): Promise<Result> {
-  const session = await requireTeacherOrAdmin();
-  if (!session) return { success: false, msg: "Ingen behörighet." };
-
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { teacherId: true, course: { select: { teacherId: true } } },
-  });
-  if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
-  if (!mayTakeAttendance(session, lesson)) {
-    return { success: false, msg: "Det här är inte din lektion." };
-  }
-
-  const [marks, bookings] = await Promise.all([
-    prisma.attendance.findMany({
-      where: { lessonId },
-      select: { studentKey: true, status: true },
-    }),
-    prisma.booking.findMany({
-      where: { lessonId, cancelled: false },
-      select: {
-        id: true,
-        purchaseItemId: true,
-        purchaseItem: {
-          select: {
-            purchase: { select: { userId: true, participantId: true } },
-          },
-        },
-      },
-    }),
-  ]);
-
-  if (marks.length === 0) {
-    return { success: false, msg: "Närvaron är inte tagen på lektionen ännu." };
-  }
-
-  const present = new Set(
-    marks.filter((m) => m.status === "PRESENT").map((m) => m.studentKey),
-  );
-  const toRemove = bookings.filter(
-    (b) => !present.has(studentKeyOf(b.purchaseItem.purchase)),
-  );
-  if (toRemove.length === 0) {
-    return { success: true, msg: "Alla bokningar har närvaro." };
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      for (const booking of toRemove) {
-        const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-        if (!clipResult.success) {
-          throw new Error(clipResult.msg || "Kunde inte återställa saldo.");
-        }
-        await tx.booking.delete({ where: { id: booking.id } });
-      }
-    });
-  } catch (e) {
-    console.error("Kunde inte ta bort bokningar utan närvaro", e);
-    return { success: false, msg: "Kunde inte ta bort bokningarna." };
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/lectures");
-  revalidatePath("/admin/students");
-  revalidatePath("/user");
-
-  return {
-    success: true,
-    msg: `${toRemove.length} ${
-      toRemove.length === 1 ? "bokning" : "bokningar"
-    } utan närvaro togs bort och tillfällena lades tillbaka.`,
   };
 }
 
