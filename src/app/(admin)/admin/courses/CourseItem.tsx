@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Course, Style, User } from "@/generated/prisma/client";
-import { getCourseRoster } from "@/lib/actions/roster-actions";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
 import { CourseRosterDialog } from "../components/CourseRosterDialog";
@@ -16,6 +15,13 @@ interface Props {
   styles: Style[];
   teachers: User[];
   teacherName?: string;
+  /**
+   * Elever som går kursen, från samma regel som "Hantera elever" — antalet
+   * och listan kan då inte säga olika saker. Att räkna alla köp med tillgång
+   * gav terminskortens och programmens köpare i nästan varje kurs. Räknas
+   * för hela sidan på en gång, av getCourseStudentCounts.
+   */
+  studentCount: number;
   lang?: "sv" | "en";
 }
 
@@ -24,17 +30,12 @@ export default async function CourseItem({
   styles,
   teachers,
   teacherName,
+  studentCount,
   lang = "sv",
 }: Props) {
   const lessonsCnt = await prisma.lesson.count({
     where: { courseId: course.id },
   });
-
-  // Elever som går kursen, från samma funktion som "Hantera elever" visar —
-  // antalet och listan kan då inte säga olika saker. Att räkna alla köp med
-  // tillgång gav terminskortens och programmens köpare i nästan varje kurs.
-  const roster = await getCourseRoster(course.id);
-  const studentCount = roster?.students.length ?? 0;
 
   return (
     <TableRow className={!course.active ? "opacity-60" : ""}>

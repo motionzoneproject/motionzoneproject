@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import type { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import { getCourseStudentCounts } from "@/lib/actions/roster-actions";
 import { getStyles } from "@/lib/actions/style-actions";
 import prisma from "@/lib/prisma";
 import AdminLanguageSwitch from "../components/AdminLanguageSwitch";
@@ -75,6 +76,9 @@ export default async function Page({
     take: ITEMS_PER_PAGE,
   });
   const teacherMap = new Map(teachers.map((t) => [t.id, t.name]));
+  const studentCounts = await getCourseStudentCounts(
+    allCourses.map((c) => c.id),
+  );
 
   return (
     <div className="p-4 space-y-4">
@@ -116,6 +120,7 @@ export default async function Page({
                 styles={styles}
                 teachers={teachers}
                 teacherName={teacherMap.get(c.teacherId)}
+                studentCount={studentCounts[c.id] ?? 0}
               />
             ))}
           </TableBody>

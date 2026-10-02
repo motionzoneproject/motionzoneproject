@@ -6,6 +6,7 @@ import { mayManageCourse } from "@/lib/course-access";
 import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
+import { isAdminRole } from "./admin";
 import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 
@@ -293,9 +294,47 @@ export async function getCourseRoster(
   });
   if (!course) return null;
 
+  const rosters = await collectRosters([courseId]);
+  const students = rosters.get(courseId) ?? new Map();
+
+  return {
+    courseId: course.id,
+    courseName: getCourseName(course),
+    students: [...students.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, "sv"),
+    ),
+  };
+}
+
+/**
+ * Antalet elever per kurs, för kurssidan. Samma regel som "Hantera elever",
+ * men för alla kurser på sidan i två frågor i stället för fyra per kurs.
+ *
+ * @auth Admin
+ */
+export async function getCourseStudentCounts(
+  courseIds: string[],
+): Promise<Record<string, number>> {
+  if (!(await isAdminRole())) return {};
+
+  const rosters = await collectRosters(courseIds);
+  return Object.fromEntries(
+    courseIds.map((id) => [id, rosters.get(id)?.size ?? 0]),
+  );
+}
+
+/**
+ * Vem som går kurserna: köpen och bokningarna enligt course-roster, sedan
+ * studions egna ändringar. En borttagning vinner alltid, ett manuellt
+ * tillägg läggs till. Gemensam för listan och antalet, så att de inte kan
+ * säga olika saker.
+ */
+async function collectRosters(
+  courseIds: string[],
+): Promise<Map<string, Map<string, CourseRosterStudent>>> {
   const [rows, entries] = await Promise.all([
     prisma.purchaseItem.findMany({
-      where: { courseId },
+      where: { courseId: { in: courseIds } },
       select: {
         courseId: true,
         orderItem: {
@@ -315,8 +354,9 @@ export async function getCourseRoster(
       },
     }),
     prisma.courseRosterEntry.findMany({
-      where: { courseId },
+      where: { courseId: { in: courseIds } },
       select: {
+        courseId: true,
         studentKey: true,
         status: true,
         user: { select: { name: true } },
@@ -328,10 +368,20 @@ export async function getCourseRoster(
   ]);
 
   const removed = new Set(
-    entries.filter((e) => e.status === "REMOVED").map((e) => e.studentKey),
+    entries
+      .filter((e) => e.status === "REMOVED")
+      .map((e) => `${e.courseId}|${e.studentKey}`),
   );
 
-  const students = new Map<string, CourseRosterStudent>();
+  const rosters = new Map<string, Map<string, CourseRosterStudent>>();
+  const rosterOf = (courseId: string) => {
+    let roster = rosters.get(courseId);
+    if (!roster) {
+      roster = new Map();
+      rosters.set(courseId, roster);
+    }
+    return roster;
+  };
 
   for (const row of rows) {
     const placed = placesStudentInCourse({
@@ -344,8 +394,9 @@ export async function getCourseRoster(
     if (!placed) continue;
 
     const key = studentKeyOf(row.purchase);
-    if (removed.has(key)) continue;
+    if (removed.has(`${row.courseId}|${key}`)) continue;
 
+    const students = rosterOf(row.courseId);
     const existing = students.get(key);
     if (existing) {
       existing.products.push(row.purchase.product.name);
@@ -364,7 +415,9 @@ export async function getCourseRoster(
   }
 
   for (const entry of entries) {
-    if (entry.status !== "ADDED" || students.has(entry.studentKey)) continue;
+    if (entry.status !== "ADDED") continue;
+    const students = rosterOf(entry.courseId);
+    if (students.has(entry.studentKey)) continue;
     const name = entry.participant?.name ?? entry.user?.name;
     if (!name) continue;
 
@@ -378,13 +431,7 @@ export async function getCourseRoster(
     });
   }
 
-  return {
-    courseId: course.id,
-    courseName: getCourseName(course),
-    students: [...students.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, "sv"),
-    ),
-  };
+  return rosters;
 }
 
 /**

@@ -100,49 +100,68 @@ export async function getPurchaseSchedule(
   if (!purchase) return null;
 
   const now = new Date();
+  const itemIds = purchase.PurchaseItems.map((i) => i.id);
 
-  const rows: ScheduleRow[] = await Promise.all(
-    purchase.PurchaseItems.map(async (item) => {
-      const [upcomingLessons, bookedUpcoming, bookedTotal] = await Promise.all([
-        prisma.lesson.count({
-          where: {
-            courseId: item.courseId,
-            cancelled: false,
-            startTime: { gte: now },
-          },
-        }),
-        prisma.booking.count({
-          where: {
-            purchaseItemId: item.id,
-            lesson: { startTime: { gte: now } },
-          },
-        }),
-        prisma.booking.count({ where: { purchaseItemId: item.id } }),
-      ]);
-
-      const remaining = calcRemainingCount({
-        purchase: {
-          type: purchase.type,
-          remainingCount: purchase.remainingCount,
-        },
-        purchaseItem: {
-          unlimited: item.unlimited,
-          remainingCount: item.remainingCount,
-        },
-      });
-
-      return {
-        purchaseItemId: item.id,
-        courseId: item.courseId,
-        courseName: getCourseName(item.course),
-        upcomingLessons,
-        bookedUpcoming,
-        bookedTotal,
-        remaining: String(showRemaining(remaining)),
-        outOfBalance: remaining !== Number.POSITIVE_INFINITY && remaining <= 0,
-      };
+  // Ett terminskort ger ett tjugotal kursrader. Räknat rad för rad blev det
+  // tre frågor per rad; grupperat är det tre frågor för hela köpet.
+  const [lessonCounts, upcomingCounts, totalCounts] = await Promise.all([
+    prisma.lesson.groupBy({
+      by: ["courseId"],
+      where: {
+        courseId: { in: purchase.PurchaseItems.map((i) => i.courseId) },
+        cancelled: false,
+        startTime: { gte: now },
+      },
+      _count: { _all: true },
     }),
+    prisma.booking.groupBy({
+      by: ["purchaseItemId"],
+      where: {
+        purchaseItemId: { in: itemIds },
+        lesson: { startTime: { gte: now } },
+      },
+      _count: { _all: true },
+    }),
+    prisma.booking.groupBy({
+      by: ["purchaseItemId"],
+      where: { purchaseItemId: { in: itemIds } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const upcomingByCourse = new Map(
+    lessonCounts.map((c) => [c.courseId, c._count._all]),
   );
+  const bookedUpcomingByItem = new Map(
+    upcomingCounts.map((c) => [c.purchaseItemId, c._count._all]),
+  );
+  const bookedTotalByItem = new Map(
+    totalCounts.map((c) => [c.purchaseItemId, c._count._all]),
+  );
+
+  const rows: ScheduleRow[] = purchase.PurchaseItems.map((item) => {
+    const remaining = calcRemainingCount({
+      purchase: {
+        type: purchase.type,
+        remainingCount: purchase.remainingCount,
+      },
+      purchaseItem: {
+        unlimited: item.unlimited,
+        remainingCount: item.remainingCount,
+      },
+    });
+
+    return {
+      purchaseItemId: item.id,
+      courseId: item.courseId,
+      courseName: getCourseName(item.course),
+      upcomingLessons: upcomingByCourse.get(item.courseId) ?? 0,
+      bookedUpcoming: bookedUpcomingByItem.get(item.id) ?? 0,
+      bookedTotal: bookedTotalByItem.get(item.id) ?? 0,
+      remaining: String(showRemaining(remaining)),
+      outOfBalance: remaining !== Number.POSITIVE_INFINITY && remaining <= 0,
+    };
+  });
 
   rows.sort((a, b) => a.courseName.localeCompare(b.courseName, "sv"));
 
