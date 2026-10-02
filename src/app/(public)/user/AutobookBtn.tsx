@@ -27,6 +27,7 @@ const FAILURE_KEYS: Record<
 > = {
   unauthorized: "user.autobook.error",
   notSelected: "user.autobook.notSelected",
+  removedByStudio: "user.autobook.removedByStudio",
   nothingToBook: "user.autobook.noNew",
   error: "user.autobook.error",
 };

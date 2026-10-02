@@ -77,7 +77,8 @@ function revalidateRosterViews() {
  * kvar eleven i listan. Därför sparas också ett uttryckligt "borttagen", som
  * vinner över köpen och bokningarna.
  *
- * Var eleven bara manuellt tillagd tas den raden bort i stället.
+ * Var eleven tillagd för hand och saknar köp i kursen tas den raden bort i
+ * stället.
  *
  * @auth Admin eller kursens lärare
  */
@@ -100,12 +101,6 @@ export async function removeStudentFromCourse(
     select: { id: true, status: true },
   });
 
-  if (existing?.status === "ADDED") {
-    await prisma.courseRosterEntry.delete({ where: { id: existing.id } });
-    revalidateRosterViews();
-    return { success: true, msg: `${name} är inte längre tillagd i kursen.` };
-  }
-
   const now = new Date();
   const items = await prisma.purchaseItem.findMany({
     where: courseItemsWhere(courseId, key),
@@ -117,6 +112,17 @@ export async function removeStudentFromCourse(
       },
     },
   });
+
+  // Tillagd för hand och utan köp i kursen: tillägget är det enda som håller
+  // kvar eleven. Har hen också ett köp — en lärare la till, och admin bokade
+  // sedan in — räcker det inte att ta bort tillägget, då står eleven kvar
+  // med sina bokningar. Då tas hen bort på riktigt nedan, och raden blir en
+  // borttagning.
+  if (existing?.status === "ADDED" && items.length === 0) {
+    await prisma.courseRosterEntry.delete({ where: { id: existing.id } });
+    revalidateRosterViews();
+    return { success: true, msg: `${name} är inte längre tillagd i kursen.` };
+  }
 
   const cancelled = items.reduce((sum, i) => sum + i.bookings.length, 0);
 

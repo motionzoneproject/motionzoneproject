@@ -275,8 +275,16 @@ async function autobookingEverythingProducts() {
  * som elevlistan (course-roster): en produkt som autobokar, eller en enskild
  * kurs. Terminskort, program och klippkort över flera kurser räknas inte —
  * där är noll bokningar det normala tills schemat satts.
+ *
+ * En elev som studion tagit bort från kursen räknas inte heller: där är noll
+ * bokningar meningen, och åtgärden skulle boka in hen igen.
  */
-function purchaseItemWithoutBookings(): Prisma.PurchaseItemWhereInput {
+async function purchaseItemWithoutBookings(): Promise<Prisma.PurchaseItemWhereInput> {
+  const removed = await prisma.courseRosterEntry.findMany({
+    where: { status: "REMOVED" },
+    select: { courseId: true, userId: true, participantId: true },
+  });
+
   return {
     bookings: { none: {} },
     purchase: {
@@ -285,6 +293,12 @@ function purchaseItemWithoutBookings(): Prisma.PurchaseItemWhereInput {
     course: {
       lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
     },
+    NOT: removed.map((e) => ({
+      courseId: e.courseId,
+      purchase: e.participantId
+        ? { participantId: e.participantId }
+        : { userId: e.userId ?? "", participantId: null },
+    })),
   };
 }
 
@@ -901,17 +915,17 @@ const checks: Check[] = [
         'Ska eleven bara gå vissa kurser använder du i stället kolumnen "Schema" på /admin/students.',
       ],
       caveat:
-        "En elev som medvetet plockats bort från alla lektioner ser likadan ut som en som aldrig blev inbokad — borttagna bokningar lämnar inget spår. Kontrollera att eleven verkligen ska gå kursen innan du bokar in.",
+        'En elev som tagits bort via "Hantera elever" räknas inte hit. Men en elev vars bokningar tagits bort på annat sätt ser likadan ut som en som aldrig blev inbokad. Kontrollera att eleven verkligen ska gå kursen innan du bokar in.',
     },
     fixHref: "/admin/students",
     fixLabel: "Till elever",
     severity: "serious",
     fixable: true,
-    count: () =>
-      prisma.purchaseItem.count({ where: purchaseItemWithoutBookings() }),
+    count: async () =>
+      prisma.purchaseItem.count({ where: await purchaseItemWithoutBookings() }),
     list: async () => {
       const rows = await prisma.purchaseItem.findMany({
-        where: purchaseItemWithoutBookings(),
+        where: await purchaseItemWithoutBookings(),
         select: {
           id: true,
           remainingCount: true,

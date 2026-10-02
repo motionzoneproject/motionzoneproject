@@ -8,6 +8,7 @@ import type {
   Product,
 } from "@/generated/prisma/client";
 import { handleClips } from "../clips";
+import { studentKeyOf } from "../course-roster";
 import prisma from "../prisma";
 import { getCourseName } from "../tools";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
@@ -631,6 +632,21 @@ export async function autobook(
       );
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Clip update failed.");
+      }
+
+      // Den som bokas in går kursen. En tidigare borttagning från kursen
+      // skulle annars dölja eleven i elevlistan trots bokningarna — och
+      // lektionernas närvarolistor, som följer bokningarna, skulle visa
+      // hen. Kunden når aldrig hit på en borttagen kurs: bookMyCourse
+      // säger nej innan.
+      if (created.length > 0) {
+        await txClient.courseRosterEntry.deleteMany({
+          where: {
+            courseId: course.id,
+            studentKey: studentKeyOf(purchase),
+            status: "REMOVED",
+          },
+        });
       }
 
       return created;

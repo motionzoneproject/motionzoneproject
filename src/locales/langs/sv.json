@@ -463,6 +463,7 @@
       "successCount": "Inbokad på {{count}} lektioner.",
       "noNew": "Inget mer att boka i kursen. Alla kommande lektioner är redan bokade, eller så är saldot slut.",
       "notSelected": "Kursen ingår inte bland de kurser du valde i paketet.",
+      "removedByStudio": "Studion har tagit bort dig från kursen. Hör av dig till oss om du vill gå den igen.",
       "error": "Kunde inte boka in på kursen.",
       "clipTitle": "Boka in på hela kursen?",
       "clipDesc": "Klippkortets kurser delar på samma saldo. Kursens kommande lektioner bokas så långt klippen räcker, just nu {{count}} klipp.",

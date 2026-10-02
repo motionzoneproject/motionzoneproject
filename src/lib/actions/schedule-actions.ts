@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
+import { studentKeyOf } from "@/lib/course-roster";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
@@ -163,7 +164,12 @@ export type BookMyCourseResult =
   | { success: true; count: number }
   | {
       success: false;
-      reason: "unauthorized" | "notSelected" | "nothingToBook" | "error";
+      reason:
+        | "unauthorized"
+        | "notSelected"
+        | "removedByStudio"
+        | "nothingToBook"
+        | "error";
     };
 
 /**
@@ -178,6 +184,9 @@ export type BookMyCourseResult =
  * släpper också spärren för paketens kursval, så den kontrolleras här: i ett
  * paket där kunden valt kurser går bara de valda att boka.
  *
+ * Har studion tagit bort eleven från kursen får kunden inte boka tillbaka
+ * sig själv — en bokning häver borttagningen, och det beslutet är studions.
+ *
  * @auth Köpets ägare
  */
 export async function bookMyCourse(
@@ -190,7 +199,7 @@ export async function bookMyCourse(
     where: { id: purchaseItemId },
     select: {
       courseId: true,
-      purchase: { select: { userId: true } },
+      purchase: { select: { userId: true, participantId: true } },
       orderItem: {
         select: { courseSelections: { select: { courseId: true } } },
       },
@@ -204,6 +213,19 @@ export async function bookMyCourse(
   const selected = item.orderItem.courseSelections.map((s) => s.courseId);
   if (selected.length > 0 && !selected.includes(item.courseId)) {
     return { success: false, reason: "notSelected" };
+  }
+
+  const removed = await prisma.courseRosterEntry.findUnique({
+    where: {
+      courseId_studentKey: {
+        courseId: item.courseId,
+        studentKey: studentKeyOf(item.purchase),
+      },
+    },
+    select: { status: true },
+  });
+  if (removed?.status === "REMOVED") {
+    return { success: false, reason: "removedByStudio" };
   }
 
   try {
