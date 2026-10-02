@@ -250,9 +250,9 @@ export function AttendanceDay({
 /**
  * Datumväljaren, med närvarons läge per dag.
  *
- * Grön ring: närvaron är tagen. Fyllningen säger om den stämmer med
- * bokningarna — grön om den gör det, orange om inte. Röd ring: en lektion
- * som börjat har bokningar men ingen närvaro.
+ * Grön ring: närvaron är tagen. Fyllningen säger om någon var där utan
+ * bokning — orange då, annars grön. Röd ring: en lektion som börjat har
+ * bokningar men ingen närvaro.
  */
 function AttendanceCalendar({
   date,
@@ -328,10 +328,10 @@ function AttendanceCalendar({
       />
       <div className="space-y-1.5 border-t px-4 py-3 text-xs">
         <Legend className="bg-emerald-500 ring-2 ring-inset ring-emerald-600">
-          Närvaro tagen, stämmer med bokningarna
+          Närvaro tagen
         </Legend>
         <Legend className="bg-orange-400 ring-2 ring-inset ring-emerald-600">
-          Närvaro tagen, stämmer inte med bokningarna
+          Närvaro tagen, någon var där utan bokning
         </Legend>
         <Legend className="ring-2 ring-inset ring-red-500">
           Bokningar finns, men ingen närvaro är tagen

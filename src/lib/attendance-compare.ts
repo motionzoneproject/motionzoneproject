@@ -19,7 +19,11 @@ export type LessonComparison = {
   bookedNotPresent: number;
   /** Markerade närvarande utan bokning på lektionen. */
   presentNotBooked: number;
-  /** Närvaron är tagen och stämmer inte med bokningarna. */
+  /**
+   * Någon var närvarande utan bokning, och behöver bokas in så att ett
+   * tillfälle dras. En bokad som inte kom är ingen avvikelse: en missad
+   * lektion ger inget tillfälle tillbaka, så där finns inget att rätta.
+   */
   mismatch: boolean;
 };
 
@@ -51,7 +55,7 @@ export function compareLesson(lesson: {
     notTaken: !taken && active.length > 0,
     bookedNotPresent,
     presentNotBooked,
-    mismatch: bookedNotPresent > 0 || presentNotBooked > 0,
+    mismatch: presentNotBooked > 0,
   };
 }
 

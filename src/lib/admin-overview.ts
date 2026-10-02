@@ -195,9 +195,9 @@ export type AttendanceFollowUp = {
  *
  * Närvaron och bokningarna är skilda register och rör aldrig varandra av sig
  * själva, så det är här studion fångar det som behöver följas upp: en lärare
- * som inte tagit närvaro, en elev som bokat men inte kom (bokningen kan tas
- * bort och klippet lämnas tillbaka), eller en elev som kom utan att ha bokat
- * (bokas in i efterhand, eller går utan köp).
+ * som inte tagit närvaro, eller en elev som kom utan att ha bokat (bokas in
+ * i efterhand, eller går utan köp). En elev som bokat men inte kom följs inte
+ * upp — en missad lektion ger inget tillfälle tillbaka.
  *
  * Bara avslutade, ej inställda lektioner. En vecka bakåt räcker för att
  * hinna följa upp, utan att listan växer med allt som aldrig stämts av.

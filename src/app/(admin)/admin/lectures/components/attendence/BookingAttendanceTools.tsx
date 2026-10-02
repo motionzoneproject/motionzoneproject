@@ -1,26 +1,12 @@
 "use client";
 
-import { ClipboardX, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { addUserInLesson } from "@/lib/actions/admin";
-import {
-  type PresentWithoutBooking,
-  removeBookingsWithoutAttendance,
-} from "@/lib/actions/attendance-actions";
+import type { PresentWithoutBooking } from "@/lib/actions/attendance-actions";
 
 const box = "rounded-md border px-3 py-2 text-sm";
 const neutral = `${box} bg-muted/30 text-muted-foreground`;
@@ -29,10 +15,12 @@ const warn = `${box} border-amber-500/40 bg-amber-500/10`;
 /**
  * Hur bokningarna på en lektion stämmer mot närvaron, åt båda hållen.
  *
- * Närvaron rör aldrig bokningarna av sig själv. Här ser studion i stället
- * vilka bokningar som saknar närvaro — och kan ta bort dem i ett svep, så
- * läggs tillfällena tillbaka som med papperskorgen — och vilka som var där
- * utan att ha bokat, så de kan bokas in i efterhand.
+ * Närvaron rör aldrig bokningarna. Här ser studion i stället hur många
+ * bokningar som saknar närvaro, och vilka som var där utan att ha bokat, så
+ * de kan bokas in i efterhand.
+ *
+ * Bokningar utan närvaro tas inte bort härifrån: en missad lektion ger inte
+ * tillbaka något tillfälle, och om den kan tas igen avgör studion med kunden.
  */
 export function BookingAttendanceTools({
   lessonId,
@@ -76,59 +64,16 @@ export function BookingAttendanceTools({
     }
   };
 
-  const noun = missing === 1 ? "bokning" : "bokningar";
-
   return (
     <div className="space-y-2">
       {total > 0 &&
         (missing === 0 ? (
           <p className={neutral}>Alla bokningar har närvaro.</p>
         ) : (
-          <div
-            className={`${warn} flex flex-wrap items-center justify-between gap-2`}
-          >
-            <span>
-              {missing} av {total} {total === 1 ? "bokning" : "bokningar"}{" "}
-              saknar närvaro.
-            </span>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  disabled={busy !== null}
-                >
-                  <ClipboardX className="h-4 w-4" />
-                  Ta bort bokningar utan närvaro
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Ta bort {missing} {noun} utan närvaro?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Bokningar där eleven inte är markerad som närvarande tas
-                    bort, och tillfällena läggs tillbaka på elevernas saldon.
-                    Närvaron står kvar som den är.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Avbryt</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() =>
-                      void run("remove", () =>
-                        removeBookingsWithoutAttendance(lessonId),
-                      )
-                    }
-                  >
-                    Ta bort
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          <p className={warn}>
+            {missing} av {total} {total === 1 ? "bokning" : "bokningar"} saknar
+            närvaro.
+          </p>
         ))}
 
       {presentWithoutBooking.length > 0 && (
