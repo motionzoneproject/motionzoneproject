@@ -31,6 +31,11 @@ export type AttendanceStudent = {
   /** Har en bokning på lektionen. Bara upplysning — närvaron rör den inte. */
   booked: boolean;
   /**
+   * Står bara med på en order som väntar på godkännande. Eleven får vara
+   * med, men läraren ska se att köpet inte är klart.
+   */
+  pending: boolean;
+  /**
    * Står i kursens elevlista. Den som inte gör det finns med för att hen
    * redan har en markering på lektionen — till exempel en elev som tagits
    * bort från kursen efteråt.
@@ -149,6 +154,7 @@ async function lessonStudents(lesson: {
       name: s.name,
       customerName: s.customerName,
       booked: false,
+      pending: s.pending,
       inCourse: true,
       status: null,
     });
@@ -165,6 +171,7 @@ async function lessonStudents(lesson: {
       name,
       customerName: mark.participant?.addedBy.name ?? null,
       booked: false,
+      pending: false,
       inCourse: false,
       status: null,
     });
