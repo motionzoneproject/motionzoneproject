@@ -2,9 +2,11 @@ import { PaginationBar } from "@/components/PaginationBar";
 import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
+import { placesStudentInCourse } from "@/lib/course-roster";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
+import { getCourseName } from "@/lib/tools";
 import StudentsFilter from "./components/StudentsFilter";
 import StudentTableClient from "./components/StudentTableClient";
 
@@ -95,7 +97,21 @@ export type StudentSummary = {
   pendingOrderItems: StudentPendingOrderItemSummary[];
   hasApprovedPurchase: boolean;
   hasPendingOrder: boolean;
+  /** Sant när eleven lagts till i den filtrerade kursen för hand, utan köp. */
+  addedManually?: boolean;
 };
+
+/**
+ * Fälten kursens fullständiga namn byggs av. "Balett" och "Jazzdans" finns i
+ * flera åldrar och nivåer, så kursnamnet ensamt går inte att skilja på.
+ */
+const courseNameFields = {
+  name: true,
+  minAge: true,
+  maxAge: true,
+  adult: true,
+  level: true,
+} as const;
 
 const purchaseSelect = {
   id: true,
@@ -144,6 +160,7 @@ const purchaseSelect = {
     select: {
       id: true,
       name: true,
+      autobook: true,
     },
   },
   PurchaseItems: {
@@ -164,7 +181,8 @@ const purchaseSelect = {
       course: {
         select: {
           id: true,
-          name: true,
+          ...courseNameFields,
+          teacherId: true,
           schemaItems: {
             select: {
               termin: {
@@ -253,12 +271,14 @@ const pendingOrderItemSelect = {
     select: {
       id: true,
       name: true,
+      autobook: true,
       courses: {
         select: {
           course: {
             select: {
               id: true,
-              name: true,
+              ...courseNameFields,
+              teacherId: true,
               schemaItems: {
                 select: {
                   termin: {
@@ -280,7 +300,8 @@ const pendingOrderItemSelect = {
       course: {
         select: {
           id: true,
-          name: true,
+          ...courseNameFields,
+          teacherId: true,
           schemaItems: {
             select: {
               termin: {
@@ -300,6 +321,54 @@ const pendingOrderItemSelect = {
 type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
   select: typeof pendingOrderItemSelect;
 }>;
+
+/**
+ * Kurserna ett köp placerar eleven i, enligt regeln i course-roster. Köpets
+ * alla kursrader finns kvar som tillgång under köpet; det här är de kurser
+ * eleven räknas in i, och det är dem kursfiltret och kurskolumnen visar.
+ */
+function placedCourses(purchase: StudentPurchaseRow) {
+  const courseCount = purchase.PurchaseItems.length;
+
+  return purchase.PurchaseItems.filter((item) =>
+    placesStudentInCourse({
+      courseId: item.courseId,
+      selectedCourseIds: (item.orderItem?.courseSelections ?? []).map(
+        (selection) => selection.courseId,
+      ),
+      autobook: purchase.product.autobook,
+      courseCount,
+      activeBookings: item.bookings.length,
+    }),
+  ).map((item) => item.course);
+}
+
+/** Kurserna en obeviljad orderrad gäller: kundens kursval, annars produktens. */
+function orderedCourses(item: StudentPendingOrderItemRow) {
+  const selected = item.courseSelections.map((selection) => selection.course);
+  return selected.length > 0
+    ? selected
+    : item.product.courses.map((link) => link.course);
+}
+
+/**
+ * Samma regel för en obeviljad order. Bokningar finns inte än, så ett
+ * terminskort eller program placerar ingen förrän schemat satts.
+ */
+function placedPendingCourses(item: StudentPendingOrderItemRow) {
+  const courses = orderedCourses(item);
+
+  return courses.filter((course) =>
+    placesStudentInCourse({
+      courseId: course.id,
+      // Kursvalen är redan tillämpade i orderedCourses.
+      selectedCourseIds: [],
+      autobook: item.product.autobook,
+      courseCount: courses.length,
+      activeBookings: 0,
+    }),
+  );
+}
 
 function buildStudentSummaries(
   purchasesWithData: StudentPurchaseRow[],
@@ -361,6 +430,10 @@ function buildStudentSummaries(
     };
     existing.hasApprovedPurchase = true;
 
+    const placedCourseIds = new Set(
+      placedCourses(purchase).map((course) => course.id),
+    );
+
     const purchaseItems: StudentPurchaseItemSummary[] =
       purchase.PurchaseItems.filter((item) => {
         const selections = item.orderItem?.courseSelections ?? [];
@@ -371,10 +444,12 @@ function buildStudentSummaries(
         // Annars är det en vanlig produkt/kurs där alla PurchaseItems gäller
         return true;
       }).map((item) => {
-        existing.courseMap.set(item.course.id, {
-          id: item.course.id,
-          name: item.course.name,
-        });
+        if (placedCourseIds.has(item.course.id)) {
+          existing.courseMap.set(item.course.id, {
+            id: item.course.id,
+            name: getCourseName(item.course),
+          });
+        }
 
         for (const schemaItem of item.course.schemaItems) {
           existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
@@ -385,7 +460,7 @@ function buildStudentSummaries(
             id: booking.id,
             lessonId: booking.lessonId,
             purchaseItemId: item.id,
-            courseName: item.course.name,
+            courseName: getCourseName(item.course),
             startTime: booking.lesson.startTime,
             endTime: booking.lesson.endTime,
           });
@@ -394,7 +469,7 @@ function buildStudentSummaries(
         return {
           id: item.id,
           courseId: item.course.id,
-          courseName: item.course.name,
+          courseName: getCourseName(item.course),
           remainingCount: item.remainingCount,
           unlimited: item.unlimited,
           bookingsCount: item.bookings.length,
@@ -459,17 +534,16 @@ function buildStudentSummaries(
     };
     existing.hasPendingOrder = true;
 
-    const selectedCourses = item.courseSelections.map(
-      (selection) => selection.course,
-    );
-    const courses =
-      selectedCourses.length > 0
-        ? selectedCourses
-        : item.product.courses.map((link) => link.course);
+    const courses = orderedCourses(item);
+
+    for (const course of placedPendingCourses(item)) {
+      existing.courseMap.set(course.id, {
+        id: course.id,
+        name: getCourseName(course),
+      });
+    }
 
     for (const course of courses) {
-      existing.courseMap.set(course.id, { id: course.id, name: course.name });
-
       for (const schemaItem of course.schemaItems) {
         existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
       }
@@ -482,7 +556,7 @@ function buildStudentSummaries(
       isPaid: item.order.isPaid,
       product: item.product,
       courses: courses
-        .map((course) => ({ id: course.id, name: course.name }))
+        .map((course) => ({ id: course.id, name: getCourseName(course) }))
         .sort((a, b) => a.name.localeCompare(b.name, "sv")),
     });
 
@@ -511,6 +585,242 @@ function buildStudentSummaries(
       ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+}
+
+const detailsSelect = {
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  address: true,
+  postalCode: true,
+  city: true,
+  allowPhotoVideo: true,
+  dateOfBirth: true,
+} satisfies Prisma.UserDetailsSelect;
+
+/**
+ * Lägger studions manuella ändringar ovanpå listan som härletts ur köp och
+ * bokningar. En borttagning vinner alltid: kursen försvinner ur elevens
+ * kurskolumn, och eleven ur kurs- och lärarfiltret. Ett manuellt tillägg
+ * lägger till kursen, och elever som bara finns som tillägg — utan köp —
+ * läggs till i listan när man filtrerar på kursen eller läraren.
+ *
+ * Övriga filter gäller tilläggen också: terminen avgörs av kursen, och en
+ * elev utan köp har ingen order som väntar på godkännande.
+ */
+async function applyRosterEntries(
+  students: StudentSummary[],
+  filters: {
+    course: string;
+    teacher: string;
+    product: string;
+    termin: string;
+    approval: "all" | "approved" | "unapproved";
+    query: string;
+  },
+): Promise<StudentSummary[]> {
+  const entries = await prisma.courseRosterEntry.findMany({
+    select: {
+      courseId: true,
+      studentKey: true,
+      status: true,
+      course: { select: { id: true, ...courseNameFields, teacherId: true } },
+    },
+  });
+  if (entries.length === 0 && !filters.course && !filters.teacher)
+    return students;
+
+  const removed = new Set(
+    entries
+      .filter((e) => e.status === "REMOVED")
+      .map((e) => `${e.studentKey}|${e.courseId}`),
+  );
+  const added = entries.filter((e) => e.status === "ADDED");
+
+  const byKey = new Map(students.map((s) => [s.studentKey, s]));
+
+  for (const student of students) {
+    student.courses = student.courses.filter(
+      (c) => !removed.has(`${student.studentKey}|${c.id}`),
+    );
+  }
+
+  for (const entry of added) {
+    const student = byKey.get(entry.studentKey);
+    if (!student || student.courses.some((c) => c.id === entry.courseId))
+      continue;
+    student.courses = [
+      ...student.courses,
+      { id: entry.course.id, name: getCourseName(entry.course) },
+    ].sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  }
+
+  if (!filters.course && !filters.teacher) return students;
+
+  const inScope = (courseId: string, teacherId: string) =>
+    (!filters.course || courseId === filters.course) &&
+    (!filters.teacher || teacherId === filters.teacher);
+
+  const teacherCourseIds = filters.teacher
+    ? new Set(
+        (
+          await prisma.course.findMany({
+            where: { teacherId: filters.teacher },
+            select: { id: true },
+          })
+        ).map((c) => c.id),
+      )
+    : null;
+
+  const result = students.filter((s) =>
+    s.courses.some(
+      (c) =>
+        (!filters.course || c.id === filters.course) &&
+        (!teacherCourseIds || teacherCourseIds.has(c.id)),
+    ),
+  );
+
+  // Produktfiltret gäller köp, och en manuellt tillagd elev har inget. Hen
+  // har inte heller någon order som väntar på godkännande.
+  if (filters.product || filters.approval === "unapproved") return result;
+
+  const terminCourseIds = filters.termin
+    ? new Set(
+        (
+          await prisma.course.findMany({
+            where: { schemaItems: { some: { terminId: filters.termin } } },
+            select: { id: true },
+          })
+        ).map((c) => c.id),
+      )
+    : null;
+
+  const listed = new Set(result.map((s) => s.studentKey));
+  const missing = added.filter(
+    (e) =>
+      inScope(e.courseId, e.course.teacherId) &&
+      (!terminCourseIds || terminCourseIds.has(e.courseId)) &&
+      !listed.has(e.studentKey),
+  );
+  if (missing.length === 0) return result;
+
+  const participantIds = missing
+    .map((e) => e.studentKey.split(":"))
+    .filter(([kind]) => kind === "participant")
+    .map(([, id]) => id);
+  const userIds = missing
+    .map((e) => e.studentKey.split(":"))
+    .filter(([kind]) => kind === "user")
+    .map(([, id]) => id);
+
+  const [participants, users] = await Promise.all([
+    prisma.participant.findMany({
+      where: { id: { in: participantIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        allowPhotoVideo: true,
+        dateOfBirth: true,
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            details: { select: detailsSelect },
+          },
+        },
+      },
+    }),
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        details: { select: detailsSelect },
+      },
+    }),
+  ]);
+
+  const coursesFor = (key: string) =>
+    missing
+      .filter((e) => e.studentKey === key)
+      .map((e) => ({ id: e.course.id, name: getCourseName(e.course) }));
+
+  const empty = {
+    terminer: [],
+    bookings: [],
+    purchases: [],
+    pendingOrderItems: [],
+    hasApprovedPurchase: false,
+    hasPendingOrder: false,
+    addedManually: true,
+  };
+
+  const extra: StudentSummary[] = [
+    ...participants.map((p) => ({
+      ...empty,
+      studentKey: `participant:${p.id}`,
+      userId: p.addedBy.id,
+      participantId: p.id,
+      name: p.name,
+      customerName: p.addedBy.name,
+      dateOfBirth: p.dateOfBirth,
+      user: {
+        id: p.addedBy.id,
+        name: p.addedBy.name,
+        email: p.addedBy.email,
+        details: p.addedBy.details,
+      },
+      participant: {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        allowPhotoVideo: p.allowPhotoVideo,
+        dateOfBirth: p.dateOfBirth,
+        addedBy: {
+          id: p.addedBy.id,
+          name: p.addedBy.name,
+          email: p.addedBy.email,
+        },
+      },
+      courses: coursesFor(`participant:${p.id}`),
+    })),
+    ...users.map((u) => ({
+      ...empty,
+      studentKey: `user:${u.id}`,
+      userId: u.id,
+      participantId: null,
+      name: u.name,
+      customerName: null,
+      dateOfBirth: u.details?.dateOfBirth ?? null,
+      user: { id: u.id, name: u.name, email: u.email, details: u.details },
+      participant: null,
+      courses: coursesFor(`user:${u.id}`),
+    })),
+  ];
+
+  // Samma fält som sökningen bland köpen: elevens och kundens namn, e-post
+  // och kursnamnet. Produkten finns inte för ett tillägg.
+  const q = filters.query.trim().toLowerCase();
+  const matchingExtra = q
+    ? extra.filter((s) =>
+        [
+          s.name,
+          s.user.name,
+          s.user.email,
+          s.participant?.email,
+          ...s.courses.map((c) => c.name),
+        ].some((field) => field?.toLowerCase().includes(q)),
+      )
+    : extra;
+
+  return [...result, ...matchingExtra].sort((a, b) =>
+    a.name.localeCompare(b.name, "sv"),
+  );
 }
 
 export default async function Page({
@@ -822,7 +1132,7 @@ export default async function Page({
     AND: pendingOrderItemFilters,
   };
 
-  const purchasesWithData =
+  const fetchedPurchases =
     approval === "unapproved"
       ? []
       : await prisma.purchase.findMany({
@@ -830,13 +1140,36 @@ export default async function Page({
           select: purchaseSelect,
         });
 
-  const pendingOrderItems =
+  const fetchedPendingOrderItems =
     approval === "approved"
       ? []
       : await prisma.orderItem.findMany({
           where: pendingOrderItemWhere,
           select: pendingOrderItemSelect,
         });
+
+  // Databasfiltret ovan tar med alla som har tillgång till kursen. Kurs- och
+  // lärarfiltret ska visa vilka som går den, så här tillämpas regeln i
+  // course-roster: ett terminskort räknas bara där eleven är inbokad.
+  // Produktfiltret och sökningen lämnas i fred — det är där man hittar en
+  // nyköpt elev som ännu inte fått något schema.
+  const matchesPlacement = (courses: { id: string; teacherId: string }[]) =>
+    (!course || courses.some((c) => c.id === course)) &&
+    (!teacher || courses.some((c) => c.teacherId === teacher));
+
+  const filterByPlacement = Boolean(course || teacher);
+
+  const purchasesWithData = filterByPlacement
+    ? fetchedPurchases.filter((purchase) =>
+        matchesPlacement(placedCourses(purchase)),
+      )
+    : fetchedPurchases;
+
+  const pendingOrderItems = filterByPlacement
+    ? fetchedPendingOrderItems.filter((item) =>
+        matchesPlacement(placedPendingCourses(item)),
+      )
+    : fetchedPendingOrderItems;
 
   // Under "unapproved" filtret hoppas hela purchase-queryn över (perf), men
   // vi behöver ändå veta vilka av de synade eleverna redan har ett beviljat
@@ -874,11 +1207,20 @@ export default async function Page({
     );
   }
 
-  const allStudents = buildStudentSummaries(
+  const builtStudents = buildStudentSummaries(
     purchasesWithData,
     pendingOrderItems,
     approvedStudentKeys,
   );
+
+  const allStudents = await applyRosterEntries(builtStudents, {
+    course,
+    teacher,
+    product,
+    termin,
+    approval,
+    query,
+  });
 
   const ITEMS_PER_PAGE = 10;
   const currentPage = Number(params.page) || 1;
@@ -906,7 +1248,16 @@ export default async function Page({
         <span>Totalt {totalStudents} elever</span>
       </div>
 
-      <StudentTableClient students={pageStudents} />
+      <StudentTableClient
+        students={pageStudents}
+        course={
+          course
+            ? (courses
+                .filter((c) => c.id === course)
+                .map((c) => ({ id: c.id, name: getCourseName(c) }))[0] ?? null)
+            : null
+        }
+      />
 
       {totalPages > 1 && (
         <div className="mt-4">
