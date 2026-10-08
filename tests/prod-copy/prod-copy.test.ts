@@ -60,7 +60,10 @@ describe.skipIf(!enabled)("produktionskopian", () => {
     it("kör mot klonen, aldrig mot källan", () => {
       const source = new URL(process.env.PROD_COPY_DATABASE_URL ?? "");
       const current = new URL(process.env.DATABASE_URL ?? "");
-      expect(current.pathname).toBe(`${source.pathname}_test`);
+      expect(current.pathname).not.toBe(source.pathname);
+      expect(current.pathname.startsWith(`${source.pathname}_test_`)).toBe(
+        true,
+      );
     });
 
     it("alla branchens migrationer är applicerade och ingen har fallerat", async () => {

@@ -282,8 +282,11 @@ async function autobookingEverythingProducts() {
  * Kursrader som placerar eleven i kursen men saknar bokningar. Samma regel
  * som elevlistan (placesStudentInCourse): en kurs som bytts bort i paketet
  * räknas inte, en produkt som autobokar räknas, och ett köp som bara ger en
- * kurs räknas. Terminskort, program och klippkort över flera kurser räknas
- * inte — där är noll bokningar det normala tills schemat satts.
+ * kurs räknas. Terminskort och program räknas inte — där är noll bokningar
+ * det normala tills schemat satts. Klippkort räknas aldrig: kunden bokar
+ * lektionerna själv, och ett beviljande autobokar inte klippkort (se
+ * createPurchaseFromOrder). Åtgärden "Boka in på kursen" skulle dessutom
+ * bränna alla klipp på en gång.
  *
  * En elev som studion tagit bort från kursen räknas inte heller: där är noll
  * bokningar meningen, och åtgärden skulle boka in hen igen.
@@ -304,6 +307,7 @@ async function purchaseItemsWithoutBookings(): Promise<string[]> {
   const candidates = await prisma.purchaseItem.findMany({
     where: {
       bookings: { none: {} },
+      purchase: { type: { not: "CLIP" } },
       course: {
         lessons: {
           some: { cancelled: false, startTime: { gte: new Date() } },
@@ -320,6 +324,7 @@ async function purchaseItemsWithoutBookings(): Promise<string[]> {
         select: {
           userId: true,
           participantId: true,
+          type: true,
           product: { select: { autobook: true } },
           _count: { select: { PurchaseItems: true } },
         },
@@ -330,6 +335,7 @@ async function purchaseItemsWithoutBookings(): Promise<string[]> {
   return candidates
     .filter(
       (item) =>
+        item.purchase.type !== "CLIP" &&
         !removedKeys.has(`${item.courseId}|${studentKeyOf(item.purchase)}`) &&
         placesStudentInCourse({
           courseId: item.courseId,
@@ -896,40 +902,44 @@ const checks: Check[] = [
     fixable: true,
     count: async () => (await autobookingEverythingProducts()).length,
     list: async () => {
-      const products = await autobookingEverythingProducts();
+      const products = (await autobookingEverythingProducts()).slice(0, take);
 
-      return Promise.all(
-        products.slice(0, take).map(async (product) => {
-          const purchases = await prisma.purchase.findMany({
-            where: { productId: product.id },
-            select: {
-              user: { select: { name: true, email: true } },
-              participant: { select: { name: true } },
-              _count: { select: { PurchaseItems: true } },
-            },
-          });
+      // En fråga för alla produkter, inte en per produkt.
+      const allPurchases = await prisma.purchase.findMany({
+        where: { productId: { in: products.map((p) => p.id) } },
+        select: {
+          productId: true,
+          user: { select: { name: true, email: true } },
+          participant: { select: { name: true } },
+          _count: { select: { PurchaseItems: true } },
+        },
+      });
 
-          const affected = purchases.map((purchase) => ({
-            studentName: purchase.participant?.name ?? purchase.user.name,
-            email: purchase.user.email,
-            courses: purchase._count.PurchaseItems,
-          }));
+      return products.map((product) => {
+        const purchases = allPurchases.filter(
+          (p) => p.productId === product.id,
+        );
 
-          return {
-            id: product.id,
-            title: product.name,
-            detail: `${product.courseCount} kurser ingår · ${affected.length} köp`,
-            href: searchHref("/admin/products", product.name),
-            fix: {
-              kind: "product-autobook" as const,
-              productId: product.id,
-              productName: product.name,
-              courseCount: product.courseCount,
-              affected,
-            },
-          };
-        }),
-      );
+        const affected = purchases.map((purchase) => ({
+          studentName: purchase.participant?.name ?? purchase.user.name,
+          email: purchase.user.email,
+          courses: purchase._count.PurchaseItems,
+        }));
+
+        return {
+          id: product.id,
+          title: product.name,
+          detail: `${product.courseCount} kurser ingår · ${affected.length} köp`,
+          href: searchHref("/admin/products", product.name),
+          fix: {
+            kind: "product-autobook" as const,
+            productId: product.id,
+            productName: product.name,
+            courseCount: product.courseCount,
+            affected,
+          },
+        };
+      });
     },
   },
   {
@@ -942,8 +952,8 @@ const checks: Check[] = [
      * autobokning, och då bokas ingen in alls. I båda fallen står eleven i
      * elevlistan men saknas på lektionerna.
      *
-     * Kort och program räknas inte hit: där är noll bokningar det normala,
-     * eftersom schemat sätts ihop för hand.
+     * Kort, program och klippkort räknas inte hit: där är noll bokningar det
+     * normala, eftersom schemat sätts ihop för hand eller kunden bokar själv.
      */
     id: "purchase-without-bookings",
     singular: "köp är inte inbokat på några lektioner",
@@ -994,51 +1004,56 @@ const checks: Check[] = [
         take,
       });
 
-      const now = new Date();
-
-      return Promise.all(
-        rows.map(async (row) => {
-          const upcomingLessons = await prisma.lesson.count({
+      // En fråga för alla rader, inte en per rad.
+      const upcomingByCourse = new Map(
+        (
+          await prisma.lesson.groupBy({
+            by: ["courseId"],
             where: {
-              courseId: row.courseId,
+              courseId: { in: [...new Set(rows.map((r) => r.courseId))] },
               cancelled: false,
-              startTime: { gte: now },
+              startTime: { gte: new Date() },
             },
-          });
-
-          const studentName =
-            row.purchase.participant?.name ?? row.purchase.user.name;
-          const remaining = showRemaining(
-            calcRemainingCount({
-              purchase: {
-                type: row.purchase.type,
-                remainingCount: row.purchase.remainingCount,
-              },
-              purchaseItem: {
-                unlimited: row.unlimited,
-                remainingCount: row.remainingCount,
-              },
-            }),
-          );
-
-          return {
-            id: row.id,
-            title: studentName,
-            detail: `${getCourseName(row.course)} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
-            href: searchHref("/admin/students", row.purchase.user.email),
-            fix: {
-              kind: "course-booking" as const,
-              purchaseItemId: row.id,
-              studentName,
-              courseName: getCourseName(row.course),
-              productName: row.purchase.product.name,
-              productAutobook: row.purchase.product.autobook,
-              upcomingLessons,
-              remaining: String(remaining),
-            },
-          };
-        }),
+            _count: { _all: true },
+          })
+        ).map((c) => [c.courseId, c._count._all]),
       );
+
+      return rows.map((row) => {
+        const upcomingLessons = upcomingByCourse.get(row.courseId) ?? 0;
+
+        const studentName =
+          row.purchase.participant?.name ?? row.purchase.user.name;
+        const remaining = showRemaining(
+          calcRemainingCount({
+            purchase: {
+              type: row.purchase.type,
+              remainingCount: row.purchase.remainingCount,
+            },
+            purchaseItem: {
+              unlimited: row.unlimited,
+              remainingCount: row.remainingCount,
+            },
+          }),
+        );
+
+        return {
+          id: row.id,
+          title: studentName,
+          detail: `${getCourseName(row.course)} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
+          href: searchHref("/admin/students", row.purchase.user.email),
+          fix: {
+            kind: "course-booking" as const,
+            purchaseItemId: row.id,
+            studentName,
+            courseName: getCourseName(row.course),
+            productName: row.purchase.product.name,
+            productAutobook: row.purchase.product.autobook,
+            upcomingLessons,
+            remaining: String(remaining),
+          },
+        };
+      });
     },
   },
   {
