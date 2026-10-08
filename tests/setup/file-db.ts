@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll } from "vitest";
+import { afterAll, inject } from "vitest";
 import {
   cloneDatabase,
   dropDatabase,
@@ -7,11 +7,10 @@ import {
   withDatabase,
 } from "./db-admin";
 
-const TEMPLATE_DB = "mz_test_template";
 const adminUrl = requireEnv("TEST_DATABASE_URL");
 const dbName = `mz_test_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
 
-await cloneDatabase(adminUrl, TEMPLATE_DB, dbName);
+await cloneDatabase(adminUrl, inject("templateDb"), dbName);
 
 // Måste sättas innan src/lib/prisma.ts laddas. Den cachar dessutom klienten
 // på globalThis utanför produktion, och globalThis delas mellan testfiler i

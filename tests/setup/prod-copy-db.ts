@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterAll } from "vitest";
 import {
   cloneDatabase,
@@ -14,7 +15,8 @@ const source = process.env.PROD_COPY_DATABASE_URL;
 if (source) {
   const sourceName = new URL(source).pathname.slice(1);
   const adminUrl = withDatabase(source, "postgres");
-  const dbName = `${sourceName}_test`;
+  // Eget namn per körning, så att två samtidiga körningar inte krockar.
+  const dbName = `${sourceName}_test_${randomUUID().replaceAll("-", "").slice(0, 8)}`;
 
   await cloneDatabase(adminUrl, sourceName, dbName);
   const url = withDatabase(source, dbName);
