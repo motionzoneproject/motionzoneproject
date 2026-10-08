@@ -504,7 +504,7 @@ describe("addStudentToCourse", () => {
     expect(await rosterEntry(course.id, userKey(student))).toBeNull();
   });
 
-  // Granskningsfynd 6. REMOVED-raden raderas först, utanför transaktion.
+  // Granskningsfynd 6. REMOVED-raden raderades först, utanför transaktion.
   // Fallerar ett senare steg ska borttagningen stå kvar. Här fallerar
   // upserten för att den inloggade adminen inte finns i databasen
   // (changedByUserId har en främmande nyckel) — en konstgjord men enkel väg
@@ -520,9 +520,10 @@ describe("addStudentToCourse", () => {
     );
 
     actAs({ id: "admin-som-inte-finns", role: "admin" });
-    await expect(
-      addStudentToCourse(course.id, userKey(student)),
-    ).rejects.toThrow();
+    // Felet blir ett svar till klienten, inte ett undantag som låser UI:t.
+    expect(await addStudentToCourse(course.id, userKey(student))).toMatchObject(
+      { success: false },
+    );
 
     expect((await rosterEntry(course.id, userKey(student)))?.status).toBe(
       "REMOVED",

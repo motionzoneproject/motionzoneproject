@@ -103,8 +103,13 @@ export function AddStudentSearch({
 
   const add = async (candidate: RosterCandidate) => {
     setPendingKey(candidate.studentKey);
-    const res = await addStudentToCourse(courseId, candidate.studentKey);
-    setPendingKey(null);
+    // Kastar anropet (nätverk, serverfel) får knapparna inte bli låsta.
+    const res = await addStudentToCourse(courseId, candidate.studentKey)
+      .catch(() => ({
+        success: false,
+        msg: "Kunde inte lägga till eleven i kursen.",
+      }))
+      .finally(() => setPendingKey(null));
 
     if (!res.success) {
       toast.error(res.msg);

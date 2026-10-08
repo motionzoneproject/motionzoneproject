@@ -458,18 +458,21 @@ describe("setCourseBooking", () => {
     expect(await itemRemaining(item.id)).toBe(10);
   });
 
-  // Granskningsfynd 5. Funktionen lovar "Admin, eller kursens egen lärare",
-  // men autobook bokar bara åt admin eller köpets ägare.
-  it("[fynd 5] kursens lärare får boka in en elev på sin kurs", async () => {
+  // Granskningsfynd 5. Funktionen lovade "Admin, eller kursens egen lärare",
+  // men bara admin kunde boka, och läraren fick ett missvisande "saldot är
+  // slut". Beslut: att boka in drar av elevens saldo och görs av admin —
+  // samma regel som elevlistan redan har. Läraren får ett tydligt besked.
+  it("[fynd 5] kursens lärare får ett tydligt nej när hen försöker boka in på elevens köp", async () => {
     const { a, product } = await termCard({ future: 3 });
     const { items } = await buy({ admin, buyer: await createUser(), product });
     const item = itemFor(items, a);
 
     asTeacher(teacher);
     const result = await setCourseBooking(item.id, true);
-    expect(result.success).toBe(true);
-    expect(await futureBookingCount(item.id)).toBe(3);
-    expect(await itemRemaining(item.id)).toBe(7);
+    expect(result.success).toBe(false);
+    expect(result.msg).toMatch(/Bara admin/);
+    expect(await futureBookingCount(item.id)).toBe(0);
+    expect(await itemRemaining(item.id)).toBe(10);
   });
 
   // Granskningsfynd 2. Ett terminskort placerar eleven i en kurs genom

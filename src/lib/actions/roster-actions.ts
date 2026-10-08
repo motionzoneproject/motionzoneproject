@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
+import {
+  markRemovedFromCourse,
+  unbookFutureLessons,
+} from "@/lib/course-booking";
 import { placesStudentInCourse, studentKeyOf } from "@/lib/course-roster";
 import { getCourseName } from "@/lib/tools";
 import { autobook } from "../autobook";
@@ -102,16 +105,9 @@ export async function removeStudentFromCourse(
     select: { id: true, status: true },
   });
 
-  const now = new Date();
   const items = await prisma.purchaseItem.findMany({
     where: courseItemsWhere(courseId, key),
-    select: {
-      id: true,
-      bookings: {
-        where: { lesson: { startTime: { gte: now } } },
-        select: { id: true },
-      },
-    },
+    select: { id: true },
   });
 
   // Tillagd för hand och utan köp i kursen: tillägget är det enda som håller
@@ -125,34 +121,21 @@ export async function removeStudentFromCourse(
     return { success: true, msg: `${name} är inte längre tillagd i kursen.` };
   }
 
-  const cancelled = items.reduce((sum, i) => sum + i.bookings.length, 0);
-
+  let cancelled = 0;
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const item of items) {
-        if (item.bookings.length === 0) continue;
-
-        const clipResult = await handleClips(tx, item.id, item.bookings.length);
-        if (!clipResult.success)
-          throw new Error(clipResult.msg || "Kunde inte återställa saldo.");
-
-        await tx.booking.deleteMany({
-          where: { id: { in: item.bookings.map((b) => b.id) } },
-        });
-      }
-
-      await tx.courseRosterEntry.upsert({
-        where: { courseId_studentKey: { courseId, studentKey } },
-        update: { status: "REMOVED", changedByUserId: session.user.id },
-        create: {
-          courseId,
-          studentKey,
-          userId: key.kind === "user" ? key.userId : null,
-          participantId: key.kind === "participant" ? key.participantId : null,
-          status: "REMOVED",
-          changedByUserId: session.user.id,
-        },
+    cancelled = await prisma.$transaction(async (tx) => {
+      const count = await unbookFutureLessons(
+        tx,
+        items.map((i) => i.id),
+      );
+      await markRemovedFromCourse(tx, {
+        courseId,
+        studentKey,
+        userId: key.kind === "user" ? key.userId : null,
+        participantId: key.kind === "participant" ? key.participantId : null,
+        changedByUserId: session.user.id,
       });
+      return count;
     });
   } catch (e) {
     console.error("removeStudentFromCourse misslyckades", e);
@@ -178,7 +161,8 @@ export async function removeStudentFromCourse(
  * bokningarna placerar eleven. Saknas köp (provlektion, kontant betalning)
  * sparas eleven som manuellt tillagd, utan saldo och utan fakturering.
  *
- * En tidigare borttagning tas alltid bort först.
+ * En tidigare borttagning hävs i samma steg som eleven bokas in eller läggs
+ * till — aldrig innan. Misslyckas tillägget står borttagningen kvar.
  *
  * @auth Admin eller kursens lärare
  */
@@ -195,10 +179,6 @@ export async function addStudentToCourse(
 
   const name = await studentName(key);
   if (!name) return { success: false, msg: "Eleven hittades inte." };
-
-  await prisma.courseRosterEntry.deleteMany({
-    where: { courseId, studentKey, status: "REMOVED" },
-  });
 
   const items = await prisma.purchaseItem.findMany({
     where: courseItemsWhere(courseId, key),
@@ -221,18 +201,24 @@ export async function addStudentToCourse(
   }
 
   // Inget köp, eller inget kvar att boka med: eleven läggs till för hand.
-  await prisma.courseRosterEntry.upsert({
-    where: { courseId_studentKey: { courseId, studentKey } },
-    update: { status: "ADDED", changedByUserId: session.user.id },
-    create: {
-      courseId,
-      studentKey,
-      userId: key.kind === "user" ? key.userId : null,
-      participantId: key.kind === "participant" ? key.participantId : null,
-      status: "ADDED",
-      changedByUserId: session.user.id,
-    },
-  });
+  // Upserten skriver över en eventuell borttagning.
+  try {
+    await prisma.courseRosterEntry.upsert({
+      where: { courseId_studentKey: { courseId, studentKey } },
+      update: { status: "ADDED", changedByUserId: session.user.id },
+      create: {
+        courseId,
+        studentKey,
+        userId: key.kind === "user" ? key.userId : null,
+        participantId: key.kind === "participant" ? key.participantId : null,
+        status: "ADDED",
+        changedByUserId: session.user.id,
+      },
+    });
+  } catch (e) {
+    console.error("addStudentToCourse misslyckades", e);
+    return { success: false, msg: "Kunde inte lägga till eleven i kursen." };
+  }
 
   revalidateRosterViews();
 

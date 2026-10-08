@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
+import {
+  markRemovedFromCourse,
+  unbookFutureLessons,
+} from "@/lib/course-booking";
 import { studentKeyOf } from "@/lib/course-roster";
 import { getCourseName } from "@/lib/tools";
 import { autobook } from "../autobook";
@@ -118,7 +121,9 @@ export async function getPurchaseSchedule(
       by: ["purchaseItemId"],
       where: {
         purchaseItemId: { in: itemIds },
-        lesson: { startTime: { gte: now } },
+        // Samma lektioner som upcomingLessons räknar — annars kan det stå
+        // "bokad på 6 av 5".
+        lesson: { startTime: { gte: now }, cancelled: false },
       },
       _count: { _all: true },
     }),
@@ -273,9 +278,13 @@ export async function bookMyCourse(
  * många kurser men eleven bara går några av dem. Bokar in gör samma sak som
  * ett ordergodkännande hade gjort, fast för en kurs i taget och på adminens
  * uttryckliga begäran. Bokar ut rör bara kommande lektioner — närvaro som
- * redan varit ska stå kvar.
+ * redan varit ska stå kvar — och tar bort eleven från kursen, så att de
+ * gamla bokningarna inte håller kvar hen i elevlistan.
  *
- * @auth Admin, eller kursens egen lärare
+ * Bara admin bokar in: det drar av elevens saldo, och elevlistan låter av
+ * samma skäl en lärare bara lägga till för hand.
+ *
+ * @auth Admin bokar in; admin eller kursens lärare bokar ut
  */
 export async function setCourseBooking(
   purchaseItemId: string,
@@ -283,18 +292,31 @@ export async function setCourseBooking(
 ): Promise<Result> {
   const purchaseItem = await prisma.purchaseItem.findUnique({
     where: { id: purchaseItemId },
-    select: { id: true, courseId: true, course: { select: courseNameSelect } },
+    select: {
+      id: true,
+      courseId: true,
+      course: { select: courseNameSelect },
+      purchase: { select: { userId: true, participantId: true } },
+    },
   });
 
   if (!purchaseItem) return { success: false, msg: "Kursraden hittades inte." };
   const courseName = getCourseName(purchaseItem.course);
 
-  if (!(await mayManageCourse(purchaseItem.courseId))) {
+  const session = await getSessionData();
+  if (!session || !(await mayManageCourse(purchaseItem.courseId))) {
     return { success: false, msg: "Ingen behörighet." };
   }
 
   try {
     if (booked) {
+      if (session.user.role !== "admin") {
+        return {
+          success: false,
+          msg: "Bara admin kan boka in på en elevs köp. Lägg till eleven i kursen i stället.",
+        };
+      }
+
       const created = await autobook(purchaseItemId, undefined, {
         explicit: true,
       });
@@ -316,45 +338,37 @@ export async function setCourseBooking(
       };
     }
 
-    // Bokar ut: bara kommande lektioner, och klippen tillbaka.
-    const now = new Date();
-    const futureBookings = await prisma.booking.findMany({
-      where: {
-        purchaseItemId,
-        lesson: { startTime: { gte: now } },
-      },
-      select: { id: true },
+    // Bokar ut: bara kommande lektioner, och saldot tillbaka.
+    const purchase = purchaseItem.purchase;
+    const cancelled = await prisma.$transaction(async (tx) => {
+      const count = await unbookFutureLessons(tx, [purchaseItemId]);
+      if (count === 0) return 0;
+
+      await markRemovedFromCourse(tx, {
+        courseId: purchaseItem.courseId,
+        studentKey: studentKeyOf(purchase),
+        userId: purchase.participantId ? null : purchase.userId,
+        participantId: purchase.participantId,
+        changedByUserId: session.user.id,
+      });
+      return count;
     });
 
-    if (futureBookings.length === 0) {
+    if (cancelled === 0) {
       return {
         success: false,
         msg: `Eleven har inga kommande bokningar i ${courseName}.`,
       };
     }
 
-    await prisma.$transaction(async (tx) => {
-      const clipResult = await handleClips(
-        tx,
-        purchaseItemId,
-        futureBookings.length,
-      );
-      if (!clipResult.success) {
-        throw new Error(clipResult.msg || "Kunde inte återställa saldo.");
-      }
-
-      await tx.booking.deleteMany({
-        where: { id: { in: futureBookings.map((b) => b.id) } },
-      });
-    });
-
     revalidatePath("/admin/students");
+    revalidatePath("/admin/courses");
     revalidatePath("/admin/lectures");
     revalidatePath("/user");
 
     return {
       success: true,
-      msg: `Utbokad från ${futureBookings.length} kommande lektioner i ${courseName}.`,
+      msg: `Utbokad från ${cancelled} kommande lektioner i ${courseName}.`,
     };
   } catch (e) {
     console.error("setCourseBooking misslyckades", e);
