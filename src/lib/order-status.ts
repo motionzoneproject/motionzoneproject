@@ -33,5 +33,9 @@ export function getOrderStatusLabel(
     return overrides?.[typedStatus] ?? ORDER_STATUS_LABELS[typedStatus];
   }
 
-  return HISTORICAL_STATUS_LABELS[status] ?? status;
+  // hasOwn, inte [status]: en status som "constructor" hade annars gett
+  // tillbaka Object.prototype.constructor i stället för en sträng.
+  return Object.hasOwn(HISTORICAL_STATUS_LABELS, status)
+    ? HISTORICAL_STATUS_LABELS[status]
+    : status;
 }
