@@ -236,7 +236,7 @@ export default function EditProductForm({
     const res = await editProduct(productId, payload);
 
     if (res.success) {
-      if (!!oldImageUrl && finalImageURL !== oldImageUrl) {
+      if (oldImageUrl && finalImageURL !== oldImageUrl) {
         // Ta bort gamla
         try {
           const res = await fetch("/api/remove", {

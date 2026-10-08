@@ -507,8 +507,8 @@ export default function OrdersView({
                           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block">
                             Deltagare
                           </span>
-                          {participants.map((p, i) => (
-                            <div key={`${o.id}-p-${i}`} className="text-xs">
+                          {participants.map((p) => (
+                            <div key={`${o.id}-p-${p.id}`} className="text-xs">
                               <span className="font-medium text-foreground">
                                 {p.name}
                               </span>{" "}
@@ -532,11 +532,14 @@ export default function OrdersView({
                           oi.courseSelections?.flatMap((sel) =>
                             sel.course
                               ? [
-                                  getCourseName(
-                                    sel.course,
-                                    "sv",
-                                    sel.course.schemaItems,
-                                  ),
+                                  {
+                                    id: sel.course.id,
+                                    name: getCourseName(
+                                      sel.course,
+                                      "sv",
+                                      sel.course.schemaItems,
+                                    ),
+                                  },
                                 ]
                               : [],
                           ) ?? [];
@@ -582,12 +585,12 @@ export default function OrdersView({
                                       Inga paketval sparade
                                     </span>
                                   ) : (
-                                    selections.map((courseName, idx) => (
+                                    selections.map((selection) => (
                                       <span
-                                        key={`${oi.id}-${courseName}-${idx}`}
+                                        key={`${oi.id}-${selection.id}`}
                                         className="truncate text-[11px] text-muted-foreground block"
                                       >
-                                        • {courseName}
+                                        • {selection.name}
                                       </span>
                                     ))
                                   )}
