@@ -26,6 +26,10 @@ export async function updateOrderStatus(
   const adminUserId = await requireAdmin();
 
   return prisma.$transaction(async (tx) => {
+    // Lås ordern. Två samtidiga ändringar — bevilja och avbryt — såg annars
+    // båda AWAITING_APPROVAL, gick båda igenom och loggades båda.
+    await tx.$queryRaw`SELECT id FROM "order" WHERE id = ${orderId} FOR UPDATE`;
+
     const current = await tx.order.findUnique({
       where: { id: orderId },
       include: {
@@ -48,8 +52,20 @@ export async function updateOrderStatus(
 
     if (!current) throw new Error("Order not found");
     if (current.status === toStatus) return { success: true };
-    if (toStatus === "CANCELLED" && current.status === "APPROVED") {
-      throw new Error("Kan inte avbryta en redan beviljad order.");
+
+    // En order beviljas eller avbryts en gång, från AWAITING_APPROVAL. En
+    // beviljad order har köp och bokningar, och en avbruten har släppt sin
+    // plats — att gå vidare därifrån (t.ex. beviljad → väntande → avbruten)
+    // gav en avbruten order med aktiva bokningar, eller en beviljad utan
+    // att platsen kontrollerats igen.
+    if (current.status !== "AWAITING_APPROVAL") {
+      if (current.status === "APPROVED" && toStatus === "CANCELLED")
+        throw new Error("Kan inte avbryta en redan beviljad order.");
+      throw new Error(
+        current.status === "APPROVED"
+          ? "Kan inte ändra en redan beviljad order."
+          : "Kan inte ändra en avbruten order.",
+      );
     }
 
     if (toStatus === "APPROVED") {
@@ -506,7 +522,13 @@ export async function updateOrderItemCourseSelections(
       /*
        * Ta bort gamla kurser som inte längre är valda.
        * Endast framtida bokningar tas bort.
+       *
+       * Tillfällen som redan gåtts på en bortvald kurs är förbrukade ur
+       * paketet. De dras från de nya kursernas pott nedan — samma regel som
+       * adminChangePurchaseItemCourse — annars kunde ett kursbyte trolla
+       * fram extra tillfällen.
        */
+      let usedOnRemoved = 0;
       for (const removedCourseId of removedCourseIds) {
         const oldPurchaseItem = purchaseItemsByCourse.get(removedCourseId);
 
@@ -557,6 +579,8 @@ export async function updateOrderItemCourseSelections(
           },
         });
 
+        usedOnRemoved += remainingBookings;
+
         if (remainingBookings === 0) {
           // Om inga bokningar finns kvar alls kan vi radera raden helt
           await tx.purchaseItem.delete({
@@ -578,9 +602,18 @@ export async function updateOrderItemCourseSelections(
       }
 
       const newPI = <PurchaseItem[]>[];
+      const isClip = orderItem.product.type === "CLIP";
+
+      /** Tar det som gåtts på bortvalda kurser ur en ny kurs pott. */
+      const takeUsed = (lessonsIncluded: number) => {
+        const taken = Math.min(usedOnRemoved, lessonsIncluded);
+        usedOnRemoved -= taken;
+        return taken;
+      };
 
       /*
-       * Skapa PurchaseItem för nya kurser med deras fulla pott.
+       * Skapa PurchaseItem för nya kurser med paketets pott, minus det som
+       * redan gåtts.
        */
       for (const addedCourseId of addedCourseIds) {
         const productCourse = productCourses.get(addedCourseId);
@@ -589,7 +622,13 @@ export async function updateOrderItemCourseSelections(
           throw new Error("Den nya kursen saknas i produktens kurskoppling.");
         }
 
-        const alreadyExists = await tx.purchaseItem.findFirst({
+        const lessonsIncluded = productCourse.lessonsIncluded;
+
+        // En kurs som valts bort och nu väljs tillbaka har kvar sin rad,
+        // nollställd för att historiken finns kvar. Den får tillbaka sin
+        // pott, minus det som redan gåtts på den — förut hoppades den över,
+        // och kunden stod utan tillfällen.
+        const existing = await tx.purchaseItem.findFirst({
           where: {
             purchaseId,
             orderItemId: normalizedOrderItemId,
@@ -597,11 +636,26 @@ export async function updateOrderItemCourseSelections(
           },
         });
 
-        if (alreadyExists) {
+        if (existing) {
+          const usedHere = await tx.booking.count({
+            where: { purchaseItemId: existing.id },
+          });
+          const restored = await tx.purchaseItem.update({
+            where: { id: existing.id },
+            data: {
+              remainingCount: isClip
+                ? 0
+                : Math.max(
+                    0,
+                    existing.lessonsIncluded -
+                      usedHere -
+                      takeUsed(existing.lessonsIncluded - usedHere),
+                  ),
+            },
+          });
+          newPI.push(restored);
           continue;
         }
-
-        const lessonsIncluded = productCourse.lessonsIncluded;
 
         const createPI = await tx.purchaseItem.create({
           data: {
@@ -609,10 +663,10 @@ export async function updateOrderItemCourseSelections(
             orderItemId: normalizedOrderItemId,
             courseId: addedCourseId,
             type: orderItem.product.type,
-            lessonsIncluded:
-              orderItem.product.type === "CLIP" ? 0 : lessonsIncluded,
-            remainingCount:
-              orderItem.product.type === "CLIP" ? 0 : lessonsIncluded,
+            lessonsIncluded: isClip ? 0 : lessonsIncluded,
+            remainingCount: isClip
+              ? 0
+              : lessonsIncluded - takeUsed(lessonsIncluded),
             unlimited: productCourse.unlimited ?? false,
           },
         });
@@ -694,6 +748,10 @@ export async function createPurchaseFromOrder(orderId: string) {
   if (!order) throw new Error("Order hittades inte");
 
   const result = await prisma.$transaction(async (tx) => {
+    // Lås ordern, så att två samtidiga anrop (ett dubbelklick på "Bevilja")
+    // inte båda ser att köp saknas och skapar varsitt.
+    await tx.$queryRaw`SELECT id FROM "order" WHERE id = ${orderId} FOR UPDATE`;
+
     // 1. SÄKERHETSSPÄRR: Kolla om ordern redan har genererat ett köp
     const existingPurchase = await tx.purchase.findFirst({
       where: { orderId: orderId },
@@ -709,8 +767,13 @@ export async function createPurchaseFromOrder(orderId: string) {
       };
     }
 
-    // Kontrollera att ordern är i rätt status för att generera köp
-    if (order.status !== "APPROVED") {
+    // Kontrollera att ordern är i rätt status för att generera köp. Läst
+    // under låset — ordern ovan hämtades innan.
+    const locked = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { status: true },
+    });
+    if (locked?.status !== "APPROVED") {
       throw new Error("Ordern är inte beviljad ännu.");
     }
 
