@@ -989,6 +989,25 @@ describe("antal per orderrad", () => {
   });
 });
 
+describe("getUserOrder", () => {
+  it("visar kunden statushistoriken utan adminens kontouppgifter eller anteckningar", async () => {
+    const course = await createCourse({ teacher, future: 1 });
+    const product = await createProduct({ type: "COURSE", courses: [course] });
+    const buyer = await createUser();
+    const order = await placeOrder({ buyer, product });
+    await as(admin, () => approveOrder(order.id, "intern: ringde kunden"));
+
+    const seen = await as(buyer, () => getUserOrder(order.id));
+    const text = JSON.stringify(seen);
+    expect(text).not.toContain(admin.email);
+    expect(text).not.toContain("intern: ringde kunden");
+    expect(seen.statusEvents.map((e) => e.toStatus)).toEqual([
+      "AWAITING_APPROVAL",
+      "APPROVED",
+    ]);
+  });
+});
+
 describe("unlimited", () => {
   it("ett obegränsat köp bokar alla kommande lektioner och rör aldrig saldot", async () => {
     const course = await createCourse({

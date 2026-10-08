@@ -1173,8 +1173,11 @@ export async function getUserOrder(orderId: string) {
           participant: true,
         },
       },
+      // Bara vad som hände och när. Förut följde adminens hela
+      // användarrad med (mejl, roll, spärrstatus) och anteckningarna, som
+      // är studions interna.
       statusEvents: {
-        include: { changedBy: true },
+        select: { fromStatus: true, toStatus: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       },
     },
