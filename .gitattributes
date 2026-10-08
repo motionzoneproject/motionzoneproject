@@ -1,0 +1,4 @@
+# Biome formaterar med LF. Utan den här raden checkar Git på Windows (med
+# core.autocrlf=true) ut filerna med CRLF, och npm run lint ger då hundratals
+# formateringsfel lokalt som inte finns i CI.
+* text=auto eol=lf
