@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  ArrowRight,
-  Facebook,
-  Instagram,
-  Mail,
-  MapPin,
-  Phone,
-} from "lucide-react";
+import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { Facebook, Instagram } from "@/components/icons/brand-icons";
 import { ManageCookiesLink } from "@/components/ManageCookiesLink";
 import { Button } from "@/components/ui/button";
 

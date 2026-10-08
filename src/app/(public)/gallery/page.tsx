@@ -1,6 +1,6 @@
-import { Instagram } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Instagram } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { getActiveGalleryItems } from "@/lib/actions/gallery";
 import { getDictionary } from "@/locales/get-dictionary";
