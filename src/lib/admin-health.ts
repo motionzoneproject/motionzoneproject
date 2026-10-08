@@ -8,11 +8,13 @@
 // från /admin, som redan vaktat att användaren är admin.
 
 import type { Prisma } from "@/generated/prisma/client";
+import { calcRemainingCount, showRemaining } from "./actions/purchase-helpers";
+import { placesStudentInCourse, studentKeyOf } from "./course-roster";
 import { formatDateToInputStr, formatShortFriendlyDate } from "./date-utils";
 import { formatPrice } from "./money";
 import prisma from "./prisma";
 import { dbToFormTime } from "./time-convert";
-import { getVeckodag } from "./tools";
+import { getCourseName, getVeckodag } from "./tools";
 
 export type HealthSeverity = "warning" | "serious";
 
@@ -60,6 +62,42 @@ export type HealthFix =
       productNames: string[];
       /** Paket där kundens kursval saknas — då vägrar skapandet. */
       missingSelections: string[];
+    }
+  | {
+      /**
+       * Stäng av autobokningen på ett paket som bokar in köparen på samtliga
+       * kopplade kurser. Redan skapade bokningar rörs inte — de plockas bort
+       * per elev i schemadialogen, eftersom en massradering inte kan skilja de
+       * felaktiga från dem eleven faktiskt ska gå på.
+       */
+      kind: "product-autobook";
+      productId: string;
+      productName: string;
+      courseCount: number;
+      /** Köpare som redan blivit inbokade, med antal kurser var. */
+      affected: { studentName: string; email: string; courses: number }[];
+    }
+  | {
+      /**
+       * Boka in eleven på kursens kommande lektioner. Produkten autobokar, så
+       * bokningarna skulle ha skapats när ordern beviljades — autobook() sväljer
+       * sina fel, så ett misslyckande syns ingenstans förrän läraren saknar
+       * eleven på lektionen.
+       */
+      kind: "course-booking";
+      purchaseItemId: string;
+      studentName: string;
+      courseName: string;
+      productName: string;
+      /**
+       * Falskt när produkten är en enskild kurs utan autobokning. Då hamnar
+       * nästa köpare i samma läge, och det är produkten som ska rättas.
+       */
+      productAutobook: boolean;
+      /** Hur många lektioner som bokas. */
+      upcomingLessons: number;
+      /** Saldo att boka med, "∞" för obegränsade rader. */
+      remaining: string;
     }
   | {
       /**
@@ -141,6 +179,170 @@ type Check = {
 };
 
 const take = HEALTH_ROW_LIMIT;
+
+/**
+ * Kursrader som skulle ha blivit inbokade men inte blev det.
+ *
+ * Kursen måste ha kommande lektioner — en avslutad kurs har inga bokningar
+ * kvar att göra, och skulle annars flaggas för evigt när terminen tar slut.
+ */
+/**
+ * Elever som lagts till i en kurs för hand och saknar köp i den.
+ *
+ * Tillägget finns för provlektioner och kontant betalning, men det finns
+ * ingen order bakom, så eleven syns aldrig bland ordrarna och faktureras
+ * aldrig av sig själv. Bara kurser med lektioner kvar räknas: en avslutad
+ * kurs går inte att följa upp, och skulle annars flaggas för evigt.
+ *
+ * Ett tillägg där eleven har ett köp i kursen — till exempel när en lärare
+ * lagt till och bokningen väntar på admin — räknas inte hit.
+ */
+async function manualStudentsWithoutPurchase() {
+  const entries = await prisma.courseRosterEntry.findMany({
+    where: {
+      status: "ADDED",
+      course: {
+        lessons: { some: { cancelled: false, startTime: { gte: new Date() } } },
+      },
+    },
+    select: {
+      id: true,
+      courseId: true,
+      studentKey: true,
+      createdAt: true,
+      course: {
+        select: {
+          name: true,
+          minAge: true,
+          maxAge: true,
+          adult: true,
+          level: true,
+        },
+      },
+      user: { select: { name: true, email: true } },
+      participant: {
+        select: {
+          name: true,
+          addedBy: { select: { name: true, email: true } },
+        },
+      },
+      changedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  if (entries.length === 0) return [];
+
+  const items = await prisma.purchaseItem.findMany({
+    where: { courseId: { in: [...new Set(entries.map((e) => e.courseId))] } },
+    select: {
+      courseId: true,
+      purchase: { select: { userId: true, participantId: true } },
+    },
+  });
+  const withPurchase = new Set(
+    items.map((i) => `${i.courseId}|${studentKeyOf(i.purchase)}`),
+  );
+
+  return entries.filter(
+    (e) => !withPurchase.has(`${e.courseId}|${e.studentKey}`),
+  );
+}
+
+/**
+ * Aktiva paket utan kursbegränsning som autobokar fler än två kurser.
+ *
+ * Klippkort räknas inte: ett klippkort över flera kurser har en gemensam
+ * pott, och autobook() bokar aldrig in det av sig själv, oavsett flaggan.
+ *
+ * Antalet kopplade kurser går inte att filtrera på i en Prisma-where, så
+ * urvalet görs i minnet. Produkttabellen är liten.
+ */
+async function autobookingEverythingProducts() {
+  const products = await prisma.product.findMany({
+    where: {
+      active: true,
+      autobook: true,
+      maxCourses: null,
+      type: { not: "CLIP" },
+    },
+    select: { id: true, name: true, _count: { select: { courses: true } } },
+    orderBy: { name: "asc" },
+  });
+
+  return products
+    .filter((product) => product._count.courses > 2)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      courseCount: product._count.courses,
+    }));
+}
+
+/**
+ * Kursrader som placerar eleven i kursen men saknar bokningar. Samma regel
+ * som elevlistan (placesStudentInCourse): en kurs som bytts bort i paketet
+ * räknas inte, en produkt som autobokar räknas, och ett köp som bara ger en
+ * kurs räknas. Terminskort, program och klippkort över flera kurser räknas
+ * inte — där är noll bokningar det normala tills schemat satts.
+ *
+ * En elev som studion tagit bort från kursen räknas inte heller: där är noll
+ * bokningar meningen, och åtgärden skulle boka in hen igen.
+ *
+ * Antalet kursrader i köpet går inte att filtrera på i en Prisma-where, så
+ * regeln tillämpas i minnet. Urvalet är redan begränsat till kursrader utan
+ * bokningar i kurser med lektioner kvar.
+ */
+async function purchaseItemsWithoutBookings(): Promise<string[]> {
+  const removed = await prisma.courseRosterEntry.findMany({
+    where: { status: "REMOVED" },
+    select: { courseId: true, studentKey: true },
+  });
+  const removedKeys = new Set(
+    removed.map((e) => `${e.courseId}|${e.studentKey}`),
+  );
+
+  const candidates = await prisma.purchaseItem.findMany({
+    where: {
+      bookings: { none: {} },
+      course: {
+        lessons: {
+          some: { cancelled: false, startTime: { gte: new Date() } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      courseId: true,
+      orderItem: {
+        select: { courseSelections: { select: { courseId: true } } },
+      },
+      purchase: {
+        select: {
+          userId: true,
+          participantId: true,
+          product: { select: { autobook: true } },
+          _count: { select: { PurchaseItems: true } },
+        },
+      },
+    },
+  });
+
+  return candidates
+    .filter(
+      (item) =>
+        !removedKeys.has(`${item.courseId}|${studentKeyOf(item.purchase)}`) &&
+        placesStudentInCourse({
+          courseId: item.courseId,
+          selectedCourseIds: item.orderItem.courseSelections.map(
+            (s) => s.courseId,
+          ),
+          autobook: item.purchase.product.autobook,
+          courseCount: item.purchase._count.PurchaseItems,
+          activeBookings: 0,
+        }),
+    )
+    .map((item) => item.id);
+}
 
 const productWithoutCourse = {
   active: true,
@@ -657,6 +859,222 @@ const checks: Check[] = [
             productName: row.product.name,
             courseNames,
           },
+        };
+      });
+    },
+  },
+  {
+    /**
+     * Ett paket utan kursbegränsning som dessutom autobokar.
+     *
+     * "Ingen begränsning" betyder i koden att samtliga kopplade kurser ingår,
+     * så varje köpare bokas in på allihop. För ett terminskort eller ett
+     * program är det fel — köpet ger tillgång till ett utbud som eleven väljer
+     * ur — och felet märks först när någon köpt och fått tjugotal kurser i sitt
+     * schema.
+     *
+     * Två kurser kan vara helt riktigt, t.ex. en kurs som går två dagar i
+     * veckan. Därför flaggas först produkter med fler än så.
+     */
+    id: "product-autobooks-everything",
+    singular: "produkt bokar in köparen på samtliga kurser",
+    plural: "produkter bokar in köparen på samtliga kurser",
+    description:
+      "Paketet har ingen kursbegränsning, så alla kopplade kurser ingår, och autobokningen bokar in köparen på varenda en.",
+    howTo: {
+      steps: [
+        'Är det ett terminskort eller ett program? Klicka "Åtgärda" och stäng av autobokningen. Köpet ger då tillgång till kurserna utan att boka in eleven på dem.',
+        'Ska kunden välja ett visst antal kurser i kassan sätter du i stället "Begränsa antal valbara kurser" på /admin/products. Autobokningen bokar då bara kundens val.',
+        "Ska köparen verkligen gå samtliga kurser är allt som det ska — lämna produkten i fred.",
+      ],
+      caveat:
+        'Avstängningen gäller framåt. Kunder som redan blivit inbokade behåller sina bokningar, och de plockas bort per elev i kolumnen "Schema" på /admin/students — en massradering skulle inte kunna skilja de felaktiga från kurserna eleven faktiskt går på.',
+    },
+    fixHref: "/admin/products",
+    fixLabel: "Till produkter",
+    severity: "warning",
+    fixable: true,
+    count: async () => (await autobookingEverythingProducts()).length,
+    list: async () => {
+      const products = await autobookingEverythingProducts();
+
+      return Promise.all(
+        products.slice(0, take).map(async (product) => {
+          const purchases = await prisma.purchase.findMany({
+            where: { productId: product.id },
+            select: {
+              user: { select: { name: true, email: true } },
+              participant: { select: { name: true } },
+              _count: { select: { PurchaseItems: true } },
+            },
+          });
+
+          const affected = purchases.map((purchase) => ({
+            studentName: purchase.participant?.name ?? purchase.user.name,
+            email: purchase.user.email,
+            courses: purchase._count.PurchaseItems,
+          }));
+
+          return {
+            id: product.id,
+            title: product.name,
+            detail: `${product.courseCount} kurser ingår · ${affected.length} köp`,
+            href: searchHref("/admin/products", product.name),
+            fix: {
+              kind: "product-autobook" as const,
+              productId: product.id,
+              productName: product.name,
+              courseCount: product.courseCount,
+              affected,
+            },
+          };
+        }),
+      );
+    },
+  },
+  {
+    /**
+     * Köpet placerar eleven i kursen, men hen har inte en enda bokning där.
+     *
+     * Två orsaker. Bokningarna skapas när ordern beviljas, av autobook(), som
+     * returnerar tom lista i stället för att kasta vid fel — slår den fel ser
+     * adminen bara "beviljad". Eller så är en enskild kurs sparad utan
+     * autobokning, och då bokas ingen in alls. I båda fallen står eleven i
+     * elevlistan men saknas på lektionerna.
+     *
+     * Kort och program räknas inte hit: där är noll bokningar det normala,
+     * eftersom schemat sätts ihop för hand.
+     */
+    id: "purchase-without-bookings",
+    singular: "köp är inte inbokat på några lektioner",
+    plural: "köp är inte inbokade på några lektioner",
+    description:
+      "Köpet gäller en enskild kurs eller en produkt som bokar in automatiskt, men kursraden har noll bokningar trots att kursen har lektioner kvar.",
+    howTo: {
+      steps: [
+        'Klicka "Åtgärda" och "Boka in på kursen". Eleven bokas in på kursens kommande lektioner, precis som ett beviljande hade gjort.',
+        "Lektioner som redan varit bokas aldrig i efterhand — eleven har ju inte gått på dem, och de skulle dra klipp i onödan.",
+        'Ska eleven bara gå vissa kurser använder du i stället kolumnen "Schema" på /admin/students.',
+      ],
+      caveat:
+        'En elev som tagits bort via "Hantera elever" räknas inte hit. Men en elev vars bokningar tagits bort på annat sätt ser likadan ut som en som aldrig blev inbokad. Kontrollera att eleven verkligen ska gå kursen innan du bokar in.',
+    },
+    fixHref: "/admin/students",
+    fixLabel: "Till elever",
+    severity: "serious",
+    fixable: true,
+    count: async () => (await purchaseItemsWithoutBookings()).length,
+    list: async () => {
+      const rows = await prisma.purchaseItem.findMany({
+        where: { id: { in: await purchaseItemsWithoutBookings() } },
+        select: {
+          id: true,
+          remainingCount: true,
+          unlimited: true,
+          courseId: true,
+          course: {
+            select: {
+              name: true,
+              minAge: true,
+              maxAge: true,
+              adult: true,
+              level: true,
+            },
+          },
+          purchase: {
+            select: {
+              type: true,
+              remainingCount: true,
+              product: { select: { name: true, autobook: true } },
+              user: { select: { name: true, email: true } },
+              participant: { select: { name: true } },
+            },
+          },
+        },
+        take,
+      });
+
+      const now = new Date();
+
+      return Promise.all(
+        rows.map(async (row) => {
+          const upcomingLessons = await prisma.lesson.count({
+            where: {
+              courseId: row.courseId,
+              cancelled: false,
+              startTime: { gte: now },
+            },
+          });
+
+          const studentName =
+            row.purchase.participant?.name ?? row.purchase.user.name;
+          const remaining = showRemaining(
+            calcRemainingCount({
+              purchase: {
+                type: row.purchase.type,
+                remainingCount: row.purchase.remainingCount,
+              },
+              purchaseItem: {
+                unlimited: row.unlimited,
+                remainingCount: row.remainingCount,
+              },
+            }),
+          );
+
+          return {
+            id: row.id,
+            title: studentName,
+            detail: `${getCourseName(row.course)} · ${row.purchase.product.name} · ${upcomingLessons} lektioner kvar`,
+            href: searchHref("/admin/students", row.purchase.user.email),
+            fix: {
+              kind: "course-booking" as const,
+              purchaseItemId: row.id,
+              studentName,
+              courseName: getCourseName(row.course),
+              productName: row.purchase.product.name,
+              productAutobook: row.purchase.product.autobook,
+              upcomingLessons,
+              remaining: String(remaining),
+            },
+          };
+        }),
+      );
+    },
+  },
+  {
+    id: "manual-student-without-purchase",
+    singular: "elev är tillagd i en kurs utan köp",
+    plural: "elever är tillagda i kurser utan köp",
+    description:
+      'Eleven lades till för hand i "Hantera elever" och har inget köp i kursen. Det finns ingen order bakom, så eleven faktureras inte och ser inte kursen på sin profilsida.',
+    howTo: {
+      steps: [
+        "Kontrollera om eleven har betalat på annat sätt, till exempel kontant eller Swish, eller om det var en provlektion.",
+        "Ska eleven fortsätta och betala via hemsidan: be kunden anmäla sig till kursen, eller lägg ordern åt kunden. Tillägget försvinner då ur den här listan av sig själv.",
+        'Ska eleven inte gå kursen: raden här öppnar elevlistan filtrerad på kursen. Klicka personen med minustecken ("Ta bort från kursen") längst till höger på elevens rad, eller gör samma sak under "Hantera elever" på /admin/courses.',
+      ],
+      caveat:
+        "Har eleven redan betalat på annat sätt står hen kvar här tills kursen är slut. Det finns inget sätt att bocka av en rad, så använd listan som påminnelse, inte som en att göra-lista som ska bli tom.",
+    },
+    fixHref: "/admin/courses",
+    fixLabel: "Till kurser",
+    severity: "warning",
+    count: async () => (await manualStudentsWithoutPurchase()).length,
+    list: async () => {
+      const rows = await manualStudentsWithoutPurchase();
+      return rows.slice(0, take).map((row) => {
+        const studentName = row.participant?.name ?? row.user?.name ?? "Okänd";
+        return {
+          id: row.id,
+          title: studentName,
+          detail: [
+            getCourseName(row.course),
+            row.participant ? `kund: ${row.participant.addedBy.name}` : null,
+            `tillagd av ${row.changedBy.name} ${formatShortFriendlyDate(row.createdAt)}`,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          href: `/admin/students?course=${row.courseId}`,
         };
       });
     },

@@ -17,10 +17,12 @@ import {
 import {
   backfillPurchaseItems,
   createMissingPurchase,
+  disableProductAutobook,
   grantTeacherRole,
   mergeParticipants,
   removeStaleBooking,
 } from "@/lib/actions/health-actions";
+import { setCourseBooking } from "@/lib/actions/schedule-actions";
 import type { HealthFix, ParticipantCopy } from "@/lib/admin-health";
 import { formatShortFriendlyDate } from "@/lib/date-utils";
 
@@ -70,6 +72,24 @@ export function FixDialog({
         )}
         {fix.kind === "purchase-backfill" && (
           <BackfillPurchase
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "product-autobook" && (
+          <DisableAutobook
+            fix={fix}
+            onDone={() => {
+              setOpen(false);
+              onFixed?.();
+            }}
+          />
+        )}
+        {fix.kind === "course-booking" && (
+          <BookWholeCourse
             fix={fix}
             onDone={() => {
               setOpen(false);
@@ -462,6 +482,160 @@ function CreatePurchase({
       <DialogFooter>
         <Button onClick={submit} disabled={isPending || blocked}>
           {isPending ? "Skapar…" : "Skapa köp"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Bokar in eleven på kursens kommande lektioner.
+ *
+ * Samma sak som ett ordergodkännande skulle ha gjort. Dialogen säger hur många
+ * lektioner det blir och vad saldot är, eftersom det är kundens tillfällen som
+ * dras — och varnar för fallet där någon plockats bort med flit.
+ */
+function BookWholeCourse({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "course-booking" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await setCourseBooking(fix.purchaseItemId, true);
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Boka in på kursen</DialogTitle>
+        <DialogDescription>
+          {fix.studentName} har {fix.productName} och står i elevlistan för{" "}
+          {fix.courseName}, men är inte inbokad på en enda lektion där.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 text-sm">
+        {!fix.productAutobook && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+            {fix.productName} är en enskild kurs med autobokningen avstängd, så
+            ingen som köper den blir inbokad. Slå på autobokning på produkten,
+            annars hamnar nästa köpare i samma läge.
+          </div>
+        )}
+        <p className="text-muted-foreground">
+          {fix.upcomingLessons} kommande lektioner bokas, så långt saldot
+          räcker. Saldo just nu: {fix.remaining}.
+        </p>
+        <p className="text-muted-foreground">
+          Lektioner som redan varit bokas inte — eleven har inte gått på dem,
+          och de skulle dra klipp i onödan.
+        </p>
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+          Har eleven plockats bort från lektionerna med flit ser det likadant ut
+          som om bokningarna aldrig skapats. Kontrollera att eleven verkligen
+          ska gå kursen.
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending}>
+          {isPending ? "Bokar…" : "Boka in på kursen"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/**
+ * Stänger av autobokningen på ett paket som bokar in köparen på allt.
+ *
+ * Dialogen förklarar vad inställningen faktiskt gör innan man trycker, och
+ * räknar upp de kunder som redan hunnit bli inbokade — deras bokningar rörs
+ * inte, för en massradering kan inte skilja de felaktiga från kurserna eleven
+ * verkligen går på.
+ */
+function DisableAutobook({
+  fix,
+  onDone,
+}: {
+  fix: Extract<HealthFix, { kind: "product-autobook" }>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await disableProductAutobook(fix.productId);
+      if (result.success) {
+        toast.success(result.msg);
+        onDone();
+        router.refresh();
+      } else {
+        toast.error(result.msg);
+      }
+    });
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Stäng av autobokningen</DialogTitle>
+        <DialogDescription>
+          &ldquo;{fix.productName}&rdquo; har ingen kursbegränsning, så samtliga{" "}
+          {fix.courseCount} kopplade kurser ingår — och autobokningen bokar in
+          varje köpare på alla.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 text-sm">
+        <p className="text-muted-foreground">
+          Med avstängd autobokning ger köpet fortfarande tillgång till kurserna,
+          men eleven bokas inte in på något. Ni sätter ihop hens schema i
+          kolumnen &ldquo;Schema&rdquo; på /admin/students.
+        </p>
+        <p className="text-muted-foreground">
+          Ska kunden i stället välja ett visst antal kurser själv i kassan är
+          det &ldquo;Begränsa antal valbara kurser&rdquo; på produkten som
+          gäller, inte den här knappen.
+        </p>
+
+        {fix.affected.length > 0 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+            <p>
+              {fix.affected.length} köp finns redan. Deras bokningar tas inte
+              bort här — vi kan inte veta vilka kurser eleven faktiskt går på.
+              Gå igenom dem en och en i schemadialogen:
+            </p>
+            <ul className="ml-4 list-disc space-y-1">
+              {fix.affected.map((person) => (
+                <li key={`${person.email}-${person.studentName}`}>
+                  {person.studentName} — {person.courses}{" "}
+                  {person.courses === 1 ? "kurs" : "kurser"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <DialogFooter>
+        <Button onClick={submit} disabled={isPending}>
+          {isPending ? "Stänger av…" : "Stäng av autobokningen"}
         </Button>
       </DialogFooter>
     </>

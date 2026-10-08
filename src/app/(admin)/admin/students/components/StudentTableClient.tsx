@@ -41,7 +41,12 @@ import {
   formatFriendlyDateTime,
 } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import {
+  AddStudentToCourseDialog,
+  RemoveFromCourseButton,
+} from "../../components/CourseRosterControls";
 import { ProductEditorDialog } from "../../components/ProductEditorDialog";
+import { ScheduleDialog } from "../../components/ScheduleDialog";
 import type { StudentSummary } from "../page";
 import { DetailsDialog } from "./DetailsDialog";
 import { MailDialog } from "./MailDialog";
@@ -142,12 +147,14 @@ function CoursesDialog({ student }: { student: StudentSummary }) {
     <CountDialogButton
       count={student.courses.length}
       title={`Kurser för ${student.name}`}
-      description="Visar alla kurser eleven har via sina purchases."
+      description="Kurserna eleven går. Ett terminskort eller program räknas bara på de kurser eleven är inbokad på — resten av kurserna det ger finns under Schema."
     >
       <div className="space-y-2">
         {student.courses.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            Inga kurser hittades.
+            {student.purchases.length > 0
+              ? "Inga kurser ännu. Ett terminskort eller program syns på en kurs först när eleven är inbokad där — sätt det under Schema."
+              : "Inga kurser hittades."}
           </div>
         ) : (
           student.courses.map((course) => (
@@ -248,8 +255,11 @@ function BookingsDialog({ student }: { student: StudentSummary }) {
 
 export default function StudentTableClient({
   students,
+  course = null,
 }: {
   students: StudentSummary[];
+  /** Kursen listan är filtrerad på. Då går elever att lägga till och ta bort. */
+  course?: { id: string; name: string } | null;
 }) {
   const [selectedStudents, setSelectedStudents] =
     useState<StudentsSelectedType>({});
@@ -414,6 +424,13 @@ export default function StudentTableClient({
         </Dialog>
 
         <MailDialog selectedStudents={selectedList} />
+
+        {course && (
+          <AddStudentToCourseDialog
+            courseId={course.id}
+            courseName={course.name}
+          />
+        )}
       </div>
 
       <div className="mt-2">
@@ -442,6 +459,7 @@ export default function StudentTableClient({
               <TableHead>Terminer</TableHead>
               <TableHead>Bokningar</TableHead>
               <TableHead>Produkter</TableHead>
+              <TableHead>Schema</TableHead>
               <TableHead className="text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
@@ -468,6 +486,14 @@ export default function StudentTableClient({
                         Ej beviljad än
                       </Badge>
                     ) : null}
+                    {student.addedManually ? (
+                      <Badge
+                        variant="outline"
+                        title="Tillagd i kursen för hand, utan köp"
+                      >
+                        Tillagd manuellt
+                      </Badge>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
@@ -490,7 +516,9 @@ export default function StudentTableClient({
                   <DetailsDialog
                     id={student.participantId ?? student.userId}
                     isParticipant={!!student.participantId}
-                    hasApprovedPurchase={student.hasApprovedPurchase}
+                    hasApprovedPurchase={
+                      student.hasApprovedPurchase || !!student.addedManually
+                    }
                   />
                 </TableCell>
                 <TableCell>{student.customerName ?? "-"}</TableCell>
@@ -511,8 +539,23 @@ export default function StudentTableClient({
                     triggerLabel={`(${student.purchases.length}st)`}
                   />
                 </TableCell>
+                <TableCell>
+                  <ScheduleDialog
+                    purchaseIds={student.purchases.map((p) => p.id)}
+                    title={student.name}
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {course && (
+                      <RemoveFromCourseButton
+                        courseId={course.id}
+                        courseName={course.name}
+                        studentKey={student.studentKey}
+                        studentName={student.name}
+                        addedManually={!!student.addedManually}
+                      />
+                    )}
                     {student.participant ? (
                       <EditParticipantForm participant={student.participant} />
                     ) : (

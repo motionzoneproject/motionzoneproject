@@ -1,10 +1,11 @@
-import { EditIcon, EyeOffIcon, Search } from "lucide-react";
+import { EditIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Course, Style, User } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getCourseName } from "@/lib/tools";
+import { CourseRosterDialog } from "../components/CourseRosterDialog";
 import DeleteCourseBtn from "./components/DelCourseBtn";
 import ToggleCourseActiveBtn from "./components/ToggleCourseActiveBtn";
 import EditCourseForm from "./forms/EditCourseForm";
@@ -14,6 +15,13 @@ interface Props {
   styles: Style[];
   teachers: User[];
   teacherName?: string;
+  /**
+   * Elever som går kursen, från samma regel som "Hantera elever" — antalet
+   * och listan kan då inte säga olika saker. Att räkna alla köp med tillgång
+   * gav terminskortens och programmens köpare i nästan varje kurs. Räknas
+   * för hela sidan på en gång, av getCourseStudentCounts.
+   */
+  studentCount: number;
   lang?: "sv" | "en";
 }
 
@@ -22,21 +30,11 @@ export default async function CourseItem({
   styles,
   teachers,
   teacherName,
+  studentCount,
   lang = "sv",
 }: Props) {
   const lessonsCnt = await prisma.lesson.count({
     where: { courseId: course.id },
-  });
-
-  // Räknar alla sålda produkter med tillgång till kursen
-  const soldProducts = await prisma.purchase.count({
-    where: {
-      PurchaseItems: {
-        some: {
-          courseId: course.id,
-        },
-      },
-    },
   });
 
   return (
@@ -55,16 +53,8 @@ export default async function CourseItem({
       <TableCell>{teacherName ?? "Saknas"}</TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <span>{soldProducts}st</span>
-          <Link
-            href={
-              `../admin/students?course=${course.id}` /**fix: finns ej kursfilter ännu i admin/students, så kolla sen när det kommeer så det blir rätt. */
-            }
-          >
-            <Button variant="ghost">
-              <Search className="h-4 w-4" /> Elever
-            </Button>
-          </Link>
+          <span>{studentCount}st</span>
+          <CourseRosterDialog courseId={course.id} />
         </div>
       </TableCell>
       <TableCell>

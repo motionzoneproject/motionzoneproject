@@ -8,6 +8,7 @@ import type {
   Product,
 } from "@/generated/prisma/client";
 import { handleClips } from "../clips";
+import { studentKeyOf } from "../course-roster";
 import prisma from "../prisma";
 import { getCourseName } from "../tools";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
@@ -162,7 +163,15 @@ export type UserPurchaseWithProduct = Prisma.PurchaseItemGetPayload<{
   include: {
     orderItem: { include: { courseSelections: true } };
     course: {
-      select: { name: true; name_en: true };
+      select: {
+        name: true;
+        name_en: true;
+        minAge: true;
+        maxAge: true;
+        adult: true;
+        level: true;
+        level_en: true;
+      };
     };
     purchase: {
       select: {
@@ -198,8 +207,18 @@ export async function getUserPurchases(): Promise<UserPurchaseWithProduct[]> {
       include: {
         orderItem: { include: { courseSelections: true } },
         course: {
-          // <--- NYTT: Hämtar kursnamnet direkt
-          select: { name: true, name_en: true },
+          // Allt det fullständiga namnet byggs av. Kursnamnet ensamt skiljer
+          // inte på åldrar och nivåer, och på ett terminskort är det i den här
+          // listan kunden väljer vilken kurs hen ska boka.
+          select: {
+            name: true,
+            name_en: true,
+            minAge: true,
+            maxAge: true,
+            adult: true,
+            level: true,
+            level_en: true,
+          },
         },
         purchase: {
           select: {
@@ -474,6 +493,14 @@ export async function getAllProducts(): Promise<Product[]> {
 export async function autobook(
   purchaseItemId: string,
   optTx?: Prisma.TransactionClient,
+  opts?: {
+    /**
+     * Sant när en admin uttryckligen valt just den här kursen, i stället för
+     * att bokningen sker automatiskt när en order godkänns. Då gäller inte de
+     * spärrar som finns för att skydda mot att systemet gissar åt kunden.
+     */
+    explicit?: boolean;
+  },
 ): Promise<Booking[]> {
   const sessionData = await getSessionData();
   const sessionUser = sessionData?.user;
@@ -507,15 +534,30 @@ export async function autobook(
     const participantId = purchase.participantId;
     const product = purchase.product;
 
-    // 1. Produkten måste ha autobokning aktiverad.
-    if (!product.autobook) return [];
+    // 1. Produkten måste ha autobokning aktiverad — men bara när bokningen
+    // sker automatiskt. Terminskort och program har den avstängd just för att
+    // ingen ska bokas in av sig själv, och det är dem schemadialogen finns
+    // för: har en admin bockat i kursen är det ett uttryckligt val.
+    if (!opts?.explicit && !product.autobook) return [];
 
-    // 2. Klippkort med fler än 1 kopplad kurs stödjer inte autobokning.
-    if (product.type === "CLIP" && product.courses.length > 1) return [];
+    // 2. Ett klippkort som gäller flera kurser har en gemensam pott, så en
+    // automatisk bokning skulle bränna alla klipp på den kurs som råkar komma
+    // först. Har en admin pekat ut kursen är valet däremot medvetet.
+    if (
+      !opts?.explicit &&
+      product.type === "CLIP" &&
+      product.courses.length > 1
+    )
+      return [];
+
+    const isAdmin = sessionUser.role === "admin";
 
     // 3. Om produkten begränsar antal valbara kurser (maxCourses satt),
-    // autoboka bara den/de kurser kunden faktiskt valde vid köpet.
-    if (product.maxCourses !== null) {
+    // autoboka bara den/de kurser kunden faktiskt valde vid köpet. Bara en
+    // admin kan välja bort spärren: funktionen är en server action och går
+    // att anropa direkt, så en kund som skickar explicit ska inte kunna boka
+    // en kurs hen bytt bort i paketet.
+    if (product.maxCourses !== null && !(opts?.explicit && isAdmin)) {
       const selection = await db.orderItemCourseSelection.findUnique({
         where: {
           orderItemId_courseId: {
@@ -529,7 +571,6 @@ export async function autobook(
     }
 
     // Säkerhetscheck: admin får boka för andra, övriga bara för sina egna köp.
-    const isAdmin = sessionUser.role === "admin";
     if (!isAdmin && purchase.userId !== sessionUser.id) return [];
 
     const aClip = calcRemainingCount({ purchase, purchaseItem });
@@ -591,6 +632,21 @@ export async function autobook(
       );
       if (!clipResult.success) {
         throw new Error(clipResult.msg || "Clip update failed.");
+      }
+
+      // Den som bokas in går kursen. En tidigare borttagning från kursen
+      // skulle annars dölja eleven i elevlistan trots bokningarna — och
+      // lektionernas närvarolistor, som följer bokningarna, skulle visa
+      // hen. Kunden når aldrig hit på en borttagen kurs: bookMyCourse
+      // säger nej innan.
+      if (created.length > 0) {
+        await txClient.courseRosterEntry.deleteMany({
+          where: {
+            courseId: course.id,
+            studentKey: studentKeyOf(purchase),
+            status: "REMOVED",
+          },
+        });
       }
 
       return created;

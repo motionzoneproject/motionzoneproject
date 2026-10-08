@@ -1,7 +1,7 @@
 "use client";
 
 import { DialogTrigger } from "@radix-ui/react-dialog";
-import { EditIcon } from "lucide-react";
+import { EditIcon, Users } from "lucide-react";
 import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import type {
 } from "@/lib/actions/admin";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import { CourseRosterDialog } from "../../../components/CourseRosterDialog";
 import { AttendenceForm } from "./AttendenceForm";
 
 interface Props {
@@ -54,6 +55,22 @@ export function AttendeDialogUI({
             {dbToFormTime(lesson.endTime)})
           </DialogDescription>
         </DialogHeader>
+        {/* Här ändras en enda lektion. Vem som går kursen över huvud taget
+            ändras i kursens elevlista, som öppnas härifrån. */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">
+            Ska eleven gå hela kursen, eller har hen slutat?
+          </span>
+          <CourseRosterDialog
+            courseId={lesson.courseId}
+            trigger={
+              <Button variant="outline" size="sm" className="gap-2">
+                <Users className="h-4 w-4" />
+                Hantera elever på kursen
+              </Button>
+            }
+          />
+        </div>
         <AttendenceForm
           lessonId={lesson.id}
           bookings={bookings}

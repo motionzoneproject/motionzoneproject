@@ -239,6 +239,10 @@
       "sameAsAccountMinor": "Det här är samma namn som kontot, som tillhör en person under 18 år. Ange den vuxna som ska betala.",
       "sameAsParticipantMinor": "Det här är namnet på en deltagare under 18 år. Ange den vuxna som är betalningsansvarig."
     },
+    "manualSchedule": {
+      "title": "Du väljer själv vilka kurser du går",
+      "desc": "Produkten ger tillgång till flera kurser men bokar inte in dig automatiskt. När ordern godkänts går du till din profilsida och trycker \"Boka in på hela kursen\" på de kurser du vill gå. Du kan också boka enstaka lektioner i kalendern."
+    },
     "autobook": {
       "title": "automatisk bokning",
       "desc": "När din order godkänns bokas du automatiskt in på alla kommande kurstillfällen i de kurser som ingår, så långt som klippen räcker."
@@ -454,11 +458,16 @@
       "swapped": "Ogiltig. Utbytt i paket."
     },
     "autobook": {
-      "running": "Autobokar...",
-      "label": "Autoboka",
-      "successCount": "{{count}} lektioner autobokades.",
-      "noNew": "Inga nya lektioner att autoboka.",
-      "error": "Kunde inte autoboka lektioner."
+      "running": "Bokar in...",
+      "label": "Boka in på hela kursen",
+      "successCount": "Inbokad på {{count}} lektioner.",
+      "noNew": "Inget mer att boka i kursen. Alla kommande lektioner är redan bokade, eller så är saldot slut.",
+      "notSelected": "Kursen ingår inte bland de kurser du valde i paketet.",
+      "removedByStudio": "Studion har tagit bort dig från kursen. Hör av dig till oss om du vill gå den igen.",
+      "error": "Kunde inte boka in på kursen.",
+      "clipTitle": "Boka in på hela kursen?",
+      "clipDesc": "Klippkortets kurser delar på samma saldo. Kursens kommande lektioner bokas så långt klippen räcker, just nu {{count}} klipp.",
+      "cancel": "Avbryt"
     },
     "editDetails": {
       "trigger": "Ändra uppgifter",
