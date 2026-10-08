@@ -1,7 +1,10 @@
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 import { removeStudentFromCourse } from "@/lib/actions/roster-actions";
 import { bookMyCourse } from "@/lib/actions/schedule-actions";
-import { autobook } from "@/lib/actions/server-actions";
+import { autobook } from "@/lib/autobook";
 import prisma from "@/lib/prisma";
 import {
   buy,
@@ -33,6 +36,21 @@ beforeAll(async () => {
   admin = await createUser({ role: "admin" });
   teacher = await createUser({ role: "teacher" });
 });
+
+/** Namnen på allt som exporteras från en "use server"-fil under src/. */
+async function serverActionExportNames(): Promise<string[]> {
+  const root = path.resolve(__dirname, "../../src");
+  const files = (await readdir(root, { recursive: true }))
+    .map((f) => path.join(root, f))
+    .filter((f) => /\.tsx?$/.test(f));
+  const names: string[] = [];
+  for (const file of files) {
+    const src = await readFile(file, "utf8");
+    if (!/^\s*["']use server["']/.test(src)) continue;
+    names.push(...Object.keys(await import(pathToFileURL(file).href)));
+  }
+  return names;
+}
 
 describe("autobook vid ordergodkännande", () => {
   it("COURSE: bokar alla kommande lektioner som inte är inställda och drar saldot", async () => {
@@ -378,8 +396,9 @@ describe("autobook: behörighet", () => {
       reason: "removedByStudio",
     });
 
-    const created = await autobook(item.id, undefined, { explicit: true });
-    expect(created).toEqual([]);
+    // autobook tar emot explicit och får därför inte vara en server action:
+    // då kunde kunden anropa den direkt och hoppa över bookMyCourse.
+    expect(await serverActionExportNames()).not.toContain("autobook");
     expect(await bookingCount(item.id)).toBe(0);
     expect((await rosterEntry(a.id, userKey(buyer)))?.status).toBe("REMOVED");
   });
@@ -399,10 +418,11 @@ describe("autobook: behörighet", () => {
     await removeStudentFromCourse(a.id, userKey(buyer));
 
     asUser(buyer);
-    const created = await autobook(itemFor(items, a).id, undefined, {
-      explicit: true,
+    expect(await bookMyCourse(itemFor(items, a).id)).toEqual({
+      success: false,
+      reason: "removedByStudio",
     });
-    expect(created).toEqual([]);
+    expect(await serverActionExportNames()).not.toContain("autobook");
     expect(await clipRemaining(purchase.id)).toBe(10);
     expect((await rosterEntry(a.id, userKey(buyer)))?.status).toBe("REMOVED");
   });

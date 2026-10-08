@@ -5,10 +5,10 @@ import { handleClips } from "@/lib/clips";
 import { mayManageCourse } from "@/lib/course-access";
 import { studentKeyOf } from "@/lib/course-roster";
 import { getCourseName } from "@/lib/tools";
+import { autobook } from "../autobook";
 import prisma from "../prisma";
 import { isAdminRole } from "./admin";
 import { calcRemainingCount, showRemaining } from "./purchase-helpers";
-import { autobook } from "./server-actions";
 import { getSessionData } from "./sessiondata";
 
 type Result = { success: boolean; msg: string };
