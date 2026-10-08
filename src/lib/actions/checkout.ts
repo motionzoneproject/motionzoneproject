@@ -65,12 +65,18 @@ export async function createCheckout(params: {
     .map((itm) => itm.participantId)
     .filter((id): id is string => Boolean(id));
 
+  // Bara kundens egna deltagare. Förut gick vilken deltagare som helst att
+  // anmäla, och kunden kunde sedan läsa ut hens uppgifter ur sina ordrar.
   const orderParticipants = participantIds.length
     ? await prisma.participant.findMany({
-        where: { id: { in: participantIds } },
+        where: { id: { in: participantIds }, addedByUserId: session.user.id },
         select: { id: true, name: true, dateOfBirth: true },
       })
     : [];
+  const ownParticipantIds = new Set(orderParticipants.map((p) => p.id));
+  if (participantIds.some((id) => !ownParticipantIds.has(id))) {
+    throw new Error("En vald deltagare hittades inte.");
+  }
 
   const resolved = resolveInvoiceRecipient({
     choice: invoice,
@@ -114,8 +120,10 @@ export async function createCheckout(params: {
         const p = await tx.product.findUnique({
           where: { id: itm.productId },
         });
-        if (!p) {
-          console.error("Checkout: product not found", {
+        // En inaktiv produkt syns inte i butiken och går inte att lägga i
+        // varukorgen, men kassan går att anropa direkt.
+        if (!p?.active) {
+          console.error("Checkout: product not found or inactive", {
             productId: itm.productId,
           });
           throw new Error(

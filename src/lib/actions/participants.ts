@@ -43,29 +43,55 @@ export async function getMyParticipants() {
   });
 }
 
+/**
+ * Vilket konto deltagaren ska kopplas till. En kopplad deltagare ser köpen
+ * på sin egen profilsida, så kopplingen ger kontot insyn i någon annans
+ * köp. En kund får därför bara koppla till sitt eget konto. Bara admin
+ * kopplar till andra, och då även automatiskt via e-post. Förut kopplades
+ * kundens deltagare till vilket konto som helst med samma e-post, utan
+ * samtycke — och svaret avslöjade om e-posten hade ett konto.
+ */
+async function linkedUserId(
+  session: { user: { id: string; role?: string | null; email: string } },
+  data: { userId?: string | null; email?: string },
+): Promise<string | null | undefined> {
+  const isAdmin = session.user.role === "admin";
+
+  if (data.userId !== undefined) {
+    if (data.userId === null || isAdmin || data.userId === session.user.id)
+      return data.userId;
+    return undefined;
+  }
+
+  if (!data.email) return undefined;
+  if (!isAdmin) {
+    return data.email.toLowerCase() === session.user.email.toLowerCase()
+      ? session.user.id
+      : null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+    select: { id: true },
+  });
+  return user ? user.id : null;
+}
+
 export async function getOrCreateParticipant(data: ParticipantData) {
   const session = await getSessionData();
   if (!session) throw new Error("Unauthorized");
 
-  // If userId is provided, check if we already have a participant for this user added by this manager
-  if (data.userId) {
+  const userId = (await linkedUserId(session, data)) ?? undefined;
+
+  // Finns redan en deltagare för kontot, tillagd av den här kunden?
+  if (userId) {
     const existing = await prisma.participant.findFirst({
       where: {
-        userId: data.userId,
+        userId,
         addedByUserId: session.user.id,
       },
     });
     if (existing) return existing;
-  }
-
-  // Otherwise, check if a user with this email exists to link them automatically
-  let userId = data.userId;
-  if (!userId && data.email) {
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-      select: { id: true },
-    });
-    if (user) userId = user.id;
   }
 
   // Check if a participant with this name (case-insensitive) already exists for this user
@@ -134,15 +160,8 @@ export async function updateParticipant(
     );
   }
 
-  // If email changed, we might want to re-link or un-link the userId
-  let userId: string | null | undefined = data.userId;
-  if (data.email && data.email !== undefined) {
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-      select: { id: true },
-    });
-    userId = user ? user.id : null;
-  }
+  // Ny e-post kan ge en ny koppling — samma regler som när deltagaren skapas.
+  const userId = await linkedUserId(session, data);
 
   return prisma.participant.update({
     where: { id },

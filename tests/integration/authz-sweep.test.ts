@@ -862,6 +862,15 @@ function secretsIn(text: string): string[] {
   return found;
 }
 
+/** Alla strängar i ett värde, på vilket djup som helst. */
+function stringLeaves(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(stringLeaves);
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap(stringLeaves);
+  return [];
+}
+
 async function invoke(fn: AnyFn, args: unknown[]) {
   try {
     return { ok: true as const, value: await fn(...args) };
@@ -918,10 +927,14 @@ async function sweepOne(
     }
   }
 
-  // 2. Returvärdet (eller felmeddelandet).
-  const text = result.ok
+  // 2. Returvärdet (eller felmeddelandet). Det anroparen själv skickade in —
+  // t.ex. en e-postadress i ett formulär — är ingen läcka när det kommer
+  // tillbaka, så de värdena stryks innan texten granskas.
+  let text = result.ok
     ? stringifyResult(result.value)
     : String((result.error as Error)?.message ?? result.error);
+  for (const own of stringLeaves(args).filter((v) => v.length > 3))
+    text = text.split(own).join("");
   const leaked = secretsIn(text);
   if (leaked.length > 0)
     problems.push(`returnerade ${leaked.join(", ")}: ${text.slice(0, 300)}`);
@@ -1041,6 +1054,10 @@ const KNOWN_SHALLOW: Record<string, string> = {
   "src/lib/actions/server-actions.ts#getUserPendingRegistrations":
     "kundens egen",
   "src/lib/actions/server-actions.ts#delBooking": "kundens egen",
+  // Deltagaren måste vara köparens egen, så svepets främmande deltagare
+  // nekas även för admin. Täcks av "kassan" nedan och checkout.test.ts.
+  "src/lib/actions/checkout.ts#createCheckout": "kundens egen",
+  "src/lib/actions/checkout.ts#createCheckoutAndRedirect": "kundens egen",
 };
 
 describe("kontroll: argumenten biter när admin anropar", () => {

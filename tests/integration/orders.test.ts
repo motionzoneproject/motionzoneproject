@@ -975,24 +975,17 @@ describe("antal per orderrad", () => {
       price: 500_00,
     });
     const buyer = await createUser();
-    // count 2 går bara att skicka genom att anropa servern direkt — kassan
-    // (createCheckout) validerar inte antalet.
-    const order = await prisma.$transaction((tx) =>
-      createOrder(tx, {
-        userId: buyer.id,
-        items: [{ productId: product.id, count: 2, price: product.price }],
-      }),
-    );
-    expect(order.totalPrice).toBe(1000_00);
-    await as(admin, async () => {
-      await approveOrder(order.id);
-      await createPurchaseFromOrder(order.id);
-    });
-    // Två platser betalda → två köp (eller så skulle ordern aldrig ha
-    // tagits emot med count 2).
-    expect(await prisma.purchase.count({ where: { orderId: order.id } })).toBe(
-      2,
-    );
+    // En orderrad blir ett köp. Ett antal över 1 skulle debitera för platser
+    // som aldrig skapas, så createOrder tar inte emot det.
+    await expect(
+      prisma.$transaction((tx) =>
+        createOrder(tx, {
+          userId: buyer.id,
+          items: [{ productId: product.id, count: 2, price: product.price }],
+        }),
+      ),
+    ).rejects.toThrow();
+    expect(await prisma.order.count({ where: { userId: buyer.id } })).toBe(0);
   });
 });
 

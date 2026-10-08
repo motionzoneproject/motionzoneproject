@@ -39,6 +39,16 @@ export async function createOrder(
 
   if (!items || items.length === 0) throw new Error("No items provided");
 
+  // En orderrad är en anmälan: en deltagare på en produkt, och den blir ett
+  // köp när ordern beviljas (createPurchaseFromOrder). Ett annat antal skulle
+  // debitera för platser som aldrig skapas — eller, med ett negativt antal,
+  // ge en order med negativt pris.
+  for (const it of items) {
+    if (it.count !== 1) {
+      throw new Error("Varje anmälan gäller en plats.");
+    }
+  }
+
   // All prices are integers in öre — plain integer arithmetic, no rounding needed
   const total = items.reduce((acc, it) => acc + it.count * it.price, 0);
 
