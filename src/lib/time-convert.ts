@@ -13,6 +13,39 @@ export const dbToFormTime = (dateObj: Date): string => {
   return `${pad(hours)}:${pad(minutes)}`;
 };
 
+const LOCAL_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/**
+ * Tolkar en väggklocktid utan tidszon ("2026-01-01", "2026-01-01T16:15" eller
+ * "2026-01-01T16:15:00") som svensk tid och returnerar tidpunkten.
+ *
+ * new TZDate("2026-01-01T16:15:00", "Europe/Stockholm") räcker inte: strängen
+ * tolkas då i serverns tidszon och flyttas sedan, så resultatet blev rätt bara
+ * när servern råkade gå på svensk tid — på en server i UTC en timme fel
+ * (två på sommaren). Komponenterna tolkas däremot i den angivna zonen.
+ *
+ * En sträng med egen tidszon ("…Z", "…+02:00") är redan en tidpunkt och
+ * tolkas som den är. Ogiltig indata ger ett ogiltigt Date.
+ */
+export function stockholmLocalToDate(local: string): Date {
+  const m = LOCAL_DATE_TIME.exec(local.trim());
+  if (!m) return new Date(local);
+
+  const [, y, mo, d, h, mi, sec] = m;
+  return new Date(
+    new TZDate(
+      Number(y),
+      Number(mo) - 1,
+      Number(d),
+      Number(h ?? 0),
+      Number(mi ?? 0),
+      Number(sec ?? 0),
+      "Europe/Stockholm",
+    ).getTime(),
+  );
+}
+
 /**
  * Konverterar en tids- eller datumsträng från frontend till ett komplett Date-objekt
  * som alltid representerar den exakta tidpunkten i svensk tidszon (Europe/Stockholm),
@@ -38,10 +71,7 @@ export const formToDbDate = (dateOrTimeString: string): Date => {
     sanitizedStr = `${sanitizedStr}T00:00:00`;
   }
 
-  // Skapa ett tidszonssäkrat datumobjekt låst till svensk tid (hanterar DST automatiskt!)
-
-  const timeZone = "Europe/Stockholm";
-  const zonedDate = new TZDate(sanitizedStr, timeZone);
+  const zonedDate = stockholmLocalToDate(sanitizedStr);
 
   // Om JS-motorn ändå inte kan tolka strängen, kasta ett tydligt fel i terminalen
   if (Number.isNaN(zonedDate.getTime())) {

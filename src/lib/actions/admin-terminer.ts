@@ -12,7 +12,11 @@ import {
 import { handleClips } from "../clips";
 import { endOfStockholmDay } from "../date-utils";
 import prisma from "../prisma";
-import { formToDbDate, getZonedHoursMinutes } from "../time-convert";
+import {
+  formToDbDate,
+  getZonedHoursMinutes,
+  stockholmLocalToDate,
+} from "../time-convert";
 import { isAdminRole } from "./admin";
 
 /**
@@ -79,19 +83,17 @@ async function CreateLessons(
         const dateStr = format(currentDate, "yyyy-MM-dd");
         const pad = (n: number) => String(n).padStart(2, "0");
 
-        const combinedStartTime = new TZDate(
+        const combinedStartTime = stockholmLocalToDate(
           `${dateStr}T${pad(startHours)}:${pad(startMinutes)}:00`,
-          timeZone,
         );
 
-        const combinedEndTime = new TZDate(
+        const combinedEndTime = stockholmLocalToDate(
           `${dateStr}T${pad(endHours)}:${pad(endMinutes)}:00`,
-          timeZone,
         );
 
         lessonsToCreate.push({
-          startTime: new Date(combinedStartTime.getTime()),
-          endTime: new Date(combinedEndTime.getTime()),
+          startTime: combinedStartTime,
+          endTime: combinedEndTime,
           terminId: schemaItm.termin.id,
           courseId: schemaItm.course.id,
           teacherId: teacherId,

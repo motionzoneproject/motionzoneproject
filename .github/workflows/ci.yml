@@ -80,7 +80,7 @@ jobs:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       # Unit och integration. prod-copy kräver en produktionsbackup och körs
-      # bara lokalt.
+      # bara lokalt. Runnern går i UTC, utvecklarna i svensk tid.
       - name: Test
         run: npx vitest run --project unit --project integration
         env:
@@ -88,3 +88,11 @@ jobs:
           BETTER_AUTH_SECRET: "ci-dummy-secret-do-not-use-in-prod-0123456789"
           BETTER_AUTH_URL: "http://localhost:3000"
           SITE_URL: "http://localhost:3000"
+
+      # Datum- och tidsfunktionerna ska ge samma svar oavsett serverns
+      # tidszon. En tredje zon med annan sommartid fångar kod som bara råkar
+      # fungera i UTC eller svensk tid.
+      - name: Test (annan tidszon)
+        run: npx vitest run --project unit
+        env:
+          TZ: "America/New_York"

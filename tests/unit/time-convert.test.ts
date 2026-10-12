@@ -3,6 +3,7 @@ import {
   dbToFormTime,
   formToDbDate,
   getZonedHoursMinutes,
+  stockholmLocalToDate,
 } from "@/lib/time-convert";
 
 describe("formToDbDate", () => {
@@ -92,5 +93,34 @@ describe("dbToFormTime / getZonedHoursMinutes", () => {
   it("ger samma klockslag före och efter omställningen till vintertid", () => {
     expect(dbToFormTime(formToDbDate("2026-10-24T17:00:00"))).toBe("17:00");
     expect(dbToFormTime(formToDbDate("2026-10-26T17:00:00"))).toBe("17:00");
+  });
+});
+
+// Funktionerna ska ge samma tidpunkt oavsett serverns tidszon. CI kör i UTC
+// och dessutom i en tredje zon (se .github/workflows/ci.yml); utvecklarna
+// kör i svensk tid.
+describe("stockholmLocalToDate", () => {
+  it("tolkar väggklocktid som svensk tid, vinter och sommar", () => {
+    expect(stockholmLocalToDate("2026-01-15T09:00").toISOString()).toBe(
+      "2026-01-15T08:00:00.000Z",
+    );
+    expect(stockholmLocalToDate("2026-07-15T09:00:00").toISOString()).toBe(
+      "2026-07-15T07:00:00.000Z",
+    );
+    expect(stockholmLocalToDate("2026-07-15").toISOString()).toBe(
+      "2026-07-14T22:00:00.000Z",
+    );
+  });
+
+  it("lämnar en sträng med egen tidszon orörd", () => {
+    expect(stockholmLocalToDate("2026-07-15T09:00:00Z").toISOString()).toBe(
+      "2026-07-15T09:00:00.000Z",
+    );
+  });
+
+  it("ger ett ogiltigt datum för skräp", () => {
+    expect(Number.isNaN(stockholmLocalToDate("inte ett datum").getTime())).toBe(
+      true,
+    );
   });
 });
