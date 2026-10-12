@@ -379,6 +379,16 @@ describe("ParticipantSchema", () => {
     ).toBe(true);
   });
 
+  it("godtar ett barn fött idag, även strax efter midnatt svensk tid", () => {
+    // 00:30 den 10 oktober i Sverige är fortfarande den 9:e i UTC.
+    vi.setSystemTime(new Date("2026-10-09T22:30:00Z"));
+    expect(
+      ParticipantSchema.safeParse({ ...valid, dateOfBirth: "2026-10-10" })
+        .success,
+    ).toBe(true);
+    vi.setSystemTime(new Date("2026-10-09T12:00:00Z"));
+  });
+
   it("avvisar födelsedatum före 1900", () => {
     expect(
       failedPaths(ParticipantSchema, { ...valid, dateOfBirth: "1899-12-31" }),

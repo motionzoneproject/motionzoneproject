@@ -1,4 +1,5 @@
 import z from "zod";
+import { formatDateToInputStr } from "@/lib/date-utils";
 
 export const UserBookLessonSchema = z.object({
   courseId: z.string().min(1),
@@ -54,8 +55,11 @@ export const ParticipantSchema = z.object({
   dateOfBirth: z.iso.date("Ange födelsedatum (ÅÅÅÅ-MM-DD)").refine((value) => {
     // Ett datum i framtiden eller långt tillbaka är en felskrivning, och
     // just den felskrivningen gör en vuxen till omyndig eller tvärtom.
-    const date = new Date(value);
-    return date <= new Date() && date.getFullYear() >= 1900;
+    // Jämförs som ÅÅÅÅ-MM-DD mot dagens datum i svensk tid. new Date(value)
+    // är midnatt UTC, och getFullYear()/jämförelsen med nu räknade sedan i
+    // serverns tidszon: 1900-01-01 blev 1899 väster om Greenwich, och ett
+    // barn fött idag nekades i Sverige före 02:00.
+    return value >= "1900-01-01" && value <= formatDateToInputStr(new Date());
   }, "Kontrollera födelsedatumet"),
   allowPhotoVideo: z.boolean(),
 });
