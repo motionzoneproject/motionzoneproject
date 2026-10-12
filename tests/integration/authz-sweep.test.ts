@@ -1100,7 +1100,7 @@ describe("kontroll: argumenten biter när admin anropar", () => {
       if (!effective) shallow.push(`${e.file}#${e.name}`);
     }
     expect(shallow.sort()).toEqual(Object.keys(KNOWN_SHALLOW).sort());
-  });
+  }, 60_000); // ögonblicksbild av databasen per export
 });
 
 // --- Riktade fall ------------------------------------------------------------
@@ -1208,7 +1208,7 @@ describe("studions borttagning går inte att kringgå", () => {
       }
     }
     expect(bypasses).toEqual([]);
-  });
+  }, 180_000); // anropar varje export i flera varianter; ~20 s lokalt, mer i CI
 
   it("bookMyCourse bokar inte en kurs som kunden valt bort i paketet", async () => {
     // Paket med maxCourses: kunden valde courseA. Köpet skapar bara rader för
