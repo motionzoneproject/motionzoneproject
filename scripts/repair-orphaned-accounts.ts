@@ -5,17 +5,18 @@ import prisma from "@/lib/prisma";
 
 /**
  * Repairs users who cannot sign in because their credential account row is
- * missing or does not match what better-auth 1.7 looks up.
+ * missing or does not match what better-auth looks up.
  *
- * Sign-in in 1.7 resolves an account by
- *   providerId === "credential" && issuer === "local:credential" && accountId === user.id
+ * Sign-in resolves an account by
+ *   providerId === "credential" && accountId === user.id
  * and a user whose row fails that test gets "User not found" on sign-in and
  * "User already exists. Use another email." on sign-up -- a dead end, because
- * this app has no password-reset flow yet.
+ * the user cannot get past it on their own.
  *
- * Most of these were created while better-auth 1.7 was writing an `issuer`
- * column the schema did not have: sign-up wrote the user row, then failed on
- * linkAccount.
+ * Sign-up writes the user row first and the account row second, so any
+ * failure in between leaves such a user. It happened twice: better-auth
+ * 1.7.0 started writing an `issuer` column the schema did not have, and
+ * 1.7.3 stopped writing it while the schema still required it.
  *
  * This script never deletes a user and never touches orders. It only adds or
  * corrects the account row. A user who already has a working password keeps
@@ -25,7 +26,6 @@ import prisma from "@/lib/prisma";
  * Apply:             npx tsx scripts/repair-orphaned-accounts.ts --apply
  */
 
-const CREDENTIAL_ISSUER = "local:credential";
 const APPLY = process.argv.includes("--apply");
 
 type Plan = {
@@ -52,7 +52,6 @@ async function main() {
         select: {
           id: true,
           providerId: true,
-          issuer: true,
           accountId: true,
           password: true,
         },
@@ -66,9 +65,7 @@ async function main() {
   for (const user of users) {
     const signInMatch = user.accounts.find(
       (account) =>
-        account.providerId === "credential" &&
-        account.issuer === CREDENTIAL_ISSUER &&
-        account.accountId === user.id,
+        account.providerId === "credential" && account.accountId === user.id,
     );
 
     if (signInMatch?.password) continue;
@@ -84,7 +81,7 @@ async function main() {
       continue;
     }
 
-    // A credential row that exists but does not match the 1.7 lookup keeps its
+    // A credential row that exists but does not match the lookup keeps its
     // password -- the user still knows it, only the identity columns are wrong.
     const staleCredential = user.accounts.find(
       (account) => account.providerId === "credential",
@@ -95,7 +92,7 @@ async function main() {
         userId: user.id,
         email: user.email,
         action: "fix-identity",
-        detail: `issuer=${staleCredential.issuer ?? "<null>"} accountId=${staleCredential.accountId} -- password kept`,
+        detail: `accountId=${staleCredential.accountId} -- password kept`,
       });
       continue;
     }
@@ -137,7 +134,7 @@ async function main() {
     if (plan.action === "fix-identity") {
       await prisma.account.updateMany({
         where: { userId: plan.userId, providerId: "credential" },
-        data: { issuer: CREDENTIAL_ISSUER, accountId: plan.userId },
+        data: { accountId: plan.userId },
       });
       continue;
     }
@@ -155,7 +152,6 @@ async function main() {
     await ctx.internalAdapter.createAccount({
       userId: plan.userId,
       providerId: "credential",
-      issuer: CREDENTIAL_ISSUER,
       accountId: plan.userId,
       password: hashedPassword,
     });
