@@ -308,6 +308,17 @@ async function seed() {
       changedByUserId: admin.id,
     },
   });
+  // Offrets barn är markerat närvarande, så att svepet ser om någon annans
+  // närvaro läcker.
+  await prisma.attendance.create({
+    data: {
+      lessonId: pastLesson.id,
+      studentKey: `participant:${victimParticipant.id}`,
+      participantId: victimParticipant.id,
+      status: "PRESENT",
+      markedByUserId: teacher.id,
+    },
+  });
 
   return {
     admin,
@@ -396,6 +407,14 @@ const productForm = {
   autobook: true,
   maxCourses: null,
 };
+/** Lektionens dag i svensk tid, som närvarons datumväljare skickar den. */
+const stockholmDay = (date: Date) =>
+  new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 const eventForm = {
   headline: "Hackat",
   description: "x",
@@ -468,6 +487,30 @@ const ARGS: Record<string, ArgsFor> = {
         purchaseItemId: s.victimItem.id,
         nextTotalCount: 99,
       },
+    ],
+  ],
+  // attendance-actions.ts
+  getAttendanceDay: (s) => [
+    [stockholmDay(s.pastLesson.startTime)],
+    [stockholmDay(s.pastLesson.startTime), s.teacher.id],
+  ],
+  getAttendanceCalendar: (s) => [
+    [
+      stockholmDay(s.pastLesson.startTime),
+      stockholmDay(s.futureLesson.startTime),
+    ],
+    [
+      stockholmDay(s.pastLesson.startTime),
+      stockholmDay(s.futureLesson.startTime),
+      s.teacher.id,
+    ],
+  ],
+  getLessonAttendance: (s) => [[s.pastLesson.id]],
+  getBookingAttendance: (s) => [[s.pastLesson.id]],
+  saveAttendance: (s) => [
+    [
+      s.pastLesson.id,
+      [{ studentKey: `participant:${s.victimParticipant.id}`, present: false }],
     ],
   ],
   // admin-terminer.ts
@@ -1050,6 +1093,7 @@ const KNOWN_SHALLOW: Record<string, string> = {
   "src/lib/actions/orders.ts#getUserOrder": "kundens egen",
   "src/lib/actions/participants.ts#getMyParticipants": "kundens egen",
   "src/lib/actions/schedule-actions.ts#bookMyCourse": "kundens egen",
+  "src/lib/actions/attendance-actions.ts#getMyAttendance": "kundens egen",
   "src/lib/actions/server-actions.ts#getUserPurchases": "kundens egen",
   "src/lib/actions/server-actions.ts#getUserPendingRegistrations":
     "kundens egen",
