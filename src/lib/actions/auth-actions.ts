@@ -1,4 +1,5 @@
 "use server";
+import { isAPIError } from "better-auth/api";
 import { headers } from "next/headers";
 import type z from "zod";
 import { auth } from "@/lib/auth";
@@ -61,10 +62,12 @@ export async function signUpWithDetails(values: SignUpValues) {
     return { success: true };
   } catch (error: unknown) {
     console.error("Signup error:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Ett oväntat fel inträffade vid registrering";
+
+    // Better Auths egna fel ("User already exists" m.fl.) är skrivna för
+    // användaren. Allt annat kan innehålla databasfrågan, med lösenordshash.
+    const errorMessage = isAPIError(error)
+      ? error.message
+      : "Ett oväntat fel inträffade vid registrering";
     return {
       success: false,
       error: errorMessage,

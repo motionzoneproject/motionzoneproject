@@ -7,6 +7,12 @@ import prisma from "@/lib/prisma"; // Importera din HMR-säkra, adapter-konfigur
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
+    // Registreringen skriver användarraden, kontoraden med lösenordet och
+    // sessionen i en och samma transaktion -- men bara om adaptern får köra
+    // transaktioner. Utan det (standard är false) blev användarraden kvar när
+    // kontoraden föll, och kunden fastnade: "User not found" vid inloggning,
+    // "User already exists" vid ny registrering.
+    transaction: true,
   }),
   emailAndPassword: {
     enabled: true,

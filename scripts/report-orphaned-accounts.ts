@@ -12,9 +12,11 @@ const prisma = new PrismaClient({ adapter });
  * Read-only report. Lists users that have no account row, i.e. users that can
  * never sign in.
  *
- * They exist because better-auth 1.7 started writing an `issuer` column the
- * Prisma schema did not have: sign-up created the user row, then blew up on
- * `linkAccount`, leaving the user behind with no credentials. Retrying the
+ * They exist because sign-up writes the user row before the account row, and
+ * the account row failed twice: better-auth 1.7.0 started writing an `issuer`
+ * column the schema did not have, and 1.7.3 stopped writing it while the
+ * schema still required it. Each time `linkAccount` blew up and left the user
+ * behind with no credentials. Retrying the
  * same email then hits "User already exists. Use another email.".
  *
  * This script only reads. It deletes nothing and changes nothing -- decide
