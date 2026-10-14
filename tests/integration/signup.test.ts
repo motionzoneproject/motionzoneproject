@@ -58,23 +58,34 @@ describe("signUpWithDetails", () => {
     expect(await prisma.user.count({ where: { email: values.email } })).toBe(1);
   });
 
-  it("lämnar ingen användare kvar om kontoraden inte går att skapa", async () => {
+  it("lämnar ingen användare kvar om databasen vägrar kontoraden", async () => {
     const values = form();
-    vi.spyOn(prisma.account, "create").mockRejectedValueOnce(
-      new Error(
-        'Invalid `prisma.account.create()` invocation: password: "hash"',
-      ),
+    // Samma fel som i produktionen: en NOT NULL-kolumn på account som
+    // better-auth aldrig skriver (issuer, 1.7.0-1.7.2). Defaulten finns bara
+    // för att raderna från testerna ovan ska få ett värde.
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "account" ADD COLUMN "issuer" TEXT NOT NULL DEFAULT 'x'`,
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "account" ALTER COLUMN "issuer" DROP DEFAULT`,
     );
 
-    const res = await signUpWithDetails(values);
+    try {
+      const res = await signUpWithDetails(values);
 
-    expect(res.success).toBe(false);
-    // Kunden ska inte se databasfrågan (den innehåller lösenordshashen).
-    expect(res.error).not.toMatch(/prisma|password|hash/i);
-    expect(await prisma.user.count({ where: { email: values.email } })).toBe(0);
+      expect(res.success).toBe(false);
+      // Kunden ska inte se databasfrågan (den innehåller lösenordshashen).
+      expect(res.error).not.toMatch(/prisma|password|hash|issuer/i);
+      expect(await prisma.user.count({ where: { email: values.email } })).toBe(
+        0,
+      );
+    } finally {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "account" DROP COLUMN "issuer"`,
+      );
+    }
 
     // ...och kan därför registrera sig igen med samma mejl.
-    vi.restoreAllMocks();
     expect(await signUpWithDetails(values)).toEqual({ success: true });
   });
 });

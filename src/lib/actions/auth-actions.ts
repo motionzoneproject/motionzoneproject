@@ -16,7 +16,6 @@ type SignUpValues = z.infer<typeof SignUpFormSchema>;
 
 export async function signUpWithDetails(values: SignUpValues) {
   const validated = SignUpFormSchema.parse(values);
-  const startedAt = new Date();
 
   try {
     // 1. Skapa användaren via Better Auth
@@ -63,22 +62,6 @@ export async function signUpWithDetails(values: SignUpValues) {
     return { success: true };
   } catch (error: unknown) {
     console.error("Signup error:", error);
-
-    // Better Auth skapar användarraden före kontoraden med lösenordet. Kastar
-    // den mittemellan blir en användare kvar som varken kan logga in eller
-    // registrera sig igen ("User already exists"). Ta bort den som det här
-    // anropet skapade, men bara om den saknar konto.
-    await prisma.user
-      .deleteMany({
-        where: {
-          email: validated.email.toLowerCase(),
-          createdAt: { gte: startedAt },
-          accounts: { none: {} },
-        },
-      })
-      .catch((cleanupError: unknown) => {
-        console.error("Failed to clean up half-created user:", cleanupError);
-      });
 
     // Better Auths egna fel ("User already exists" m.fl.) är skrivna för
     // användaren. Allt annat kan innehålla databasfrågan, med lösenordshash.
