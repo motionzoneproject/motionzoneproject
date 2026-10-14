@@ -88,4 +88,28 @@ describe("signUpWithDetails", () => {
     // ...och kan därför registrera sig igen med samma mejl.
     expect(await signUpWithDetails(values)).toEqual({ success: true });
   });
+
+  it("en användare som blev kvar utan konto kommer in via glömt lösenord", async () => {
+    // Så ser kunderna ut som registrerade sig medan issuer-kolumnen fanns.
+    const email = `orphan${Date.now()}@example.com`;
+    const orphan = await prisma.user.create({
+      data: { id: `orphan-${Date.now()}`, name: "Halv Användare", email },
+    });
+
+    await auth.api.requestPasswordReset({ body: { email } });
+    const verification = await prisma.verification.findFirstOrThrow({
+      where: {
+        value: orphan.id,
+        identifier: { startsWith: "reset-password:" },
+      },
+    });
+    const token = verification.identifier.slice("reset-password:".length);
+
+    await auth.api.resetPassword({ body: { token, newPassword: "Nytt1234" } });
+
+    const signIn = await auth.api.signInEmail({
+      body: { email, password: "Nytt1234" },
+    });
+    expect(signIn.user.id).toBe(orphan.id);
+  });
 });
