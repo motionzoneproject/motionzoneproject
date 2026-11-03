@@ -2,7 +2,7 @@ import { PaginationBar } from "@/components/PaginationBar";
 import type { ProductType } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/actions/admin";
-import { placesStudentInCourse } from "@/lib/course-roster";
+import { collectRosters } from "@/lib/course-roster-data";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import type { OrderStatus } from "@/lib/order-status";
 import prisma from "@/lib/prisma";
@@ -322,52 +322,12 @@ type StudentPendingOrderItemRow = Prisma.OrderItemGetPayload<{
   select: typeof pendingOrderItemSelect;
 }>;
 
-/**
- * Kurserna ett köp placerar eleven i, enligt regeln i course-roster. Köpets
- * alla kursrader finns kvar som tillgång under köpet; det här är de kurser
- * eleven räknas in i, och det är dem kursfiltret och kurskolumnen visar.
- */
-function placedCourses(purchase: StudentPurchaseRow) {
-  const courseCount = purchase.PurchaseItems.length;
-
-  return purchase.PurchaseItems.filter((item) =>
-    placesStudentInCourse({
-      courseId: item.courseId,
-      selectedCourseIds: (item.orderItem?.courseSelections ?? []).map(
-        (selection) => selection.courseId,
-      ),
-      autobook: purchase.product.autobook,
-      courseCount,
-      activeBookings: item.bookings.length,
-    }),
-  ).map((item) => item.course);
-}
-
 /** Kurserna en obeviljad orderrad gäller: kundens kursval, annars produktens. */
 function orderedCourses(item: StudentPendingOrderItemRow) {
   const selected = item.courseSelections.map((selection) => selection.course);
   return selected.length > 0
     ? selected
     : item.product.courses.map((link) => link.course);
-}
-
-/**
- * Samma regel för en obeviljad order. Bokningar finns inte än, så ett
- * terminskort eller program placerar ingen förrän schemat satts.
- */
-function placedPendingCourses(item: StudentPendingOrderItemRow) {
-  const courses = orderedCourses(item);
-
-  return courses.filter((course) =>
-    placesStudentInCourse({
-      courseId: course.id,
-      // Kursvalen är redan tillämpade i orderedCourses.
-      selectedCourseIds: [],
-      autobook: item.product.autobook,
-      courseCount: courses.length,
-      activeBookings: 0,
-    }),
-  );
 }
 
 function buildStudentSummaries(
@@ -378,7 +338,6 @@ function buildStudentSummaries(
   const studentMap = new Map<
     string,
     StudentSummary & {
-      courseMap: Map<string, { id: string; name: string }>;
       terminMap: Map<string, { id: string; name: string }>;
       bookingMap: Map<string, StudentBookingSummary>;
     }
@@ -417,6 +376,8 @@ function buildStudentSummaries(
             addedBy: participant.addedBy,
           }
         : null,
+      // Fylls i av applyRosters, så att kurserna kommer ur samma lista som
+      // kursdialogen och närvaron.
       courses: [],
       terminer: [],
       bookings: [],
@@ -424,15 +385,10 @@ function buildStudentSummaries(
       pendingOrderItems: [],
       hasApprovedPurchase: true,
       hasPendingOrder: false,
-      courseMap: new Map<string, { id: string; name: string }>(),
       terminMap: new Map<string, { id: string; name: string }>(),
       bookingMap: new Map<string, StudentBookingSummary>(),
     };
     existing.hasApprovedPurchase = true;
-
-    const placedCourseIds = new Set(
-      placedCourses(purchase).map((course) => course.id),
-    );
 
     const purchaseItems: StudentPurchaseItemSummary[] =
       purchase.PurchaseItems.filter((item) => {
@@ -444,13 +400,6 @@ function buildStudentSummaries(
         // Annars är det en vanlig produkt/kurs där alla PurchaseItems gäller
         return true;
       }).map((item) => {
-        if (placedCourseIds.has(item.course.id)) {
-          existing.courseMap.set(item.course.id, {
-            id: item.course.id,
-            name: getCourseName(item.course),
-          });
-        }
-
         for (const schemaItem of item.course.schemaItems) {
           existing.terminMap.set(schemaItem.termin.id, schemaItem.termin);
         }
@@ -521,6 +470,8 @@ function buildStudentSummaries(
             addedBy: participant.addedBy,
           }
         : null,
+      // Fylls i av applyRosters, så att kurserna kommer ur samma lista som
+      // kursdialogen och närvaron.
       courses: [],
       terminer: [],
       bookings: [],
@@ -528,20 +479,12 @@ function buildStudentSummaries(
       pendingOrderItems: [],
       hasApprovedPurchase: approvedStudentKeys?.has(studentKey) ?? false,
       hasPendingOrder: true,
-      courseMap: new Map<string, { id: string; name: string }>(),
       terminMap: new Map<string, { id: string; name: string }>(),
       bookingMap: new Map<string, StudentBookingSummary>(),
     };
     existing.hasPendingOrder = true;
 
     const courses = orderedCourses(item);
-
-    for (const course of placedPendingCourses(item)) {
-      existing.courseMap.set(course.id, {
-        id: course.id,
-        name: getCourseName(course),
-      });
-    }
 
     for (const course of courses) {
       for (const schemaItem of course.schemaItems) {
@@ -564,11 +507,8 @@ function buildStudentSummaries(
   }
 
   return Array.from(studentMap.values())
-    .map(({ bookingMap, courseMap, terminMap, ...student }) => ({
+    .map(({ bookingMap, terminMap, ...student }) => ({
       ...student,
-      courses: Array.from(courseMap.values()).sort((a, b) =>
-        a.name.localeCompare(b.name, "sv"),
-      ),
       terminer: Array.from(terminMap.values()).sort((a, b) =>
         a.name.localeCompare(b.name, "sv"),
       ),
@@ -599,17 +539,23 @@ const detailsSelect = {
 } satisfies Prisma.UserDetailsSelect;
 
 /**
- * Lägger studions manuella ändringar ovanpå listan som härletts ur köp och
- * bokningar. En borttagning vinner alltid: kursen försvinner ur elevens
- * kurskolumn, och eleven ur kurs- och lärarfiltret. Ett manuellt tillägg
- * lägger till kursen, och elever som bara finns som tillägg — utan köp —
- * läggs till i listan när man filtrerar på kursen eller läraren.
+ * Sätter elevernas kurser och kurs- och lärarfiltret efter deltagarlistan, den
+ * som kursdialogen och närvaron också utgår från (collectRosters). Då följer
+ * allt samma regel: ett terminskort räknas bara där eleven är inbokad, en
+ * borttagning vinner alltid, och ett manuellt tillägg lägger till kursen.
  *
- * Övriga filter gäller tilläggen också: terminen avgörs av kursen, och en
- * elev utan köp har ingen order som väntar på godkännande.
+ * Databasfiltret ovan tar med alla som har tillgång till kursen; det är här
+ * listan görs rätt. Elever som bara finns som tillägg — utan köp — läggs till
+ * i listan när man filtrerar på kursen eller läraren. Övriga filter gäller
+ * tilläggen också: terminen avgörs av kursen, och en elev utan köp har ingen
+ * order som väntar på godkännande.
  */
-async function applyRosterEntries(
+async function applyRosters(
   students: StudentSummary[],
+  allCourses: (Parameters<typeof getCourseName>[0] & {
+    id: string;
+    teacherId: string;
+  })[],
   filters: {
     course: string;
     teacher: string;
@@ -619,66 +565,35 @@ async function applyRosterEntries(
     query: string;
   },
 ): Promise<StudentSummary[]> {
-  const entries = await prisma.courseRosterEntry.findMany({
-    select: {
-      courseId: true,
-      studentKey: true,
-      status: true,
-      course: { select: { id: true, ...courseNameFields, teacherId: true } },
-    },
-  });
-  if (entries.length === 0 && !filters.course && !filters.teacher)
-    return students;
+  const rosters = await collectRosters(allCourses.map((c) => c.id));
 
-  const removed = new Set(
-    entries
-      .filter((e) => e.status === "REMOVED")
-      .map((e) => `${e.studentKey}|${e.courseId}`),
-  );
-  const added = entries.filter((e) => e.status === "ADDED");
-
-  const byKey = new Map(students.map((s) => [s.studentKey, s]));
+  const coursesByStudent = new Map<string, { id: string; name: string }[]>();
+  for (const course of allCourses) {
+    for (const studentKey of rosters.get(course.id)?.keys() ?? []) {
+      const list = coursesByStudent.get(studentKey) ?? [];
+      list.push({ id: course.id, name: getCourseName(course) });
+      coursesByStudent.set(studentKey, list);
+    }
+  }
+  const coursesOf = (studentKey: string) =>
+    [...(coursesByStudent.get(studentKey) ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, "sv"),
+    );
 
   for (const student of students) {
-    student.courses = student.courses.filter(
-      (c) => !removed.has(`${student.studentKey}|${c.id}`),
-    );
-  }
-
-  for (const entry of added) {
-    const student = byKey.get(entry.studentKey);
-    if (!student || student.courses.some((c) => c.id === entry.courseId))
-      continue;
-    student.courses = [
-      ...student.courses,
-      { id: entry.course.id, name: getCourseName(entry.course) },
-    ].sort((a, b) => a.name.localeCompare(b.name, "sv"));
+    student.courses = coursesOf(student.studentKey);
   }
 
   if (!filters.course && !filters.teacher) return students;
 
-  const inScope = (courseId: string, teacherId: string) =>
-    (!filters.course || courseId === filters.course) &&
-    (!filters.teacher || teacherId === filters.teacher);
-
-  const teacherCourseIds = filters.teacher
-    ? new Set(
-        (
-          await prisma.course.findMany({
-            where: { teacherId: filters.teacher },
-            select: { id: true },
-          })
-        ).map((c) => c.id),
-      )
-    : null;
-
-  const result = students.filter((s) =>
-    s.courses.some(
-      (c) =>
-        (!filters.course || c.id === filters.course) &&
-        (!teacherCourseIds || teacherCourseIds.has(c.id)),
-    ),
+  const teacherCourseIds = new Set(
+    allCourses.filter((c) => c.teacherId === filters.teacher).map((c) => c.id),
   );
+  const inScope = (courseId: string) =>
+    (!filters.course || courseId === filters.course) &&
+    (!filters.teacher || teacherCourseIds.has(courseId));
+
+  const result = students.filter((s) => s.courses.some((c) => inScope(c.id)));
 
   // Produktfiltret gäller köp, och en manuellt tillagd elev har inget. Hen
   // har inte heller någon order som väntar på godkännande.
@@ -696,20 +611,22 @@ async function applyRosterEntries(
     : null;
 
   const listed = new Set(result.map((s) => s.studentKey));
-  const missing = added.filter(
-    (e) =>
-      inScope(e.courseId, e.course.teacherId) &&
-      (!terminCourseIds || terminCourseIds.has(e.courseId)) &&
-      !listed.has(e.studentKey),
-  );
-  if (missing.length === 0) return result;
+  const missingKeys = new Set<string>();
+  for (const course of allCourses) {
+    if (!inScope(course.id)) continue;
+    if (terminCourseIds && !terminCourseIds.has(course.id)) continue;
+    for (const student of rosters.get(course.id)?.values() ?? []) {
+      if (student.addedManually && !listed.has(student.studentKey))
+        missingKeys.add(student.studentKey);
+    }
+  }
+  if (missingKeys.size === 0) return result;
 
+  const missing = [...missingKeys].map((key) => key.split(":"));
   const participantIds = missing
-    .map((e) => e.studentKey.split(":"))
     .filter(([kind]) => kind === "participant")
     .map(([, id]) => id);
   const userIds = missing
-    .map((e) => e.studentKey.split(":"))
     .filter(([kind]) => kind === "user")
     .map(([, id]) => id);
 
@@ -743,11 +660,6 @@ async function applyRosterEntries(
       },
     }),
   ]);
-
-  const coursesFor = (key: string) =>
-    missing
-      .filter((e) => e.studentKey === key)
-      .map((e) => ({ id: e.course.id, name: getCourseName(e.course) }));
 
   const empty = {
     terminer: [],
@@ -787,7 +699,7 @@ async function applyRosterEntries(
           email: p.addedBy.email,
         },
       },
-      courses: coursesFor(`participant:${p.id}`),
+      courses: coursesOf(`participant:${p.id}`),
     })),
     ...users.map((u) => ({
       ...empty,
@@ -799,7 +711,7 @@ async function applyRosterEntries(
       dateOfBirth: u.details?.dateOfBirth ?? null,
       user: { id: u.id, name: u.name, email: u.email, details: u.details },
       participant: null,
-      courses: coursesFor(`user:${u.id}`),
+      courses: coursesOf(`user:${u.id}`),
     })),
   ];
 
@@ -1132,7 +1044,7 @@ export default async function Page({
     AND: pendingOrderItemFilters,
   };
 
-  const fetchedPurchases =
+  const purchasesWithData =
     approval === "unapproved"
       ? []
       : await prisma.purchase.findMany({
@@ -1140,36 +1052,13 @@ export default async function Page({
           select: purchaseSelect,
         });
 
-  const fetchedPendingOrderItems =
+  const pendingOrderItems =
     approval === "approved"
       ? []
       : await prisma.orderItem.findMany({
           where: pendingOrderItemWhere,
           select: pendingOrderItemSelect,
         });
-
-  // Databasfiltret ovan tar med alla som har tillgång till kursen. Kurs- och
-  // lärarfiltret ska visa vilka som går den, så här tillämpas regeln i
-  // course-roster: ett terminskort räknas bara där eleven är inbokad.
-  // Produktfiltret och sökningen lämnas i fred — det är där man hittar en
-  // nyköpt elev som ännu inte fått något schema.
-  const matchesPlacement = (courses: { id: string; teacherId: string }[]) =>
-    (!course || courses.some((c) => c.id === course)) &&
-    (!teacher || courses.some((c) => c.teacherId === teacher));
-
-  const filterByPlacement = Boolean(course || teacher);
-
-  const purchasesWithData = filterByPlacement
-    ? fetchedPurchases.filter((purchase) =>
-        matchesPlacement(placedCourses(purchase)),
-      )
-    : fetchedPurchases;
-
-  const pendingOrderItems = filterByPlacement
-    ? fetchedPendingOrderItems.filter((item) =>
-        matchesPlacement(placedPendingCourses(item)),
-      )
-    : fetchedPendingOrderItems;
 
   // Under "unapproved" filtret hoppas hela purchase-queryn över (perf), men
   // vi behöver ändå veta vilka av de synade eleverna redan har ett beviljat
@@ -1213,7 +1102,7 @@ export default async function Page({
     approvedStudentKeys,
   );
 
-  const allStudents = await applyRosterEntries(builtStudents, {
+  const allStudents = await applyRosters(builtStudents, courses, {
     course,
     teacher,
     product,
