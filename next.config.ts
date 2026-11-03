@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       bodySizeLimit: "5mb",
     },
