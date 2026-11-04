@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { TeacherOverview as TeacherOverviewData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { LessonCarousel } from "../LessonCarousel";
+import { AttendanceFollowUp } from "./AttendanceFollowUp";
 import { CancelledAhead } from "./CancelledAhead";
 import { StatTile } from "./StatTile";
 import { TodayLessonCard } from "./TodayLessonCard";
@@ -64,6 +65,8 @@ export function TeacherOverview({
           hint="på dessa lektioner"
         />
       </section>
+
+      <AttendanceFollowUp items={data.followUp} />
 
       <CancelledAhead lessons={data.cancelledAhead} />
 

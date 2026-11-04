@@ -2,7 +2,7 @@
 
 import { enGB, sv } from "date-fns/locale";
 import { Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,6 +13,10 @@ import {
   ItemContent,
   ItemDescription,
 } from "@/components/ui/item";
+import {
+  getMyAttendanceInRange,
+  type MyAttendance,
+} from "@/lib/actions/attendance-actions";
 import {
   calcRemainingCount,
   hasRemainingCount,
@@ -41,6 +45,15 @@ interface Props {
   initDate?: Date;
 }
 
+/** YYYY-MM-DD för första och sista dagen i månaden som `month` visar. */
+function monthRange(month: Date): [string, string] {
+  const y = month.getFullYear();
+  const m = month.getMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const last = new Date(y, m + 1, 0).getDate();
+  return [`${y}-${pad(m + 1)}-01`, `${y}-${pad(m + 1)}-${pad(last)}`];
+}
+
 export default function BookingCal({
   lessons,
   bookings,
@@ -52,6 +65,31 @@ export default function BookingCal({
   const dateLocale = lang === "en" ? "en-GB" : "sv-SE";
   const calendarLocale = lang === "en" ? enGB : sv;
   const [date, setDate] = useState<Date | undefined>(initDate ?? new Date());
+  const [month, setMonth] = useState<Date>(initDate ?? new Date());
+  // Närvaro hämtas en månad i taget (nyckel YYYY-MM) och sparas så att man kan
+  // bläddra fram och tillbaka utan nya anrop.
+  const [attendanceByMonth, setAttendanceByMonth] = useState<
+    Record<string, MyAttendance[]>
+  >({});
+
+  const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
+  useEffect(() => {
+    if (attendanceByMonth[monthKey]) return;
+    const [from, to] = monthRange(month);
+    let cancelled = false;
+    getMyAttendanceInRange(from, to).then((rows) => {
+      if (!cancelled)
+        setAttendanceByMonth((prev) => ({ ...prev, [monthKey]: rows }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [month, monthKey, attendanceByMonth]);
+
+  const attendance = useMemo(
+    () => Object.values(attendanceByMonth).flat(),
+    [attendanceByMonth],
+  );
 
   // Slå ihop alla lektioner (från props + från historiska bokningar där kursen ej längre är aktiv)
   const allRelevantLessons = useMemo(() => {
@@ -137,6 +175,21 @@ export default function BookingCal({
     [allRelevantLessons],
   );
 
+  // Närvaron är ett eget register och visas för sig, oberoende av bokningarna.
+  // Varje dag med en markering (närvarande eller frånvarande) får en gul ring.
+  const attendedDays = useMemo(
+    () => attendance.map((a) => a.startTime),
+    [attendance],
+  );
+
+  const selectedDateAttendance = useMemo(() => {
+    if (!date) return [];
+    const selectedDateStr = formatDateToInputStr(date);
+    return attendance.filter(
+      (a) => formatDateToInputStr(a.startTime) === selectedDateStr,
+    );
+  }, [date, attendance]);
+
   // 2. Hitta lektioner för den valda dagen baserat på alla relevanta lektioner
   const selectedDateLessons = useMemo(() => {
     if (!date) return [];
@@ -156,6 +209,8 @@ export default function BookingCal({
             mode="single"
             selected={date}
             onSelect={setDate}
+            month={month}
+            onMonthChange={setMonth}
             showWeekNumber
             locale={calendarLocale}
             className="rounded-lg border shadow w-full sm:w-auto"
@@ -163,6 +218,7 @@ export default function BookingCal({
               isBooked: bookedDays,
               cancelled: cancelledDays,
               isAvailable: availableDays,
+              attended: attendedDays,
             }}
             modifiersStyles={{
               isBooked: {
@@ -177,6 +233,11 @@ export default function BookingCal({
               cancelled: {
                 backgroundColor: "#ef4444",
                 color: "white",
+                borderRadius: "50%",
+              },
+              // Utanpå cirkeln, så ringen syns även över en blå eller röd dag.
+              attended: {
+                boxShadow: "0 0 0 2px #facc15",
                 borderRadius: "50%",
               },
             }}
@@ -195,6 +256,10 @@ export default function BookingCal({
             <div className="h-3 w-3 rounded-full bg-red-500" />
             <span>{t("user.booking.legendCancelled")}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full ring-2 ring-yellow-400" />
+            <span>{t("user.booking.legendAttendance")}</span>
+          </div>
         </div>
       </div>
 
@@ -208,6 +273,42 @@ export default function BookingCal({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {selectedDateAttendance.length > 0 && (
+              <div className="space-y-1.5 border-b pb-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("user.booking.attendance")}
+                </p>
+                {selectedDateAttendance.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-wrap items-baseline justify-between gap-x-3 rounded-md border border-yellow-400/60 bg-yellow-50 px-3 py-2 text-sm dark:bg-yellow-950/20"
+                  >
+                    <span className="min-w-0">
+                      <span className="font-semibold">
+                        {a.courseName[lang]}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        {dbToFormTime(a.startTime)}–{dbToFormTime(a.endTime)}
+                        {" · "}
+                        {a.participantName ?? t("user.booking.yourselfShort")}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        a.status === "PRESENT"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {a.status === "PRESENT"
+                        ? t("user.attendancePresent")
+                        : t("user.attendanceAbsent")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {selectedDateLessons.length > 0 ? (
               selectedDateLessons.map((lesson) => {
                 const lessonPurchaseItems = purchaseItems.filter(

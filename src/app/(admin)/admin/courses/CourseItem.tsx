@@ -1,4 +1,4 @@
-import { EditIcon, EyeOffIcon } from "lucide-react";
+import { EditIcon, EyeOffIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -55,6 +55,11 @@ export default async function CourseItem({
         <div className="flex items-center gap-2">
           <span>{studentCount}st</span>
           <CourseRosterDialog courseId={course.id} />
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/admin/students?course=${course.id}`}>
+              <UsersIcon /> Visa i studenter
+            </Link>
+          </Button>
         </div>
       </TableCell>
       <TableCell>

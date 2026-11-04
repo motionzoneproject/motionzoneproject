@@ -1,0 +1,714 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import type { Prisma } from "@/generated/prisma/client";
+import type { AttendanceStatus } from "@/generated/prisma/enums";
+import {
+  attendanceStartedAt,
+  compareLesson,
+  compareLessonInclude,
+} from "@/lib/attendance-compare";
+import { studentKeyOf } from "@/lib/course-roster";
+import { loadCourseRoster } from "@/lib/course-roster-data";
+import {
+  endOfStockholmDateInput,
+  formatDateToInputStr,
+  parseStockholmDateInput,
+} from "@/lib/date-utils";
+import { getCourseName } from "@/lib/tools";
+import prisma from "../prisma";
+import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
+import { getSessionData } from "./sessiondata";
+
+type Result = { success: boolean; msg: string };
+
+export type AttendanceStudent = {
+  studentKey: string;
+  userId: string | null;
+  participantId: string | null;
+  name: string;
+  customerName: string | null;
+  /** Har en bokning på lektionen. Bara upplysning — närvaron rör den inte. */
+  booked: boolean;
+  /**
+   * Står bara med på en order som väntar på godkännande. Eleven får vara
+   * med, men läraren ska se att köpet inte är klart.
+   */
+  pending: boolean;
+  /**
+   * Står i kursens elevlista. Den som inte gör det finns med för att hen
+   * redan har en markering på lektionen — till exempel en elev som tagits
+   * bort från kursen efteråt.
+   */
+  inCourse: boolean;
+  status: AttendanceStatus | null;
+};
+
+export type AttendanceLesson = {
+  lessonId: string;
+  courseId: string;
+  courseName: string;
+  studioName: string | null;
+  teacherName: string;
+  startTime: Date;
+  endTime: Date;
+  cancelled: boolean;
+  message: string | null;
+  students: AttendanceStudent[];
+};
+
+const lessonSelect = {
+  id: true,
+  startTime: true,
+  endTime: true,
+  cancelled: true,
+  message: true,
+  courseId: true,
+  teacherId: true,
+  course: {
+    select: {
+      teacherId: true,
+      name: true,
+      minAge: true,
+      maxAge: true,
+      adult: true,
+      level: true,
+    },
+  },
+  teacher: { select: { name: true } },
+  schemaItem: { select: { studio: { select: { name: true } } } },
+} as const;
+
+async function requireTeacherOrAdmin() {
+  const session = await getSessionData();
+  if (!session) return null;
+  if (session.user.role !== "admin" && session.user.role !== "teacher") {
+    return null;
+  }
+  return session;
+}
+
+/** Admin, lektionens lärare eller kursens lärare. */
+function mayTakeAttendance(
+  session: { user: { id: string; role?: string | null } },
+  lesson: { teacherId: string; course: { teacherId: string | null } },
+) {
+  return (
+    session.user.role === "admin" ||
+    lesson.teacherId === session.user.id ||
+    lesson.course.teacherId === session.user.id
+  );
+}
+
+/**
+ * Elevlistan för en lektion.
+ *
+ * Kursens elever — samma lista som "Hantera elever" och elevlistan filtrerad
+ * på kursen. Bokningarna spelar ingen roll här: närvaron är ett eget register.
+ * Utöver kursens elever står den med som redan har en markering på
+ * lektionen, så att en elev som tagits bort från kursen efteråt inte
+ * försvinner ur de lektioner hen faktiskt gick.
+ */
+async function lessonStudents(lesson: {
+  id: string;
+  courseId: string;
+}): Promise<AttendanceStudent[]> {
+  const [roster, marks, bookings] = await Promise.all([
+    loadCourseRoster(lesson.courseId),
+    prisma.attendance.findMany({
+      where: { lessonId: lesson.id },
+      select: {
+        studentKey: true,
+        status: true,
+        userId: true,
+        participantId: true,
+        user: { select: { name: true } },
+        participant: {
+          select: { name: true, addedBy: { select: { name: true } } },
+        },
+      },
+    }),
+    prisma.booking.findMany({
+      where: { lessonId: lesson.id, cancelled: false },
+      select: {
+        purchaseItem: {
+          select: {
+            purchase: { select: { userId: true, participantId: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const bookedKeys = new Set(
+    bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
+  );
+  const statusByKey = new Map(marks.map((m) => [m.studentKey, m.status]));
+  const students = new Map<string, AttendanceStudent>();
+
+  for (const s of roster?.students ?? []) {
+    students.set(s.studentKey, {
+      studentKey: s.studentKey,
+      userId: s.userId,
+      participantId: s.participantId,
+      name: s.name,
+      customerName: s.customerName,
+      booked: false,
+      pending: s.pending,
+      inCourse: true,
+      status: null,
+    });
+  }
+
+  for (const mark of marks) {
+    if (students.has(mark.studentKey)) continue;
+    const name = mark.participant?.name ?? mark.user?.name;
+    if (!name) continue;
+    students.set(mark.studentKey, {
+      studentKey: mark.studentKey,
+      userId: mark.userId,
+      participantId: mark.participantId,
+      name,
+      customerName: mark.participant?.addedBy.name ?? null,
+      booked: false,
+      pending: false,
+      inCourse: false,
+      status: null,
+    });
+  }
+
+  return [...students.values()]
+    .map((s) => ({
+      ...s,
+      booked: bookedKeys.has(s.studentKey),
+      status: statusByKey.get(s.studentKey) ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+}
+
+async function toAttendanceLesson(lesson: {
+  id: string;
+  courseId: string;
+  startTime: Date;
+  endTime: Date;
+  cancelled: boolean;
+  message: string | null;
+  course: Parameters<typeof getCourseName>[0];
+  teacher: { name: string };
+  schemaItem: { studio: { name: string } | null };
+}): Promise<AttendanceLesson> {
+  return {
+    lessonId: lesson.id,
+    courseId: lesson.courseId,
+    courseName: getCourseName(lesson.course),
+    studioName: lesson.schemaItem.studio?.name ?? null,
+    teacherName: lesson.teacher.name,
+    startTime: lesson.startTime,
+    endTime: lesson.endTime,
+    cancelled: lesson.cancelled,
+    message: lesson.message,
+    students: await lessonStudents(lesson),
+  };
+}
+
+/**
+ * Dagens lektioner med elevlista och redan satt närvaro.
+ *
+ * En lärare ser sina egna lektioner — de hen håller och de i hens kurser. En
+ * admin ser alla, eller en viss lärares om teacherId anges.
+ *
+ * @auth Admin eller lärare
+ */
+export async function getAttendanceDay(
+  dateInput: string,
+  teacherId?: string,
+): Promise<AttendanceLesson[]> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return [];
+
+  const scopedTeacherId =
+    session.user.role === "teacher" ? session.user.id : teacherId;
+
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      startTime: {
+        gte: parseStockholmDateInput(dateInput),
+        lte: endOfStockholmDateInput(dateInput),
+      },
+      ...(scopedTeacherId
+        ? {
+            OR: [
+              { teacherId: scopedTeacherId },
+              { course: { teacherId: scopedTeacherId } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { startTime: "asc" },
+    select: lessonSelect,
+  });
+
+  return Promise.all(lessons.map(toAttendanceLesson));
+}
+
+/** Hur en dag ser ut i närvarokalendern. */
+export type AttendanceDayStatus = {
+  /**
+   * Röd: en lektion som börjat har bokningar men ingen närvaro. Grön:
+   * närvaron är tagen. Rött väger tyngst — det är det som behöver göras.
+   */
+  ring: "red" | "green" | null;
+  /** Närvaron som är tagen stämmer med bokningarna (grön) eller inte (orange). */
+  fill: "green" | "orange" | null;
+};
+
+/**
+ * Närvarons läge per dag för kalendern på närvarosidan.
+ *
+ * Samma jämförelse som översiktens "Stäm av närvaro". En lektion som inte
+ * börjat ännu räknas inte som saknad — där finns ingen närvaro att ta — och
+ * inte heller en från innan närvaro togs första gången.
+ *
+ * @auth Admin eller lärare. En lärare ser bara sina egna lektioner.
+ */
+export async function getAttendanceCalendar(
+  fromDate: string,
+  toDate: string,
+  teacherId?: string,
+): Promise<Record<string, AttendanceDayStatus>> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return {};
+
+  const dateInput = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateInput.test(fromDate) || !dateInput.test(toDate)) return {};
+
+  const scopedTeacherId =
+    session.user.role === "teacher" ? session.user.id : teacherId;
+
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      cancelled: false,
+      startTime: {
+        gte: parseStockholmDateInput(fromDate),
+        lte: endOfStockholmDateInput(toDate),
+      },
+      ...(scopedTeacherId
+        ? {
+            OR: [
+              { teacherId: scopedTeacherId },
+              { course: { teacherId: scopedTeacherId } },
+            ],
+          }
+        : {}),
+    },
+    select: { startTime: true, ...compareLessonInclude },
+  });
+
+  const now = Date.now();
+  const since = (await attendanceStartedAt())?.getTime() ?? null;
+  const days: Record<
+    string,
+    { missing: boolean; taken: boolean; mismatch: boolean }
+  > = {};
+
+  for (const lesson of lessons) {
+    const key = formatDateToInputStr(lesson.startTime);
+    days[key] ??= { missing: false, taken: false, mismatch: false };
+    const day = days[key];
+    const result = compareLesson(lesson);
+
+    const start = lesson.startTime.getTime();
+    if (result.notTaken && start < now && since !== null && start >= since)
+      day.missing = true;
+    if (result.taken) day.taken = true;
+    if (result.mismatch) day.mismatch = true;
+  }
+
+  return Object.fromEntries(
+    Object.entries(days)
+      .filter(([, d]) => d.missing || d.taken)
+      .map(([key, d]) => [
+        key,
+        {
+          ring: d.missing ? "red" : d.taken ? "green" : null,
+          fill: d.taken ? (d.mismatch ? "orange" : "green") : null,
+        },
+      ]),
+  );
+}
+
+/**
+ * En enskild lektion med elevlista och redan satt närvaro, för den som kommer
+ * från översikten eller lektionslistan och redan vet vilken lektion det är.
+ *
+ * @auth Admin eller lektionens lärare
+ */
+export async function getLessonAttendance(
+  lessonId: string,
+): Promise<AttendanceLesson | null> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return null;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: lessonSelect,
+  });
+  if (!lesson || !mayTakeAttendance(session, lesson)) return null;
+
+  return toAttendanceLesson(lesson);
+}
+
+/**
+ * Sparar närvaron för en hel lektion i ett svep.
+ *
+ * Rör varken bokningar eller klipp. Att markera någon som närvarande är ett
+ * konstaterande, inte ett köp — därför kan även en elev som lagts till i
+ * kursen för hand bockas i, trots att hen inte har någon bokning.
+ *
+ * @auth Admin eller lektionens lärare
+ */
+export async function saveAttendance(
+  lessonId: string,
+  marks: { studentKey: string; present: boolean }[],
+): Promise<Result> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return { success: false, msg: "Ingen behörighet." };
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: lessonSelect,
+  });
+  if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
+  if (!mayTakeAttendance(session, lesson)) {
+    return { success: false, msg: "Det här är inte din lektion." };
+  }
+
+  // Bara elever som står på lektionens lista får markeras, så en manipulerad
+  // nyckel inte kan skapa närvaro för vem som helst.
+  const allowed = new Map(
+    (await lessonStudents(lesson)).map((s) => [s.studentKey, s]),
+  );
+  const valid = marks.filter((mark) => allowed.has(mark.studentKey));
+  if (valid.length === 0) {
+    return { success: false, msg: "Inga elever att spara närvaro för." };
+  }
+
+  await prisma.$transaction(
+    valid.map((mark) => {
+      const student = allowed.get(mark.studentKey);
+      const status: AttendanceStatus = mark.present ? "PRESENT" : "ABSENT";
+
+      return prisma.attendance.upsert({
+        where: {
+          lessonId_studentKey: { lessonId, studentKey: mark.studentKey },
+        },
+        update: { status, markedByUserId: session.user.id },
+        create: {
+          lessonId,
+          studentKey: mark.studentKey,
+          userId: student?.userId ?? null,
+          participantId: student?.participantId ?? null,
+          status,
+          markedByUserId: session.user.id,
+        },
+      });
+    }),
+  );
+
+  revalidatePath("/admin/attendance");
+  revalidatePath("/user");
+
+  const present = valid.filter((m) => m.present).length;
+  return {
+    success: true,
+    msg: `Närvaron är sparad: ${present} av ${valid.length} närvarande.`,
+  };
+}
+
+/** En elev som var närvarande men inte har någon bokning på lektionen. */
+export type PresentWithoutBooking = {
+  studentKey: string;
+  name: string;
+  /**
+   * Kursraden att boka på: elevens köp i kursen med saldo kvar. Null när
+   * köp saknas — eleven är då tillagd för hand — eller saldot är slut.
+   */
+  purchaseItemId: string | null;
+  /** Köpets ägare, som bokningen görs på. */
+  ownerUserId: string | null;
+  reason: "bookable" | "noPurchase" | "noBalance";
+};
+
+export type BookingAttendance = {
+  /** Någon på lektionen har markerats, alltså är närvaron tagen. */
+  taken: boolean;
+  byStudentKey: Record<string, AttendanceStatus>;
+  /** Närvarande utan bokning: gick utan att ha bokat, eller saknar köp. */
+  presentWithoutBooking: PresentWithoutBooking[];
+};
+
+/**
+ * Närvaron på en lektion per elev, för bokningsdialogen.
+ *
+ * Bokningarna och närvaron hålls isär. Dialogen visar bara bredvid varje
+ * bokning om eleven markerats, så att studion ser vilka bokningar som saknar
+ * närvaro — och omvänt vilka som var där utan att ha bokat, så att de kan
+ * bokas in i efterhand.
+ *
+ * @auth Admin eller lektionens lärare
+ */
+export async function getBookingAttendance(
+  lessonId: string,
+): Promise<BookingAttendance> {
+  const empty = { taken: false, byStudentKey: {}, presentWithoutBooking: [] };
+  const session = await requireTeacherOrAdmin();
+  if (!session) return empty;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      courseId: true,
+      teacherId: true,
+      course: { select: { teacherId: true } },
+    },
+  });
+  if (!lesson || !mayTakeAttendance(session, lesson)) return empty;
+
+  const [marks, bookings] = await Promise.all([
+    prisma.attendance.findMany({
+      where: { lessonId },
+      select: {
+        studentKey: true,
+        status: true,
+        userId: true,
+        participantId: true,
+        user: { select: { name: true } },
+        participant: { select: { name: true } },
+      },
+    }),
+    prisma.booking.findMany({
+      where: { lessonId, cancelled: false },
+      select: {
+        purchaseItem: {
+          select: {
+            purchase: { select: { userId: true, participantId: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const booked = new Set(
+    bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
+  );
+  const unbooked = marks.filter(
+    (m) => m.status === "PRESENT" && !booked.has(m.studentKey),
+  );
+
+  // Elevernas köp i kursen, för att kunna boka in dem direkt.
+  const items = unbooked.length
+    ? await prisma.purchaseItem.findMany({
+        where: {
+          courseId: lesson.courseId,
+          OR: unbooked.map((m) =>
+            m.participantId
+              ? { purchase: { participantId: m.participantId } }
+              : { purchase: { userId: m.userId ?? "", participantId: null } },
+          ),
+        },
+        select: {
+          id: true,
+          unlimited: true,
+          remainingCount: true,
+          purchase: {
+            select: {
+              userId: true,
+              participantId: true,
+              type: true,
+              remainingCount: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const presentWithoutBooking = unbooked.map((m): PresentWithoutBooking => {
+    const own = items.filter((i) => studentKeyOf(i.purchase) === m.studentKey);
+    const withBalance = own.find((i) =>
+      hasRemainingCount(
+        calcRemainingCount({ purchase: i.purchase, purchaseItem: i }),
+      ),
+    );
+    return {
+      studentKey: m.studentKey,
+      name: m.participant?.name ?? m.user?.name ?? "Okänd",
+      purchaseItemId: withBalance?.id ?? null,
+      ownerUserId: withBalance?.purchase.userId ?? null,
+      reason: withBalance
+        ? "bookable"
+        : own.length
+          ? "noBalance"
+          : "noPurchase",
+    };
+  });
+
+  return {
+    taken: marks.length > 0,
+    byStudentKey: Object.fromEntries(
+      marks.map((m) => [m.studentKey, m.status]),
+    ),
+    presentWithoutBooking,
+  };
+}
+
+export type MyAttendance = {
+  id: string;
+  lessonId: string;
+  startTime: Date;
+  endTime: Date;
+  courseName: { sv: string; en: string };
+  /** Null när det är kunden själv. */
+  participantName: string | null;
+  status: AttendanceStatus;
+};
+
+const MY_ATTENDANCE_PAGE = 5;
+
+const myAttendanceSelect = {
+  id: true,
+  status: true,
+  participant: { select: { name: true, userId: true } },
+  lesson: {
+    select: {
+      id: true,
+      startTime: true,
+      endTime: true,
+      course: {
+        select: {
+          name: true,
+          name_en: true,
+          minAge: true,
+          maxAge: true,
+          adult: true,
+          level: true,
+          level_en: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.AttendanceSelect;
+
+function myAttendanceWhere(userId: string): Prisma.AttendanceWhereInput {
+  return {
+    OR: [
+      { userId },
+      { participant: { userId } },
+      { participant: { addedByUserId: userId } },
+    ],
+  };
+}
+
+function toMyAttendance(
+  m: Prisma.AttendanceGetPayload<{ select: typeof myAttendanceSelect }>,
+  userId: string,
+): MyAttendance {
+  return {
+    id: m.id,
+    lessonId: m.lesson.id,
+    startTime: m.lesson.startTime,
+    endTime: m.lesson.endTime,
+    courseName: {
+      sv: getCourseName(m.lesson.course, "sv"),
+      en: getCourseName(m.lesson.course, "en"),
+    },
+    participantName:
+      m.participant && m.participant.userId !== userId
+        ? m.participant.name
+        : null,
+    status: m.status,
+  };
+}
+
+/**
+ * Kundens egen närvaro och deltagarnas, för profilsidan: de senaste raderna
+ * plus summan över allt. Summan räknas i databasen, så den stämmer även när
+ * listan bara visar en del.
+ *
+ * Hämtas ur närvaroregistret och inte via bokningarna: en elev kan vara
+ * markerad utan bokning, och en bokning utan markering betyder bara att
+ * läraren inte tagit närvaro — det är inte samma sak som frånvaro.
+ */
+export async function getMyAttendance(): Promise<{
+  items: MyAttendance[];
+  total: number;
+  present: number;
+}> {
+  const session = await getSessionData();
+  if (!session) return { items: [], total: 0, present: 0 };
+
+  const userId = session.user.id;
+  const where = myAttendanceWhere(userId);
+
+  const [marks, total, present] = await Promise.all([
+    prisma.attendance.findMany({
+      where,
+      orderBy: { lesson: { startTime: "desc" } },
+      take: MY_ATTENDANCE_PAGE,
+      select: myAttendanceSelect,
+    }),
+    prisma.attendance.count({ where }),
+    prisma.attendance.count({ where: { ...where, status: "PRESENT" } }),
+  ]);
+
+  return { items: marks.map((m) => toMyAttendance(m, userId)), total, present };
+}
+
+/** "Visa fler": nästa sida efter de `skip` rader som redan visas. */
+export async function loadMoreAttendance(
+  skip: number,
+): Promise<MyAttendance[]> {
+  const session = await getSessionData();
+  if (!session) return [];
+
+  const userId = session.user.id;
+  const marks = await prisma.attendance.findMany({
+    where: myAttendanceWhere(userId),
+    orderBy: { lesson: { startTime: "desc" } },
+    skip: Math.max(0, Math.floor(skip)),
+    take: MY_ATTENDANCE_PAGE,
+    select: myAttendanceSelect,
+  });
+  return marks.map((m) => toMyAttendance(m, userId));
+}
+
+/**
+ * Närvaro för kalendern, en månad i taget. Egen fråga så kalendern inte
+ * beror på listans sidindelning. `fromStr`/`toStr` är YYYY-MM-DD (Stockholm).
+ */
+export async function getMyAttendanceInRange(
+  fromStr: string,
+  toStr: string,
+): Promise<MyAttendance[]> {
+  const session = await getSessionData();
+  if (!session) return [];
+
+  const userId = session.user.id;
+  const marks = await prisma.attendance.findMany({
+    where: {
+      AND: [
+        myAttendanceWhere(userId),
+        {
+          lesson: {
+            startTime: {
+              gte: parseStockholmDateInput(fromStr),
+              lte: endOfStockholmDateInput(toStr),
+            },
+          },
+        },
+      ],
+    },
+    orderBy: { lesson: { startTime: "asc" } },
+    select: myAttendanceSelect,
+  });
+  return marks.map((m) => toMyAttendance(m, userId));
+}

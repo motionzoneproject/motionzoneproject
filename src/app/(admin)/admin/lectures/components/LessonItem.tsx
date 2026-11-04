@@ -3,6 +3,7 @@ import type { Lesson } from "@/generated/prisma/client";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import { AttendanceDialog } from "../../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "./attendence/AttendenceDialog";
 import { EditLessonBtn } from "./EditLesson";
 
@@ -28,6 +29,9 @@ export async function LessonItem({
       <TableCell className="max-w-[260px] whitespace-normal">
         {lesson.message}
         {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
+      </TableCell>
+      <TableCell>
+        <AttendanceDialog lessonId={lesson.id} />
       </TableCell>
       <TableCell>
         <AttendeDialog lesson={lesson} />

@@ -444,10 +444,14 @@ describe("addStudentToCourse", () => {
     expect(roster?.students).toEqual([
       {
         studentKey: participantKey(child),
+        userId: null,
+        participantId: child.id,
         name: "Provare",
         customerName: "Kunden",
         products: [],
         bookings: 0,
+        // Inget köp, alltså inget saldo att visa.
+        remaining: null,
         addedManually: true,
         pending: false,
       },

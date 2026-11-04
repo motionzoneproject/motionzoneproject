@@ -77,7 +77,7 @@ export async function isTeacherRole(): Promise<boolean> {
 
 /**
  * Check if session user is admin OR teacher — the shared gate for
- * /admin and /admin/lectures, which both roles may access.
+ * /admin, /admin/lectures and /admin/attendance, which both roles may access.
  */
 export async function isAdminOrTeacherRole(): Promise<boolean> {
   const sessiondata = await getSessionData();
@@ -88,7 +88,7 @@ export async function isAdminOrTeacherRole(): Promise<boolean> {
 
 /**
  * Page-level guard for routes teachers may also access
- * (currently: /admin and /admin/lectures).
+ * (currently: /admin, /admin/lectures and /admin/attendance).
  */
 export async function requireAdminOrTeacher(): Promise<void> {
   if (!(await isAdminOrTeacherRole())) notFound();

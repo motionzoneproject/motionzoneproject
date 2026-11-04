@@ -430,7 +430,11 @@
       "submitBook": "Book",
       "close": "Close",
       "yourselfFallback": "You",
-      "delErrorPrefix": "Something went wrong, could not remove booking."
+      "delErrorPrefix": "Something went wrong, could not remove booking.",
+      "attendance": "Attendance",
+      "legendPresent": "Present",
+      "legendAbsent": "Absent",
+      "legendAttendance": "Attendance registered"
     },
     "orderHistory": {
       "title": "Order history",
@@ -536,7 +540,14 @@
       "savedTitle": "Saved invoice recipient",
       "savedEmpty": "None saved yet",
       "savedHelp": "Used to prefill your next enrolment. Changing it leaves orders you have already placed untouched."
-    }
+    },
+    "attendanceTitle": "Attendance",
+    "attendanceDescription": "Lessons where the teacher has taken attendance.",
+    "attendanceEmpty": "No attendance recorded yet.",
+    "attendancePresent": "Present",
+    "attendanceAbsent": "Absent",
+    "attendanceSummary": "{{present}} of {{total}} lessons attended",
+    "attendanceShowMore": "Show more ({{count}} more)"
   },
   "legal": {
     "lastUpdated": "Last updated"
