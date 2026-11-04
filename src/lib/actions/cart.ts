@@ -21,7 +21,7 @@ export async function addToCart(params: {
     where: { id: productId },
     select: { active: true },
   });
-  if (!product || !product.active) {
+  if (!product?.active) {
     return { success: false };
   }
 
