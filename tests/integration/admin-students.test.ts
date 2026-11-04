@@ -122,7 +122,7 @@ describe("kurs-, produkt- och lärarfilter", () => {
     expect(await keys({ course: u.a.id, product: u.prodB.id })).toEqual([]);
   });
 
-  it("kurs + produkt med terminskort: bara de som valt kursen och är inbokade", async () => {
+  it("kurs + produkt med terminskort: bara de som valt kursen", async () => {
     const teacher = await createUser({ role: "teacher" });
     const a = await createCourse({ teacher, past: 2, future: 2 });
     const b = await createCourse({ teacher, past: 2, future: 2 });
@@ -143,11 +143,15 @@ describe("kurs-, produkt- och lärarfilter", () => {
       selectedCourseIds: [a.id],
     });
 
-    // Köpt men inte inbokad: räknas inte som elev på kursen.
-    expect(await keys({ course: a.id, product: pack.id })).toEqual([]);
+    // Hen valde bara kurs A, så köpet ger en enda kurs och eleven placeras
+    // på A direkt (placesStudentInCourse: courseCount <= 1), även utan bokning.
+    expect(await keys({ course: a.id, product: pack.id })).toEqual([
+      userKey(dora),
+    ]);
+    expect(await keys({ course: b.id, product: pack.id })).toEqual([]);
     expect(await keys({ product: pack.id })).toEqual([userKey(dora)]);
 
-    // Efter bokning syns hen på kurs A men inte på B (valde bara A).
+    // Efter bokning ligger hen kvar på A men inte på B.
     await bookPastLessons(itemFor(bought.items, a));
     expect(await keys({ course: a.id, product: pack.id })).toEqual([
       userKey(dora),
