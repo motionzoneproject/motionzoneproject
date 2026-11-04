@@ -1094,6 +1094,9 @@ const KNOWN_SHALLOW: Record<string, string> = {
   "src/lib/actions/participants.ts#getMyParticipants": "kundens egen",
   "src/lib/actions/schedule-actions.ts#bookMyCourse": "kundens egen",
   "src/lib/actions/attendance-actions.ts#getMyAttendance": "kundens egen",
+  "src/lib/actions/attendance-actions.ts#loadMoreAttendance": "kundens egen",
+  "src/lib/actions/attendance-actions.ts#getMyAttendanceInRange":
+    "kundens egen",
   "src/lib/actions/server-actions.ts#getUserPurchases": "kundens egen",
   "src/lib/actions/server-actions.ts#getUserPendingRegistrations":
     "kundens egen",
