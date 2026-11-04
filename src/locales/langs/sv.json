@@ -200,7 +200,7 @@
       "duplicateUseSlot": "Använd samma person, '{{name}}'",
       "duplicateUseSelf": "Markera som \"Jag själv\" istället",
       "method": "Betalningsmetod:",
-      "methodInfo": "Obs! Fakturan skickas efter första lektionen och kan ta upp till två veckor innan den kommer.”",
+      "methodInfo": "Obs! Fakturan skickas efter kursstart och kan ta upp till två veckor innan den kommer.”",
       "1": "Faktura",
       "1description": "Hela beloppet",
       "2": "Delbetalning x 2",
