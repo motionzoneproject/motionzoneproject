@@ -29,7 +29,7 @@ export async function signUpWithDetails(values: SignUpValues) {
       headers: await headers(),
     });
 
-    if (!result || !result.user) {
+    if (!result?.user) {
       return { success: false, error: "Kunde inte skapa användare" };
     }
 
