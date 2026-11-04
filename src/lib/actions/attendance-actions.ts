@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@/generated/prisma/client";
 import type { AttendanceStatus } from "@/generated/prisma/enums";
 import {
   attendanceStartedAt,
@@ -571,52 +572,47 @@ export type MyAttendance = {
   status: AttendanceStatus;
 };
 
-/**
- * Kundens egen närvaro och deltagarnas, för profilsidan.
- *
- * Hämtas ur närvaroregistret och inte via bokningarna: en elev kan vara
- * markerad utan bokning, och en bokning utan markering betyder bara att
- * läraren inte tagit närvaro — det är inte samma sak som frånvaro.
- */
-export async function getMyAttendance(): Promise<MyAttendance[]> {
-  const session = await getSessionData();
-  if (!session) return [];
+const MY_ATTENDANCE_PAGE = 5;
 
-  const marks = await prisma.attendance.findMany({
-    where: {
-      OR: [
-        { userId: session.user.id },
-        { participant: { userId: session.user.id } },
-        { participant: { addedByUserId: session.user.id } },
-      ],
-    },
-    orderBy: { lesson: { startTime: "desc" } },
+const myAttendanceSelect = {
+  id: true,
+  status: true,
+  participant: { select: { name: true, userId: true } },
+  lesson: {
     select: {
       id: true,
-      status: true,
-      participant: { select: { name: true, userId: true } },
-      lesson: {
+      startTime: true,
+      endTime: true,
+      course: {
         select: {
-          id: true,
-          startTime: true,
-          endTime: true,
-          course: {
-            select: {
-              name: true,
-              name_en: true,
-              minAge: true,
-              maxAge: true,
-              adult: true,
-              level: true,
-              level_en: true,
-            },
-          },
+          name: true,
+          name_en: true,
+          minAge: true,
+          maxAge: true,
+          adult: true,
+          level: true,
+          level_en: true,
         },
       },
     },
-  });
+  },
+} satisfies Prisma.AttendanceSelect;
 
-  return marks.map((m) => ({
+function myAttendanceWhere(userId: string): Prisma.AttendanceWhereInput {
+  return {
+    OR: [
+      { userId },
+      { participant: { userId } },
+      { participant: { addedByUserId: userId } },
+    ],
+  };
+}
+
+function toMyAttendance(
+  m: Prisma.AttendanceGetPayload<{ select: typeof myAttendanceSelect }>,
+  userId: string,
+): MyAttendance {
+  return {
     id: m.id,
     lessonId: m.lesson.id,
     startTime: m.lesson.startTime,
@@ -626,9 +622,93 @@ export async function getMyAttendance(): Promise<MyAttendance[]> {
       en: getCourseName(m.lesson.course, "en"),
     },
     participantName:
-      m.participant && m.participant.userId !== session.user.id
+      m.participant && m.participant.userId !== userId
         ? m.participant.name
         : null,
     status: m.status,
-  }));
+  };
+}
+
+/**
+ * Kundens egen närvaro och deltagarnas, för profilsidan: de senaste raderna
+ * plus summan över allt. Summan räknas i databasen, så den stämmer även när
+ * listan bara visar en del.
+ *
+ * Hämtas ur närvaroregistret och inte via bokningarna: en elev kan vara
+ * markerad utan bokning, och en bokning utan markering betyder bara att
+ * läraren inte tagit närvaro — det är inte samma sak som frånvaro.
+ */
+export async function getMyAttendance(): Promise<{
+  items: MyAttendance[];
+  total: number;
+  present: number;
+}> {
+  const session = await getSessionData();
+  if (!session) return { items: [], total: 0, present: 0 };
+
+  const userId = session.user.id;
+  const where = myAttendanceWhere(userId);
+
+  const [marks, total, present] = await Promise.all([
+    prisma.attendance.findMany({
+      where,
+      orderBy: { lesson: { startTime: "desc" } },
+      take: MY_ATTENDANCE_PAGE,
+      select: myAttendanceSelect,
+    }),
+    prisma.attendance.count({ where }),
+    prisma.attendance.count({ where: { ...where, status: "PRESENT" } }),
+  ]);
+
+  return { items: marks.map((m) => toMyAttendance(m, userId)), total, present };
+}
+
+/** "Visa fler": nästa sida efter de `skip` rader som redan visas. */
+export async function loadMoreAttendance(
+  skip: number,
+): Promise<MyAttendance[]> {
+  const session = await getSessionData();
+  if (!session) return [];
+
+  const userId = session.user.id;
+  const marks = await prisma.attendance.findMany({
+    where: myAttendanceWhere(userId),
+    orderBy: { lesson: { startTime: "desc" } },
+    skip: Math.max(0, Math.floor(skip)),
+    take: MY_ATTENDANCE_PAGE,
+    select: myAttendanceSelect,
+  });
+  return marks.map((m) => toMyAttendance(m, userId));
+}
+
+/**
+ * Närvaro för kalendern, en månad i taget. Egen fråga så kalendern inte
+ * beror på listans sidindelning. `fromStr`/`toStr` är YYYY-MM-DD (Stockholm).
+ */
+export async function getMyAttendanceInRange(
+  fromStr: string,
+  toStr: string,
+): Promise<MyAttendance[]> {
+  const session = await getSessionData();
+  if (!session) return [];
+
+  const userId = session.user.id;
+  const marks = await prisma.attendance.findMany({
+    where: {
+      AND: [
+        myAttendanceWhere(userId),
+        {
+          lesson: {
+            startTime: {
+              gte: parseStockholmDateInput(fromStr),
+              lte: endOfStockholmDateInput(toStr),
+            },
+          },
+        },
+      ],
+    },
+    orderBy: { lesson: { startTime: "asc" } },
+    select: myAttendanceSelect,
+  });
+  return marks.map((m) => toMyAttendance(m, userId));
 }

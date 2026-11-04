@@ -1,34 +1,48 @@
 "use client";
 
-import { ChevronDown, ChevronUp, ClipboardCheck } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ClipboardCheck } from "lucide-react";
+import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import type { MyAttendance } from "@/lib/actions/attendance-actions";
+import {
+  loadMoreAttendance,
+  type MyAttendance,
+} from "@/lib/actions/attendance-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
 import { normalizeLang } from "@/locales/config-lang";
 
 /**
- * Kundens närvaro, senaste först.
+ * Kundens närvaro, senaste först. Servern skickar de första raderna och
+ * summan över allt; "Visa fler" hämtar nästa sida.
  *
  * Kommer ur närvaroregistret, inte ur bokningarna. En lektion utan markering
  * finns inte med alls: läraren har inte tagit närvaro, och det är inte samma
  * sak som frånvaro.
  */
 export function AttendanceHistory({
-  attendance,
-  initialCount = 8,
+  initial,
+  total,
+  present,
 }: {
-  attendance: MyAttendance[];
-  initialCount?: number;
+  initial: MyAttendance[];
+  total: number;
+  present: number;
 }) {
   const { t, i18n } = useTranslation();
   const lang = normalizeLang(i18n.language);
-  const [expanded, setExpanded] = useState(false);
+  const [items, setItems] = useState(initial);
+  const [pending, startTransition] = useTransition();
 
-  const present = attendance.filter((a) => a.status === "PRESENT").length;
-  const visible = expanded ? attendance : attendance.slice(0, initialCount);
+  const showMore = () => {
+    startTransition(async () => {
+      const more = await loadMoreAttendance(items.length);
+      setItems((prev) => {
+        const seen = new Set(prev.map((a) => a.id));
+        return [...prev, ...more.filter((a) => !seen.has(a.id))];
+      });
+    });
+  };
 
   return (
     <div className="mt-8 space-y-3">
@@ -37,22 +51,19 @@ export function AttendanceHistory({
           <ClipboardCheck className="h-4 w-4" /> {t("user.attendanceTitle")}
         </h3>
         <p className="text-xs text-muted-foreground">
-          {attendance.length > 0
-            ? t("user.attendanceSummary", {
-                present,
-                total: attendance.length,
-              })
+          {total > 0
+            ? t("user.attendanceSummary", { present, total })
             : t("user.attendanceDescription")}
         </p>
       </div>
 
-      {attendance.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-xs italic text-muted-foreground">
           {t("user.attendanceEmpty")}
         </p>
       ) : (
         <ul className="divide-y rounded-lg border">
-          {visible.map((a) => (
+          {items.map((a) => (
             <li
               key={a.id}
               className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2 text-sm"
@@ -85,25 +96,17 @@ export function AttendanceHistory({
         </ul>
       )}
 
-      {attendance.length > initialCount && (
+      {items.length < total && (
         <Button
           type="button"
           variant="ghost"
           size="sm"
+          disabled={pending}
           className="h-8 gap-1.5 px-2 text-xs text-muted-foreground"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={showMore}
         >
-          {expanded ? (
-            <>
-              <ChevronUp className="h-3.5 w-3.5" />
-              {t("user.attendanceShowLess")}
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3.5 w-3.5" />
-              {t("user.attendanceShowAll", { count: attendance.length })}
-            </>
-          )}
+          <ChevronDown className="h-3.5 w-3.5" />
+          {t("user.attendanceShowMore", { count: total - items.length })}
         </Button>
       )}
     </div>

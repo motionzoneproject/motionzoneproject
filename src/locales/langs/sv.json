@@ -433,7 +433,8 @@
       "delErrorPrefix": "Något gick fel, kunde inte ta bort bokning.",
       "attendance": "Närvaro",
       "legendPresent": "Närvarande",
-      "legendAbsent": "Frånvarande"
+      "legendAbsent": "Frånvarande",
+      "legendAttendance": "Närvaro registrerad"
     },
     "orderHistory": {
       "title": "Orderhistorik",
@@ -546,8 +547,7 @@
     "attendancePresent": "Närvarande",
     "attendanceAbsent": "Frånvarande",
     "attendanceSummary": "{{present}} av {{total}} lektioner närvarande",
-    "attendanceShowAll": "Visa all närvaro ({{count}}st)",
-    "attendanceShowLess": "Visa mindre"
+    "attendanceShowMore": "Visa fler ({{count}} till)"
   },
   "legal": {
     "lastUpdated": "Senast uppdaterad"

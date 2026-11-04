@@ -433,7 +433,8 @@
       "delErrorPrefix": "Something went wrong, could not remove booking.",
       "attendance": "Attendance",
       "legendPresent": "Present",
-      "legendAbsent": "Absent"
+      "legendAbsent": "Absent",
+      "legendAttendance": "Attendance registered"
     },
     "orderHistory": {
       "title": "Order history",
@@ -546,8 +547,7 @@
     "attendancePresent": "Present",
     "attendanceAbsent": "Absent",
     "attendanceSummary": "{{present}} of {{total}} lessons attended",
-    "attendanceShowAll": "Show all attendance ({{count}})",
-    "attendanceShowLess": "Show less"
+    "attendanceShowMore": "Show more ({{count}} more)"
   },
   "legal": {
     "lastUpdated": "Last updated"

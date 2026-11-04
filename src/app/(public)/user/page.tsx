@@ -75,7 +75,7 @@ export default async function Page() {
 
   const { lessons = [] } = await getUserLessons();
   const { bookings = [] } = await getUserBookings();
-  const attendance = await getMyAttendance();
+  const myAttendance = await getMyAttendance();
   const purchaseItems: UserPurchaseWithProduct[] = await getUserPurchases();
   const pendingRegistrations = await getUserPendingRegistrations();
   const myParticipants = await getMyParticipants();
@@ -203,10 +203,13 @@ export default async function Page() {
               purchaseItems={purchaseItems}
               lessons={lessons}
               bookings={bookings}
-              attendance={attendance}
             />
 
-            <AttendanceHistory attendance={attendance} />
+            <AttendanceHistory
+              initial={myAttendance.items}
+              total={myAttendance.total}
+              present={myAttendance.present}
+            />
 
             <div className="mt-8 space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
