@@ -12,7 +12,7 @@ import { getSessionData } from "./sessiondata";
 
 async function requireAdmin() {
   const session = await getSessionData();
-  if (!session || session.user.role !== "admin") {
+  if (session?.user.role !== "admin") {
     throw new Error("No permission.");
   }
   return session.user.id;
