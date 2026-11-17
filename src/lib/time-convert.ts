@@ -1,55 +1,56 @@
+import { TZDate } from "@date-fns/tz";
+
 /**
  * Konverterar ett Date-objekt från databasen till en "HH:MM"-sträng.
+ * Garanterar kolon-separering (HH:MM) oavsett Node-version eller serverns ICU-inställningar.
  * @param dateObj Date-objektet från Prisma.
  * @returns Tiden som en sträng (t.ex. "09:30").
  */
 export const dbToFormTime = (dateObj: Date): string => {
-  // Använd toLocaleTimeString för att få den lokala tiden (HH:MM)
-  return dateObj.toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false, // För att säkerställa 24-timmarsformat
-  });
+  const { hours, minutes } = getZonedHoursMinutes(dateObj);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(hours)}:${pad(minutes)}`;
 };
 
-// /**
-//  * Konverterar en "HH:MM"-tidsträng till ett komplett Date-objekt
-//  * genom att använda ett basdatum.
-//  * @param timeString Tiden som sträng (t.ex. "09:30").
-//  * @param baseDate Datumet att använda som bas (standard: idag).
-//  * @returns Ett komplett Date-objekt.
-//  */
-// export const formToDbDate = (
-//   timeString: string,
-//   baseDate: Date = new Date(),
-// ): Date => {
-//   const [hours, minutes] = timeString.split(":").map(Number);
-
-//   const newDate = new Date(baseDate);
-
-//   // Ställ in timmar, minuter, och nollställ sekunder/millisekunder i lokal tid
-//   newDate.setHours(hours, minutes, 0, 0);
-
-//   return newDate;
-// };
-
 /**
- * Konverterar en "HH:MM"-tidsträng till ett komplett Date-objekt
- * som alltid representerar den exakta tiden i svensk tidszon,
- * oavsett serverns interna klocka. Sparas som basdatum 1970-01-01.
- * @param timeString Tiden som sträng (t.ex. "16:15").
- * @returns Ett komplett Date-objekt justerat till UTC för Prisma.
+ * Konverterar en tids- eller datumsträng från frontend till ett komplett Date-objekt
+ * som alltid representerar den exakta tidpunkten i svensk tidszon (Europe/Stockholm),
+ * oavsett serverns interna klocka.
+ * * Hanterar:
+ * - Ren tid: "16:15" -> Sparas på basdatum 1970-01-01T16:15:00 i svensk tid.
+ * - Ren kalenderdag: "2026-01-01" -> Sparas som midnatt 2026-01-01T00:00:00 i svensk tid.
+ * - Full sträng: "1970-01-01T16:15:00" -> Sparas exakt som angivet i svensk tid.
  */
-export const formToDbDate = (timeString: string): Date => {
-  const [hours, minutes] = timeString.split(":").map(Number);
-  const pad = (n: number) => String(n).padStart(2, "0");
+export const formToDbDate = (dateOrTimeString: string): Date => {
+  if (!dateOrTimeString || typeof dateOrTimeString !== "string") {
+    throw new Error("formToDbDate fick ett tomt eller ogiltigt värde.");
+  }
 
-  // Vi använder 1970-01-01 som standardår för schema-mallen.
-  const baseDateStr = `1970-01-01T${pad(hours)}:${pad(minutes)}:00`;
+  const timeZone = "Europe/Stockholm";
+  let sanitizedStr = dateOrTimeString.trim();
 
-  // Eftersom 1970-01-01 var normaltid (vintertid) i Sverige, sätter vi +01:00 explicit.
-  return new Date(`${baseDateStr}+01:00`);
+  // Scenario 1: Det är en ren tidsträng (t.ex. "16:15" eller "08:00")
+  if (sanitizedStr.length === 5 && sanitizedStr.includes(":")) {
+    sanitizedStr = `1970-01-01T${sanitizedStr}:00`;
+  }
+  // Scenario 2: Det är en ren datumsträng (t.ex. "2026-01-01")
+  else if (sanitizedStr.length === 10 && !sanitizedStr.includes("T")) {
+    sanitizedStr = `${sanitizedStr}T00:00:00`;
+  }
+
+  // Skapa ett tidszonssäkrat datumobjekt låst till svensk tid (hanterar DST automatiskt!)
+  const zonedDate = new TZDate(sanitizedStr, timeZone);
+
+  // Om JS-motorn ändå inte kan tolka strängen, kasta ett tydligt fel i terminalen
+  if (Number.isNaN(zonedDate.getTime())) {
+    throw new Error(
+      `formToDbDate kunde inte tolka formatet på: "${dateOrTimeString}"`,
+    );
+  }
+
+  // Returnera som ett standard JS Date som Prisma-klienten kan spara i databasen
+  return new Date(zonedDate.getTime());
 };
 
 /**

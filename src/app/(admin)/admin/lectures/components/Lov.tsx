@@ -46,13 +46,6 @@ import { adminBulkCancelLessonsSchema } from "@/validations/adminforms";
 type FormInput = z.input<typeof adminBulkCancelLessonsSchema>;
 type FormOutput = z.output<typeof adminBulkCancelLessonsSchema>;
 
-const toDateInput = (value: Date): string => {
-  if (!value || !(value instanceof Date) || Number.isNaN(value.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("sv-SE").format(value);
-};
 interface Props {
   courses: Course[];
   terminer: Termin[];
@@ -68,8 +61,8 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(adminBulkCancelLessonsSchema),
     defaultValues: {
-      from: toDateInput(new Date()),
-      to: toDateInput(new Date()),
+      from: formatDateToInputStr(new Date()),
+      to: formatDateToInputStr(new Date()),
       courseIds: [],
       message: "Lov",
       message_en: "Holiday",
@@ -102,8 +95,7 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
   }, [filteredCourses, form, useAllCourses]);
 
   async function onSubmit(values: FormInput) {
-    const parsed = await adminBulkCancelLessonsSchema.parseAsync(values);
-    const res = await bulkCancelLessons(parsed);
+    const res = await bulkCancelLessons(values);
 
     if (!res.success) {
       toast.error(res.msg);
@@ -115,8 +107,8 @@ export function Lov({ courses, terminer, schemaItems }: Props) {
     setSelectedTerminId("all");
     setUseAllCourses(true);
     form.reset({
-      from: toDateInput(new Date()),
-      to: toDateInput(new Date()),
+      from: formatDateToInputStr(new Date()),
+      to: formatDateToInputStr(new Date()),
       courseIds: [],
       message: "Lov",
       message_en: "Holiday",

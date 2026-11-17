@@ -103,7 +103,7 @@ export function EditTerminFormUI({
     if (check.count > 0) {
       const confirm = window.confirm(
         `Varning: ${check.count} bokningar ligger utanför de nya datumen. ` +
-          `Dese kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
+          `Dessa kommer raderas och eleverna får tillbaka sina klipp. Vill du fortsätta?`,
       );
       if (!confirm) return;
     }

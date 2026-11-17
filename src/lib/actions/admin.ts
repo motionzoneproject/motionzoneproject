@@ -239,67 +239,6 @@ export async function delEvent(
 }
 
 /**
- * Removes an entire termin.
- * @returns Success (boolean) and a message.
- * @auth Admin
- */
-export async function delTermin(
-  id: string,
-): Promise<{ success: boolean; msg: string }> {
-  const isAdmin = await isAdminRole();
-  if (!isAdmin) return { success: false, msg: "No permission." };
-
-  try {
-    // 1. Hitta alla aktiva bokningar kopplade till denna termin
-    const bookings = await prisma.booking.findMany({
-      where: {
-        lesson: { terminId: id },
-        cancelled: false, // Hmm, ska vi verkligen ignorera detta? Kommer ligga onödiga bokningar. Eller just det, ja för annars betalas inställda bokningar tillbaka. Ev. fix för att inte ha onödig data i db.
-      },
-      select: { purchaseItemId: true },
-    });
-
-    // 2. Kör transaktionen
-    const result = await prisma.$transaction(async (tx) => {
-      // Återställ alla klipp
-      if (bookings.length > 0) {
-        for (const booking of bookings) {
-          if (!booking.purchaseItemId) continue;
-
-          // Via handleClips :)
-          const clipResult = await handleClips(tx, booking.purchaseItemId, 1);
-
-          if (!clipResult.success) {
-            throw new Error(clipResult.msg || "Clip update failed.");
-          }
-        }
-      }
-
-      // Radera terminen (triggar cascade för resten)
-      const deletedTermin = await tx.termin.delete({
-        where: { id },
-        select: { name: true },
-      });
-
-      return deletedTermin.name;
-    });
-
-    revalidatePath("/admin/termins");
-
-    return {
-      success: true,
-      msg: `Terminen ${result} och ${bookings.length} tillhörande bokningar raderades. Klipp har återställts.`,
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      success: false,
-      msg: "Kunde inte radera terminen. Kontrollera om den har aktiva kopplingar som hindrar radering.",
-    };
-  }
-}
-
-/**
  * Removes a course, all schemaItems, lessons and bookings and restores clips.
  * * @important
  * @returns Success (boolean) and a message.
@@ -678,6 +617,7 @@ export async function editLessonItem(
     return { success: false, msg: "Ett fel uppstod vid uppdatering." };
   }
 }
+
 /**
  * Bulk update lessons to cancelled state in a date range and selected courses.
  * Restores clips and removes existing bookings for newly cancelled lessons.
@@ -692,44 +632,19 @@ export async function bulkCancelLessons(
   try {
     const validated = await adminBulkCancelLessonsSchema.parseAsync(formData);
 
-    // 1. Skapa råa datumsträngar för start och slut på dagarna
-    // validated.from och validated.to är enkla datumsträngar (t.ex. "2026-05-20")
-    const rawFrom = new Date(`${validated.from}T00:00:00`);
-    const rawTo = new Date(`${validated.to}T23:59:59.999`);
-
-    // 2. Tvinga JavaScript att tolka dessa tider exakt efter svensk tidszon, oavsett servermiljö
-    const from = new Date(
-      rawFrom.toLocaleString("en-US", {
-        timeZone: "Europe/Stockholm",
-      }),
-    );
-    const to = new Date(
-      rawTo.toLocaleString("en-US", {
-        timeZone: "Europe/Stockholm",
-      }),
-    );
+    const from = formToDbDate(`${validated.from}T00:00:00`);
+    const to = formToDbDate(`${validated.to}T23:59:59`);
 
     const lessons = await prisma.lesson.findMany({
       where: {
-        startTime: {
-          gte: from,
-          lte: to,
-        },
-        courseId: {
-          in: validated.courseIds,
-        },
+        startTime: { gte: from, lte: to },
+        courseId: { in: validated.courseIds },
       },
-      select: {
-        id: true,
-        cancelled: true,
-      },
+      select: { id: true, cancelled: true },
     });
 
     if (lessons.length === 0) {
-      return {
-        success: false,
-        msg: "Inga lektioner matchade ditt urval.",
-      };
+      return { success: false, msg: "Inga lektioner matchade ditt urval." };
     }
 
     const lessonIds = lessons.map((lesson) => lesson.id);
@@ -740,13 +655,8 @@ export async function bulkCancelLessons(
     await prisma.$transaction(async (tx) => {
       if (newlyCancelledLessonIds.length > 0) {
         const bookings = await tx.booking.findMany({
-          where: {
-            lessonId: { in: newlyCancelledLessonIds },
-          },
-          select: {
-            id: true,
-            purchaseItemId: true,
-          },
+          where: { lessonId: { in: newlyCancelledLessonIds } },
+          select: { id: true, purchaseItemId: true },
         });
 
         for (const booking of bookings) {
@@ -759,16 +669,12 @@ export async function bulkCancelLessons(
         }
 
         await tx.booking.deleteMany({
-          where: {
-            lessonId: { in: newlyCancelledLessonIds },
-          },
+          where: { lessonId: { in: newlyCancelledLessonIds } },
         });
       }
 
       await tx.lesson.updateMany({
-        where: {
-          id: { in: lessonIds },
-        },
+        where: { id: { in: lessonIds } },
         data: {
           cancelled: validated.cancelled,
           message: validated.message,
@@ -1344,7 +1250,6 @@ export async function getBookings(
   }
 }
 
-// Kanske flytta ut denna sen från admin, tänker att vi använder samma för bokning ifrån profilsidan också.
 export async function addUserInLesson(
   formData: z.output<typeof AddStudentToLessonForm>,
 ): Promise<{ success: boolean; msg: string }> {

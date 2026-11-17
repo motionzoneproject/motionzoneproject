@@ -140,8 +140,8 @@ export const adminLessonFormSchema = z.object({
 
 export const adminBulkCancelLessonsSchema = z
   .object({
-    from: z.coerce.date("Ogiltigt startdatum"),
-    to: z.coerce.date("Ogiltigt slutdatum"),
+    from: z.string().min(1),
+    to: z.string().min(1),
     courseIds: z.array(z.string().min(1)).min(1, "Valj minst en kurs."),
     message: z.string().trim().min(1, "Anledning maste anges."),
     message_en: z.string().trim().min(1, "Skriv en anledning"),
