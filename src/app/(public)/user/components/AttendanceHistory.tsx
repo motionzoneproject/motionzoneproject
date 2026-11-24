@@ -9,11 +9,9 @@ import {
   type MyAttendance,
 } from "@/lib/actions/attendance-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
+import { MY_ATTENDANCE_PAGE } from "@/lib/my-attendance-page";
 import { dbToFormTime } from "@/lib/time-convert";
 import { normalizeLang } from "@/locales/config-lang";
-
-/** Samma som MY_ATTENDANCE_PAGE i attendance-actions.ts (kan inte exporteras därifrån). */
-const PAGE_SIZE = 5;
 
 /**
  * Kundens närvaro, senaste först. Servern skickar de första raderna och
@@ -110,7 +108,7 @@ export function AttendanceHistory({
         >
           <ChevronDown className="h-3.5 w-3.5" />
           {t("user.attendanceShowMore", {
-            count: Math.min(PAGE_SIZE, total - items.length),
+            count: Math.min(MY_ATTENDANCE_PAGE, total - items.length),
           })}
         </Button>
       )}

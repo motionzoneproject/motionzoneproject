@@ -5,7 +5,11 @@
 // aldrig från något som inte redan vet vem användaren är.
 
 import type { Prisma } from "@/generated/prisma/client";
-import { attendanceStartedAt, compareLesson } from "./attendance-compare";
+import {
+  attendanceStartedAt,
+  compareLesson,
+  enrolledCounts,
+} from "./attendance-compare";
 import prisma from "./prisma";
 
 export type LessonWithData = Prisma.LessonGetPayload<{
@@ -229,11 +233,14 @@ export async function getAttendanceFollowUp(
     orderBy: { startTime: "desc" },
   });
 
-  const since = await attendanceStartedAt();
+  const [since, enrolled] = await Promise.all([
+    attendanceStartedAt(),
+    enrolledCounts(lessons.map((l) => l.courseId)),
+  ]);
   const result: AttendanceFollowUp[] = [];
 
   for (const lesson of lessons) {
-    const comparison = compareLesson(lesson);
+    const comparison = compareLesson(lesson, enrolled.get(lesson.courseId));
     const { bookedNotPresent, presentNotBooked, mismatch } = comparison;
     // Före första närvaron fanns inget att ta, så det räknas inte som saknat.
     const notTaken =

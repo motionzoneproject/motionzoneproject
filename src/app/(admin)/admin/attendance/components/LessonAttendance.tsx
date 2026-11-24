@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   type AttendanceLesson,
+  type AttendanceMark,
   type AttendanceStudent,
   saveAttendance,
 } from "@/lib/actions/attendance-actions";
@@ -173,15 +174,30 @@ export function LessonAttendance({
       return next;
     });
 
-  const [marks, setMarks] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    for (const student of lesson.students) {
-      if (student.status !== null) {
-        initial[student.studentKey] = student.status === "PRESENT";
-      }
+  // Bara lärarens egna, ännu inte inlästa ändringar. Övrigt visas som det
+  // står i registret, så att en markering någon annan gjort syns när listan
+  // hämtats om.
+  const [marks, setMarks] = useState<Record<string, boolean>>({});
+  const presentOf = (student: AttendanceStudent): boolean | undefined =>
+    marks[student.studentKey] ??
+    (student.status === null ? undefined : student.status === "PRESENT");
+
+  // När listan hämtats om efter en sparning släpps de sparade ändringarna,
+  // så att registrets värde tar över — det kan skilja sig om någon annan
+  // hann markera samma elev. Osparade ändringar ligger kvar.
+  const [savedKeys, setSavedKeys] = useState<Set<string> | null>(null);
+  const [shownStudents, setShownStudents] = useState(lesson.students);
+  if (shownStudents !== lesson.students) {
+    setShownStudents(lesson.students);
+    if (savedKeys) {
+      setMarks((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).filter(([key]) => !savedKeys.has(key)),
+        ),
+      );
+      setSavedKeys(null);
     }
-    return initial;
-  });
+  }
 
   const refresh = () => {
     onChanged?.();
@@ -195,18 +211,45 @@ export function LessonAttendance({
   };
 
   const save = async () => {
+    // Bara det som ändrats skickas, så att två som tar närvaro samtidigt
+    // inte skriver över varandras markeringar. Den som inte bockats i och
+    // saknar markering blir frånvarande — men bara om ingen annan hunnit
+    // markera hen (onlyIfUnmarked).
+    const changes: AttendanceMark[] = lesson.students.flatMap((student) => {
+      const local = marks[student.studentKey];
+      if (local === undefined) {
+        return student.status === null
+          ? [
+              {
+                studentKey: student.studentKey,
+                present: false,
+                onlyIfUnmarked: true,
+              },
+            ]
+          : [];
+      }
+      const status = local ? "PRESENT" : "ABSENT";
+      return status === student.status
+        ? []
+        : [{ studentKey: student.studentKey, present: local }];
+    });
+
+    if (changes.length === 0) {
+      toast.success("Inga ändringar att spara.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const saved = lesson.students.map((student) => ({
-        studentKey: student.studentKey,
-        present: marks[student.studentKey] === true,
-      }));
-      const res = await saveAttendance(lesson.lessonId, saved);
+      const res = await saveAttendance(lesson.lessonId, changes);
       if (res.success) {
-        // Den som inte bockats i sparas som frånvarande, och ska visas så.
-        setMarks(
-          Object.fromEntries(saved.map((m) => [m.studentKey, m.present])),
-        );
+        // Visa det sparade tills listan hämtats om: den som inte bockats i
+        // är nu frånvarande.
+        setMarks((prev) => ({
+          ...prev,
+          ...Object.fromEntries(changes.map((m) => [m.studentKey, m.present])),
+        }));
+        setSavedKeys(new Set(changes.map((m) => m.studentKey)));
         toast.success(res.msg);
         refresh();
       } else {
@@ -264,7 +307,7 @@ export function LessonAttendance({
         <ul className="divide-y">
           {lesson.students.map((student) => {
             const id = `${lesson.lessonId}-${student.studentKey}`;
-            const value = marks[student.studentKey];
+            const value = presentOf(student);
 
             return (
               <li key={student.studentKey}>

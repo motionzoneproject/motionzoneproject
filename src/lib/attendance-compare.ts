@@ -1,4 +1,5 @@
 import { studentKeyOf } from "./course-roster";
+import { collectRosters } from "./course-roster-data";
 import { startOfStockholmDay } from "./date-utils";
 import prisma from "./prisma";
 
@@ -13,7 +14,10 @@ import prisma from "./prisma";
 export type LessonComparison = {
   /** Någon på lektionen har markerats. */
   taken: boolean;
-  /** Det finns bokningar men ingen markering alls. */
+  /**
+   * Lektionen har elever — bokade eller i kursens elevlista — men ingen
+   * markering alls.
+   */
   notTaken: boolean;
   /** Bokade som inte markerats närvarande. Bara när närvaron är tagen. */
   bookedNotPresent: number;
@@ -27,15 +31,23 @@ export type LessonComparison = {
   mismatch: boolean;
 };
 
-export function compareLesson(lesson: {
-  bookings: {
-    cancelled: boolean;
-    purchaseItem: {
-      purchase: { userId: string; participantId: string | null };
-    };
-  }[];
-  attendance: { studentKey: string; status: "PRESENT" | "ABSENT" }[];
-}): LessonComparison {
+/**
+ * @param enrolled Antalet elever i kursens elevlista (se enrolledCounts). En
+ *   kurs där eleverna lagts till för hand har inga bokningar, men närvaron
+ *   ska tas ändå.
+ */
+export function compareLesson(
+  lesson: {
+    bookings: {
+      cancelled: boolean;
+      purchaseItem: {
+        purchase: { userId: string; participantId: string | null };
+      };
+    }[];
+    attendance: { studentKey: string; status: "PRESENT" | "ABSENT" }[];
+  },
+  enrolled = 0,
+): LessonComparison {
   const active = lesson.bookings.filter((b) => !b.cancelled);
   const marks = new Map(lesson.attendance.map((m) => [m.studentKey, m.status]));
   const bookedKeys = new Set(
@@ -52,7 +64,7 @@ export function compareLesson(lesson: {
 
   return {
     taken,
-    notTaken: !taken && active.length > 0,
+    notTaken: !taken && (active.length > 0 || enrolled > 0),
     bookedNotPresent,
     presentNotBooked,
     mismatch: presentNotBooked > 0,
@@ -73,6 +85,20 @@ export const compareLessonInclude = {
   },
   attendance: { select: { studentKey: true, status: true } },
 } as const;
+
+/**
+ * Antalet elever i kursernas elevlistor, per kurs-id. En fråga för alla
+ * kurserna, för compareLesson.
+ */
+export async function enrolledCounts(
+  courseIds: string[],
+): Promise<Map<string, number>> {
+  if (courseIds.length === 0) return new Map();
+  const rosters = await collectRosters([...new Set(courseIds)]);
+  return new Map(
+    [...rosters].map(([courseId, students]) => [courseId, students.size]),
+  );
+}
 
 /**
  * Dagen närvaro togs första gången, i Stockholmstid. Lektioner före den

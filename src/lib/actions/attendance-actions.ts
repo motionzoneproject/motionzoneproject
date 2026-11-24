@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import type { AttendanceStatus } from "@/generated/prisma/enums";
 import {
   attendanceStartedAt,
   compareLesson,
   compareLessonInclude,
+  enrolledCounts,
 } from "@/lib/attendance-compare";
 import { studentKeyOf } from "@/lib/course-roster";
 import { collectRosters } from "@/lib/course-roster-data";
@@ -16,6 +18,7 @@ import {
   formatDateToInputStr,
   parseStockholmDateInput,
 } from "@/lib/date-utils";
+import { MY_ATTENDANCE_PAGE } from "@/lib/my-attendance-page";
 import {
   contactForParticipant,
   contactForUser,
@@ -35,6 +38,43 @@ import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
 type Result = { success: boolean; msg: string };
+
+// Server actions är publika endpoints, så argumenten valideras här och inte
+// bara i formulären. z.iso.date() underkänner även datum som inte finns,
+// som 2026-02-30.
+const dateInputSchema = z.iso.date();
+const idSchema = z.string().min(1).max(100);
+
+/** Kalendrarna visar högst sex veckor; lite marginal, men inte hela åren. */
+const MAX_RANGE_DAYS = 62;
+const dateRangeSchema = z
+  .object({ from: dateInputSchema, to: dateInputSchema })
+  .refine(
+    ({ from, to }) => {
+      const days = (Date.parse(to) - Date.parse(from)) / 86_400_000;
+      return days >= 0 && days <= MAX_RANGE_DAYS;
+    },
+    { message: `Högst ${MAX_RANGE_DAYS} dagar, och från före till.` },
+  );
+
+const marksSchema = z
+  .array(
+    z.object({
+      studentKey: z
+        .string()
+        .regex(/^(participant|user):\S+$/)
+        .max(200),
+      present: z.boolean(),
+      /**
+       * Sätts för en elev som inte bockats i och inte hade någon markering:
+       * "frånvarande" skrivs bara om ingen annan hunnit markera eleven.
+       */
+      onlyIfUnmarked: z.boolean().optional(),
+    }),
+  )
+  .max(1000);
+
+export type AttendanceMark = z.input<typeof marksSchema>[number];
 
 export type AttendanceStudent = {
   studentKey: string;
@@ -357,6 +397,12 @@ export async function getAttendanceDay(
   const session = await requireTeacherOrAdmin();
   if (!session) return [];
 
+  if (
+    !dateInputSchema.safeParse(dateInput).success ||
+    !idSchema.optional().safeParse(teacherId).success
+  )
+    return [];
+
   const scopedTeacherId =
     session.user.role === "teacher" ? session.user.id : teacherId;
 
@@ -385,7 +431,7 @@ export async function getAttendanceDay(
 /** Hur en dag ser ut i närvarokalendern. */
 export type AttendanceDayStatus = {
   /**
-   * Röd: en lektion som börjat har bokningar men ingen närvaro. Grön:
+   * Röd: en avslutad lektion har elever men ingen närvaro. Grön:
    * närvaron är tagen. Rött väger tyngst — det är det som behöver göras.
    */
   ring: "red" | "green" | null;
@@ -397,7 +443,7 @@ export type AttendanceDayStatus = {
  * Närvarons läge per dag för kalendern på närvarosidan.
  *
  * Samma jämförelse som översiktens "Stäm av närvaro". En lektion som inte
- * börjat ännu räknas inte som saknad — där finns ingen närvaro att ta — och
+ * är slut ännu räknas inte som saknad — närvaron kan fortfarande tas — och
  * inte heller en från innan närvaro togs första gången.
  *
  * @auth Admin eller lärare. En lärare ser bara sina egna lektioner.
@@ -410,8 +456,11 @@ export async function getAttendanceCalendar(
   const session = await requireTeacherOrAdmin();
   if (!session) return {};
 
-  const dateInput = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateInput.test(fromDate) || !dateInput.test(toDate)) return {};
+  if (
+    !dateRangeSchema.safeParse({ from: fromDate, to: toDate }).success ||
+    !idSchema.optional().safeParse(teacherId).success
+  )
+    return {};
 
   const scopedTeacherId =
     session.user.role === "teacher" ? session.user.id : teacherId;
@@ -432,11 +481,20 @@ export async function getAttendanceCalendar(
           }
         : {}),
     },
-    select: { startTime: true, ...compareLessonInclude },
+    select: {
+      startTime: true,
+      endTime: true,
+      courseId: true,
+      ...compareLessonInclude,
+    },
   });
 
   const now = Date.now();
-  const since = (await attendanceStartedAt())?.getTime() ?? null;
+  const [startedAt, enrolled] = await Promise.all([
+    attendanceStartedAt(),
+    enrolledCounts(lessons.map((l) => l.courseId)),
+  ]);
+  const since = startedAt?.getTime() ?? null;
   const days: Record<
     string,
     { missing: boolean; taken: boolean; mismatch: boolean }
@@ -446,10 +504,13 @@ export async function getAttendanceCalendar(
     const key = formatDateToInputStr(lesson.startTime);
     days[key] ??= { missing: false, taken: false, mismatch: false };
     const day = days[key];
-    const result = compareLesson(lesson);
+    const result = compareLesson(lesson, enrolled.get(lesson.courseId));
 
+    // Saknas först när lektionen är slut, som i översiktens uppföljning:
+    // under lektionen hinner läraren fortfarande ta närvaron.
     const start = lesson.startTime.getTime();
-    if (result.notTaken && start < now && since !== null && start >= since)
+    const ended = lesson.endTime.getTime() < now;
+    if (result.notTaken && ended && since !== null && start >= since)
       day.missing = true;
     if (result.taken) day.taken = true;
     if (result.mismatch) day.mismatch = true;
@@ -490,28 +551,42 @@ export async function getLessonAttendance(
 }
 
 /**
- * Sparar närvaron för en hel lektion i ett svep.
+ * Sparar närvaron för en lektion.
  *
  * Rör varken bokningar eller klipp. Att markera någon som närvarande är ett
  * konstaterande, inte ett köp — därför kan även en elev som lagts till i
  * kursen för hand bockas i, trots att hen inte har någon bokning.
  *
- * @auth Admin eller lektionens lärare
+ * Klienten skickar bara det som ändrats. En elev som inte bockats i och inte
+ * hade någon markering skickas med onlyIfUnmarked: tar två lärare närvaro
+ * samtidigt skriver den ena då inte över den andras "närvarande" med ett
+ * "frånvarande" bara för att eleven var omarkerad när sidan laddades.
+ *
+ * @auth Admin, lektionens lärare eller kursens lärare
  */
 export async function saveAttendance(
   lessonId: string,
-  marks: { studentKey: string; present: boolean }[],
+  marks: AttendanceMark[],
 ): Promise<Result> {
   const session = await requireTeacherOrAdmin();
   if (!session) return { success: false, msg: "Ingen behörighet." };
 
+  const parsedId = idSchema.safeParse(lessonId);
+  const parsedMarks = marksSchema.safeParse(marks);
+  if (!parsedId.success || !parsedMarks.success) {
+    return { success: false, msg: "Ogiltig närvaro." };
+  }
+
   const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
+    where: { id: parsedId.data },
     select: lessonSelect,
   });
   if (!lesson) return { success: false, msg: "Lektionen hittades inte." };
   if (!mayTakeAttendance(session, lesson)) {
     return { success: false, msg: "Det här är inte din lektion." };
+  }
+  if (lesson.cancelled) {
+    return { success: false, msg: "Lektionen är inställd." };
   }
 
   // Bara elever som står på lektionens lista får markeras, så en manipulerad
@@ -522,40 +597,60 @@ export async function saveAttendance(
       s,
     ]),
   );
-  const valid = marks.filter((mark) => allowed.has(mark.studentKey));
+  const valid = parsedMarks.data.filter((mark) => allowed.has(mark.studentKey));
   if (valid.length === 0) {
     return { success: false, msg: "Inga elever att spara närvaro för." };
   }
 
-  await prisma.$transaction(
-    valid.map((mark) => {
-      const student = allowed.get(mark.studentKey);
-      const status: AttendanceStatus = mark.present ? "PRESENT" : "ABSENT";
+  const row = (mark: (typeof valid)[number]) => {
+    const student = allowed.get(mark.studentKey);
+    return {
+      lessonId: lesson.id,
+      studentKey: mark.studentKey,
+      userId: student?.userId ?? null,
+      participantId: student?.participantId ?? null,
+      status: (mark.present ? "PRESENT" : "ABSENT") as AttendanceStatus,
+      markedByUserId: session.user.id,
+    };
+  };
+  const explicit = valid.filter((mark) => !mark.onlyIfUnmarked).map(row);
+  const defaults = valid.filter((mark) => mark.onlyIfUnmarked).map(row);
 
-      return prisma.attendance.upsert({
+  await prisma.$transaction([
+    ...explicit.map((data) =>
+      prisma.attendance.upsert({
         where: {
-          lessonId_studentKey: { lessonId, studentKey: mark.studentKey },
+          lessonId_studentKey: {
+            lessonId: data.lessonId,
+            studentKey: data.studentKey,
+          },
         },
-        update: { status, markedByUserId: session.user.id },
-        create: {
-          lessonId,
-          studentKey: mark.studentKey,
-          userId: student?.userId ?? null,
-          participantId: student?.participantId ?? null,
-          status,
-          markedByUserId: session.user.id,
-        },
-      });
-    }),
-  );
+        update: { status: data.status, markedByUserId: data.markedByUserId },
+        create: data,
+      }),
+    ),
+    // Finns redan en markering vinner den.
+    ...(defaults.length > 0
+      ? [prisma.attendance.createMany({ data: defaults, skipDuplicates: true })]
+      : []),
+  ]);
 
   revalidatePath("/admin/attendance");
   revalidatePath("/user");
 
-  const present = valid.filter((m) => m.present).length;
+  // Räknas på det som nu står i registret, inte på det som skickades — det
+  // är bara ändringarna.
+  const saved = await prisma.attendance.groupBy({
+    by: ["status"],
+    where: { lessonId: lesson.id },
+    _count: true,
+  });
+  const countOf = (status: AttendanceStatus) =>
+    saved.find((g) => g.status === status)?._count ?? 0;
+  const present = countOf("PRESENT");
   return {
     success: true,
-    msg: `Närvaron är sparad: ${present} av ${valid.length} närvarande.`,
+    msg: `Närvaron är sparad: ${present} av ${present + countOf("ABSENT")} närvarande.`,
   };
 }
 
@@ -754,8 +849,6 @@ export type MyAttendance = {
   status: AttendanceStatus;
 };
 
-const MY_ATTENDANCE_PAGE = 5;
-
 const myAttendanceSelect = {
   id: true,
   status: true,
@@ -780,8 +873,13 @@ const myAttendanceSelect = {
   },
 } satisfies Prisma.AttendanceSelect;
 
+/**
+ * Kundens och deltagarnas närvaro. Inställda lektioner räknas inte: en
+ * markering som gjorts innan lektionen ställdes in säger ingenting.
+ */
 function myAttendanceWhere(userId: string): Prisma.AttendanceWhereInput {
   return {
+    lesson: { cancelled: false },
     OR: [
       { userId },
       { participant: { userId } },
@@ -873,6 +971,9 @@ export async function getMyAttendanceInRange(
 ): Promise<MyAttendance[]> {
   const session = await getSessionData();
   if (!session) return [];
+
+  if (!dateRangeSchema.safeParse({ from: fromStr, to: toStr }).success)
+    return [];
 
   const userId = session.user.id;
   const marks = await prisma.attendance.findMany({
