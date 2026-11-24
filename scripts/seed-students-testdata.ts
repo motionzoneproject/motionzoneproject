@@ -52,6 +52,8 @@ const prisma = new PrismaClient({
 const P = "zztest-stu-";
 const id = (name: string) => `${P}${name}`;
 const DAY = 24 * 60 * 60 * 1000;
+/** Ett födelsedatum, midnatt svensk tid. */
+const birthDate = (ymd: string) => new Date(`${ymd}T00:00:00+01:00`);
 
 const ADMIN_ID = "zztest-admin-user";
 const ADMIN_EMAIL = "admin@zztest.example.invalid";
@@ -213,24 +215,27 @@ async function seed() {
       id: id("teacher"),
       name: "[TEST] Lina Lärare",
       email: "zztest-stu-teacher@example.invalid",
-      role: "user",
+      role: "teacher",
     },
   });
+  // Telefonnummer ur 070-174 06 05–99, som PTS reserverat för fiktiva nummer.
   const customers = [
-    ["anna", "[TEST] Anna Andersson"],
-    ["bo", "[TEST] Bo Bengtsson"],
-    ["cecilia", "[TEST] Cecilia Carlsson"],
-    ["david", "[TEST] David Dahl"],
-    ["eva", "[TEST] Eva Ek"],
-    ["manual", "[TEST] Maja Manuell"], // har inga köp, läggs bara till manuellt
+    ["anna", "[TEST] Anna Andersson", "070-174 06 05", "1984-03-12"],
+    ["bo", "[TEST] Bo Bengtsson", "070-174 06 06", "1979-08-30"],
+    ["cecilia", "[TEST] Cecilia Carlsson", "070-174 06 07", "1992-01-15"],
+    ["david", "[TEST] David Dahl", "070-174 06 08", "1988-11-02"],
+    ["eva", "[TEST] Eva Ek", null, "1995-06-20"], // saknar telefon
+    // har inga köp, läggs bara till manuellt
+    ["manual", "[TEST] Maja Manuell", "070-174 06 09", "1986-04-04"],
   ] as const;
-  for (const [k, name] of customers) {
+  for (const [k, name, phoneNumber, dob] of customers) {
     await prisma.user.create({
       data: {
         id: id(k),
         name,
         email: `zztest-stu-${k}@example.invalid`,
         role: "user",
+        details: { create: { phoneNumber, dateOfBirth: birthDate(dob) } },
       },
     });
   }
@@ -241,6 +246,12 @@ async function seed() {
       email: STUDENT_EMAIL,
       emailVerified: true,
       role: "user",
+      details: {
+        create: {
+          phoneNumber: "070-174 06 10",
+          dateOfBirth: birthDate("2000-09-09"),
+        },
+      },
       accounts: {
         create: {
           id: `${STUDENT_ID}-account`,
@@ -253,18 +264,28 @@ async function seed() {
   });
 
   // Deltagare (barn m.fl.) som kunderna lagt till.
+  // Alla barn utom Algot får förälderns nummer; Algot har en egen mobil men
+  // ingen egen mejl, så hans rad visar både egna och kundens uppgifter.
   const participants = [
-    ["anna-kid1", "[TEST] Alma Andersson", "anna"],
-    ["anna-kid2", "[TEST] Algot Andersson", "anna"],
-    ["bo-kid", "[TEST] Bea Bengtsson", "bo"],
-    ["stina-kid", "[TEST] Sixten Student", "student"],
-    ["manual-kid", "[TEST] Mio Manuell", "manual"],
+    ["anna-kid1", "[TEST] Alma Andersson", "anna", null, "2014-02-10"],
+    [
+      "anna-kid2",
+      "[TEST] Algot Andersson",
+      "anna",
+      "070-174 06 11",
+      "2017-12-01",
+    ],
+    ["bo-kid", "[TEST] Bea Bengtsson", "bo", null, "2012-07-07"],
+    ["stina-kid", "[TEST] Sixten Student", "student", null, "2019-03-03"],
+    ["manual-kid", "[TEST] Mio Manuell", "manual", null, "2015-10-24"],
   ] as const;
-  for (const [k, name, owner] of participants) {
+  for (const [k, name, owner, phone, dob] of participants) {
     await prisma.participant.create({
       data: {
         id: id(k),
         name,
+        phone,
+        dateOfBirth: birthDate(dob),
         addedByUserId: owner === "student" ? STUDENT_ID : id(owner),
       },
     });

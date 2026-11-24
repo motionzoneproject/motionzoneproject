@@ -71,9 +71,9 @@ async function seed(email: string) {
   await prisma.user.create({
     data: {
       id: id("teacher"),
-      name: "[TEST] Lina Lärare",
+      name: "[TEST] Lars Lärare",
       email: "zztest-att-teacher@example.invalid",
-      role: "user",
+      role: "teacher",
     },
   });
 
