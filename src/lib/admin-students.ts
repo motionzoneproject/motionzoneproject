@@ -561,10 +561,76 @@ async function applyRosters(
     query: string;
   },
 ): Promise<StudentSummary[]> {
-  const rosters = await collectRosters(allCourses.map((c) => c.id));
+  const teacherCourseIds = new Set(
+    allCourses.filter((c) => c.teacherId === filters.teacher).map((c) => c.id),
+  );
+  const inScope = (courseId: string) =>
+    (!filters.course || courseId === filters.course) &&
+    (!filters.teacher || teacherCourseIds.has(courseId));
+
+  // Bara kurserna som behövs, inte alla som någonsin funnits. En elev står
+  // bara i en kurs där hen har ett köp, en väntande order eller ett manuellt
+  // tillägg, så de listade elevernas sådana kurser räcker — plus de
+  // filtrerade kurserna, där tillägg utan köp ska hittas. Köpen hämtas på
+  // nytt här: sammanfattningarna har bara köpen som matchar filtret, och
+  // kurskolumnen ska visa alla elevens kurser.
+  const listedParticipantIds = students.flatMap((s) =>
+    s.participantId ? [s.participantId] : [],
+  );
+  const listedUserIds = students.flatMap((s) =>
+    s.participantId ? [] : [s.userId],
+  );
+  const [itemCourses, pendingCourses, manuallyAdded] = await Promise.all([
+    prisma.purchaseItem.findMany({
+      where: {
+        purchase: {
+          OR: [
+            { participantId: { in: listedParticipantIds } },
+            { userId: { in: listedUserIds }, participantId: null },
+          ],
+        },
+      },
+      select: { courseId: true },
+      distinct: ["courseId"],
+    }),
+    prisma.orderItem.findMany({
+      where: {
+        order: { status: "AWAITING_APPROVAL" },
+        OR: [
+          { participantId: { in: listedParticipantIds } },
+          { participantId: null, order: { userId: { in: listedUserIds } } },
+        ],
+      },
+      select: {
+        courseSelections: { select: { courseId: true } },
+        product: { select: { courses: { select: { courseId: true } } } },
+      },
+    }),
+    prisma.courseRosterEntry.findMany({
+      where: { status: "ADDED" },
+      select: { courseId: true },
+      distinct: ["courseId"],
+    }),
+  ]);
+
+  const needed = new Set([
+    ...itemCourses.map((i) => i.courseId),
+    ...pendingCourses.flatMap((o) => [
+      ...o.courseSelections.map((c) => c.courseId),
+      ...o.product.courses.map((c) => c.courseId),
+    ]),
+    ...manuallyAdded.map((e) => e.courseId),
+  ]);
+  if (filters.course || filters.teacher) {
+    for (const course of allCourses)
+      if (inScope(course.id)) needed.add(course.id);
+  }
+  const courses = allCourses.filter((c) => needed.has(c.id));
+
+  const rosters = await collectRosters(courses.map((c) => c.id));
 
   const coursesByStudent = new Map<string, { id: string; name: string }[]>();
-  for (const course of allCourses) {
+  for (const course of courses) {
     for (const studentKey of rosters.get(course.id)?.keys() ?? []) {
       const list = coursesByStudent.get(studentKey) ?? [];
       list.push({ id: course.id, name: getCourseName(course) });
@@ -581,13 +647,6 @@ async function applyRosters(
   }
 
   if (!filters.course && !filters.teacher) return students;
-
-  const teacherCourseIds = new Set(
-    allCourses.filter((c) => c.teacherId === filters.teacher).map((c) => c.id),
-  );
-  const inScope = (courseId: string) =>
-    (!filters.course || courseId === filters.course) &&
-    (!filters.teacher || teacherCourseIds.has(courseId));
 
   const result = students.filter((s) => s.courses.some((c) => inScope(c.id)));
 
@@ -608,7 +667,7 @@ async function applyRosters(
 
   const listed = new Set(result.map((s) => s.studentKey));
   const missingKeys = new Set<string>();
-  for (const course of allCourses) {
+  for (const course of courses) {
     if (!inScope(course.id)) continue;
     if (terminCourseIds && !terminCourseIds.has(course.id)) continue;
     for (const student of rosters.get(course.id)?.values() ?? []) {
