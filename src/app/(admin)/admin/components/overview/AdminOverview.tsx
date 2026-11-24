@@ -6,6 +6,7 @@ import type { AdminOverview as AdminOverviewData } from "@/lib/admin-overview";
 import { formatLongFriendlyDate } from "@/lib/date-utils";
 import { formatPrice } from "@/lib/money";
 import { LessonCarousel } from "../LessonCarousel";
+import { AttendanceFollowUp } from "./AttendanceFollowUp";
 import { CancelledAhead } from "./CancelledAhead";
 import { HealthChecks } from "./HealthChecks";
 import { StatTile } from "./StatTile";
@@ -127,6 +128,8 @@ export function AdminOverview({
           Till alla lektioner
         </Link>
       </section>
+
+      <AttendanceFollowUp items={data.followUp} showTeacher />
 
       <CancelledAhead lessons={data.cancelledAhead} showTeacher />
 

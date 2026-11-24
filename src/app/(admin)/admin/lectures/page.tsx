@@ -135,6 +135,7 @@ export default async function LecturePage({ searchParams }: Props) {
     orderBy: { startTime: "asc" },
     skip,
     take: ITEMS_PER_PAGE,
+    include: { _count: { select: { bookings: true } } },
   });
 
   const lang = sp.lang === "en" ? "en" : "sv";
@@ -175,6 +176,7 @@ export default async function LecturePage({ searchParams }: Props) {
                   <TableHead>Kurs</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Närvaro</TableHead>
+                  <TableHead>Bokningar</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
               </TableHeader>

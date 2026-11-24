@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { AttendanceStatus } from "@/generated/prisma/enums";
 import {
   addUserInLesson,
   type BookingWithUserAndParticipant,
@@ -49,6 +50,10 @@ interface Props {
   lessonId: string;
   studentsAndPurchases: StudentWithPurchaseItemsWithCourse[];
   bookings: BookingWithUserAndParticipant[];
+  attendanceTaken: boolean;
+  statusOf: (b: BookingWithUserAndParticipant) => AttendanceStatus | null;
+  /** Körs efter en ändring, så att dialogen kan hämta om sin data. */
+  onChanged?: () => void;
 }
 
 const formSchema = AddStudentToLessonForm;
@@ -62,6 +67,9 @@ export function AttendenceForm({
   lessonId,
   bookings,
   studentsAndPurchases,
+  attendanceTaken,
+  statusOf,
+  onChanged,
 }: Props) {
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
@@ -85,6 +93,7 @@ export function AttendenceForm({
     const res = await addUserInLesson(values);
     if (res.success) {
       toast.success(res.msg);
+      onChanged?.();
       router.refresh();
     } else {
       toast.error(res.msg);
@@ -233,6 +242,8 @@ export function AttendenceForm({
           purchaseItem={b.purchaseItem}
           user={b.user}
           product={b.purchaseItem.purchase.product}
+          attendance={attendanceTaken ? statusOf(b) : undefined}
+          onChanged={onChanged}
         />
       ))}
     </div>

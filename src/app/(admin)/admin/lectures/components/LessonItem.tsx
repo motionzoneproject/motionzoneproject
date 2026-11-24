@@ -3,6 +3,7 @@ import type { Lesson } from "@/generated/prisma/client";
 import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
 import { formatDateToInputStr } from "@/lib/date-utils";
 import { dbToFormTime } from "@/lib/time-convert";
+import { AttendanceDialog } from "../../attendance/components/AttendanceDialog";
 import { AttendeDialog } from "./attendence/AttendenceDialog";
 import { EditLessonBtn } from "./EditLesson";
 
@@ -10,7 +11,7 @@ export async function LessonItem({
   lesson,
   lang = "sv",
 }: {
-  lesson: Lesson;
+  lesson: Lesson & { _count: { bookings: number } };
   lang: "sv" | "en";
 }) {
   const courseName = await getFullCourseNameFromId(lesson.courseId, lang);
@@ -30,7 +31,10 @@ export async function LessonItem({
         {lesson.cancelled && <div className="text-red-500">Inställd.</div>}
       </TableCell>
       <TableCell>
-        <AttendeDialog lesson={lesson} />
+        <AttendanceDialog lessonId={lesson.id} />
+      </TableCell>
+      <TableCell>
+        <AttendeDialog lesson={lesson} bookingCount={lesson._count.bookings} />
       </TableCell>
       <TableCell className="text-right">
         <EditLessonBtn lesson={lesson} />

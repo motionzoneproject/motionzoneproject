@@ -203,7 +203,7 @@ export default function StudentsFilter({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj lärare" />
+            <SelectValue placeholder="Välj kurs" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -235,7 +235,7 @@ export default function StudentsFilter({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Välj lärare" />
+            <SelectValue placeholder="Välj produkt" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

@@ -1,5 +1,5 @@
-import { TZDate } from "@date-fns/tz";
-import { differenceInYears, format, isValid } from "date-fns";
+import { TZDate, tz } from "@date-fns/tz";
+import { addDays, differenceInYears, format, isValid } from "date-fns";
 import { enGB, type Locale, sv } from "date-fns/locale";
 import { stockholmLocalToDate } from "./time-convert";
 
@@ -95,15 +95,23 @@ export function parseStockholmDateInput(dateInput: string): Date {
   return stockholmLocalToDate(dateInput);
 }
 
+/**
+ * Flyttar ett datum ("yyyy-MM-dd") ett antal kalenderdagar.
+ *
+ * `in: tz(...)` får date-fns att räkna i svensk tid. Utan det räknar addDays
+ * i serverns tidszon, och på en server i UTC blev det fel en timme kring
+ * sommartidsbytet — midnatt svensk tid hamnade då på fel dag.
+ */
+export function shiftDateInput(dateInput: string, days: number): string {
+  return formatDateToInputStr(
+    addDays(parseStockholmDateInput(dateInput), days, {
+      in: tz(STOCKHOLM_TIME_ZONE),
+    }),
+  );
+}
+
 export function endOfStockholmDateInput(dateInput: string): Date {
-  // Nästa kalenderdag räknas på datumet, inte genom att lägga till 24
-  // timmar: dagarna då sommartiden börjar och slutar är 23 och 25 timmar.
-  // addDays på ett vanligt Date räknade i serverns tidszon och blev fel en
-  // timme på de dagarna när servern inte gick på svensk tid.
-  const [y, m, d] = dateInput.split("-").map(Number);
-  const nextDay = new Date(Date.UTC(y, m - 1, d + 1))
-    .toISOString()
-    .slice(0, 10);
+  const nextDay = shiftDateInput(dateInput, 1);
   return new Date(parseStockholmDateInput(nextDay).getTime() - 1);
 }
 

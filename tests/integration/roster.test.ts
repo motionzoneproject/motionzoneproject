@@ -331,6 +331,45 @@ describe("removeStudentFromCourse", () => {
     expect(keysOf(await getCourseRoster(course.id))).toEqual([]);
   });
 
+  it("kunden och barnet tillagda för hand: att ta bort kunden rör inte barnet", async () => {
+    const course = await createCourse({ teacher });
+    const parent = await createUser();
+    const child = await createParticipant(parent);
+
+    asTeacher(teacher);
+    await addStudentToCourse(course.id, userKey(parent));
+    await addStudentToCourse(course.id, participantKey(child));
+    // Elevlistan i admin/students är bara för admin.
+    expect((await getCourseRoster(course.id))?.showStudentList).toBe(false);
+
+    await removeStudentFromCourse(course.id, userKey(parent));
+    expect((await rosterEntry(course.id, participantKey(child)))?.status).toBe(
+      "ADDED",
+    );
+    expect(keysOf(await getCourseRoster(course.id))).toEqual([
+      participantKey(child),
+    ]);
+  });
+
+  it("barnets väntande beställning står kvar när kunden tas bort", async () => {
+    const course = await createCourse({ teacher, future: 3 });
+    const product = await createProduct({
+      type: "COURSE",
+      courses: [course],
+      autobook: true,
+    });
+    const parent = await createUser();
+    const child = await createParticipant(parent);
+    await buy({ admin, buyer: parent, product });
+    await placeOrder({ buyer: parent, product, participant: child });
+
+    asAdmin(admin);
+    await removeStudentFromCourse(course.id, userKey(parent));
+    const roster = await getCourseRoster(course.id);
+    expect(keysOf(roster)).toEqual([participantKey(child)]);
+    expect(roster?.students[0].pending).toBe(true);
+  });
+
   it("en manuellt tillagd elev utan köp: tillägget tas bort", async () => {
     const course = await createCourse({ teacher });
     const student = await createUser();
@@ -444,10 +483,14 @@ describe("addStudentToCourse", () => {
     expect(roster?.students).toEqual([
       {
         studentKey: participantKey(child),
+        userId: null,
+        participantId: child.id,
         name: "Provare",
         customerName: "Kunden",
         products: [],
         bookings: 0,
+        // Inget köp, alltså inget saldo att visa.
+        remaining: null,
         addedManually: true,
         pending: false,
       },
