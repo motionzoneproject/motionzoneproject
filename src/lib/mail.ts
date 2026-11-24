@@ -193,7 +193,7 @@ export async function generateOrderApprovedHtml(order: OrderForEmail) {
       <h2 style="color: #4CAF50; text-align: center;">Din plats är beviljad! 🎉</h2>
       <p>Hej ${order.user.name || "Kund"},</p>
       <p>Goda nyheter! Du har fått en plats beviljad för order <strong>#${order.id}</strong>. Vi ser fram emot att välkomna dig!</p>
-      <p>Faktura skickas ut till dig <strong>ca 2 veckor efter första lektionen</strong>.</p>
+      <p>Faktura skickas ut till dig <strong>ca 2 veckor efter kursstart</strong>.</p>
       <p>Logga in på webbsidan med kontot ${order.user.email} för att se dina detaljer och hantera dina bokningar.</p>
       <p><strong>Varmt välkommen! 🕺💃</strong></p>
 
