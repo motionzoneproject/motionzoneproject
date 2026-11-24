@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCheck, Users } from "lucide-react";
+import { CheckCheck, Mail, Phone, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   type AttendanceStudent,
   saveAttendance,
 } from "@/lib/actions/attendance-actions";
+import type { StudentContact } from "@/lib/student-contact";
 import { CourseRosterDialog } from "../../components/CourseRosterDialog";
 
 /**
@@ -24,6 +25,51 @@ function studentDetails(student: AttendanceStudent): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/**
+ * Telefon och mejl, så att läraren kan ringa en förälder direkt från listan.
+ *
+ * Länkarna ligger i radens label, men en länk är interaktiv och ändrar
+ * därför inte kryssrutan när man trycker på den.
+ */
+function StudentContactLinks({ contact }: { contact: StudentContact }) {
+  if (!contact.phone && !contact.email) {
+    return (
+      <span className="block text-xs text-muted-foreground">
+        Inga kontaktuppgifter
+      </span>
+    );
+  }
+
+  return (
+    <span className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      {contact.phone && (
+        <a
+          href={`tel:${contact.phone.value.replace(/[^\d+]/g, "")}`}
+          className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+        >
+          <Phone className="h-3.5 w-3.5" />
+          {contact.phone.value}
+          {contact.phone.viaCustomer && <CustomerTag />}
+        </a>
+      )}
+      {contact.email && (
+        <a
+          href={`mailto:${contact.email.value}`}
+          className="inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{contact.email.value}</span>
+          {contact.email.viaCustomer && <CustomerTag />}
+        </a>
+      )}
+    </span>
+  );
+}
+
+function CustomerTag() {
+  return <span className="text-xs text-muted-foreground">(kundens)</span>;
 }
 
 /**
@@ -155,6 +201,7 @@ export function LessonAttendance({
                     <span className="block text-xs text-muted-foreground">
                       {studentDetails(student)}
                     </span>
+                    <StudentContactLinks contact={student.contact} />
                   </span>
                   {student.pending && (
                     <span className="shrink-0 rounded-full border border-amber-500/50 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">

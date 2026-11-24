@@ -15,6 +15,12 @@ import {
   formatDateToInputStr,
   parseStockholmDateInput,
 } from "@/lib/date-utils";
+import {
+  contactForParticipant,
+  contactForUser,
+  NO_CONTACT,
+  type StudentContact,
+} from "@/lib/student-contact";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
@@ -41,8 +47,16 @@ export type AttendanceStudent = {
    * bort från kursen efteråt.
    */
   inCourse: boolean;
+  /**
+   * Vem läraren ringer eller mejlar om eleven. För ett barn är det oftast
+   * förälderns uppgifter, och då är `viaCustomer` satt.
+   */
+  contact: StudentContact;
   status: AttendanceStatus | null;
 };
+
+/** Eleven utan kontaktuppgifter, som saveAttendance behöver. */
+type RosterAttendanceStudent = Omit<AttendanceStudent, "contact">;
 
 export type AttendanceLesson = {
   lessonId: string;
@@ -112,7 +126,7 @@ function mayTakeAttendance(
 async function lessonStudents(lesson: {
   id: string;
   courseId: string;
-}): Promise<AttendanceStudent[]> {
+}): Promise<RosterAttendanceStudent[]> {
   const [roster, marks, bookings] = await Promise.all([
     loadCourseRoster(lesson.courseId),
     prisma.attendance.findMany({
@@ -144,7 +158,7 @@ async function lessonStudents(lesson: {
     bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
   );
   const statusByKey = new Map(marks.map((m) => [m.studentKey, m.status]));
-  const students = new Map<string, AttendanceStudent>();
+  const students = new Map<string, RosterAttendanceStudent>();
 
   for (const s of roster?.students ?? []) {
     students.set(s.studentKey, {
@@ -186,6 +200,71 @@ async function lessonStudents(lesson: {
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
+const accountContactSelect = {
+  email: true,
+  details: { select: { phoneNumber: true } },
+} as const;
+
+/**
+ * Lägger till kontaktuppgifter på elevlistan, med två frågor oavsett hur
+ * många elever det är.
+ *
+ * Hålls utanför lessonStudents, eftersom saveAttendance bara behöver veta
+ * vilka som står på listan.
+ */
+async function withContacts(
+  students: RosterAttendanceStudent[],
+): Promise<AttendanceStudent[]> {
+  const participantIds = students.flatMap((s) =>
+    s.participantId ? [s.participantId] : [],
+  );
+  const userIds = students.flatMap((s) =>
+    !s.participantId && s.userId ? [s.userId] : [],
+  );
+
+  const [participants, users] = await Promise.all([
+    participantIds.length
+      ? prisma.participant.findMany({
+          where: { id: { in: participantIds } },
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            user: { select: accountContactSelect },
+            addedBy: { select: accountContactSelect },
+          },
+        })
+      : [],
+    userIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, ...accountContactSelect },
+        })
+      : [],
+  ]);
+
+  const participantById = new Map(participants.map((p) => [p.id, p]));
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  return students.map((s) => {
+    // En deltagare har sina egna uppgifter. userId är då köparens konto, så
+    // det används bara för den som själv är eleven.
+    const participant = s.participantId
+      ? participantById.get(s.participantId)
+      : undefined;
+    const user =
+      !s.participantId && s.userId ? userById.get(s.userId) : undefined;
+
+    const contact = participant
+      ? contactForParticipant(participant)
+      : user
+        ? contactForUser(user)
+        : NO_CONTACT;
+
+    return { ...s, contact };
+  });
+}
+
 async function toAttendanceLesson(lesson: {
   id: string;
   courseId: string;
@@ -207,7 +286,7 @@ async function toAttendanceLesson(lesson: {
     endTime: lesson.endTime,
     cancelled: lesson.cancelled,
     message: lesson.message,
-    students: await lessonStudents(lesson),
+    students: await withContacts(await lessonStudents(lesson)),
   };
 }
 
