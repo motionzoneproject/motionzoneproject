@@ -9,7 +9,7 @@ import {
   compareLessonInclude,
 } from "@/lib/attendance-compare";
 import { studentKeyOf } from "@/lib/course-roster";
-import { loadCourseRoster } from "@/lib/course-roster-data";
+import { collectRosters } from "@/lib/course-roster-data";
 import {
   calculateAge,
   endOfStockholmDateInput,
@@ -25,6 +25,12 @@ import {
 } from "@/lib/student-contact";
 import { getCourseName } from "@/lib/tools";
 import prisma from "../prisma";
+import {
+  type BookingWithUserAndParticipant,
+  getBookings,
+  getUsersWithPurchasedProductsWithCourseInIt,
+  type StudentWithPurchaseItemsWithCourse,
+} from "./admin";
 import { calcRemainingCount, hasRemainingCount } from "./purchase-helpers";
 import { getSessionData } from "./sessiondata";
 
@@ -72,6 +78,8 @@ export type AttendanceLesson = {
   endTime: Date;
   cancelled: boolean;
   message: string | null;
+  /** Alla bokningar på lektionen, för knappen till bokningsdialogen. */
+  bookingCount: number;
   students: AttendanceStudent[];
 };
 
@@ -95,7 +103,10 @@ const lessonSelect = {
   },
   teacher: { select: { name: true } },
   schemaItem: { select: { studio: { select: { name: true } } } },
+  _count: { select: { bookings: true } },
 } as const;
+
+type LessonRow = Prisma.LessonGetPayload<{ select: typeof lessonSelect }>;
 
 async function requireTeacherOrAdmin() {
   const session = await getSessionData();
@@ -119,23 +130,29 @@ function mayTakeAttendance(
 }
 
 /**
- * Elevlistan för en lektion.
+ * Elevlistorna för en eller flera lektioner, per lektions-id.
  *
  * Kursens elever — samma lista som "Hantera elever" och elevlistan filtrerad
  * på kursen. Bokningarna spelar ingen roll här: närvaron är ett eget register.
  * Utöver kursens elever står den med som redan har en markering på
  * lektionen, så att en elev som tagits bort från kursen efteråt inte
  * försvinner ur de lektioner hen faktiskt gick.
+ *
+ * Tre frågor oavsett hur många lektioner det är, så att en hel dag inte
+ * kostar frågor per lektion.
  */
-async function lessonStudents(lesson: {
-  id: string;
-  courseId: string;
-}): Promise<RosterAttendanceStudent[]> {
-  const [roster, marks, bookings] = await Promise.all([
-    loadCourseRoster(lesson.courseId),
+async function lessonStudents(
+  lessons: { id: string; courseId: string }[],
+): Promise<Map<string, RosterAttendanceStudent[]>> {
+  if (lessons.length === 0) return new Map();
+  const lessonIds = lessons.map((l) => l.id);
+
+  const [rosters, marks, bookings] = await Promise.all([
+    collectRosters([...new Set(lessons.map((l) => l.courseId))]),
     prisma.attendance.findMany({
-      where: { lessonId: lesson.id },
+      where: { lessonId: { in: lessonIds } },
       select: {
+        lessonId: true,
         studentKey: true,
         status: true,
         userId: true,
@@ -147,8 +164,9 @@ async function lessonStudents(lesson: {
       },
     }),
     prisma.booking.findMany({
-      where: { lessonId: lesson.id, cancelled: false },
+      where: { lessonId: { in: lessonIds }, cancelled: false },
       select: {
+        lessonId: true,
         purchaseItem: {
           select: {
             purchase: { select: { userId: true, participantId: true } },
@@ -158,50 +176,62 @@ async function lessonStudents(lesson: {
     }),
   ]);
 
-  const bookedKeys = new Set(
-    bookings.map((b) => studentKeyOf(b.purchaseItem.purchase)),
-  );
-  const statusByKey = new Map(marks.map((m) => [m.studentKey, m.status]));
-  const students = new Map<string, RosterAttendanceStudent>();
+  const result = new Map<string, RosterAttendanceStudent[]>();
+  for (const lesson of lessons) {
+    const lessonMarks = marks.filter((m) => m.lessonId === lesson.id);
+    const bookedKeys = new Set(
+      bookings
+        .filter((b) => b.lessonId === lesson.id)
+        .map((b) => studentKeyOf(b.purchaseItem.purchase)),
+    );
+    const statusByKey = new Map(
+      lessonMarks.map((m) => [m.studentKey, m.status]),
+    );
+    const students = new Map<string, RosterAttendanceStudent>();
 
-  for (const s of roster?.students ?? []) {
-    students.set(s.studentKey, {
-      studentKey: s.studentKey,
-      userId: s.userId,
-      participantId: s.participantId,
-      name: s.name,
-      customerName: s.customerName,
-      booked: false,
-      pending: s.pending,
-      inCourse: true,
-      status: null,
-    });
+    for (const s of rosters.get(lesson.courseId)?.values() ?? []) {
+      students.set(s.studentKey, {
+        studentKey: s.studentKey,
+        userId: s.userId,
+        participantId: s.participantId,
+        name: s.name,
+        customerName: s.customerName,
+        booked: false,
+        pending: s.pending,
+        inCourse: true,
+        status: null,
+      });
+    }
+
+    for (const mark of lessonMarks) {
+      if (students.has(mark.studentKey)) continue;
+      const name = mark.participant?.name ?? mark.user?.name;
+      if (!name) continue;
+      students.set(mark.studentKey, {
+        studentKey: mark.studentKey,
+        userId: mark.userId,
+        participantId: mark.participantId,
+        name,
+        customerName: mark.participant?.addedBy.name ?? null,
+        booked: false,
+        pending: false,
+        inCourse: false,
+        status: null,
+      });
+    }
+
+    result.set(
+      lesson.id,
+      [...students.values()]
+        .map((s) => ({
+          ...s,
+          booked: bookedKeys.has(s.studentKey),
+          status: statusByKey.get(s.studentKey) ?? null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, "sv")),
+    );
   }
-
-  for (const mark of marks) {
-    if (students.has(mark.studentKey)) continue;
-    const name = mark.participant?.name ?? mark.user?.name;
-    if (!name) continue;
-    students.set(mark.studentKey, {
-      studentKey: mark.studentKey,
-      userId: mark.userId,
-      participantId: mark.participantId,
-      name,
-      customerName: mark.participant?.addedBy.name ?? null,
-      booked: false,
-      pending: false,
-      inCourse: false,
-      status: null,
-    });
-  }
-
-  return [...students.values()]
-    .map((s) => ({
-      ...s,
-      booked: bookedKeys.has(s.studentKey),
-      status: statusByKey.get(s.studentKey) ?? null,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  return result;
 }
 
 const accountContactSelect = {
@@ -216,8 +246,9 @@ const ownAccountSelect = {
 } as const;
 
 /**
- * Lägger till kontaktuppgifter och ålder på elevlistan, med två frågor
- * oavsett hur många elever det är.
+ * Hämtar kontaktuppgifter och ålder för eleverna, med två frågor oavsett hur
+ * många elever och lektioner det är, och ger en funktion som lägger till dem
+ * på en elev. Samma elev kan stå på flera lektioner; hen hämtas en gång.
  *
  * Kontohavaren (addedBy) hämtas utan födelsedatum, så att en förälders ålder
  * inte kan hamna på barnet ens av misstag.
@@ -225,15 +256,19 @@ const ownAccountSelect = {
  * Hålls utanför lessonStudents, eftersom saveAttendance bara behöver veta
  * vilka som står på listan.
  */
-async function withContactAndAge(
+async function contactAndAge(
   students: RosterAttendanceStudent[],
-): Promise<AttendanceStudent[]> {
-  const participantIds = students.flatMap((s) =>
-    s.participantId ? [s.participantId] : [],
-  );
-  const userIds = students.flatMap((s) =>
-    !s.participantId && s.userId ? [s.userId] : [],
-  );
+): Promise<(student: RosterAttendanceStudent) => AttendanceStudent> {
+  const participantIds = [
+    ...new Set(
+      students.flatMap((s) => (s.participantId ? [s.participantId] : [])),
+    ),
+  ];
+  const userIds = [
+    ...new Set(
+      students.flatMap((s) => (!s.participantId && s.userId ? [s.userId] : [])),
+    ),
+  ];
 
   const [participants, users] = await Promise.all([
     participantIds.length
@@ -260,7 +295,7 @@ async function withContactAndAge(
   const participantById = new Map(participants.map((p) => [p.id, p]));
   const userById = new Map(users.map((u) => [u.id, u]));
 
-  return students.map((s) => {
+  return (s) => {
     // En deltagare har sina egna uppgifter. userId är då köparens konto, så
     // det används bara för den som själv är eleven.
     const participant = s.participantId
@@ -280,21 +315,19 @@ async function withContactAndAge(
       : (user?.details?.dateOfBirth ?? null);
 
     return { ...s, contact, age: calculateAge(dateOfBirth) };
-  });
+  };
 }
 
-async function toAttendanceLesson(lesson: {
-  id: string;
-  courseId: string;
-  startTime: Date;
-  endTime: Date;
-  cancelled: boolean;
-  message: string | null;
-  course: Parameters<typeof getCourseName>[0];
-  teacher: { name: string };
-  schemaItem: { studio: { name: string } | null };
-}): Promise<AttendanceLesson> {
-  return {
+/** Lektionerna med elevlistor, kontaktuppgifter och ålder. */
+async function toAttendanceLessons(
+  lessons: LessonRow[],
+): Promise<AttendanceLesson[]> {
+  const studentsByLesson = await lessonStudents(lessons);
+  const withContact = await contactAndAge(
+    [...studentsByLesson.values()].flat(),
+  );
+
+  return lessons.map((lesson) => ({
     lessonId: lesson.id,
     courseId: lesson.courseId,
     courseName: getCourseName(lesson.course),
@@ -304,8 +337,9 @@ async function toAttendanceLesson(lesson: {
     endTime: lesson.endTime,
     cancelled: lesson.cancelled,
     message: lesson.message,
-    students: await withContactAndAge(await lessonStudents(lesson)),
-  };
+    bookingCount: lesson._count.bookings,
+    students: (studentsByLesson.get(lesson.id) ?? []).map(withContact),
+  }));
 }
 
 /**
@@ -345,7 +379,7 @@ export async function getAttendanceDay(
     select: lessonSelect,
   });
 
-  return Promise.all(lessons.map(toAttendanceLesson));
+  return toAttendanceLessons(lessons);
 }
 
 /** Hur en dag ser ut i närvarokalendern. */
@@ -452,7 +486,7 @@ export async function getLessonAttendance(
   });
   if (!lesson || !mayTakeAttendance(session, lesson)) return null;
 
-  return toAttendanceLesson(lesson);
+  return (await toAttendanceLessons([lesson]))[0] ?? null;
 }
 
 /**
@@ -483,7 +517,10 @@ export async function saveAttendance(
   // Bara elever som står på lektionens lista får markeras, så en manipulerad
   // nyckel inte kan skapa närvaro för vem som helst.
   const allowed = new Map(
-    (await lessonStudents(lesson)).map((s) => [s.studentKey, s]),
+    ((await lessonStudents([lesson])).get(lesson.id) ?? []).map((s) => [
+      s.studentKey,
+      s,
+    ]),
   );
   const valid = marks.filter((mark) => allowed.has(mark.studentKey));
   if (valid.length === 0) {
@@ -655,6 +692,54 @@ export async function getBookingAttendance(
       marks.map((m) => [m.studentKey, m.status]),
     ),
     presentWithoutBooking,
+  };
+}
+
+export type LessonBookings = {
+  courseName: string;
+  studentsAndPurchases: StudentWithPurchaseItemsWithCourse[];
+  bookings: BookingWithUserAndParticipant[];
+  attendance: BookingAttendance;
+};
+
+/**
+ * Allt bokningsdialogen visar, hämtat när den öppnas.
+ *
+ * Dialogen står på varje lektion i karusellen, uppföljningen och listorna.
+ * Hämtades datan när sidan renderades kostade det fyra frågor per lektion,
+ * också för de dialoger som aldrig öppnades.
+ *
+ * Varje del kontrollerar dessutom behörigheten själv, som tidigare.
+ *
+ * @auth Admin, lektionens lärare eller kursens lärare
+ */
+export async function getLessonBookings(
+  lessonId: string,
+): Promise<LessonBookings | null> {
+  const session = await requireTeacherOrAdmin();
+  if (!session) return null;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      courseId: true,
+      teacherId: true,
+      course: { select: lessonSelect.course.select },
+    },
+  });
+  if (!lesson || !mayTakeAttendance(session, lesson)) return null;
+
+  const [studentsAndPurchases, bookings, attendance] = await Promise.all([
+    getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId),
+    getBookings(lessonId),
+    getBookingAttendance(lessonId),
+  ]);
+
+  return {
+    courseName: getCourseName(lesson.course),
+    studentsAndPurchases,
+    bookings,
+    attendance,
   };
 }
 

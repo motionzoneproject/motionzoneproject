@@ -1,6 +1,5 @@
 import { ClipboardList } from "lucide-react";
 import Link from "next/link";
-import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import type { AttendanceFollowUp as FollowUp } from "@/lib/admin-overview";
 import {
@@ -51,11 +50,7 @@ export function AttendanceFollowUp({
         </p>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-        }
-      >
+      <div className="space-y-3">
         <FollowUpList
           items={items.slice(0, VISIBLE)}
           showTeacher={showTeacher}
@@ -75,7 +70,7 @@ export function AttendanceFollowUp({
             </div>
           </details>
         )}
-      </Suspense>
+      </div>
 
       <Link
         href={`/admin/attendance?date=${formatDateToInputStr(new Date(items[0].lesson.startTime))}`}
@@ -132,7 +127,10 @@ function FollowUpList({
 
           <span className="ml-auto flex items-center gap-2">
             <AttendanceDialog lessonId={lesson.id} />
-            <AttendeDialog lesson={lesson} />
+            <AttendeDialog
+              lesson={lesson}
+              bookingCount={lesson.bookings.length}
+            />
           </span>
         </li>
       ))}

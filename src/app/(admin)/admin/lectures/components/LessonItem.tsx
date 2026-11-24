@@ -11,7 +11,7 @@ export async function LessonItem({
   lesson,
   lang = "sv",
 }: {
-  lesson: Lesson;
+  lesson: Lesson & { _count: { bookings: number } };
   lang: "sv" | "en";
 }) {
   const courseName = await getFullCourseNameFromId(lesson.courseId, lang);
@@ -34,7 +34,7 @@ export async function LessonItem({
         <AttendanceDialog lessonId={lesson.id} />
       </TableCell>
       <TableCell>
-        <AttendeDialog lesson={lesson} />
+        <AttendeDialog lesson={lesson} bookingCount={lesson._count.bookings} />
       </TableCell>
       <TableCell className="text-right">
         <EditLessonBtn lesson={lesson} />

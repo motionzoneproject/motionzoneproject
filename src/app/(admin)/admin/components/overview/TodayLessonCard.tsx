@@ -71,7 +71,7 @@ export function TodayLessonCard({
 
       <CardFooter className="flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
         <AttendanceDialog lessonId={lesson.id} />
-        <AttendeDialog lesson={lesson} />
+        <AttendeDialog lesson={lesson} bookingCount={lesson.bookings.length} />
         <EditLessonBtn lesson={lesson} />
       </CardFooter>
     </Card>
@@ -116,7 +116,7 @@ export function TodayLessonRow({ lesson }: { lesson: LessonWithData }) {
           {bookedCount(lesson)} bokade
         </span>
         <AttendanceDialog lessonId={lesson.id} />
-        <AttendeDialog lesson={lesson} />
+        <AttendeDialog lesson={lesson} bookingCount={lesson.bookings.length} />
         <EditLessonBtn lesson={lesson} />
       </span>
     </li>

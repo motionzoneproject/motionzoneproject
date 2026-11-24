@@ -1,6 +1,9 @@
 "use client";
 
 import { Trash2, UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Item,
@@ -33,6 +36,7 @@ export function AttendeceItem({
   purchaseItem,
   product,
   attendance,
+  onChanged,
 }: {
   booking: Booking;
   participant: Participant | null;
@@ -41,7 +45,30 @@ export function AttendeceItem({
   product: Product;
   /** Elevens närvaro på lektionen. Undefined när närvaron inte är tagen. */
   attendance?: AttendanceStatus | null;
+  /** Körs när bokningen tagits bort. */
+  onChanged?: () => void;
 }) {
+  const router = useRouter();
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  // Gav tidigare ingen återkoppling alls: bokningen försvann först när
+  // sidan laddades om.
+  const remove = async () => {
+    setIsRemoving(true);
+    try {
+      const res = await removeUserFromLesson(purchaseItem.id, booking.lessonId);
+      if (res.success) {
+        toast.success(res.msg);
+        onChanged?.();
+        router.refresh();
+      } else {
+        toast.error(res.msg);
+      }
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   const label =
     attendance === undefined ? null : attendanceLabel[attendance ?? "none"];
 
@@ -74,11 +101,9 @@ export function AttendeceItem({
           variant="ghost"
           size="icon"
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          disabled={booking.cancelled}
+          disabled={booking.cancelled || isRemoving}
           type="button"
-          onClick={() =>
-            removeUserFromLesson(purchaseItem.id, booking.lessonId)
-          }
+          onClick={remove}
         >
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Ta bort från lektion</span>

@@ -83,7 +83,10 @@ export function LessonCarousel({
               </CardContent>
               <CardFooter className="flex flex-wrap items-center gap-2 border-t pt-2 text-xs">
                 <AttendanceDialog lessonId={lesson.id} />
-                <AttendeDialog lesson={lesson} />
+                <AttendeDialog
+                  lesson={lesson}
+                  bookingCount={lesson.bookings.length}
+                />
                 <EditLessonBtn lesson={lesson} />
               </CardFooter>
             </Card>

@@ -1,39 +1,31 @@
-import type { Lesson } from "@/generated/prisma/client";
 import {
-  type BookingWithUserAndParticipant,
-  getBookings,
-  getUsersWithPurchasedProductsWithCourseInIt,
-  type StudentWithPurchaseItemsWithCourse,
-} from "@/lib/actions/admin";
-import { getBookingAttendance } from "@/lib/actions/attendance-actions";
-import { getFullCourseNameFromId } from "@/lib/actions/server-actions";
-import { AttendeDialogUI } from "./AttendenceDialogUI";
+  AttendeDialogUI,
+  type BookingsDialogLesson,
+} from "./AttendenceDialogUI";
 
-interface Props {
-  lesson: Lesson;
-}
-
-export async function AttendeDialog({ lesson }: Props) {
-  const courseName = await getFullCourseNameFromId(lesson.courseId);
-
-  const studentsAndPurchases: StudentWithPurchaseItemsWithCourse[] =
-    await getUsersWithPurchasedProductsWithCourseInIt(lesson.courseId);
-
-  const [bookings, attendance]: [
-    BookingWithUserAndParticipant[],
-    Awaited<ReturnType<typeof getBookingAttendance>>,
-  ] = await Promise.all([
-    getBookings(lesson.id),
-    getBookingAttendance(lesson.id),
-  ]);
-
+/**
+ * Bokningsdialogen för en lektion, från en serverkomponent.
+ *
+ * Plockar ut de fält dialogen behöver, så att inte hela lektionen — med kurs,
+ * lärare och bokningar — skickas till webbläsaren. Själva bokningarna hämtas
+ * när dialogen öppnas.
+ */
+export function AttendeDialog({
+  lesson,
+  bookingCount,
+}: {
+  lesson: BookingsDialogLesson;
+  bookingCount: number;
+}) {
   return (
     <AttendeDialogUI
-      courseName={courseName}
-      lesson={lesson}
-      studentsAndPurchases={studentsAndPurchases}
-      bookings={bookings}
-      attendance={attendance}
+      lesson={{
+        id: lesson.id,
+        courseId: lesson.courseId,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+      }}
+      bookingCount={bookingCount}
     />
   );
 }

@@ -36,6 +36,7 @@ import {
   getAttendanceCalendar,
 } from "@/lib/actions/attendance-actions";
 import { dbToFormTime } from "@/lib/time-convert";
+import { AttendeDialogUI } from "../../lectures/components/attendence/AttendenceDialogUI";
 import { attendanceSummary } from "./attendance-summary";
 import { LessonAttendance } from "./LessonAttendance";
 
@@ -58,7 +59,6 @@ export function AttendanceDay({
   heading,
   teachers,
   selectedTeacher,
-  bookingDialogs,
 }: {
   date: string;
   lessons: AttendanceLesson[];
@@ -68,8 +68,6 @@ export function AttendanceDay({
   /** Tomt för lärare, som bara ser sina egna lektioner. */
   teachers: { id: string; name: string }[];
   selectedTeacher: string;
-  /** Lektionens bokningsdialog, renderad på servern, per lektion. */
-  bookingDialogs: Record<string, ReactNode>;
 }) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
@@ -215,7 +213,15 @@ export function AttendanceDay({
                     </button>
 
                     <div className="flex shrink-0 items-center gap-1">
-                      {bookingDialogs[lesson.lessonId]}
+                      <AttendeDialogUI
+                        lesson={{
+                          id: lesson.lessonId,
+                          courseId: lesson.courseId,
+                          startTime: lesson.startTime,
+                          endTime: lesson.endTime,
+                        }}
+                        bookingCount={lesson.bookingCount}
+                      />
                       <Button
                         type="button"
                         variant="ghost"

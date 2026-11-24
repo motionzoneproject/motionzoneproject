@@ -507,6 +507,7 @@ const ARGS: Record<string, ArgsFor> = {
   ],
   getLessonAttendance: (s) => [[s.pastLesson.id]],
   getBookingAttendance: (s) => [[s.pastLesson.id]],
+  getLessonBookings: (s) => [[s.pastLesson.id]],
   saveAttendance: (s) => [
     [
       s.pastLesson.id,

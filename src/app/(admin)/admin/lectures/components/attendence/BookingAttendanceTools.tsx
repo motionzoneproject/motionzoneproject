@@ -28,6 +28,7 @@ export function BookingAttendanceTools({
   missing,
   total,
   presentWithoutBooking,
+  onChanged,
 }: {
   lessonId: string;
   /** Närvaron är tagen på lektionen. */
@@ -36,6 +37,8 @@ export function BookingAttendanceTools({
   missing: number;
   total: number;
   presentWithoutBooking: PresentWithoutBooking[];
+  /** Körs efter en ändring, så att dialogen kan hämta om sin data. */
+  onChanged?: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export function BookingAttendanceTools({
       const res = await action();
       if (res.success) {
         toast.success(res.msg);
+        onChanged?.();
         router.refresh();
       } else {
         toast.error(res.msg);

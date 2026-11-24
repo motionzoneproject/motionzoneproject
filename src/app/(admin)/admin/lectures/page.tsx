@@ -135,6 +135,7 @@ export default async function LecturePage({ searchParams }: Props) {
     orderBy: { startTime: "asc" },
     skip,
     take: ITEMS_PER_PAGE,
+    include: { _count: { select: { bookings: true } } },
   });
 
   const lang = sp.lang === "en" ? "en" : "sv";
