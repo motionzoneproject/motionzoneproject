@@ -40,10 +40,14 @@ export async function runHealthChecks(): Promise<
 /**
  * Slår ihop dubbletter av samma deltagare till en.
  *
- * Participant refereras bara från Purchase.participantId och
- * OrderItem.participantId, så sammanslagningen är att peka om de två
- * kolumnerna och radera resten. Allt sker i en transaktion: antingen flyttas
- * alla kopplingar och dubbletterna försvinner, eller så ändras ingenting.
+ * Participant refereras från Purchase, OrderItem, Attendance och
+ * CourseRosterEntry. Köp och ordrar pekas om rakt av. Närvaro och kurslista
+ * raderas i kaskad med deltagaren och har en unik studentKey per lektion
+ * respektive kurs, så de flyttas till den kvarvarande kopian och slås ihop
+ * där två kopior har en rad för samma lektion eller kurs (se
+ * mergeAttendance och mergeRoster). Allt sker i en transaktion: antingen
+ * flyttas alla kopplingar och dubbletterna försvinner, eller så ändras
+ * ingenting.
  *
  * Vilken kopia som överlever är adminens val, inte vår gissning — namn,
  * e-post, födelsedatum och fotosamtycke kan skilja sig mellan kopiorna, och
@@ -90,24 +94,31 @@ export async function mergeParticipants(
       };
     }
 
-    const { orderItems, purchases } = await prisma.$transaction(async (tx) => {
-      const movedOrderItems = await tx.orderItem.updateMany({
-        where: { participantId: { in: removeIds } },
-        data: { participantId: keepId },
+    const { orderItems, purchases, attendance, roster } =
+      await prisma.$transaction(async (tx) => {
+        const movedOrderItems = await tx.orderItem.updateMany({
+          where: { participantId: { in: removeIds } },
+          data: { participantId: keepId },
+        });
+
+        const movedPurchases = await tx.purchase.updateMany({
+          where: { participantId: { in: removeIds } },
+          data: { participantId: keepId },
+        });
+
+        // Före deleteMany: annars raderas raderna i kaskad med dubbletterna.
+        const movedAttendance = await mergeAttendance(tx, keepId, removeIds);
+        const movedRoster = await mergeRoster(tx, keepId, removeIds);
+
+        await tx.participant.deleteMany({ where: { id: { in: removeIds } } });
+
+        return {
+          orderItems: movedOrderItems.count,
+          purchases: movedPurchases.count,
+          attendance: movedAttendance,
+          roster: movedRoster,
+        };
       });
-
-      const movedPurchases = await tx.purchase.updateMany({
-        where: { participantId: { in: removeIds } },
-        data: { participantId: keepId },
-      });
-
-      await tx.participant.deleteMany({ where: { id: { in: removeIds } } });
-
-      return {
-        orderItems: movedOrderItems.count,
-        purchases: movedPurchases.count,
-      };
-    });
 
     revalidatePath("/admin");
     revalidatePath("/admin/health/duplicate-participant");
@@ -115,12 +126,119 @@ export async function mergeParticipants(
 
     return {
       success: true,
-      msg: `${removeIds.length} dubbletter borttagna. ${orderItems} ordrar och ${purchases} köp flyttades.`,
+      msg: `${removeIds.length} dubbletter borttagna. ${orderItems} ordrar, ${purchases} köp, ${attendance} närvaromarkeringar och ${roster} kursval flyttades.`,
     };
   } catch (e) {
     console.error(e);
     return { success: false, msg: "Kunde inte slå ihop deltagarna." };
   }
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Grupperar raderna per nyckel (lektion eller kurs) och väljer en vinnare per
+ * grupp. Vinnaren flyttas till den kvarvarande deltagaren, resten raderas —
+ * först, eftersom (lektion/kurs, studentKey) är unikt.
+ *
+ * Returnerar antalet rader som flyttades från en dubblett.
+ */
+async function mergeRows<
+  Row extends { id: string; participantId: string | null },
+>(
+  rows: Row[],
+  groupOf: (row: Row) => string,
+  winnerOf: (rows: Row[]) => Row,
+  keepId: string,
+  remove: (ids: string[]) => Promise<unknown>,
+  move: (id: string) => Promise<unknown>,
+): Promise<number> {
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const key = groupOf(row);
+    groups.set(key, [...(groups.get(key) ?? []), row]);
+  }
+
+  let moved = 0;
+  for (const group of groups.values()) {
+    const winner = winnerOf(group);
+    const losers = group.filter((row) => row.id !== winner.id);
+    if (losers.length > 0) await remove(losers.map((row) => row.id));
+    if (winner.participantId !== keepId) {
+      await move(winner.id);
+      moved++;
+    }
+  }
+  return moved;
+}
+
+const latestFirst = <Row extends { updatedAt: Date }>(a: Row, b: Row) =>
+  b.updatedAt.getTime() - a.updatedAt.getTime();
+
+/**
+ * Närvaron per lektion. Har två kopior en markering för samma lektion vinner
+ * "närvarande": eleven var där, oavsett under vilken kopia det bockades i.
+ * Annars vinner den senast ändrade.
+ */
+async function mergeAttendance(
+  tx: Tx,
+  keepId: string,
+  removeIds: string[],
+): Promise<number> {
+  const rows = await tx.attendance.findMany({
+    where: { participantId: { in: [keepId, ...removeIds] } },
+    select: {
+      id: true,
+      lessonId: true,
+      participantId: true,
+      status: true,
+      updatedAt: true,
+    },
+  });
+
+  return mergeRows(
+    rows,
+    (row) => row.lessonId,
+    (group) => {
+      const sorted = [...group].sort(latestFirst);
+      return sorted.find((row) => row.status === "PRESENT") ?? sorted[0];
+    },
+    keepId,
+    (ids) => tx.attendance.deleteMany({ where: { id: { in: ids } } }),
+    (id) =>
+      tx.attendance.update({
+        where: { id },
+        data: { participantId: keepId, studentKey: `participant:${keepId}` },
+      }),
+  );
+}
+
+/**
+ * Kurslistan per kurs. Två kopior kan ha olika beslut för samma kurs (en
+ * tillagd, en borttagen). Det senaste beslutet är det som gäller.
+ */
+async function mergeRoster(
+  tx: Tx,
+  keepId: string,
+  removeIds: string[],
+): Promise<number> {
+  const rows = await tx.courseRosterEntry.findMany({
+    where: { participantId: { in: [keepId, ...removeIds] } },
+    select: { id: true, courseId: true, participantId: true, updatedAt: true },
+  });
+
+  return mergeRows(
+    rows,
+    (row) => row.courseId,
+    (group) => [...group].sort(latestFirst)[0],
+    keepId,
+    (ids) => tx.courseRosterEntry.deleteMany({ where: { id: { in: ids } } }),
+    (id) =>
+      tx.courseRosterEntry.update({
+        where: { id },
+        data: { participantId: keepId, studentKey: `participant:${keepId}` },
+      }),
+  );
 }
 
 /**

@@ -907,6 +907,109 @@ describe("duplicate-participant", () => {
     expect(item.participantId).toBe(keep.id);
   });
 
+  it("mergeParticipants flyttar närvaro och kurslista till kopian som behålls", async () => {
+    const owner = await createUser();
+    const keep = await createParticipant(owner, "Kim Testsson");
+    const copy = await createParticipant(owner, "Kim Testsson");
+    const course = await createHealthyCourse({ teacher, past: 3, future: 0 });
+    const other = await createHealthyCourse({ teacher, future: 1 });
+    const [onlyCopy, both, bothAbsent] = await prisma.lesson.findMany({
+      where: { courseId: course.id },
+      orderBy: { startTime: "asc" },
+    });
+
+    const mark = (
+      p: { id: string },
+      lessonId: string,
+      status: "PRESENT" | "ABSENT",
+      updatedAt: Date,
+    ) =>
+      prisma.attendance.create({
+        data: {
+          lessonId,
+          participantId: p.id,
+          studentKey: `participant:${p.id}`,
+          status,
+          markedByUserId: admin.id,
+          updatedAt,
+        },
+      });
+    const old = new Date(Date.now() - 2 * DAY);
+    const recent = new Date(Date.now() - DAY);
+    // Bara dubbletten är markerad: raden ska flyttas.
+    await mark(copy, onlyCopy.id, "PRESENT", old);
+    // Båda markerade, olika: närvarande vinner även om frånvaron är nyare.
+    await mark(keep, both.id, "ABSENT", recent);
+    await mark(copy, both.id, "PRESENT", old);
+    // Båda frånvarande: en rad blir kvar.
+    await mark(keep, bothAbsent.id, "ABSENT", old);
+    await mark(copy, bothAbsent.id, "ABSENT", recent);
+
+    const decide = (
+      p: { id: string },
+      courseId: string,
+      status: "ADDED" | "REMOVED",
+      updatedAt: Date,
+    ) =>
+      prisma.courseRosterEntry.create({
+        data: {
+          courseId,
+          participantId: p.id,
+          studentKey: `participant:${p.id}`,
+          status,
+          changedByUserId: admin.id,
+          updatedAt,
+        },
+      });
+    // Samma kurs med olika beslut: det senaste gäller.
+    await decide(keep, course.id, "ADDED", old);
+    await decide(copy, course.id, "REMOVED", recent);
+    // Bara dubbletten: flyttas.
+    await decide(copy, other.id, "ADDED", old);
+
+    const result = await mergeParticipants(keep.id, [copy.id]);
+    expect(result.success).toBe(true);
+
+    const attendance = await prisma.attendance.findMany({
+      select: {
+        lessonId: true,
+        participantId: true,
+        studentKey: true,
+        status: true,
+      },
+    });
+    expect(attendance).toHaveLength(3);
+    for (const row of attendance) {
+      expect(row.participantId).toBe(keep.id);
+      expect(row.studentKey).toBe(`participant:${keep.id}`);
+    }
+    const statusOf = (lessonId: string) =>
+      attendance.find((row) => row.lessonId === lessonId)?.status;
+    expect(statusOf(onlyCopy.id)).toBe("PRESENT");
+    expect(statusOf(both.id)).toBe("PRESENT");
+    expect(statusOf(bothAbsent.id)).toBe("ABSENT");
+
+    const roster = await prisma.courseRosterEntry.findMany({
+      select: {
+        courseId: true,
+        participantId: true,
+        studentKey: true,
+        status: true,
+      },
+    });
+    expect(roster).toHaveLength(2);
+    for (const row of roster) {
+      expect(row.participantId).toBe(keep.id);
+      expect(row.studentKey).toBe(`participant:${keep.id}`);
+    }
+    expect(roster.find((row) => row.courseId === course.id)?.status).toBe(
+      "REMOVED",
+    );
+    expect(roster.find((row) => row.courseId === other.id)?.status).toBe(
+      "ADDED",
+    );
+  });
+
   it("mergeParticipants vägrar olika ägare och att slå ihop med sig själv", async () => {
     const a = await createParticipant(await createUser(), "Lo Test");
     const b = await createParticipant(await createUser(), "Lo Test");
