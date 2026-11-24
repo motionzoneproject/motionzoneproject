@@ -249,6 +249,23 @@ describe("status (godkänd / ej godkänd)", () => {
     );
   });
 
+  it("statusfiltret gäller kurskolumnen: godkänd visar inte en bara beställd kurs", async () => {
+    const u = await universe();
+    const ann = await createUser();
+    await buy({ admin, buyer: ann, product: u.prodA });
+    await placeOrder({ buyer: ann, product: u.prodB });
+
+    const coursesOf = async (approval: string) =>
+      (await list({ approval }))
+        .find((s) => s.studentKey === userKey(ann))
+        ?.courses.map((c) => c.id)
+        .sort();
+
+    expect(await coursesOf("approved")).toEqual([u.a.id]);
+    expect(await coursesOf("unapproved")).toEqual([u.b.id]);
+    expect(await coursesOf("all")).toEqual(sorted(u.a.id, u.b.id));
+  });
+
   it("okänt värde på approval tolkas som alla", async () => {
     const u = await universe();
     const waiting = await createUser();

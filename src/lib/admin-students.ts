@@ -629,9 +629,21 @@ async function applyRosters(
 
   const rosters = await collectRosters(courses.map((c) => c.id));
 
+  // Statusfiltret gäller kurserna också. Under "beviljad" räknas inte en
+  // kurs eleven bara har en väntande order på — annars dök en elev med ett
+  // beviljat köp i en kurs upp under en annan kurs hen bara beställt. Under
+  // "ej beviljad" tvärtom.
+  const counts = (student: { pending: boolean }) =>
+    filters.approval === "approved"
+      ? !student.pending
+      : filters.approval === "unapproved"
+        ? student.pending
+        : true;
+
   const coursesByStudent = new Map<string, { id: string; name: string }[]>();
   for (const course of courses) {
-    for (const studentKey of rosters.get(course.id)?.keys() ?? []) {
+    for (const [studentKey, student] of rosters.get(course.id) ?? []) {
+      if (!counts(student)) continue;
       const list = coursesByStudent.get(studentKey) ?? [];
       list.push({ id: course.id, name: getCourseName(course) });
       coursesByStudent.set(studentKey, list);
