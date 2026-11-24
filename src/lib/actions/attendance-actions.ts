@@ -557,10 +557,10 @@ export async function getLessonAttendance(
  * konstaterande, inte ett köp — därför kan även en elev som lagts till i
  * kursen för hand bockas i, trots att hen inte har någon bokning.
  *
- * Klienten skickar bara det som ändrats. En elev som inte bockats i och inte
- * hade någon markering skickas med onlyIfUnmarked: tar två lärare närvaro
- * samtidigt skriver den ena då inte över den andras "närvarande" med ett
- * "frånvarande" bara för att eleven var omarkerad när sidan laddades.
+ * Listan sparar varje kryss direkt, en elev i taget (eller alla vid "Alla
+ * närvarande"). "Klar" markerar de omarkerade som frånvarande med
+ * onlyIfUnmarked: tar två lärare närvaro samtidigt skriver den ena då inte
+ * över den andras "närvarande" bara för att eleven var omarkerad hos hen.
  *
  * @auth Admin, lektionens lärare eller kursens lärare
  */

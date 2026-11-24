@@ -1,8 +1,16 @@
 "use client";
 
-import { CheckCheck, Contact, Mail, Phone, Users } from "lucide-react";
+import {
+  CheckCheck,
+  Contact,
+  Loader2,
+  Mail,
+  Phone,
+  Users,
+  UserX,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -152,6 +160,11 @@ function ContactDetails({ contact }: { contact: StudentContact }) {
  *
  * Rör varken bokningar eller klipp. Närvaron är ett eget register; vilka
  * bokningar som saknar närvaro syns i stället i lektionens bokningar.
+ *
+ * Varje kryss sparas direkt. Läraren står med telefonen och listan kan vara
+ * lång — en sparknapp längst ner var lätt att missa, och då försvann allt.
+ * Den som ingen rört förblir omarkerad tills läraren trycker "Klar", som
+ * markerar resten som frånvarande.
  */
 export function LessonAttendance({
   lesson,
@@ -162,7 +175,7 @@ export function LessonAttendance({
   onChanged?: () => void;
 }) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   // Vilka elevers kontaktuppgifter som är utfällda.
   const [shownContacts, setShownContacts] = useState<Set<string>>(
     () => new Set(),
@@ -174,89 +187,141 @@ export function LessonAttendance({
       return next;
     });
 
-  // Bara lärarens egna, ännu inte inlästa ändringar. Övrigt visas som det
+  // Lärarens klick, som visas direkt medan de sparas. Övrigt visas som det
   // står i registret, så att en markering någon annan gjort syns när listan
   // hämtats om.
   const [marks, setMarks] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<Set<string>>(() => new Set());
   const presentOf = (student: AttendanceStudent): boolean | undefined =>
     marks[student.studentKey] ??
     (student.status === null ? undefined : student.status === "PRESENT");
 
-  // När listan hämtats om efter en sparning släpps de sparade ändringarna,
-  // så att registrets värde tar över — det kan skilja sig om någon annan
-  // hann markera samma elev. Osparade ändringar ligger kvar.
-  const [savedKeys, setSavedKeys] = useState<Set<string> | null>(null);
+  // När listan hämtats om tar registret över. Klick som fortfarande sparas
+  // ligger kvar, annars skulle kryssrutan hoppa tillbaka en stund.
   const [shownStudents, setShownStudents] = useState(lesson.students);
   if (shownStudents !== lesson.students) {
     setShownStudents(lesson.students);
-    if (savedKeys) {
-      setMarks((prev) =>
-        Object.fromEntries(
-          Object.entries(prev).filter(([key]) => !savedKeys.has(key)),
-        ),
-      );
-      setSavedKeys(null);
-    }
+    setMarks((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).filter(([key]) => saving.has(key)),
+      ),
+    );
   }
 
-  const refresh = () => {
+  // Varje klick hämtar inte om hela sidan. Det görs en stund efter det
+  // senaste, och direkt om listan stängs innan dess.
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshNow = () => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = null;
     onChanged?.();
     router.refresh();
   };
-
-  const markAllPresent = () => {
-    const next: Record<string, boolean> = {};
-    for (const student of lesson.students) next[student.studentKey] = true;
-    setMarks(next);
+  // Timern och avmonteringen ska anropa den senaste refreshNow.
+  const refreshNowRef = useRef(refreshNow);
+  useEffect(() => {
+    refreshNowRef.current = refreshNow;
+  });
+  const refreshSoon = () => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => refreshNowRef.current(), 1500);
   };
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) refreshNowRef.current();
+    },
+    [],
+  );
 
-  const save = async () => {
-    // Bara det som ändrats skickas, så att två som tar närvaro samtidigt
-    // inte skriver över varandras markeringar. Den som inte bockats i och
-    // saknar markering blir frånvarande — men bara om ingen annan hunnit
-    // markera hen (onlyIfUnmarked).
-    const changes: AttendanceMark[] = lesson.students.flatMap((student) => {
-      const local = marks[student.studentKey];
-      if (local === undefined) {
-        return student.status === null
-          ? [
-              {
-                studentKey: student.studentKey,
-                present: false,
-                onlyIfUnmarked: true,
-              },
-            ]
-          : [];
-      }
-      const status = local ? "PRESENT" : "ABSENT";
-      return status === student.status
-        ? []
-        : [{ studentKey: student.studentKey, present: local }];
-    });
+  // Det senaste klicket per elev. Svarar ett äldre anrop sent ska det inte
+  // ändra det läraren klickat sedan.
+  const latest = useRef<Record<string, number>>({});
 
-    if (changes.length === 0) {
-      toast.success("Inga ändringar att spara.");
-      return;
+  /** Visar markeringarna direkt, sparar dem och backar om det misslyckas. */
+  const mark = async (changes: { studentKey: string; present: boolean }[]) => {
+    if (changes.length === 0) return;
+    const keys = changes.map((c) => c.studentKey);
+    const before = Object.fromEntries(keys.map((k) => [k, marks[k]]));
+    const tokens: Record<string, number> = {};
+    for (const key of keys) {
+      tokens[key] = (latest.current[key] ?? 0) + 1;
+      latest.current[key] = tokens[key];
+    }
+    const isLatest = (key: string) => latest.current[key] === tokens[key];
+
+    setMarks((prev) => ({
+      ...prev,
+      ...Object.fromEntries(changes.map((c) => [c.studentKey, c.present])),
+    }));
+    setSaving((prev) => new Set([...prev, ...keys]));
+
+    let ok = false;
+    try {
+      const res = await saveAttendance(lesson.lessonId, changes);
+      ok = res.success;
+      if (!ok) toast.error(res.msg);
+    } catch {
+      toast.error("Kunde inte spara närvaron. Försök igen.");
     }
 
-    setIsSaving(true);
+    if (!ok) {
+      setMarks((prev) => {
+        const next = { ...prev };
+        for (const key of keys) {
+          if (!isLatest(key)) continue;
+          if (before[key] === undefined) delete next[key];
+          else next[key] = before[key];
+        }
+        return next;
+      });
+    }
+    setSaving((prev) => {
+      const next = new Set(prev);
+      for (const key of keys) if (isLatest(key)) next.delete(key);
+      return next;
+    });
+    if (ok) refreshSoon();
+  };
+
+  const markAllPresent = () =>
+    void mark(
+      lesson.students
+        .filter((student) => presentOf(student) !== true)
+        .map((student) => ({ studentKey: student.studentKey, present: true })),
+    );
+
+  const unmarked = lesson.students.filter(
+    (student) => presentOf(student) === undefined,
+  );
+
+  /**
+   * Markerar de omarkerade som frånvarande — men bara de som ingen annan
+   * hunnit markera (onlyIfUnmarked), så två som tar närvaro samtidigt inte
+   * skriver över varandra.
+   */
+  const finish = async () => {
+    const changes: AttendanceMark[] = unmarked.map((student) => ({
+      studentKey: student.studentKey,
+      present: false,
+      onlyIfUnmarked: true,
+    }));
+    if (changes.length === 0) return;
+
+    setIsFinishing(true);
     try {
       const res = await saveAttendance(lesson.lessonId, changes);
       if (res.success) {
-        // Visa det sparade tills listan hämtats om: den som inte bockats i
-        // är nu frånvarande.
         setMarks((prev) => ({
           ...prev,
-          ...Object.fromEntries(changes.map((m) => [m.studentKey, m.present])),
+          ...Object.fromEntries(changes.map((c) => [c.studentKey, false])),
         }));
-        setSavedKeys(new Set(changes.map((m) => m.studentKey)));
         toast.success(res.msg);
-        refresh();
+        refreshNow();
       } else {
         toast.error(res.msg);
       }
     } finally {
-      setIsSaving(false);
+      setIsFinishing(false);
     }
   };
 
@@ -268,7 +333,7 @@ export function LessonAttendance({
           variant="outline"
           size="sm"
           onClick={markAllPresent}
-          disabled={lesson.students.length === 0}
+          disabled={lesson.students.every((s) => presentOf(s) === true)}
         >
           <CheckCheck className="h-4 w-4" />
           Alla närvarande
@@ -320,10 +385,12 @@ export function LessonAttendance({
                     className="h-6 w-6"
                     checked={value === true}
                     onCheckedChange={(checked) =>
-                      setMarks((prev) => ({
-                        ...prev,
-                        [student.studentKey]: checked === true,
-                      }))
+                      void mark([
+                        {
+                          studentKey: student.studentKey,
+                          present: checked === true,
+                        },
+                      ])
                     }
                   />
                   <span className="min-w-0 flex-1">
@@ -336,12 +403,18 @@ export function LessonAttendance({
                         </span>
                       )}
                     </span>
-                    <span className="block text-sm font-bold">
+                    <span className="flex items-center gap-1.5 text-sm font-bold">
                       {value === undefined
                         ? "Ej markerad"
                         : value
                           ? "Närvarande"
                           : "Frånvarande"}
+                      {saving.has(student.studentKey) && (
+                        <Loader2
+                          aria-label="Sparar"
+                          className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+                        />
+                      )}
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {studentDetails(student)}
@@ -378,16 +451,33 @@ export function LessonAttendance({
         </ul>
       )}
 
-      <div className="border-t p-3">
-        <Button
-          type="button"
-          className="w-full"
-          onClick={save}
-          disabled={isSaving || lesson.students.length === 0}
-        >
-          {isSaving ? "Sparar..." : "Spara närvaro"}
-        </Button>
-      </div>
+      {lesson.students.length > 0 && (
+        <div className="border-t p-3">
+          {unmarked.length > 0 ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={finish}
+                disabled={isFinishing}
+              >
+                <UserX className="h-4 w-4" />
+                {isFinishing
+                  ? "Sparar..."
+                  : `Klar – markera ${unmarked.length} omarkerade frånvarande`}
+              </Button>
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                Varje kryss sparas direkt.
+              </p>
+            </>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              Alla är markerade. Varje kryss sparas direkt.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
