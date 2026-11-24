@@ -1,4 +1,3 @@
-import { addDays, subDays } from "date-fns";
 import type { Metadata } from "next";
 import { requireAdminOrTeacher } from "@/lib/actions/admin";
 import { getAttendanceDay } from "@/lib/actions/attendance-actions";
@@ -6,6 +5,7 @@ import { getSessionData } from "@/lib/actions/sessiondata";
 import {
   formatDateToInputStr,
   parseStockholmDateInput,
+  shiftDateInput,
 } from "@/lib/date-utils";
 import prisma from "@/lib/prisma";
 import { AttendeDialog } from "../lectures/components/attendence/AttendenceDialog";
@@ -85,8 +85,8 @@ export default async function Page({
     <AttendanceDay
       date={date}
       lessons={lessons}
-      previousDate={formatDateToInputStr(subDays(asDate, 1))}
-      nextDate={formatDateToInputStr(addDays(asDate, 1))}
+      previousDate={shiftDateInput(date, -1)}
+      nextDate={shiftDateInput(date, 1)}
       heading={{
         weekday:
           heading.weekday.charAt(0).toUpperCase() + heading.weekday.slice(1),

@@ -11,6 +11,7 @@ import {
   formatShortFriendlyDate,
   MONTHS_SHORT_SV,
   parseStockholmDateInput,
+  shiftDateInput,
   startOfStockholmDay,
 } from "@/lib/date-utils";
 
@@ -85,6 +86,23 @@ describe("Stockholmsdagar", () => {
   it("en tidpunkt strax efter midnatt svensk tid hör till den nya dagen", () => {
     const t = new Date("2026-01-01T23:30:00Z"); // 00:30 den 2 jan
     expect(iso(startOfStockholmDay(t))).toBe("2026-01-01T23:00:00.000Z");
+  });
+});
+
+describe("shiftDateInput", () => {
+  it("flyttar över månads- och årsskiften", () => {
+    expect(shiftDateInput("2026-01-31", 1)).toBe("2026-02-01");
+    expect(shiftDateInput("2026-01-01", -1)).toBe("2025-12-31");
+    expect(shiftDateInput("2028-02-28", 1)).toBe("2028-02-29");
+  });
+
+  it("hoppar inte över dagen då sommartiden börjar eller slutar", () => {
+    // Bakåt från dagen efter: addDays/subDays på midnatt svensk tid landade
+    // på en server i UTC en timme fel och gav dagen innan.
+    expect(shiftDateInput("2026-03-30", -1)).toBe("2026-03-29");
+    expect(shiftDateInput("2026-03-28", 1)).toBe("2026-03-29");
+    expect(shiftDateInput("2026-10-26", -1)).toBe("2026-10-25");
+    expect(shiftDateInput("2026-10-24", 1)).toBe("2026-10-25");
   });
 });
 
