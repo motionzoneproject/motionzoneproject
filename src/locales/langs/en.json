@@ -200,7 +200,7 @@
       "duplicateUseSlot": "Use the same person, '{{name}}'",
       "duplicateUseSelf": "Mark as \"Myself\" instead",
       "method": "Payment method:",
-      "methodInfo": "Your invoice will be sent after the first lesson, and it can take around two weeks to arrive.",
+      "methodInfo": "Your invoice will be sent after the course starts, and it can take around two weeks to arrive.",
       "1": "Invoice",
       "1description": "Full amount",
       "2": "Installments x 2",
