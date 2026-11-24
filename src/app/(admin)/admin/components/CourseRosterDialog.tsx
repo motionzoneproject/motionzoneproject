@@ -160,12 +160,14 @@ export function CourseRosterDialog({
               <AddStudentSearch courseId={roster.courseId} onAdded={load} />
             </div>
 
-            <Button asChild variant="link" size="sm" className="h-auto px-0">
-              <Link href={`/admin/students?course=${roster.courseId}`}>
-                <ExternalLink className="h-4 w-4" />
-                Öppna i elevlistan — mailutskick och schema
-              </Link>
-            </Button>
+            {roster.showStudentList && (
+              <Button asChild variant="link" size="sm" className="h-auto px-0">
+                <Link href={`/admin/students?course=${roster.courseId}`}>
+                  <ExternalLink className="h-4 w-4" />
+                  Öppna i elevlistan — mailutskick och schema
+                </Link>
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>

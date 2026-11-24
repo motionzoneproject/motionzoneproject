@@ -3,12 +3,14 @@
 import {
   CheckCheck,
   Contact,
+  ExternalLink,
   Loader2,
   Mail,
   Phone,
   Users,
   UserX,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -349,6 +351,15 @@ export function LessonAttendance({
             </Button>
           }
         />
+
+        {lesson.showStudentList && (
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/admin/students?course=${lesson.courseId}`}>
+              <ExternalLink className="h-4 w-4" />
+              Visa i elevlistan
+            </Link>
+          </Button>
+        )}
       </div>
 
       {lesson.students.some(

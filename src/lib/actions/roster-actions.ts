@@ -241,7 +241,10 @@ export async function addStudentToCourse(
 }
 
 export type CourseRosterStudent = RosterStudent;
-export type CourseRoster = LoadedCourseRoster;
+export type CourseRoster = LoadedCourseRoster & {
+  /** Elevlistan i admin/students är bara för admin. */
+  showStudentList: boolean;
+};
 
 /**
  * Vem som går en kurs, för "Hantera elever". Listan byggs i
@@ -253,7 +256,11 @@ export async function getCourseRoster(
   courseId: string,
 ): Promise<CourseRoster | null> {
   if (!(await mayManageCourse(courseId))) return null;
-  return loadCourseRoster(courseId);
+  const [roster, showStudentList] = await Promise.all([
+    loadCourseRoster(courseId),
+    isAdminRole(),
+  ]);
+  return roster && { ...roster, showStudentList };
 }
 
 /**

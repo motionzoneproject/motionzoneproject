@@ -120,6 +120,8 @@ export type AttendanceLesson = {
   message: string | null;
   /** Alla bokningar på lektionen, för knappen till bokningsdialogen. */
   bookingCount: number;
+  /** Elevlistan i admin/students, med mailutskick, är bara för admin. */
+  showStudentList: boolean;
   students: AttendanceStudent[];
 };
 
@@ -361,6 +363,7 @@ async function contactAndAge(
 /** Lektionerna med elevlistor, kontaktuppgifter och ålder. */
 async function toAttendanceLessons(
   lessons: LessonRow[],
+  isAdmin: boolean,
 ): Promise<AttendanceLesson[]> {
   const studentsByLesson = await lessonStudents(lessons);
   const withContact = await contactAndAge(
@@ -378,6 +381,7 @@ async function toAttendanceLessons(
     cancelled: lesson.cancelled,
     message: lesson.message,
     bookingCount: lesson._count.bookings,
+    showStudentList: isAdmin,
     students: (studentsByLesson.get(lesson.id) ?? []).map(withContact),
   }));
 }
@@ -425,7 +429,7 @@ export async function getAttendanceDay(
     select: lessonSelect,
   });
 
-  return toAttendanceLessons(lessons);
+  return toAttendanceLessons(lessons, session.user.role === "admin");
 }
 
 /** Hur en dag ser ut i närvarokalendern. */
@@ -547,7 +551,10 @@ export async function getLessonAttendance(
   });
   if (!lesson || !mayTakeAttendance(session, lesson)) return null;
 
-  return (await toAttendanceLessons([lesson]))[0] ?? null;
+  return (
+    (await toAttendanceLessons([lesson], session.user.role === "admin"))[0] ??
+    null
+  );
 }
 
 /**

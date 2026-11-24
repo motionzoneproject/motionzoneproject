@@ -116,6 +116,8 @@ describe("behörighet mellan lärare", () => {
       expect(read?.students.map((s) => s.studentKey).sort()).toEqual(
         [participantKey(child), userKey(parent)].sort(),
       );
+      // Elevlistan i admin/students är bara för admin.
+      expect(read?.showStudentList).toBe(who === admin);
       expect((await getLessonBookings(lesson.id))?.courseName).toBeTruthy();
       const saved = await saveAttendance(lesson.id, [
         { studentKey: userKey(parent), present: true },
