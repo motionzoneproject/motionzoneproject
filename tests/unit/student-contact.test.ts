@@ -3,6 +3,7 @@ import {
   contactForParticipant,
   contactForUser,
   type ParticipantContactSource,
+  participantBirthDate,
 } from "@/lib/student-contact";
 
 const parent = {
@@ -81,6 +82,39 @@ describe("contactForParticipant", () => {
         participant({ addedBy: { email: "a@example.com", details: null } }),
       ).phone,
     ).toBeNull();
+  });
+});
+
+describe("participantBirthDate", () => {
+  const kid = new Date("2016-05-01T00:00:00Z");
+  const adult = new Date("1990-02-03T00:00:00Z");
+
+  it("använder deltagarens eget födelsedatum", () => {
+    expect(participantBirthDate({ dateOfBirth: kid, user: null })).toEqual(kid);
+  });
+
+  it("använder deltagarens eget konto när deltagaren saknar datum", () => {
+    expect(
+      participantBirthDate({
+        dateOfBirth: null,
+        user: { details: { dateOfBirth: adult } },
+      }),
+    ).toEqual(adult);
+  });
+
+  it("går före kontots datum när båda finns", () => {
+    expect(
+      participantBirthDate({
+        dateOfBirth: kid,
+        user: { details: { dateOfBirth: adult } },
+      }),
+    ).toEqual(kid);
+  });
+
+  it("ger null hellre än att gissa, och tar aldrig emot kontohavaren", () => {
+    // Funktionen tar inte ens emot addedBy: förälderns ålder kan inte
+    // hamna på barnet.
+    expect(participantBirthDate({ dateOfBirth: null, user: null })).toBeNull();
   });
 });
 

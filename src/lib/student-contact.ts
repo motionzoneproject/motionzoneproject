@@ -68,6 +68,22 @@ export function contactForParticipant(
   };
 }
 
+/**
+ * Deltagarens födelsedatum, för att visa elevens ålder.
+ *
+ * Till skillnad från kontaktuppgifterna faller åldern aldrig tillbaka på
+ * kontohavaren: ett barn ska inte visas med förälderns ålder. Deltagarens
+ * eget konto får användas, eftersom det är samma person.
+ */
+export function participantBirthDate(participant: {
+  dateOfBirth: Date | null;
+  user: { details: { dateOfBirth: Date | null } | null } | null;
+}): Date | null {
+  return (
+    participant.dateOfBirth ?? participant.user?.details?.dateOfBirth ?? null
+  );
+}
+
 /** Kontohavaren är själv eleven, så uppgifterna är alltid hens egna. */
 export function contactForUser(user: AccountContact): StudentContact {
   return {

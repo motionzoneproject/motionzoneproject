@@ -11,6 +11,7 @@ import {
 import { studentKeyOf } from "@/lib/course-roster";
 import { loadCourseRoster } from "@/lib/course-roster-data";
 import {
+  calculateAge,
   endOfStockholmDateInput,
   formatDateToInputStr,
   parseStockholmDateInput,
@@ -19,6 +20,7 @@ import {
   contactForParticipant,
   contactForUser,
   NO_CONTACT,
+  participantBirthDate,
   type StudentContact,
 } from "@/lib/student-contact";
 import { getCourseName } from "@/lib/tools";
@@ -52,11 +54,13 @@ export type AttendanceStudent = {
    * förälderns uppgifter, och då är `viaCustomer` satt.
    */
   contact: StudentContact;
+  /** Elevens egen ålder, aldrig kontohavarens. Null om födelsedatum saknas. */
+  age: number | null;
   status: AttendanceStatus | null;
 };
 
-/** Eleven utan kontaktuppgifter, som saveAttendance behöver. */
-type RosterAttendanceStudent = Omit<AttendanceStudent, "contact">;
+/** Eleven utan kontaktuppgifter och ålder, som saveAttendance behöver. */
+type RosterAttendanceStudent = Omit<AttendanceStudent, "contact" | "age">;
 
 export type AttendanceLesson = {
   lessonId: string;
@@ -205,14 +209,23 @@ const accountContactSelect = {
   details: { select: { phoneNumber: true } },
 } as const;
 
+/** Elevens eget konto: kontaktuppgifter och födelsedatum. */
+const ownAccountSelect = {
+  email: true,
+  details: { select: { phoneNumber: true, dateOfBirth: true } },
+} as const;
+
 /**
- * Lägger till kontaktuppgifter på elevlistan, med två frågor oavsett hur
- * många elever det är.
+ * Lägger till kontaktuppgifter och ålder på elevlistan, med två frågor
+ * oavsett hur många elever det är.
+ *
+ * Kontohavaren (addedBy) hämtas utan födelsedatum, så att en förälders ålder
+ * inte kan hamna på barnet ens av misstag.
  *
  * Hålls utanför lessonStudents, eftersom saveAttendance bara behöver veta
  * vilka som står på listan.
  */
-async function withContacts(
+async function withContactAndAge(
   students: RosterAttendanceStudent[],
 ): Promise<AttendanceStudent[]> {
   const participantIds = students.flatMap((s) =>
@@ -230,7 +243,8 @@ async function withContacts(
             id: true,
             phone: true,
             email: true,
-            user: { select: accountContactSelect },
+            dateOfBirth: true,
+            user: { select: ownAccountSelect },
             addedBy: { select: accountContactSelect },
           },
         })
@@ -238,7 +252,7 @@ async function withContacts(
     userIds.length
       ? prisma.user.findMany({
           where: { id: { in: userIds } },
-          select: { id: true, ...accountContactSelect },
+          select: { id: true, ...ownAccountSelect },
         })
       : [],
   ]);
@@ -261,7 +275,11 @@ async function withContacts(
         ? contactForUser(user)
         : NO_CONTACT;
 
-    return { ...s, contact };
+    const dateOfBirth = participant
+      ? participantBirthDate(participant)
+      : (user?.details?.dateOfBirth ?? null);
+
+    return { ...s, contact, age: calculateAge(dateOfBirth) };
   });
 }
 
@@ -286,7 +304,7 @@ async function toAttendanceLesson(lesson: {
     endTime: lesson.endTime,
     cancelled: lesson.cancelled,
     message: lesson.message,
-    students: await withContacts(await lessonStudents(lesson)),
+    students: await withContactAndAge(await lessonStudents(lesson)),
   };
 }
 

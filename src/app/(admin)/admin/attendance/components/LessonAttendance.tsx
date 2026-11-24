@@ -1,8 +1,8 @@
 "use client";
 
-import { CheckCheck, Mail, Phone, Users } from "lucide-react";
+import { CheckCheck, Contact, Mail, Phone, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +11,7 @@ import {
   type AttendanceStudent,
   saveAttendance,
 } from "@/lib/actions/attendance-actions";
-import type { StudentContact } from "@/lib/student-contact";
+import type { ContactValue, StudentContact } from "@/lib/student-contact";
 import { CourseRosterDialog } from "../../components/CourseRosterDialog";
 
 /**
@@ -28,48 +28,119 @@ function studentDetails(student: AttendanceStudent): string {
 }
 
 /**
- * Telefon och mejl, så att läraren kan ringa en förälder direkt från listan.
- *
- * Länkarna ligger i radens label, men en länk är interaktiv och ändrar
- * därför inte kryssrutan när man trycker på den.
+ * Pricken på ring- och mailknappen: uppgiften går till kunden (oftast
+ * föräldern), inte till eleven. Förklaras ovanför listan.
  */
-function StudentContactLinks({ contact }: { contact: StudentContact }) {
-  if (!contact.phone && !contact.email) {
-    return (
-      <span className="block text-xs text-muted-foreground">
-        Inga kontaktuppgifter
-      </span>
-    );
-  }
+function CustomerDot({ className = "" }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block h-2.5 w-2.5 rounded-full border-2 border-background bg-amber-500 ${className}`}
+    />
+  );
+}
+
+const iconButton =
+  "relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:bg-muted";
+
+/**
+ * Ring, maila och visa kontakt, till höger på raden. Läraren når eleven eller
+ * föräldern med ett tryck, och fäller ut uppgifterna bara när hen vill se dem.
+ *
+ * Knapparna ligger i radens label, men länkar och knappar är interaktiva och
+ * ändrar därför inte kryssrutan när man trycker på dem.
+ */
+function ContactButtons({
+  contact,
+  shown,
+  onToggle,
+}: {
+  contact: StudentContact;
+  shown: boolean;
+  onToggle: () => void;
+}) {
+  if (!contact.phone && !contact.email) return null;
 
   return (
-    <span className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+    <span className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={(e) => {
+          // Säkerhetsbälte: låt inte klicket nå labeln och kryssrutan.
+          e.preventDefault();
+          onToggle();
+        }}
+        aria-expanded={shown}
+        aria-label={shown ? "Dölj kontaktuppgifter" : "Visa kontaktuppgifter"}
+        title={shown ? "Dölj kontaktuppgifter" : "Visa kontaktuppgifter"}
+        className={`${iconButton} ${shown ? "bg-muted" : ""}`}
+      >
+        <Contact className="h-4 w-4" />
+      </button>
       {contact.phone && (
-        <a
+        <ContactButton
           href={`tel:${contact.phone.value.replace(/[^\d+]/g, "")}`}
-          className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
-        >
-          <Phone className="h-3.5 w-3.5" />
-          {contact.phone.value}
-          {contact.phone.viaCustomer && <CustomerTag />}
-        </a>
+          verb="Ring"
+          contact={contact.phone}
+          icon={<Phone className="h-4 w-4" />}
+        />
       )}
       {contact.email && (
-        <a
+        <ContactButton
           href={`mailto:${contact.email.value}`}
-          className="inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
-        >
-          <Mail className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{contact.email.value}</span>
-          {contact.email.viaCustomer && <CustomerTag />}
-        </a>
+          verb="Maila"
+          contact={contact.email}
+          icon={<Mail className="h-4 w-4" />}
+        />
       )}
     </span>
   );
 }
 
-function CustomerTag() {
-  return <span className="text-xs text-muted-foreground">(kundens)</span>;
+function ContactButton({
+  href,
+  verb,
+  contact,
+  icon,
+}: {
+  href: string;
+  verb: string;
+  contact: ContactValue;
+  icon: ReactNode;
+}) {
+  const whose = contact.viaCustomer ? "kunden" : "eleven";
+  const label = `${verb} ${whose}: ${contact.value}`;
+  return (
+    <a href={href} aria-label={label} title={label} className={iconButton}>
+      {icon}
+      {contact.viaCustomer && (
+        <CustomerDot className="absolute -top-1 -right-1" />
+      )}
+    </a>
+  );
+}
+
+/** Kontaktuppgifterna i text, under namnet, när läraren fällt ut dem. */
+function ContactDetails({ contact }: { contact: StudentContact }) {
+  const rows = [
+    ["Telefon", contact.phone],
+    ["Mejl", contact.email],
+  ] as const;
+  return (
+    <span className="mt-1 block space-y-0.5 text-sm">
+      {rows.map(([label, value]) =>
+        value ? (
+          <span key={label} className="block break-all">
+            <span className="text-muted-foreground">{label}: </span>
+            <span className="select-all">{value.value}</span>
+            {value.viaCustomer && (
+              <span className="text-xs text-muted-foreground"> (kundens)</span>
+            )}
+          </span>
+        ) : null,
+      )}
+    </span>
+  );
 }
 
 /**
@@ -91,6 +162,17 @@ export function LessonAttendance({
 }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  // Vilka elevers kontaktuppgifter som är utfällda.
+  const [shownContacts, setShownContacts] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleContact = (studentKey: string) =>
+    setShownContacts((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(studentKey)) next.add(studentKey);
+      return next;
+    });
+
   const [marks, setMarks] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const student of lesson.students) {
@@ -161,6 +243,15 @@ export function LessonAttendance({
         />
       </div>
 
+      {lesson.students.some(
+        (s) => s.contact.phone?.viaCustomer || s.contact.email?.viaCustomer,
+      ) && (
+        <p className="flex items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
+          <CustomerDot />
+          Ring eller maila går till kunden, oftast föräldern, inte till eleven.
+        </p>
+      )}
+
       {lesson.students.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">
           Ingen går kursen ännu. Lägg till elever under &ldquo;Hantera elever på
@@ -190,7 +281,15 @@ export function LessonAttendance({
                     }
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-base">{student.name}</span>
+                    <span className="block text-base">
+                      {student.name}
+                      {student.age !== null && (
+                        <span className="text-sm text-muted-foreground">
+                          {" "}
+                          · {student.age} år
+                        </span>
+                      )}
+                    </span>
                     <span className="block text-sm font-bold">
                       {value === undefined
                         ? "Ej markerad"
@@ -201,7 +300,15 @@ export function LessonAttendance({
                     <span className="block text-xs text-muted-foreground">
                       {studentDetails(student)}
                     </span>
-                    <StudentContactLinks contact={student.contact} />
+                    {!student.contact.phone && !student.contact.email ? (
+                      <span className="block text-xs text-muted-foreground">
+                        Inga kontaktuppgifter
+                      </span>
+                    ) : (
+                      shownContacts.has(student.studentKey) && (
+                        <ContactDetails contact={student.contact} />
+                      )
+                    )}
                   </span>
                   {student.pending && (
                     <span className="shrink-0 rounded-full border border-amber-500/50 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">
@@ -213,6 +320,11 @@ export function LessonAttendance({
                       Bokad
                     </span>
                   )}
+                  <ContactButtons
+                    contact={student.contact}
+                    shown={shownContacts.has(student.studentKey)}
+                    onToggle={() => toggleContact(student.studentKey)}
+                  />
                 </label>
               </li>
             );
